@@ -4,7 +4,11 @@ Copy this file to `project-context.md` in the same directory and fill it in. The
 
 ## Product name (customer-facing)
 
-<!-- e.g. Vyo — use this in the Canvas H1, not the repo folder name -->
+<!-- e.g. Vyo — use this in the poster hero title, not the repo folder name -->
+
+## Poster variant
+
+<!-- deprecated — Swiss canon is the only layout; leave blank -->
 
 ## Primary audience for this explanation
 
