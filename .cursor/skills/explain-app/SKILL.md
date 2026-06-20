@@ -2,16 +2,22 @@
 name: explain-app
 description: >-
   Inspects a repository and explains what the app does and how it works in
-  plain English for non-technical stakeholders. Produces a Swiss Style graphic
-  design poster as a visual Canvas. Use when the user asks to explain the app,
-  walk through how it works for a client/PM/stakeholder, create a non-technical
-  overview, demystify the codebase for someone who does not code, or visualize
-  the repo as a poster.
+  plain English for non-technical stakeholders. Produces two Swiss Style poster
+  Canvases: page 1 (how it works) and page 2 (project story — connection and
+  selling). Use when the user asks to explain the app, walk through how it works
+  for a client/PM/stakeholder, create a non-technical overview, demystify the
+  codebase for someone who does not code, help someone sell or talk about their
+  product, or visualize the repo as a poster.
 ---
 
 # Explain App
 
-Turn a codebase into a plain-English app guide for people who will never read code. The deliverable is a **Swiss Style poster Canvas** (`.canvas.tsx`) on light paper — objective typography, real 12-column grid, one accent color. Not a dark UI mockup, not a scrolling doc.
+Turn a codebase into a plain-English app guide for people who will never read code. The deliverable is **two Swiss Style poster Canvases** (`.canvas.tsx`) on light paper — objective typography, real 12-column grid, one accent color. Not a dark UI mockup, not a scrolling doc.
+
+| Page | File | Purpose |
+|------|------|---------|
+| **1 — App Guide** | `<repo>-app-poster.canvas.tsx` | How the product works — journeys, screens, connected services |
+| **2 — Project Story** | `<repo>-project-story.canvas.tsx` | Connection and selling — who it's for, talking points, what's real, the vision |
 
 ## When to Use
 
@@ -19,6 +25,7 @@ Turn a codebase into a plain-English app guide for people who will never read co
 - User wants a walkthrough of how the product works without code
 - User asks "what does this app do?" or "demystify this codebase"
 - User needs a visual overview for handoff, sales, or investor context
+- User wants to feel connected to their project or talk about it confidently without technical detail
 
 ## When NOT to Use
 
@@ -32,9 +39,10 @@ Turn a codebase into a plain-English app guide for people who will never read co
 1. Read the [canvas skill](file:///Users/niki_g/.cursor/skills-cursor/canvas/SKILL.md) — required for every Canvas deliverable.
 2. Read [swiss-design-principles.md](swiss-design-principles.md) — **mandatory** design discipline (Müller-Brockmann + Vignelli, from [hyperagent-public-skills](https://github.com/alexmcdonnell-airtable/hyperagent-public-skills)).
 3. Read [plain-language-rules.md](plain-language-rules.md) before writing copy.
-4. Read [poster-layout.md](poster-layout.md) for grid rows and content zones.
-5. Use [poster-starter.md](poster-starter.md) as the structural starting point.
-6. Skim [canvas-layout.md](canvas-layout.md) only if the user explicitly wants the legacy document-style fallback.
+4. Read [poster-layout.md](poster-layout.md) for page 1 grid rows and content zones.
+5. Read [sell-sheet-layout.md](sell-sheet-layout.md) for page 2 — **always produce both pages** when an app is detected.
+6. Use [poster-starter.md](poster-starter.md) and [sell-sheet-starter.md](sell-sheet-starter.md) as structural starting points.
+7. Skim [canvas-layout.md](canvas-layout.md) only if the user explicitly wants the legacy document-style fallback.
 
 ### Project overrides (check in order)
 
@@ -50,9 +58,11 @@ Copy this checklist and track progress:
 Explain App Progress:
 - [ ] Phase 1: Recon
 - [ ] Phase 2: User feature map
-- [ ] Phase 3: Plain English synthesis
-- [ ] Phase 4: Poster canvas deliverable
-- [ ] Chat summary with canvas link
+- [ ] Phase 3: Plain English synthesis (page 1)
+- [ ] Phase 4: App Guide poster (page 1)
+- [ ] Phase 5: Connection & sales synthesis (page 2)
+- [ ] Phase 6: Project Story poster (page 2)
+- [ ] Chat summary with both canvas links
 ```
 
 ### Phase 1 — Recon (read-only, parallel)
@@ -94,7 +104,7 @@ Apply [plain-language-rules.md](plain-language-rules.md):
 - No file paths in primary copy — reserve for collapsed technical appendix
 - Adapt depth to audience (see rules file)
 
-### Phase 4 — Poster canvas deliverable
+### Phase 4 — App Guide poster (page 1)
 
 1. Determine workspace canvases path: `~/.cursor/projects/<workspace>/canvases/`
 2. Filename: `<repo-name>-app-poster.canvas.tsx` (kebab-case, from git root basename)
@@ -109,14 +119,43 @@ Apply [plain-language-rules.md](plain-language-rules.md):
 6. `useCanvasState("showGrid", false)` for grid toggle
 7. Run Swiss pre-delivery checklist in swiss-design-principles.md
 
+### Phase 5 — Connection & sales synthesis (page 2)
+
+Build this map from the same recon — do not re-read the entire repo. Pull from README, marketing copy, playbooks, and the page 1 feature map.
+
+| Element | What to capture |
+|---------|-----------------|
+| Tagline | Emotional outcome in one line — not a feature list |
+| In one breath | 20-second script the owner can say aloud |
+| Who it's for | Ideal person, their situation, the moment they need this |
+| Why they'll care | Customer outcomes and feelings — not screens |
+| Talking points | 3 verbatim lines in quotation marks |
+| What's real today | Honest capabilities only — same status labels as page 1 |
+| Differentiation | 2–3 contrasts vs generic alternatives or named competitors if obvious from docs |
+| The vision | 2–3 sentences in ownership language — why *they* built this |
+
+Default audience for page 2: **project owner who wants to sell or share the product** — even if page 1 targets a client or PM.
+
+Apply page 2 voice rules in [plain-language-rules.md](plain-language-rules.md#page-2--project-story-voice).
+
+### Phase 6 — Project Story poster (page 2)
+
+1. Same canvases path as page 1
+2. Filename: `<repo-name>-project-story.canvas.tsx`
+3. Follow [sell-sheet-layout.md](sell-sheet-layout.md) and [sell-sheet-starter.md](sell-sheet-starter.md) — same Swiss canon as page 1
+4. Footer center: "Pair with the App Guide (page 1)"
+5. Same quality gates as page 1 — no jargon, no file paths, no hype
+
 ### Chat response
 
-Keep chat short. The poster canvas is the deliverable.
+Keep chat short. Both poster canvases are the deliverable.
 
 1. One sentence: what the app does
-2. Link to the poster canvas with full absolute path (markdown link)
-3. If first canvas in workspace: one sentence on opening it beside the chat
-4. Note any gaps honestly ("billing UI is not built yet; backend exists only")
+2. Link to **page 1** (App Guide) with full absolute path (markdown link)
+3. One sentence on **page 2**: who it's for and that it has talking points + what's real today
+4. Link to **page 2** (Project Story) with full absolute path
+5. If first canvas in workspace: one sentence on opening them beside the chat
+6. Note any gaps honestly ("billing UI is not built yet; backend exists only")
 
 ## Edge Cases
 
@@ -124,7 +163,7 @@ Keep chat short. The poster canvas is the deliverable.
 
 If there is no `package.json`, no routes, and no product docs:
 
-- Do **not** produce a Canvas with placeholder content
+- Do **not** produce either Canvas with placeholder content
 - Tell the user honestly: no application detected in this repository
 - Suggest what would help: README, filled `project-context.md`, or a different repo path
 
@@ -153,17 +192,26 @@ When a playbook or audit distinguishes UI from server work:
 
 ## Output Quality Gates
 
-Before finishing, verify:
+Before finishing, verify **both pages**:
 
+**Page 1 — App Guide**
 - [ ] A non-engineer can describe what the app does from the poster alone
+- [ ] Journeys match real routes/screens when UI exists
+- [ ] Backend-only features in footer only, not as live journeys
+
+**Page 2 — Project Story**
+- [ ] Owner can read "in one breath" and talking points aloud without stumbling
+- [ ] "What's real today" matches page 1 status honesty — no overselling
+- [ ] Vision copy uses ownership language ("you", "your product")
+- [ ] Differentiation is concrete, not generic hype
+
+**Both pages**
 - [ ] Light paper, ink type, one red accent — Swiss canon palette
 - [ ] 12-column grid with baseline lock; overlay shares content box
 - [ ] Two type sizes; flush-left throughout
 - [ ] No dark fields, rainbow tabs, or document-style canvas components
 - [ ] No unexplained jargon in visible poster copy
-- [ ] Journeys match real routes/screens when UI exists
-- [ ] Backend-only features in footer only, not as live journeys
-- [ ] No file paths on the poster surface
+- [ ] No file paths on either poster surface
 
 ## Examples
 

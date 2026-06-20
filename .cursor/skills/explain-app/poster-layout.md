@@ -2,12 +2,20 @@
 
 Section spec for explain-app deliverables. Read [swiss-design-principles.md](swiss-design-principles.md) first — always.
 
-The output is a **single-page Swiss Style poster** on light paper. Not a dark UI mockup. Not a scrolling document.
+The output is a **two-page Swiss Style poster set** on light paper. Not a dark UI mockup. Not a scrolling document.
+
+| Page | File |
+|------|------|
+| 1 — App Guide | `<repo-name>-app-poster.canvas.tsx` |
+| 2 — Project Story | `<repo-name>-project-story.canvas.tsx` |
+
+Page 2 layout: [sell-sheet-layout.md](sell-sheet-layout.md)
 
 ## File Location
 
 ```
 ~/.cursor/projects/<workspace>/canvases/<repo-name>-app-poster.canvas.tsx
+~/.cursor/projects/<workspace>/canvases/<repo-name>-project-story.canvas.tsx
 ```
 
 - Default-export one React component

@@ -11,14 +11,19 @@
 **General**
 > Explain what this app does. Visualize the repo as a poster.
 
+**Selling / connection (page 2 emphasis)**
+> Explain this codebase so I can talk about my product confidently — I need the second page with talking points.
+
 ## Sample Chat Response
 
 ```markdown
 This app is a team task board where members sign in, create projects, and track work on a shared dashboard.
 
-Open the poster beside this chat: [taskflow-app-poster](/Users/niki_g/.cursor/projects/.../canvases/taskflow-app-poster.canvas.tsx)
+**Page 1 — how it works:** [taskflow-app-poster](/Users/niki_g/.cursor/projects/.../canvases/taskflow-app-poster.canvas.tsx)
 
-Note: billing is wired on the server but there is no payment screen yet — marked in the footer.
+**Page 2 — your story:** talking points, who's it's for, and what's real today — [taskflow-project-story](/Users/niki_g/.cursor/projects/.../canvases/taskflow-project-story.canvas.tsx)
+
+Note: billing is wired on the server but there is no payment screen yet — marked on both pages.
 ```
 
 ## Sample Poster Copy (Hypher)
@@ -49,6 +54,44 @@ A spatial project brain for solo builders — capture thoughts anywhere, see the
 
 ### Footer
 Not built: npm package, GitHub OAuth, voice capture
+
+## Sample Page 2 Copy (Hypher)
+
+### Folio
+- PROJECT STORY · For solo builders · Page 2
+
+### Masthead
+```
+Hy
+pher
+```
+Your ideas, finally in one place.
+
+**In one breath:** "Hyphers is a workspace for solo builders who are tired of losing ideas across tabs. You capture a thought in seconds, see it organized on a canvas, and get a daily digest that keeps you moving — without becoming a project manager."
+
+### Body columns
+
+**Who it's for** — Solo builders, indie hackers, and consultants juggling multiple projects. The moment: you had a great idea in the shower and can't find it by afternoon.
+
+**Why they'll care** — One place for thinking, not ten apps. Less mental overhead. Share a link when you want someone to see your work, not your file system.
+
+**What to say**
+1. "Most builders lose ideas across ten tabs — Hyphers keeps everything in one workspace."
+2. "You capture a thought in seconds; the app organizes it on a spatial canvas."
+3. "Share a read-only link when you want feedback, not repo access."
+
+### What's real today
+- Sign in and land on a personal dashboard
+- Capture notes and files into projects
+- Organize work on a spatial canvas
+- Daily AI digest of recent activity
+- Billing is not in the app yet
+
+### Differentiation + vision
+
+**How you're different** — Not another notes app with folders. Not a team project manager. A spatial brain for one person who ships alone.
+
+**The vision** — You built this because scattered thinking was costing you momentum. What you have now is a single place to capture, see patterns, and share — on your terms.
 
 ## Anti-patterns
 

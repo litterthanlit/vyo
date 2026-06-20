@@ -12,11 +12,27 @@ Copy this file to `project-context.md` in the same directory and fill it in. The
 
 ## Primary audience for this explanation
 
-<!-- client | pm | exec | general -->
+<!-- client | pm | exec | general — page 1 handoff audience -->
+
+## Page 2 owner
+
+<!-- Who sells or shares the product: founder | solo builder | agency client | operator -->
 
 ## Tone
 
 <!-- formal | friendly | investor-brief -->
+
+## Tagline direction (page 2)
+
+<!-- Emotional one-liner if you already have one — e.g. "Your ideas, finally in one place." -->
+
+## Competitors or alternatives to contrast
+
+<!-- spreadsheets, Notion, named competitors — helps page 2 differentiation -->
+
+## Vision / why we built this
+
+<!-- 1–3 sentences for page 2 "The vision" band — ownership language -->
 
 ## Terms to use
 

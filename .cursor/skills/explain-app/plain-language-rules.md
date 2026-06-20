@@ -46,7 +46,48 @@ Replace or move to glossary / technical appendix:
 | **Exec / investor** | Problem, outcome, traction signals, connected services | Step-by-step UI | Short |
 | **General** (default) | Balanced: purpose, 2–3 journeys, main areas | Technical appendix only | Medium |
 
-If audience is unclear, use **general** and keep the technical appendix collapsed.
+If audience is unclear, use **general** for page 1 and **project owner / seller** for page 2.
+
+## Page 2 — Project Story voice
+
+Page 2 is for people who **own or sell** the product — not engineers, not agency handoff recipients. They want to feel connected to what they built and talk about it without reading code.
+
+### Principles
+
+1. **Speakable copy** — every talking point and the "in one breath" script should sound natural out loud
+2. **Ownership** — "your app", "what you've built", "you set out to" — not "the system" or "the platform"
+3. **Customer language** — describe outcomes for *their* customer, not UI areas
+4. **Honest confidence** — "what's real today" builds trust; one limitation beats overselling
+5. **No architecture** — page 2 never mentions stack, services, or how it's built (that's page 1's "Connected" column)
+
+### Banned on page 2
+
+Everything in the primary-sections ban list, plus:
+
+| Instead of | Say |
+|------------|-----|
+| MVP / beta / v1 | "what's live now" or omit |
+| leverage / utilize | "use" |
+| solution / platform / ecosystem | name the product or say "app" |
+| disruptive / revolutionary | omit — show the contrast instead |
+| TAM / moat / ARR / runway | omit unless exec audience in project-context |
+| synergy / holistic | omit |
+
+### Talking points format
+
+Write as quoted lines the owner can memorize or read:
+
+```
+1. "Most solo builders lose ideas across ten tabs — this keeps everything in one place."
+```
+
+Not bullet fragments: ~~"idea capture, spatial canvas, AI digest"~~
+
+### Vision band
+
+Connect the owner to the *why* behind the build. Pull from README mission, playbook positioning, or product name etymology if docs are thin. Example tone:
+
+> You started this because scattered notes were costing you momentum. What you've built is a single place to think, organize, and share — without becoming a project manager.
 
 ## Section Voice
 
