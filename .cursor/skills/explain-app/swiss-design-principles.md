@@ -130,7 +130,7 @@ Rules (from Vignelli transit canon):
 
 ## Grid toggle
 
-- `useCanvasState("showGrid", false)`
+- Page 1: `useCanvasState("showGridApp", false)` · Page 2: `useCanvasState("showGridStory", false)` — separate keys per poster
 - Toggle draws column fields + baseline lines **inside the same `.wrap` as content**
 - Button label: "Show grid" / "Hide grid" — folio size, ink-soft color
 - Column fields: translucent accent tint; baseline: major every 24px, minor every 8px
@@ -142,7 +142,10 @@ Rules (from Vignelli transit canon):
 Swiss quality gate — all must pass:
 
 - [ ] Light paper field — not dark, not host-theme tinted
-- [ ] 12-column grid; elements placed by column line
+- [ ] **One outer 12-column grid** — all rows share the same column lines
+- [ ] **Consistent spans**: folio 4+4+4, masthead 8+4, diagrams 6+6, body 4+4+4
+- [ ] Diagrams use CSS grid inside their span — not fixed-width SVG viewBoxes
+- [ ] No negative margins or off-column header decorations
 - [ ] 8px baseline; body leading = 24px in px
 - [ ] Two type sizes only (display + body/folio)
 - [ ] Flush-left throughout; no centered paragraphs
@@ -164,6 +167,8 @@ Swiss quality gate — all must pass:
 | 4-column grid with no baseline | Grid as decoration | 12-col + 8px baseline lock |
 | Host dark theme colors | Breaks paper/ink discipline | Vignelli canon palette |
 | Stack of canvas components | Document, not poster | Raw grid + inline styles |
+| Nested subgrids per row | Columns drift between bands | Single outer 12-col grid |
+| Fixed SVG viewBox diagrams | Diagram floats off column lines | CSS grid nodes inside col span |
 
 ---
 

@@ -11,7 +11,7 @@ import { useCanvasState } from "cursor/canvas";
 // Same GridOverlay, Band helpers as poster-starter.md
 
 export default function ProjectStory() {
-  const [showGrid, setShowGrid] = useCanvasState("showGrid", false);
+  const [showGrid, setShowGrid] = useCanvasState("showGridStory", false);
 
   const folio = { /* same as poster */ };
   const body = { fontSize: 13, lineHeight: `${LH}px`, margin: 0 };

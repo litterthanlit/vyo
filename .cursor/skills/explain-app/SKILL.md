@@ -36,7 +36,7 @@ Turn a codebase into a plain-English app guide for people who will never read co
 
 ## Before You Start
 
-1. Read the [canvas skill](file:///Users/niki_g/.cursor/skills-cursor/canvas/SKILL.md) — required for every Canvas deliverable.
+1. Read the canvas skill at `~/.cursor/skills-cursor/canvas/SKILL.md` — required for every Canvas deliverable.
 2. Read [swiss-design-principles.md](swiss-design-principles.md) — **mandatory** design discipline (Müller-Brockmann + Vignelli, from [hyperagent-public-skills](https://github.com/alexmcdonnell-airtable/hyperagent-public-skills)).
 3. Read [plain-language-rules.md](plain-language-rules.md) before writing copy.
 4. Read [poster-layout.md](poster-layout.md) for page 1 grid rows and content zones.
@@ -116,7 +116,7 @@ Apply [plain-language-rules.md](plain-language-rules.md):
    - Numbered journeys in the meta column — no colored tabs or dark blocks
 4. Import only from `cursor/canvas`; inline all content; no `fetch`
 5. Omit empty zones — never render placeholder blocks
-6. `useCanvasState("showGrid", false)` for grid toggle
+6. `useCanvasState("showGridApp", false)` on page 1; `useCanvasState("showGridStory", false)` on page 2 — separate keys so toggles do not leak across posters
 7. Run Swiss pre-delivery checklist in swiss-design-principles.md
 
 ### Phase 5 — Connection & sales synthesis (page 2)

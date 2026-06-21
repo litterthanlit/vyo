@@ -3,7 +3,7 @@
 > **Prefer [poster-layout.md](poster-layout.md)** for all new explain-app deliverables.
 > This file describes the older scrolling document-style canvas. Use it only when the user explicitly asks for a traditional guide layout instead of a Swiss Style poster.
 
-Section spec for explain-app deliverables. Read the [canvas skill](file:///Users/niki_g/.cursor/skills-cursor/canvas/SKILL.md) and `~/.cursor/skills-cursor/canvas/sdk/index.d.ts` before authoring.
+Section spec for explain-app deliverables. Read the canvas skill at `~/.cursor/skills-cursor/canvas/SKILL.md` and `~/.cursor/skills-cursor/canvas/sdk/index.d.ts` before authoring.
 
 ## File Location
 

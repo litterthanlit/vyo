@@ -21,7 +21,7 @@ This app is a team task board where members sign in, create projects, and track 
 
 **Page 1 — how it works:** [taskflow-app-poster](/Users/niki_g/.cursor/projects/.../canvases/taskflow-app-poster.canvas.tsx)
 
-**Page 2 — your story:** talking points, who's it's for, and what's real today — [taskflow-project-story](/Users/niki_g/.cursor/projects/.../canvases/taskflow-project-story.canvas.tsx)
+**Page 2 — your story:** talking points, who it's for, and what's real today — [taskflow-project-story](/Users/niki_g/.cursor/projects/.../canvases/taskflow-project-story.canvas.tsx)
 
 Note: billing is wired on the server but there is no payment screen yet — marked on both pages.
 ```
@@ -67,7 +67,7 @@ pher
 ```
 Your ideas, finally in one place.
 
-**In one breath:** "Hyphers is a workspace for solo builders who are tired of losing ideas across tabs. You capture a thought in seconds, see it organized on a canvas, and get a daily digest that keeps you moving — without becoming a project manager."
+**In one breath:** "Hypher is a workspace for solo builders who are tired of losing ideas across tabs. You capture a thought in seconds, see it organized on a canvas, and get a daily digest that keeps you moving — without becoming a project manager."
 
 ### Body columns
 
@@ -76,7 +76,7 @@ Your ideas, finally in one place.
 **Why they'll care** — One place for thinking, not ten apps. Less mental overhead. Share a link when you want someone to see your work, not your file system.
 
 **What to say**
-1. "Most builders lose ideas across ten tabs — Hyphers keeps everything in one workspace."
+1. "Most builders lose ideas across ten tabs — Hypher keeps everything in one workspace."
 2. "You capture a thought in seconds; the app organizes it on a spatial canvas."
 3. "Share a read-only link when you want feedback, not repo access."
 

@@ -20,23 +20,34 @@ const MAXW = 900;
 
 const FONT = '"Helvetica Neue", Helvetica, Arial, system-ui, sans-serif';
 
+const GRID_BASELINE_MINOR = "rgba(228, 0, 43, 0.04)";
+const GRID_BASELINE_MAJOR = "rgba(228, 0, 43, 0.12)";
+
 function GridOverlay() {
   return (
-    <div
-      aria-hidden
-      style={{
-        position: "absolute",
-        inset: 0,
-        pointerEvents: "none",
-        display: "grid",
-        gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-        columnGap: GUTTER,
-        padding: MARGIN,
-      }}
-    >
-      {Array.from({ length: COLS }).map((_, i) => (
-        <div key={i} style={{ background: GRID_FIELD, height: "100%" }} />
-      ))}
+    <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: MARGIN,
+          display: "grid",
+          gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+          columnGap: GUTTER,
+        }}
+      >
+        {Array.from({ length: COLS }).map((_, i) => (
+          <div key={i} style={{ background: GRID_FIELD, height: "100%" }} />
+        ))}
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          inset: MARGIN,
+          backgroundImage: `repeating-linear-gradient(to bottom, ${GRID_BASELINE_MINOR} 0, ${GRID_BASELINE_MINOR} 1px, transparent 1px, transparent ${BL}px), repeating-linear-gradient(to bottom, ${GRID_BASELINE_MAJOR} 0, ${GRID_BASELINE_MAJOR} 1px, transparent 1px, transparent ${LH}px)`,
+        }}
+      />
+      <div style={{ position: "absolute", top: MARGIN, bottom: MARGIN, left: MARGIN, width: 1, background: GRID_BASELINE_MAJOR }} />
+      <div style={{ position: "absolute", top: MARGIN, bottom: MARGIN, right: MARGIN, width: 1, background: GRID_BASELINE_MAJOR }} />
     </div>
   );
 }
@@ -59,7 +70,7 @@ function Band({ children, style }: { children: React.ReactNode; style?: Record<s
 }
 
 export default function AppPoster() {
-  const [showGrid, setShowGrid] = useCanvasState("showGrid", false);
+  const [showGrid, setShowGrid] = useCanvasState("showGridApp", false);
 
   const folio = {
     fontSize: 11,
