@@ -1,13 +1,13 @@
-# Poster Layout
+# Poster Layout (Page 1 — App Guide)
 
 Section spec for explain-app deliverables. Read [swiss-design-principles.md](swiss-design-principles.md) first — always.
 
 The output is a **two-page Swiss Style poster set** on light paper. Not a dark UI mockup. Not a scrolling document.
 
-| Page | File |
-|------|------|
-| 1 — App Guide | `<repo-name>-app-poster.canvas.tsx` |
-| 2 — Project Story | `<repo-name>-project-story.canvas.tsx` |
+| Page | File | Job |
+|------|------|-----|
+| 1 — App Guide | `<repo-name>-app-poster.canvas.tsx` | How the app **and the code behind it** work, in plain English |
+| 2 — Project Story | `<repo-name>-project-story.canvas.tsx` | The summary / marketing sheet — tagline, talking points, what's real |
 
 Page 2 layout: [sell-sheet-layout.md](sell-sheet-layout.md)
 
@@ -21,7 +21,7 @@ Page 2 layout: [sell-sheet-layout.md](sell-sheet-layout.md)
 - Default-export one React component
 - Import only from `cursor/canvas`
 - Inline all copy — no `fetch`, no helper files
-- Single viewport, ~900×1100px portrait, minimal scroll
+- Single viewport, ~900×1150px portrait, minimal scroll
 
 ## Palette (fixed — see swiss-design-principles.md)
 
@@ -33,7 +33,7 @@ const ACCENT = "#E4002B";
 const GRID_FIELD = "rgba(228, 0, 43, 0.08)";
 ```
 
-Use Vignelli canon values only. Do not use `theme.category.*` rainbow colors.
+Accent appears **once** as an editorial mark — the red full stop after the masthead. Rules, dots, and numerals are ink. The grid toggle may use accent (functional chrome).
 
 ## Grid constants
 
@@ -42,7 +42,7 @@ const COLS = 12;
 const BL = 8;        // baseline unit
 const LH = 24;       // leading = 3 × BL
 const GUTTER = 24;
-const MARGIN = 48;
+const MARGIN = 64;   // wide margins = serenity
 const MAXW = 900;
 ```
 
@@ -53,7 +53,7 @@ One `.wrap` container — **content and grid overlay both inside it**:
 ```tsx
 <div style={{ maxWidth: MAXW, margin: "0 auto", padding: MARGIN, background: PAPER, color: INK, position: "relative" }}>
   {showGrid && <GridOverlay />}
-  <div style={{ display: "grid", gridTemplateColumns: `repeat(${COLS}, 1fr)`, columnGap: GUTTER, rowGap: BL * 2 }}>
+  <div style={{ display: "grid", gridTemplateColumns: `repeat(${COLS}, 1fr)`, columnGap: GUTTER, rowGap: LH }}>
     {/* bands */}
   </div>
 </div>
@@ -63,70 +63,76 @@ Each row is a band spanning `gridColumn: "1 / -1"` with the same 12-column subgr
 
 ## Row-by-row spec
 
-### Row 1 — Folio (all 12 cols)
+### Row 1 — Folio + major rule (all 12 cols)
+
+| cols 1–4 | cols 5–9 | cols 10–12 |
+|----------|----------|------------|
+| APP GUIDE — 01 (10px, uppercase, letter-spacing 0.08em) | One-line promise, ink-soft, sentence case | Platform · audience (ink-soft, right-aligned) |
+
+Directly below: **2px ink rule**, full width. Type hangs from the ruler (Vignelli).
+
+### Row 2 — Masthead (cols 1–12)
+
+Product name at **96–128px**, weight 700, letter-spacing −0.03em, lineHeight = fontSize in px, on **one line** when it fits (stack only names that overflow at 96px). Close with a **red full stop** — the poster set's single accent mark.
+
+Optical nudge: `marginLeft: "-0.05em"` so ink, not the box, hits column line 1.
+
+### Row 3 — Purpose (cols 1–7; cols 8–12 empty)
+
+One sentence, 13–14px/24px, **INK** (not gray), max-width ~28em. The empty right zone is deliberate — do not fill it.
+
+### Row 4 — Journeys band ("What you do") — 4 × 3 cols
+
+Section label (10px uppercase) across cols 1–12, then four columns of 3 cols each:
+
+- **Giant numeral** — 40–48px, weight 700, ink, lineHeight 48px
+- Below it: one short body line (13px/24px, ink), max two lines
+
+Three journeys → use 4-col spans and leave the last empty. Never render step numbers at body size.
+
+### Row 5 — Under the hood (cols 1–12) — the code story
+
+This band answers "how does the code work?" for a non-technical reader. Two parts:
+
+**5a. Transit-line diagram** — one horizontal 2px ink line across cols 1–12 with 4–6 **solid ink dots** (stations), evenly spaced by the grid. Under each dot, flush-left: a 10px uppercase station label + one plain-verb line in ink-soft ("saved instantly", "AI reads it"). Stations narrate the pipeline: what you do → where it's stored → what processes it → what comes back out. Branch steps (optional paths) leave the line at 90° with a hollow ring.
+
+**5b. "When you…" lines** — below the diagram, 2–3 columns (4 cols each): each a bold lead-in ("When you save a note,") followed by the plain consequence ("it's stored in your database and synced to every open tab."). Name **services**, not SDKs.
+
+No boxes, no dashed borders, no centered labels, no arrowheads on the main line.
+
+### Row 6 — Three-column body — 4 + 4 + 4
 
 | cols 1–4 | cols 5–8 | cols 9–12 |
 |----------|----------|-----------|
-| APP GUIDE (11px, uppercase, letter-spacing 0.08em) | Audience (ink-soft) | Platform (ink-soft, right-aligned) |
+| **The problem** — 2–3 sentences, ink | **The screens** — main app areas as short lines, no paths | **Connected** — services + what each does, one line each |
 
-### Row 2–5 — Masthead band
+Column labels: 10px uppercase, letter-spacing 0.06em, weight 600, with a 1px ink hairline above each label (type hangs from the rule).
 
-| cols 1–7 | cols 8–12 |
-|----------|-----------|
-| Product name stacked, 56–64px, weight 700, lineHeight in px, marginLeft optical nudge | Numbered journeys (1–4), 12px, flush-left, one line each |
+### Row 7 — Footer (all 12 cols)
 
-Below masthead (cols 1–7): purpose sentence, 14px/24px.
+1px hairline above. Three zones, 10px/16px, ink-soft, all flush-left except the last:
 
-### Row 6 — Accent rule
-
-Full width. `height: 2px`, `background: ACCENT`, sits on a baseline band (padding/margin = BL multiple).
-
-### Row 6b — Flow diagrams (recommended when repo has 3+ screens or journeys)
-
-Two diagrams, stacked. Use inline SVG — **90° and 45° angles only** (Vignelli transit rule). Stroke 2px ink; primary path may use ACCENT.
-
-| Diagram | cols | Purpose |
-|---------|------|---------|
-| **User journey** | 1–6 | Capture → Canvas → Digest → Share with elbow arrows |
-| **App map** | 7–12 | Screen/route nodes: Landing → App → Project canvas → Settings |
-
-Node style: 10px uppercase label inside a 1px ink border box, min-height = 2× baseline (32px). Arrows: SVG `<path>` with `marker-end` triangle, no curves.
-
-Between body columns, optional `→` SVG connectors at column-header level to show reading order: Problem → How it works → Connected.
-
-### Row 7–10 — Three-column body
-
-| cols 1–4 | cols 5–8 | cols 9–12 |
-|----------|----------|-----------|
-| **The problem** — label 11px uppercase, body 12px/24px, 2–3 sentences | **How it works** — main app areas as short lines, no paths | **Connected** — services + one "when you X" line each |
-
-Column labels: uppercase, letter-spacing 0.06em, weight 600.
-
-### Row 11 — Footer (all 12 cols)
-
-Three zones, 10px, ink-soft:
-
-- Left: SERVER / not-built items (comma-separated)
-- Center: "For [audience]"
-- Right: grid toggle button (no border, text link style in ACCENT)
+- cols 1–5: Not built / server-only items (comma-separated)
+- cols 6–9: "For [audience]"
+- cols 10–12: grid toggle button, right-aligned (text link, ACCENT allowed)
 
 ## Typography rules
 
 - Font: `"Helvetica Neue", Helvetica, Arial, system-ui, sans-serif`
-- Display: one size (56–64px), lineHeight equals fontSize in px
-- Body: 12–14px, lineHeight 24px
-- **Two sizes on the poster** (+ folio at body scale)
-- Flush-left only. No centered body text.
+- Display: 96–128px, lineHeight = fontSize in px; numerals 40–48px/48px
+- Body: 13–14px, lineHeight 24px, **ink**
+- Folio/meta: 10–11px/16px, ink-soft
+- Flush-left only. No centered text anywhere except nothing.
 
 ## Optical alignment
 
-After render, apply left margin to display type equal to first glyph side-bearing. In canvas, approximate with `marginLeft: -0.04em` on masthead or measure with canvas API if feasible. Goal: **ink** aligns to column 1 line.
+Apply `marginLeft: "-0.05em"` to the masthead and `-0.03em` to giant numerals so **ink** aligns to the column line, not the layout box.
 
 ## Grid overlay
 
 When `showGrid`:
 
-- Position absolute, `inset: 0`, same padding as content
+- Position absolute, `inset: MARGIN` (same box as content padding)
 - 12 column fields with `GRID_FIELD` background
 - Horizontal lines every 8px (minor) and 24px (major, slightly darker)
 - Left/right margin lines at padding edge
@@ -143,4 +149,4 @@ No app detected → no poster. Report honestly.
 
 ## Legacy variants removed
 
-Do not use Modular / Editorial / Redacted variant names. There is one Swiss poster system. Color blocks and dark "redacted" layouts are explicitly forbidden — see anti-patterns in swiss-design-principles.md.
+Do not use Modular / Editorial / Redacted variant names. There is one Swiss poster system. Color blocks, dark "redacted" layouts, and boxed flowchart diagrams are explicitly forbidden — see anti-patterns in swiss-design-principles.md.

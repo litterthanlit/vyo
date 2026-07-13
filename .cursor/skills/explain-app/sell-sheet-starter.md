@@ -1,117 +1,124 @@
-# Sell Sheet Canvas Starter
+# Sell Sheet Canvas Starter (Page 2)
 
 Structural reference for `<repo>-project-story.canvas.tsx`. Read [sell-sheet-layout.md](sell-sheet-layout.md) and [swiss-design-principles.md](swiss-design-principles.md) first.
 
-Copy grid helpers (`GridOverlay`, `Band`, constants) from [poster-starter.md](poster-starter.md) — do not duplicate a different layout system.
+Copy grid helpers (`GridOverlay`, constants, `folio`/`meta`/`body`/`sectionLabel`/`numeral`/`subgrid` styles) from [poster-starter.md](poster-starter.md) — same visual system, do not invent a new one.
+
+Key craft moves specific to page 2:
+
+- **The tagline is the hero** — 64–80px display over 2–3 lines, closed with the red full stop; the product name sits in the folio
+- Talking points get **giant numerals**, mirroring page 1's journeys
+- "What's real today" is set in **two columns of 6**, includes one honest limitation
+- Everything else follows page 1: ink-first copy, ink rules, single accent, flush-left, no negative margins
 
 ```tsx
 import { useCanvasState } from "cursor/canvas";
 
-// Same PAPER, INK, INK_SOFT, ACCENT, GRID_FIELD, COLS, BL, LH, GUTTER, MARGIN, MAXW, FONT
-// Same GridOverlay, Band helpers as poster-starter.md
+// Same PAPER, INK, INK_SOFT, ACCENT, GRID_*, HAIRLINE, COLS, BL, LH, GUTTER,
+// MARGIN, MAXW, FONT, folio, meta, body, sectionLabel, numeral, subgrid,
+// GridOverlay as poster-starter.md.
 
 export default function ProjectStory() {
   const [showGrid, setShowGrid] = useCanvasState("showGridStory", false);
 
-  const folio = { /* same as poster */ };
-  const body = { fontSize: 13, lineHeight: `${LH}px`, margin: 0 };
-  const label = { /* uppercase section label */ };
+  const talkingPoints = [
+    "\u201CFirst speakable talking point.\u201D",
+    "\u201CSecond speakable talking point.\u201D",
+    "\u201CThird speakable talking point.\u201D",
+  ];
+  const realToday = [
+    ["Capability line one", "Capability line two", "Capability line three"],
+    ["Capability line four", "Capability line five", "One honest limitation \u2014 coming next"],
+  ];
 
   return (
     <div style={{ background: PAPER, minHeight: "100%", fontFamily: FONT, color: INK }}>
       <div style={{ maxWidth: MAXW, margin: "0 auto", padding: MARGIN, position: "relative" }}>
         {showGrid ? <GridOverlay /> : null}
 
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${COLS}, 1fr)`, columnGap: GUTTER, rowGap: BL * 3, position: "relative", zIndex: 1 }}>
-          {/* Folio */}
-          <Band>
-            <div style={{ gridColumn: "1 / 5", ...folio }}>Project Story</div>
-            <div style={{ gridColumn: "5 / 9", ...folio, color: INK_SOFT, textTransform: "none" }}>
-              {/* owner audience */}
+        <div style={{ ...subgrid, rowGap: LH, position: "relative", zIndex: 1 }}>
+          {/* Folio + 2px ink rule */}
+          <div style={{ gridColumn: "1 / -1" }}>
+            <div style={subgrid}>
+              <div style={{ gridColumn: "1 / 5", ...folio }}>Project Story — 02</div>
+              <div style={{ gridColumn: "5 / 10", ...meta }}>For the owner — say it out loud</div>
+              <div style={{ gridColumn: "10 / 13", ...meta, textAlign: "right" }}>{/* product name */}</div>
             </div>
-            <div style={{ gridColumn: "9 / 13", ...folio, color: INK_SOFT, textTransform: "none", textAlign: "right" }}>
-              Page 2
-            </div>
-          </Band>
+            <div style={{ height: 2, background: INK, marginTop: BL }} />
+          </div>
 
-          {/* Masthead + in one breath */}
-          <Band>
-            <div style={{ gridColumn: "1 / 9" }}>
-              <div style={{ fontSize: 60, lineHeight: "60px", fontWeight: 700, letterSpacing: "-0.02em", marginLeft: "-0.04em" }}>
-                Product
-                <br />
-                Name
-              </div>
-              <p style={{ ...body, marginTop: BL * 2, color: INK_SOFT, maxWidth: 480 }}>
-                Emotional tagline — outcome, not feature list.
-              </p>
+          {/* Masthead — tagline as hero, red full stop */}
+          <div style={{ gridColumn: "1 / 12" }}>
+            <div style={{ fontSize: 72, lineHeight: "76px", fontWeight: 700, letterSpacing: "-0.03em", marginLeft: "-0.05em" }}>
+              Emotional
+              <br />
+              outcome, not
+              <br />
+              features<span style={{ color: ACCENT }}>.</span>
             </div>
-            <div style={{ gridColumn: "9 / 13" }}>
-              <div style={label}>In one breath</div>
-              <p style={{ ...body, color: INK }}>
-                Script they can say aloud in 20 seconds.
-              </p>
-            </div>
-          </Band>
+          </div>
 
-          {/* Accent rule */}
-          <Band style={{ paddingTop: BL, paddingBottom: BL }}>
-            <div style={{ gridColumn: "1 / -1", height: 2, background: ACCENT }} />
-          </Band>
+          {/* In one breath + who it's for */}
+          <div style={{ gridColumn: "1 / 8" }}>
+            <div style={sectionLabel}>In one breath</div>
+            <p style={{ ...body, fontSize: 14, maxWidth: "30em" }}>
+              &ldquo;20-second script the owner can read aloud.&rdquo;
+            </p>
+          </div>
+          <div style={{ gridColumn: "8 / 13" }}>
+            <div style={sectionLabel}>Who it&rsquo;s for</div>
+            <p style={body}>Ideal person, their situation, the moment they need this.</p>
+          </div>
 
-          {/* Three-column body */}
-          <Band>
-            <div style={{ gridColumn: "1 / 5" }}>
-              <div style={label}>Who it&apos;s for</div>
-              <p style={body}>Ideal person and moment.</p>
+          {/* Talking points — giant numerals */}
+          <div style={{ gridColumn: "1 / -1", ...sectionLabel, marginBottom: 0 }}>What to say</div>
+          {talkingPoints.map((t, i) => (
+            <div key={t} style={{ gridColumn: `${i * 4 + 1} / ${i * 4 + 5}` }}>
+              <div style={numeral}>{i + 1}</div>
+              <p style={{ ...body, marginTop: BL, paddingRight: GUTTER }}>{t}</p>
             </div>
-            <div style={{ gridColumn: "5 / 9" }}>
-              <div style={label}>Why they&apos;ll care</div>
-              <p style={body}>Outcomes in their language.</p>
-            </div>
-            <div style={{ gridColumn: "9 / 13" }}>
-              <div style={label}>What to say</div>
-              <p style={body}>1. &quot;First talking point.&quot;</p>
-              <p style={{ ...body, marginTop: BL }}>2. &quot;Second talking point.&quot;</p>
-              <p style={{ ...body, marginTop: BL }}>3. &quot;Third talking point.&quot;</p>
-            </div>
-          </Band>
+          ))}
 
-          {/* What's real today */}
-          <Band>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <div style={label}>What&apos;s real today</div>
-              <p style={body}>Honest capability line one.</p>
-              <p style={{ ...body, marginTop: BL }}>Honest capability line two.</p>
+          {/* What's real today — two columns of six */}
+          <div style={{ gridColumn: "1 / -1", marginTop: BL }}>
+            <div style={{ ...sectionLabel, marginBottom: 0 }}>What&rsquo;s real today</div>
+            <div style={{ ...subgrid, marginTop: BL }}>
+              {realToday.map((col, i) => (
+                <div key={i} style={{ gridColumn: i === 0 ? "1 / 7" : "7 / 13" }}>
+                  {col.map((line) => (
+                    <p key={line} style={body}>{line}</p>
+                  ))}
+                </div>
+              ))}
             </div>
-          </Band>
+          </div>
 
           {/* Differentiation + vision */}
-          <Band>
-            <div style={{ gridColumn: "1 / 7" }}>
-              <div style={label}>How you&apos;re different</div>
-              <p style={body}>Contrast vs alternatives.</p>
-            </div>
-            <div style={{ gridColumn: "7 / 13" }}>
-              <div style={label}>The vision</div>
-              <p style={body}>Ownership language — why you built this.</p>
-            </div>
-          </Band>
+          <div style={{ gridColumn: "1 / 7", marginTop: BL }}>
+            <div style={sectionLabel}>How you&rsquo;re different</div>
+            <p style={{ ...body, paddingRight: GUTTER }}>Contrast vs alternatives.</p>
+          </div>
+          <div style={{ gridColumn: "7 / 13", marginTop: BL }}>
+            <div style={sectionLabel}>The vision</div>
+            <p style={body}>Ownership language — why you built this.</p>
+          </div>
 
           {/* Footer */}
-          <Band style={{ borderTop: `1px solid ${INK_SOFT}33`, paddingTop: BL * 2 }}>
-            <div style={{ gridColumn: "1 / 5", fontSize: 10, lineHeight: "16px", color: INK_SOFT }}>
-              {/* coming soon items */}
+          <div style={{ gridColumn: "1 / -1", borderTop: `1px solid ${HAIRLINE}`, paddingTop: BL }}>
+            <div style={subgrid}>
+              <div style={{ gridColumn: "1 / 6", ...meta }}>{/* coming soon items */}</div>
+              <div style={{ gridColumn: "6 / 10", ...meta }}>Pair with the App Guide — page 01</div>
+              <div style={{ gridColumn: "10 / 13", textAlign: "right" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowGrid((v) => !v)}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, lineHeight: "16px", color: ACCENT, padding: 0, fontFamily: FONT }}
+                >
+                  {showGrid ? "Hide grid" : "Show grid"}
+                </button>
+              </div>
             </div>
-            <div style={{ gridColumn: "5 / 9", fontSize: 10, lineHeight: "16px", color: INK_SOFT, textAlign: "center" }}>
-              Pair with the App Guide (page 1)
-            </div>
-            <div style={{ gridColumn: "9 / 13", textAlign: "right" }}>
-              <button type="button" onClick={() => setShowGrid((v) => !v)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: ACCENT, padding: 0, fontFamily: FONT }}>
-                {showGrid ? "Hide grid" : "Show grid"}
-              </button>
-            </div>
-          </Band>
+          </div>
         </div>
       </div>
     </div>

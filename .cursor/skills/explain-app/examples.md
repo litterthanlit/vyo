@@ -29,28 +29,33 @@ Note: billing is wired on the server but there is no payment screen yet — mark
 ## Sample Poster Copy (Hypher)
 
 ### Folio
-- APP GUIDE · Solo builders · Web app
+- APP GUIDE — 01 · How Hypher works, in plain English · Web app · Solo builders
 
-### Masthead
+### Masthead (one line, red full stop)
 ```
-Hy
-pher
+Hypher.
 ```
-A spatial project brain for solo builders — capture thoughts anywhere, see them cluster on a canvas, and get an AI-written daily digest.
+Purpose (cols 1–7, ink; right columns empty): A spatial project brain for solo builders — capture thoughts anywhere, watch them cluster on a canvas, and get an AI-written daily digest.
 
-### Meta column (numbered)
+### Journeys (giant numerals, 4 × 3 cols)
 1. Capture a note or file — pick a project
-2. Organize on the spatial canvas
+2. Organize it on the spatial canvas
 3. Read the daily AI digest
 4. Share a read-only canvas link
+
+### Under the hood (transit line)
+
+Stations: You capture → Saved live (stored in your database) → On the canvas (organize, connect) → AI reads it (Claude tags and summarizes) → Digest out (daily email). Branch off "On the canvas": Share (read-only link).
+
+"When you…" lines: *When you save a note,* it's written to your database and appears in every open tab within a second. *When the day ends,* the AI reads what changed and writes a short digest. *When you share,* the app publishes a read-only copy at a link.
 
 ### Body columns
 
 **The problem** — Builders split ideas across notes, tabs, and repos…
 
-**How it works** — Landing · Capture home · Spatial canvas · Dashboard · Settings
+**The screens** — Landing · Capture home · Spatial canvas · Dashboard · Settings
 
-**Connected** — Clerk · Convex · Claude · Stripe · GitHub (PAT)
+**Connected** — Clerk · Convex · Claude · Stripe · GitHub
 
 ### Footer
 Not built: npm package, GitHub OAuth, voice capture
@@ -58,14 +63,14 @@ Not built: npm package, GitHub OAuth, voice capture
 ## Sample Page 2 Copy (Hypher)
 
 ### Folio
-- PROJECT STORY · For solo builders · Page 2
+- PROJECT STORY — 02 · For the owner — say it out loud · Hypher
 
-### Masthead
+### Masthead (tagline as hero, 72px, red full stop)
 ```
-Hy
-pher
+Your ideas,
+finally in
+one place.
 ```
-Your ideas, finally in one place.
 
 **In one breath:** "Hypher is a workspace for solo builders who are tired of losing ideas across tabs. You capture a thought in seconds, see it organized on a canvas, and get a daily digest that keeps you moving — without becoming a project manager."
 
@@ -99,17 +104,29 @@ Your ideas, finally in one place.
 > Black blocks, yellow/blue/pink journey tabs, dark IDE-colored field.
 
 **Good — Swiss canon**
-> White paper, ink type, one red accent rule, numbered journeys, 12-column grid.
+> White paper, ink type, one red full stop, giant numerals, 12-column grid.
 
 **Bad — document canvas**
 > Stack of H1, Stat, Card, CollapsibleSection components.
 
 **Good — typographic poster**
-> Raw CSS grid bands, two type sizes, flush-left, generous margins.
+> Raw CSS grid bands, two type roles, flush-left, generous margins.
+
+**Bad — timid document header**
+> 64px stacked masthead, gray body copy everywhere, red on rule + boxes + arrows.
+
+**Good — poster scale**
+> 116px masthead on one line with a red full stop, ink body copy, one empty zone beside the purpose.
+
+**Bad — boxed flowchart**
+> Dashed/solid bordered rectangles with centered uppercase labels and stubby arrows.
+
+**Good — transit line**
+> One 2px ink line, solid dots, flush-left station labels, a 90° branch with a hollow ring.
 
 ## Verification Notes
 
-**hypher** — Poster at `hypher-app-poster.canvas.tsx`. Monorepo; UI in hypher-web. Playbook items marked in footer only.
+**hypher** — Both pages at `hypher-app-poster.canvas.tsx` and `hypher-project-story.canvas.tsx`. Monorepo; UI in hypher-web. Playbook items marked in footer only. Reference build for the poster-scale masthead, giant numerals, transit-line "Under the hood" band, and tagline-led page 2.
 
 **learnr** — Single Next.js app, landing → intake → workspace.
 

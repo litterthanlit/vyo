@@ -3,9 +3,10 @@ name: explain-app
 description: >-
   Inspects a repository and explains what the app does and how it works in
   plain English for non-technical stakeholders. Produces two Swiss Style poster
-  Canvases: page 1 (how it works) and page 2 (project story — connection and
-  selling). Use when the user asks to explain the app, walk through how it works
-  for a client/PM/stakeholder, create a non-technical overview, demystify the
+  Canvases: page 1 (how the app and the code behind it work) and page 2
+  (project story — the marketing/summary sheet for selling and sharing). Use
+  when the user asks to explain the app, walk through how it works for a
+  client/PM/stakeholder, create a non-technical overview, demystify the
   codebase for someone who does not code, help someone sell or talk about their
   product, or visualize the repo as a poster.
 ---
@@ -16,8 +17,8 @@ Turn a codebase into a plain-English app guide for people who will never read co
 
 | Page | File | Purpose |
 |------|------|---------|
-| **1 — App Guide** | `<repo>-app-poster.canvas.tsx` | How the product works — journeys, screens, connected services |
-| **2 — Project Story** | `<repo>-project-story.canvas.tsx` | Connection and selling — who it's for, talking points, what's real, the vision |
+| **1 — App Guide** | `<repo>-app-poster.canvas.tsx` | How the app **and the code behind it** work, for a non-technical reader — journeys, an "Under the hood" band, screens, connected services |
+| **2 — Project Story** | `<repo>-project-story.canvas.tsx` | The summary / marketing sheet — tagline as hero, talking points, who it's for, what's real, the vision |
 
 ## When to Use
 
@@ -90,7 +91,8 @@ Build this map before writing copy. Do not dump it raw into the Canvas.
 | Actors | Who uses the app (end user, admin, guest) |
 | Jobs | What they come to do (sign up, book, pay, manage settings) |
 | Journeys | 2–4 primary flows as UI steps a human would take |
-| Behind the scenes | One plain sentence per journey ("When you pay, the app talks to Stripe") |
+| Under the hood | The data pipeline as 4–6 plain stations: what you do → where it's saved → what processes it → what comes back out |
+| Behind the scenes | One "When you X, the app Y" sentence per journey ("When you pay, the app talks to Stripe") |
 | Status honesty | Works in UI / backend only / planned — never call backend-only "complete" |
 
 If the user named an audience (client, PM, exec), note it. If not, default to general non-technical.
@@ -109,11 +111,13 @@ Apply [plain-language-rules.md](plain-language-rules.md):
 1. Determine workspace canvases path: `~/.cursor/projects/<workspace>/canvases/`
 2. Filename: `<repo-name>-app-poster.canvas.tsx` (kebab-case, from git root basename)
 3. Follow [swiss-design-principles.md](swiss-design-principles.md) and [poster-layout.md](poster-layout.md):
-   - Light paper (`#FFFFFF`), ink (`#0A0A0A`), one accent (`#E4002B`)
-   - 12-column grid, 8px baseline, 24px leading, 48px margins
-   - Two type sizes (display + body); flush-left only
+   - Light paper (`#FFFFFF`), ink (`#0A0A0A`), one accent mark — the **red full stop** after the masthead
+   - Masthead at **96–128px on one line**; display : body ratio ≥ 7:1
+   - 12-column grid, 8px baseline, 24px leading, 64px margins
+   - Two type roles (display incl. 44px numerals + body incl. folio); flush-left only
+   - Primary copy in ink; gray reserved for folio, captions, status
+   - Journeys as **giant numerals**; "Under the hood" as a **transit-line diagram** — no boxed flowcharts, colored tabs, or dark blocks
    - Grid overlay inside the same content box as the poster
-   - Numbered journeys in the meta column — no colored tabs or dark blocks
 4. Import only from `cursor/canvas`; inline all content; no `fetch`
 5. Omit empty zones — never render placeholder blocks
 6. `useCanvasState("showGridApp", false)` on page 1; `useCanvasState("showGridStory", false)` on page 2 — separate keys so toggles do not leak across posters
@@ -143,7 +147,7 @@ Apply page 2 voice rules in [plain-language-rules.md](plain-language-rules.md#pa
 1. Same canvases path as page 1
 2. Filename: `<repo-name>-project-story.canvas.tsx`
 3. Follow [sell-sheet-layout.md](sell-sheet-layout.md) and [sell-sheet-starter.md](sell-sheet-starter.md) — same Swiss canon as page 1
-4. Footer center: "Pair with the App Guide (page 1)"
+4. Footer center: "Pair with the App Guide — page 01"
 5. Same quality gates as page 1 — no jargon, no file paths, no hype
 
 ### Chat response
@@ -196,6 +200,7 @@ Before finishing, verify **both pages**:
 
 **Page 1 — App Guide**
 - [ ] A non-engineer can describe what the app does from the poster alone
+- [ ] "Under the hood" band explains what the code does in plain verbs — no SDK names, no paths
 - [ ] Journeys match real routes/screens when UI exists
 - [ ] Backend-only features in footer only, not as live journeys
 
@@ -206,9 +211,12 @@ Before finishing, verify **both pages**:
 - [ ] Differentiation is concrete, not generic hype
 
 **Both pages**
-- [ ] Light paper, ink type, one red accent — Swiss canon palette
+- [ ] Light paper, ink type, one red accent mark (the full stop) — Swiss canon palette
+- [ ] Display type at poster scale (96–128px page 1 / 64–80px tagline page 2); numerals at 40–48px
+- [ ] Primary copy in ink; gray only for folio, captions, status
 - [ ] 12-column grid with baseline lock; overlay shares content box
-- [ ] Two type sizes; flush-left throughout
+- [ ] Two type roles; flush-left throughout; at least one deliberately empty zone
+- [ ] Diagrams are transit lines with dots — no boxed flowchart clip-art
 - [ ] No dark fields, rainbow tabs, or document-style canvas components
 - [ ] No unexplained jargon in visible poster copy
 - [ ] No file paths on either poster surface

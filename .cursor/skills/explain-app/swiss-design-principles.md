@@ -51,17 +51,27 @@ Posters explain **what the app means** (semantics) using **objective typography 
 
 | Role | Size | Leading | Weight |
 |------|------|---------|--------|
-| Display (product name) | 48–72px | 48–72px (px values) | 700 |
-| Body | 12–14px | 24px | 400 |
+| Display (product name / page-2 tagline) | **96–128px** page 1 · **64–80px** page 2 | = fontSize (px values) | 700 |
+| Display numerals (journeys, talking points) | 40–48px | 48px | 700 |
+| Body | 13–14px | 24px | 400 |
 | Folio / meta / footer | 10–11px | 16px | 400–500 |
 
 Rules:
 
 - **Grotesque sans only:** `"Helvetica Neue", Helvetica, Arial, system-ui, sans-serif`
-- **Flush-left, ragged-right.** Never center body copy. Never justify.
-- **Two sizes maximum** on the poster surface (display + body). Folio counts as body scale.
+- **Flush-left, ragged-right.** Never center body copy. Never justify. Never center labels inside diagram nodes.
+- **Two type roles maximum** on the poster surface: display and body. Giant numerals belong to the display role; folio belongs to the body role.
 - Hierarchy through **scale, weight, and white space** — not color, not novelty faces.
 - **Optical alignment:** Large display type has left side-bearing inset. Nudge display elements so **ink** aligns to the column line, not just the layout box.
+
+### Scale contrast (the #1 reason posters feel un-designed)
+
+A 48–64px masthead on a 900px canvas reads as a *document header*. Real Swiss posters live on violent scale contrast:
+
+- **Display : body ratio ≥ 7:1** on page 1 (e.g. 112px display over 13px body). Page 2 tagline may sit at 64–80px because it runs multiple lines.
+- **Set the numbers big.** Journey steps and talking points get display-scale numerals (40–48px) with body copy beside or beneath them — Müller-Brockmann's signature move. Never render step numbers at body size.
+- **Ink first.** Primary copy — purpose sentence, body columns, journey text — is set in INK. INK_SOFT is reserved for folio, captions, and status lines only. A page of gray body copy is mush; black makes the white sing.
+- **Rules carry structure:** one 2px ink rule under the folio (type hangs from the ruler — Vignelli), 1px hairlines elsewhere. Rules are **ink**, not accent.
 
 ### Palette (Vignelli canon — always light paper)
 
@@ -70,10 +80,12 @@ Posters always render on **light paper**, regardless of IDE dark/light host them
 | Role | Hex | Usage |
 |------|-----|-------|
 | Paper | `#FFFFFF` | Field background |
-| Ink | `#0A0A0A` | Primary text |
-| Ink soft | `#5B6066` | Secondary text, meta |
-| Accent | `#E4002B` | **One element only** — rule, label, or single highlight |
+| Ink | `#0A0A0A` | Primary text, rules, diagram lines |
+| Ink soft | `#5B6066` | Folio, captions, status lines only |
+| Accent | `#E4002B` | **One editorial mark only** — canonical: the red full stop after the masthead |
 | Grid guide | `rgba(228, 0, 43, 0.08)` | Column fields when overlay is on |
+
+**The single accent mark.** The canonical accent usage is a **red full stop closing the masthead** ("Hypher<span style=red>.</span>" / "…one place<span style=red>.</span>"). It brands both pages as a set and forces restraint everywhere else. Rules, arrows, dots, numerals, and node borders are all ink. The grid-toggle link may also use accent — it is functional chrome, not part of the composition.
 
 **Forbidden:**
 
@@ -90,41 +102,43 @@ This is the **only** explain-app exception to the canvas skill's `useHostTheme()
 
 White space is the protagonist. Don't fill the page. Asymmetric compositions held by the grid, not by decorative blocks.
 
+Concrete obligations, not vibes:
+
+- **At least one deliberately empty zone per poster** — e.g. the purpose sentence occupies cols 1–7 and cols 8–12 stay blank. Emptiness beside the masthead is what makes it feel like a poster.
+- Never widen copy to fill a span. Cap the purpose sentence at ~28em and let the rag breathe.
+- If two adjacent bands have equal visual weight, cut or shrink one. Symmetric fullness is the document look.
+
 If you can't justify an element with information hierarchy, delete it.
 
 ---
 
 ## Content hierarchy (semantics → layout)
 
-Map recon to these zones in order:
+Map recon to these zones in order (full row spec: [poster-layout.md](poster-layout.md)):
 
 | Zone | Grid | Content |
 |------|------|---------|
-| Folio row | 12 cols | Left: "App Guide" · Right: audience, platform, date |
-| Masthead | cols 1–7 | Stacked product name (display size) |
-| Purpose | cols 1–7 | One sentence, body size, below masthead |
-| Meta column | cols 8–12 | 3–4 numbered user journeys (short, one line each) |
-| Rule | cols 1–12 | 2px accent hairline on baseline band |
-| Body | 3× cols 4 each | Problem · How it works · Connected services |
-| Footer | cols 1–12 | Status honesty (SERVER items), audience note, grid toggle |
+| Folio row + 2px ink rule | 12 cols | Left: "App Guide — 01" · Center: one-line promise · Right: platform, audience |
+| Masthead | cols 1–12 | Product name, 96–128px, one line if it fits, **red full stop** |
+| Purpose | cols 1–7 | One sentence, body size, INK — cols 8–12 stay empty |
+| Journeys band | 4× cols 3 | Giant numeral (40–48px) + one short body line each |
+| Under the hood | cols 1–12 | Transit-line diagram + "when you X, the app Y" lines — the plain-English code story |
+| Body | 3× cols 4 each | Problem · The screens · Connected services |
+| Footer | cols 1–12 | Status honesty (not-built items), audience note, grid toggle |
 
-No "journey tabs" as colored rectangles. Use **numbers + flush-left lines** (Swiss objectivity).
+No "journey tabs" as colored rectangles. Use **giant numerals + flush-left lines** (Swiss objectivity).
 
-### Flow diagrams (wayfinding)
+### Diagrams: transit lines, not flowcharts
 
-When the app has multiple screens or journeys, add **one or two inline SVG diagrams**:
+Boxed flowcharts — little bordered rectangles with centered uppercase labels and stubby arrows — read as engineering whiteboard clip-art. **Do not draw them.** Use the Vignelli transit vocabulary instead:
 
-- **User journey** — primary path the human takes (Capture → Canvas → Digest → Share)
-- **App map** — screens/routes as labeled nodes connected by 90° arrows
-- **Service ingress** (optional) — external services (Clerk, Convex, Claude) with arrows into the app core
-
-Rules (from Vignelli transit canon):
-
-- Angles: **90° and 45° only** — no bezier curves
-- Stroke: 2px ink; primary flow path may use accent red
-- Nodes: rectangular, 1px border, uppercase 10px labels
-- Arrows: geometric triangle markers, not emoji or icon fonts
-- Purpose: clarify sequence and repo structure — if a diagram doesn't teach, omit it
+- **One horizontal 2px ink line** spanning the band, with **solid ink dots** (10–12px) as stations
+- Station labels **below the dots, flush-left**, body or folio size; a one-word plain verb line under each label if needed
+- Stations are evenly spaced by the column grid, regardless of "true" complexity — this is the subway-map move
+- Branches (e.g. an optional share step) leave the line at **90°** with a short vertical stroke and a hollow ring (sometimes-stops)
+- No boxes unless a node truly is a *screen* the user visits; then a 1px ink border with a **flush-left** 10px uppercase label
+- No dashed borders, no bezier curves, no arrowheads on the main line — dots imply sequence left to right
+- Purpose: teach sequence. If a diagram doesn't teach, omit it
 
 ---
 
@@ -143,17 +157,22 @@ Swiss quality gate — all must pass:
 
 - [ ] Light paper field — not dark, not host-theme tinted
 - [ ] **One outer 12-column grid** — all rows share the same column lines
-- [ ] **Consistent spans**: folio 4+4+4, masthead 8+4, diagrams 6+6, body 4+4+4
 - [ ] Diagrams use CSS grid inside their span — not fixed-width SVG viewBoxes
 - [ ] No negative margins or off-column header decorations
 - [ ] 8px baseline; body leading = 24px in px
-- [ ] Two type sizes only (display + body/folio)
-- [ ] Flush-left throughout; no centered paragraphs
-- [ ] One accent color, one usage
+- [ ] Two type roles only (display incl. numerals + body incl. folio)
+- [ ] **Display ≥ 96px on page 1**; display : body ratio ≥ 7:1
+- [ ] **Journey/talking-point numerals at display scale**, not body size
+- [ ] Primary copy in INK; INK_SOFT limited to folio, captions, status
+- [ ] Flush-left throughout; no centered paragraphs, no centered node labels
+- [ ] One accent mark (red full stop); rules and diagrams in ink
+- [ ] **At least one deliberately empty grid zone**
+- [ ] Diagrams are transit lines with dots — no boxed flowchart clip-art
 - [ ] Grid overlay shares content box with content
 - [ ] No rainbow blocks, no Card/Callout document components
 - [ ] Display type optically aligned to column line
 - [ ] Non-engineer understands the app from the poster alone
+- [ ] "Under the hood" band explains what the code does in plain verbs
 - [ ] Backend-only features marked in footer, not as user journeys
 
 ---
@@ -163,7 +182,12 @@ Swiss quality gate — all must pass:
 | Bad | Why | Fix |
 |-----|-----|-----|
 | Dark field + black blocks | Not Swiss; reads as "redacted/censored" UI | White paper, ink type |
-| Colored journey tabs | Rainbow decoration; not objective | Numbered list, typographic hierarchy |
+| Colored journey tabs | Rainbow decoration; not objective | Giant numerals, typographic hierarchy |
+| **64px masthead** | Document header, not a poster | 96–128px display, one line, red full stop |
+| **Gray body copy everywhere** | Nothing sings; hierarchy is mush | Ink for primary copy; gray for meta only |
+| **Boxed flowchart diagrams** | Whiteboard clip-art; centered labels | Transit line with solid dots, flush-left labels |
+| **Accent on rule + boxes + arrows + toggle** | Red everywhere = red nowhere | One red full stop; everything else ink |
+| Every zone filled | Symmetric fullness = document look | Leave one empty zone; cap line lengths |
 | 4-column grid with no baseline | Grid as decoration | 12-col + 8px baseline lock |
 | Host dark theme colors | Breaks paper/ink discipline | Vignelli canon palette |
 | Stack of canvas components | Document, not poster | Raw grid + inline styles |

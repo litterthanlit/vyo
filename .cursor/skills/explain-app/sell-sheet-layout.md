@@ -22,10 +22,11 @@ Not marketing fluff. Not a pitch deck. Plain language they can actually say out 
 
 | Page 1 — App Guide | Page 2 — Project Story |
 |--------------------|------------------------|
-| What the product does | Why the product matters |
-| User journeys and screens | Who it's for and what pain it solves |
+| How the app and its code work | Why the product matters |
+| Journeys, screens, under the hood | Who it's for and what pain it solves |
 | Connected services | Talking points and one-liners |
-| Operator / client handoff | Owner selling and storytelling |
+| Operator / client handoff | Owner selling, marketing summary |
+| Product name as hero | **Tagline as hero** |
 | "How it works" | "What to say about it" |
 
 ## Structure
@@ -34,47 +35,50 @@ Reuse the same `.wrap` container, `Band`, `GridOverlay`, and grid constants from
 
 ## Row-by-row spec
 
-### Row 1 — Folio (all 12 cols)
+### Row 1 — Folio + major rule (all 12 cols)
 
-| cols 1–4 | cols 5–8 | cols 9–12 |
-|----------|----------|-----------|
-| PROJECT STORY (11px, uppercase) | Owner audience (ink-soft) | "Page 2" (ink-soft, right-aligned) |
+| cols 1–4 | cols 5–9 | cols 10–12 |
+|----------|----------|------------|
+| PROJECT STORY — 02 (10px, uppercase) | Owner audience (ink-soft) | Product name (ink-soft, right-aligned) |
+
+Directly below: **2px ink rule**, full width — same treatment as page 1 so the pair reads as a set.
 
 Owner audience examples: "For founders", "For solo builders", "For operators" — whoever owns or sells the product.
 
-### Row 2–4 — Masthead band
+### Row 2 — Masthead: the tagline IS the hero
 
-| cols 1–8 | cols 9–12 |
+Page 2 is the marketing sheet, so the message leads, not the logo. The product name already owned page 1.
+
+- **Tagline set at display size** — 64–80px, weight 700, letter-spacing −0.03em, lineHeight = fontSize, cols 1–11, breaking over 2–3 lines
+- Close with the **red full stop** — the set's single accent mark, same as page 1
+- Emotional outcome, not a feature list: "Your ideas, finally in one place." Not: "AI-powered spatial canvas with Convex backend."
+
+### Row 3 — In one breath (cols 1–7; cols 8–12 for Who it's for)
+
+| cols 1–7 | cols 8–12 |
 |----------|-----------|
-| Product name (display size) + **tagline** — emotional outcome, not feature list (14px/24px, ink-soft) | **In one breath** label + 2–3 sentence script they can read aloud at a dinner party or intro call |
+| **In one breath** label + 2–3 sentence script the owner can read aloud at a dinner party or intro call, body size, **ink** | **Who it's for** — ideal person, their situation, the moment they need this (2–4 short lines) |
 
-Tagline example: "Your ideas, finally in one place." Not: "AI-powered spatial canvas with Convex backend."
+### Row 4 — Talking points band — 3 × 4 cols
 
-### Row 5 — Accent rule
+Section label WHAT TO SAY across the band, then three columns, each:
 
-Full width. Same as page 1.
-
-### Row 6–9 — Three-column body
-
-| cols 1–4 | cols 5–8 | cols 9–12 |
-|----------|----------|-----------|
-| **Who it's for** — ideal person, their situation, the moment they need this (2–4 short lines) | **Why they'll care** — outcomes in the customer's language; feelings and results, not features (2–4 short lines) | **What to say** — 3 numbered talking points, each one sentence, ready to use verbatim |
-
-Talking points format:
+- **Giant numeral** (40–48px, ink, display role — same treatment as page 1 journeys)
+- One quoted, speakable sentence below it (13px/24px, ink)
 
 ```
-1. "Most builders lose ideas across ten tabs — this keeps everything in one workspace."
-2. "You capture a thought in seconds; the app organizes it for you."
-3. "Share a link when you want someone to see your thinking, not your repo."
+1  "Most builders lose ideas across ten tabs — this keeps everything in one workspace."
+2  "You capture a thought in seconds; the app organizes it for you."
+3  "Share a link when you want someone to see your thinking, not your repo."
 ```
 
-Use quotation marks on talking points when they are speakable lines.
+Use quotation marks — these are lines to say out loud, not bullet fragments.
 
-### Row 10 — Full-width band: What's real today
+### Row 5 — Full-width band: What's real today
 
-Span cols 1–12. Label: **WHAT'S REAL TODAY** (uppercase).
+Span cols 1–12. Label: **WHAT'S REAL TODAY** (10px uppercase, 1px ink hairline above — type hangs from the rule).
 
-3–5 bullet lines. Honest capability statements — only what users can do or what clearly exists. Use the same status honesty as page 1. This builds selling confidence without overselling.
+3–5 short lines set in **two columns of 6** (not one long list). Honest capability statements — only what users can do or what clearly exists. Same status honesty as page 1. One honest limitation belongs here; it buys trust for everything else.
 
 Example:
 - Sign in and land on a personal dashboard
@@ -83,7 +87,7 @@ Example:
 - Daily AI digest summarizes recent activity
 - Billing is not in the app yet — coming next
 
-### Row 11 — Two-column band: Differentiation
+### Row 6 — Two-column band: Differentiation
 
 | cols 1–6 | cols 7–12 |
 |----------|-----------|
@@ -91,13 +95,13 @@ Example:
 
 Vision copy should make the owner feel like the product is *theirs*, not a black box an agency handed over.
 
-### Row 12 — Footer (all 12 cols)
+### Row 7 — Footer (all 12 cols)
 
-Three zones, 10px, ink-soft:
+1px hairline above. Three zones, 10px/16px, ink-soft:
 
-- Left: Honest gaps or "coming soon" (comma-separated) — same items as page 1 footer if applicable
-- Center: "Pair with the App Guide (page 1)"
-- Right: grid toggle button (same as page 1)
+- cols 1–5: Honest gaps or "coming soon" (comma-separated) — same items as page 1 footer if applicable
+- cols 6–9: "Pair with the App Guide — page 01"
+- cols 10–12: grid toggle button, right-aligned (same as page 1)
 
 ## Copy voice (page 2 only)
 
