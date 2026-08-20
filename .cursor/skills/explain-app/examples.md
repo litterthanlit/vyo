@@ -23,7 +23,7 @@ This app is a team task board where members sign in, create projects, and track 
 
 **Page 2 — your story:** talking points, who it's for, and what's real today — [taskflow-project-story](/Users/niki_g/.cursor/projects/.../canvases/taskflow-project-story.canvas.tsx)
 
-Note: billing is wired on the server but there is no payment screen yet — marked on both pages.
+Note: billing is not in the app yet — marked in both footers. Do not list Stripe under Connected.
 ```
 
 ## Sample Poster Copy (Hypher)
@@ -45,9 +45,9 @@ Purpose (cols 1–7, ink; right columns empty): A spatial project brain for solo
 
 ### Under the hood (transit line)
 
-Stations: You capture → Saved live (stored in your database) → On the canvas (organize, connect) → AI reads it (Claude tags and summarizes) → Digest out (daily email). Branch off "On the canvas": Share (read-only link).
+Stations (4, on the 12-col grid): You capture → Saved live (stored in your database) → On the canvas (organize, connect) → Digest out (daily email). Branch off "On the canvas": Share (read-only link).
 
-"When you…" lines: *When you save a note,* it's written to your database and appears in every open tab within a second. *When the day ends,* the AI reads what changed and writes a short digest. *When you share,* the app publishes a read-only copy at a link.
+"When you…" lines: *When you save a note,* it is written to your database and appears in every open tab within a second. *When the day ends,* a short digest of what changed is written and sent to your inbox. *When you share,* the app publishes a read-only copy at a link.
 
 ### Body columns
 
@@ -55,10 +55,10 @@ Stations: You capture → Saved live (stored in your database) → On the canvas
 
 **The screens** — Landing · Capture home · Spatial canvas · Dashboard · Settings
 
-**Connected** — Clerk · Convex · Claude · Stripe · GitHub
+**Connected** — Sign-in · live database · daily digest · GitHub activity
 
 ### Footer
-Not built: npm package, GitHub OAuth, voice capture
+Not built: in-app billing, GitHub OAuth, voice capture, npm package
 
 ## Sample Page 2 Copy (Hypher)
 
@@ -76,20 +76,22 @@ one place.
 
 ### Body columns
 
-**Who it's for** — Solo builders, indie hackers, and consultants juggling multiple projects. The moment: you had a great idea in the shower and can't find it by afternoon.
-
-**Why they'll care** — One place for thinking, not ten apps. Less mental overhead. Share a link when you want someone to see your work, not your file system.
+**Who it's for**
+- Solo builders, indie hackers, consultants
+- Juggling several projects at once
+- The moment: a great idea in the shower, gone by afternoon
 
 **What to say**
-1. "Most builders lose ideas across ten tabs — Hypher keeps everything in one workspace."
-2. "You capture a thought in seconds; the app organizes it on a spatial canvas."
+1. "Most builders lose ideas across ten tabs — you get them back before they vanish."
+2. "You capture a thought in seconds; the app organizes it on a canvas."
 3. "Share a read-only link when you want feedback, not repo access."
 
 ### What's real today
 - Sign in and land on a personal dashboard
 - Capture notes and files into projects
-- Organize work on a spatial canvas
-- Daily AI digest of recent activity
+- Organize work on a canvas
+- Daily digest of recent activity
+- Share a read-only canvas link
 - Billing is not in the app yet
 
 ### Differentiation + vision
@@ -126,7 +128,7 @@ one place.
 
 ## Verification Notes
 
-**hypher** — Both pages at `hypher-app-poster.canvas.tsx` and `hypher-project-story.canvas.tsx`. Monorepo; UI in hypher-web. Playbook items marked in footer only. Reference build for the poster-scale masthead, giant numerals, transit-line "Under the hood" band, and tagline-led page 2.
+**hypher** — Both pages at `hypher-app-poster.canvas.tsx` and `hypher-project-story.canvas.tsx`. Monorepo; UI in hypher-web. Playbook items marked in footer only (same list on both pages). Reference build for the poster-scale masthead, giant numerals, 4-station transit line on the 12-col grid, and tagline-led page 2. Delete any leftover `hypher-app-guide.canvas.tsx`.
 
 **learnr** — Single Next.js app, landing → intake → workspace.
 

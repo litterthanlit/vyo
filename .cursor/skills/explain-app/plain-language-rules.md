@@ -2,6 +2,10 @@
 
 Writing rules for explain-app. Primary Canvas sections must pass these checks.
 
+**Swiss posters (the default deliverable) have no glossary and no technical appendix.** If a banned term is still on the poster, rewrite. Do not park jargon in a collapsed section that does not exist.
+
+The glossary / appendix / "At a glance" sections below apply **only** to the legacy document canvas (`canvas-layout.md`) when the user explicitly asks for that fallback.
+
 ## Core Principles
 
 1. **Outcomes first** — "You can invite your team" before "Next.js monorepo"
@@ -10,9 +14,9 @@ Writing rules for explain-app. Primary Canvas sections must pass these checks.
 4. **One idea per sentence** — short sentences; avoid nested clauses
 5. **Define or ban** — every technical term is either removed or defined in the glossary
 
-## Banned Terms (primary sections)
+## Banned Terms (poster surface)
 
-Replace or move to glossary / technical appendix:
+Do not move these to a glossary — **replace them**:
 
 | Instead of | Say |
 |------------|-----|
@@ -24,7 +28,7 @@ Replace or move to glossary / technical appendix:
 | env var / environment | omit or "server configuration" in appendix only |
 | frontend / backend | "what you see" / "what runs behind the scenes" |
 | monorepo | omit unless appendix; say "multiple apps in one project" if needed |
-| SDK | name the service (Stripe, not "Stripe SDK") |
+| SDK / Clerk / Convex / Stripe as if the user clicks them | name the action ("sign in", "saved instantly") unless the user can actually do that in the app today |
 | REST / GraphQL | omit; describe the action |
 | component / module | "screen", "section", "part of the app" |
 | repository / repo | "project" or product name |
@@ -91,11 +95,6 @@ Connect the owner to the *why* behind the build. Pull from README mission, playb
 
 ## Section Voice
 
-### At a glance
-- One sentence purpose
-- Who it's for (role, not job title jargon)
-- 2–3 stats: user-facing facts only ("3 main workflows", not "47 API routes")
-
 ### Journeys
 Numbered steps. Each step = one user action + what they see.
 
@@ -117,13 +116,15 @@ Use plain labels when feature status matters:
 | **Coming soon** | Planned; not in the UI |
 | **Behind the scenes** | Works server-side; no user-facing screen yet |
 
-## Glossary Rules
+## Glossary & appendix (legacy document canvas only)
+
+Posters: skip this entire section. If the user asked for the document-style fallback, then:
 
 - Only include terms that appeared unavoidable after rewriting
 - Format: Term → one-sentence plain definition
 - Max 8 entries; if more are needed, the copy is still too technical — rewrite primary sections
 
-## Technical Appendix (collapsed)
+## Technical Appendix (legacy document canvas only)
 
 Allowed here only:
 

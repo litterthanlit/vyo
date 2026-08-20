@@ -15,6 +15,8 @@ description: >-
 
 Turn a codebase into a plain-English app guide for people who will never read code. The deliverable is **two Swiss Style poster Canvases** (`.canvas.tsx`) on light paper — objective typography, real 12-column grid, one accent color. Not a dark UI mockup, not a scrolling doc.
 
+**Canvas skill override (read this before the canvas skill).** Swiss posters **must** use the fixed paper/ink/accent hex, display type at **96–128px** (page 1) / **64–80px** (page 2 tagline), and raw CSS grid. Ignore the canvas skill where it forbids hardcoded hex, type above 24px, or requires `useHostTheme()` for color. Those rules are for document canvases. This skill wins on poster files. Still follow the canvas skill for file location (`…/canvases/*.canvas.tsx`), `import` only from `cursor/canvas`, and no `fetch`.
+
 | Page | File | Purpose |
 |------|------|---------|
 | **1 — App Guide** | `<repo>-app-poster.canvas.tsx` | How the app **and the code behind it** work, for a non-technical reader — journeys, an "Under the hood" band, screens, connected services |
@@ -45,11 +47,14 @@ Turn a codebase into a plain-English app guide for people who will never read co
 6. Use [poster-starter.md](poster-starter.md) and [sell-sheet-starter.md](sell-sheet-starter.md) as structural starting points.
 7. Skim [canvas-layout.md](canvas-layout.md) only if the user explicitly wants the legacy document-style fallback.
 
+### Canonical copy
+
+This repo's `.cursor/skills/explain-app/` is the source of truth. After any edit, **sync it to** `~/.cursor/skills/explain-app` so other workspaces load the same rules. If both copies exist and disagree, follow **this repo's files**, not the personal copy.
+
 ### Project overrides (check in order)
 
-1. `.cursor/skills/explain-app/project-context.md` in the repo — product name, audience, tone, backend-only features
-2. `.cursor/skills/explain-app/SKILL.md` in the repo — extends this skill; does not replace it
-3. Any `*playbook*` or audit doc in the repo — use for feature status honesty (UI vs backend-only vs planned)
+1. `.cursor/skills/explain-app/project-context.md` in the **target app repo** — product name, audience, tone, backend-only features
+2. Any `*playbook*` or audit doc in that repo — use for feature status honesty (UI vs backend-only vs planned)
 
 ## Workflow
 
@@ -91,7 +96,7 @@ Build this map before writing copy. Do not dump it raw into the Canvas.
 | Actors | Who uses the app (end user, admin, guest) |
 | Jobs | What they come to do (sign up, book, pay, manage settings) |
 | Journeys | 2–4 primary flows as UI steps a human would take |
-| Under the hood | The data pipeline as 4–6 plain stations: what you do → where it's saved → what processes it → what comes back out |
+| Under the hood | The data pipeline as **3, 4, or 6** stations (never 5 — it cannot land on a 12-column grid): what you do → where it's saved → what processes it → what comes back out |
 | Behind the scenes | One "When you X, the app Y" sentence per journey ("When you pay, the app talks to Stripe") |
 | Status honesty | Works in UI / backend only / planned — never call backend-only "complete" |
 
@@ -102,8 +107,8 @@ If the user named an audience (client, PM, exec), note it. If not, default to ge
 Apply [plain-language-rules.md](plain-language-rules.md):
 
 - Lead with outcomes, not architecture
-- Ban or glossary technical terms in primary sections
-- No file paths in primary copy — reserve for collapsed technical appendix
+- Ban technical terms. Posters have **no glossary and no appendix** — rewrite until the banned list is empty
+- No file paths anywhere on the poster
 - Adapt depth to audience (see rules file)
 
 ### Phase 4 — App Guide poster (page 1)
@@ -116,12 +121,13 @@ Apply [plain-language-rules.md](plain-language-rules.md):
    - 12-column grid, 8px baseline, 24px leading, 64px margins
    - Two type roles (display incl. 44px numerals + body incl. folio); flush-left only
    - Primary copy in ink; gray reserved for folio, captions, status
-   - Journeys as **giant numerals**; "Under the hood" as a **transit-line diagram** — no boxed flowcharts, colored tabs, or dark blocks
+   - Journeys as **giant numerals**; "Under the hood" as a **transit-line diagram** with **3, 4, or 6** stations on the 12-column grid — no boxed flowcharts, colored tabs, or dark blocks
    - Grid overlay inside the same content box as the poster
 4. Import only from `cursor/canvas`; inline all content; no `fetch`
 5. Omit empty zones — never render placeholder blocks
-6. `useCanvasState("showGridApp", false)` on page 1; `useCanvasState("showGridStory", false)` on page 2 — separate keys so toggles do not leak across posters
-7. Run Swiss pre-delivery checklist in swiss-design-principles.md
+6. `useCanvasState("showGridApp", false)` on page 1; `useCanvasState("showGridStory", false)` on page 2 — **never** a shared `"showGrid"` key (it leaks across posters)
+7. If an older `<repo>-app-guide.canvas.tsx` (document-style) exists for the same product, **delete it** so the sidebar is only the two posters
+8. Run Swiss pre-delivery checklist in swiss-design-principles.md. Open both canvases. If the masthead is under 96px or there is no red full stop, the canvas skill override was ignored — fix before finishing.
 
 ### Phase 5 — Connection & sales synthesis (page 2)
 
@@ -131,9 +137,8 @@ Build this map from the same recon — do not re-read the entire repo. Pull from
 |---------|-----------------|
 | Tagline | Emotional outcome in one line — not a feature list |
 | In one breath | 20-second script the owner can say aloud |
-| Who it's for | Ideal person, their situation, the moment they need this |
-| Why they'll care | Customer outcomes and feelings — not screens |
-| Talking points | 3 verbatim lines in quotation marks |
+| Who it's for | Ideal person, their situation, the moment they need this — 2–4 short lines, not a paragraph |
+| Talking points | 3 verbatim lines in quotation marks. **Do not restate the tagline.** |
 | What's real today | Honest capabilities only — same status labels as page 1 |
 | Differentiation | 2–3 contrasts vs generic alternatives or named competitors if obvious from docs |
 | The vision | 2–3 sentences in ownership language — why *they* built this |
@@ -176,7 +181,7 @@ If there is no `package.json`, no routes, and no product docs:
 When the git root contains multiple packages:
 
 1. Find the package with user-facing pages (`*/src/app/`, `*/pages/`)
-2. Explain the **product** from that package; mention the repo is a monorepo only in the technical appendix
+2. Explain the **product** from that package. Do not mention "monorepo" on the poster.
 3. Example: `hypher-web/` holds the screens; other folders are supporting packages
 
 ### API-only repo
@@ -203,6 +208,7 @@ Before finishing, verify **both pages**:
 - [ ] "Under the hood" band explains what the code does in plain verbs — no SDK names, no paths
 - [ ] Journeys match real routes/screens when UI exists
 - [ ] Backend-only features in footer only, not as live journeys
+- [ ] **Connected** lists only services the user can use today. A Stripe webhook with no checkout UI belongs in the footer, not Connected. Both footers list the same not-built items.
 
 **Page 2 — Project Story**
 - [ ] Owner can read "in one breath" and talking points aloud without stumbling
@@ -216,7 +222,7 @@ Before finishing, verify **both pages**:
 - [ ] Primary copy in ink; gray only for folio, captions, status
 - [ ] 12-column grid with baseline lock; overlay shares content box
 - [ ] Two type roles; flush-left throughout; at least one deliberately empty zone
-- [ ] Diagrams are transit lines with dots — no boxed flowchart clip-art
+- [ ] Diagrams are transit lines with **3, 4, or 6** dots on the 12-column grid — no boxed flowchart clip-art
 - [ ] No dark fields, rainbow tabs, or document-style canvas components
 - [ ] No unexplained jargon in visible poster copy
 - [ ] No file paths on either poster surface

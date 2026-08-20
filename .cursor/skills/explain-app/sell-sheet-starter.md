@@ -22,7 +22,7 @@ export default function ProjectStory() {
   const [showGrid, setShowGrid] = useCanvasState("showGridStory", false);
 
   const talkingPoints = [
-    "\u201CFirst speakable talking point.\u201D",
+    "\u201CFirst speakable talking point — not a restatement of the tagline.\u201D",
     "\u201CSecond speakable talking point.\u201D",
     "\u201CThird speakable talking point.\u201D",
   ];
@@ -67,7 +67,9 @@ export default function ProjectStory() {
           </div>
           <div style={{ gridColumn: "8 / 13" }}>
             <div style={sectionLabel}>Who it&rsquo;s for</div>
-            <p style={body}>Ideal person, their situation, the moment they need this.</p>
+            <p style={body}>Ideal person.</p>
+            <p style={body}>Their situation.</p>
+            <p style={body}>The moment they need this.</p>
           </div>
 
           {/* Talking points — giant numerals */}

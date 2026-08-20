@@ -31,7 +31,7 @@ Not marketing fluff. Not a pitch deck. Plain language they can actually say out 
 
 ## Structure
 
-Reuse the same `.wrap` container, `Band`, `GridOverlay`, and grid constants from page 1. Do not invent a new visual system.
+Reuse the same `.wrap` container, `GridOverlay`, style tokens (`folio`, `meta`, `body`, `sectionLabel`, `numeral`, `subgrid`), and grid constants from page 1. There is no `Band` component. Do not invent a new visual system.
 
 ## Row-by-row spec
 
@@ -57,7 +57,7 @@ Page 2 is the marketing sheet, so the message leads, not the logo. The product n
 
 | cols 1–7 | cols 8–12 |
 |----------|-----------|
-| **In one breath** label + 2–3 sentence script the owner can read aloud at a dinner party or intro call, body size, **ink** | **Who it's for** — ideal person, their situation, the moment they need this (2–4 short lines) |
+| **In one breath** label + 2–3 sentence script the owner can read aloud at a dinner party or intro call, body size, **ink** | **Who it's for** — 2–4 **short lines** (person / situation / moment). Not one paragraph. |
 
 ### Row 4 — Talking points band — 3 × 4 cols
 
@@ -72,7 +72,7 @@ Section label WHAT TO SAY across the band, then three columns, each:
 3  "Share a link when you want someone to see your thinking, not your repo."
 ```
 
-Use quotation marks — these are lines to say out loud, not bullet fragments.
+Use quotation marks — these are lines to say out loud, not bullet fragments. **Do not restate the tagline.** If the hero is "finally in one place," talking point 1 cannot be "keeps everything in one workspace."
 
 ### Row 5 — Full-width band: What's real today
 
@@ -99,7 +99,7 @@ Vision copy should make the owner feel like the product is *theirs*, not a black
 
 1px hairline above. Three zones, 10px/16px, ink-soft:
 
-- cols 1–5: Honest gaps or "coming soon" (comma-separated) — same items as page 1 footer if applicable
+- cols 1–5: Honest gaps or "coming soon" (comma-separated) — **same items as page 1 footer**
 - cols 6–9: "Pair with the App Guide — page 01"
 - cols 10–12: grid toggle button, right-aligned (same as page 1)
 

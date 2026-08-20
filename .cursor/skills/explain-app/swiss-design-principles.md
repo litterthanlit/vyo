@@ -25,7 +25,7 @@ Posters explain **what the app means** (semantics) using **objective typography 
 
 1. **Semantics** — What is this app, for whom, and why does it exist? One sentence distilled from recon.
 2. **Appropriateness** — Poster for a client handoff, not a marketing splash. Restraint over spectacle.
-3. **Discipline** — Self-imposed rules: one grid, one accent, two type sizes, flush-left only.
+3. **Discipline** — Self-imposed rules: one grid, one accent, two type **roles** (display + body), flush-left with two allowed exceptions.
 4. **Timelessness** — Primary shapes, primary palette, grotesque sans. No trends, no gradients, no emoji.
 
 ---
@@ -59,8 +59,8 @@ Posters explain **what the app means** (semantics) using **objective typography 
 Rules:
 
 - **Grotesque sans only:** `"Helvetica Neue", Helvetica, Arial, system-ui, sans-serif`
-- **Flush-left, ragged-right.** Never center body copy. Never justify. Never center labels inside diagram nodes.
-- **Two type roles maximum** on the poster surface: display and body. Giant numerals belong to the display role; folio belongs to the body role.
+- **Flush-left, ragged-right.** Never center body copy. Never justify. Never center labels inside diagram nodes. **Two exceptions:** folio right cell (platform · audience) and the grid-toggle link may be `textAlign: "right"`.
+- **Two type roles maximum** on the poster surface: display and body. Giant numerals belong to the display role; folio belongs to the body role. That is four sizes, two roles — do not invent a fifth.
 - Hierarchy through **scale, weight, and white space** — not color, not novelty faces.
 - **Optical alignment:** Large display type has left side-bearing inset. Nudge display elements so **ink** aligns to the column line, not just the layout box.
 
@@ -81,7 +81,7 @@ Posters always render on **light paper**, regardless of IDE dark/light host them
 |------|-----|-------|
 | Paper | `#FFFFFF` | Field background |
 | Ink | `#0A0A0A` | Primary text, rules, diagram lines |
-| Ink soft | `#5B6066` | Folio, captions, status lines only |
+| Ink soft | `#5B6066` | Folio **meta**, captions, status lines only. The folio **label** ("App Guide — 01") is ink. |
 | Accent | `#E4002B` | **One editorial mark only** — canonical: the red full stop after the masthead |
 | Grid guide | `rgba(228, 0, 43, 0.08)` | Column fields when overlay is on |
 
@@ -134,7 +134,7 @@ Boxed flowcharts — little bordered rectangles with centered uppercase labels a
 
 - **One horizontal 2px ink line** spanning the band, with **solid ink dots** (10–12px) as stations
 - Station labels **below the dots, flush-left**, body or folio size; a one-word plain verb line under each label if needed
-- Stations are evenly spaced by the column grid, regardless of "true" complexity — this is the subway-map move
+- Stations are **3, 4, or 6** — those counts land on the 12-column grid (4-col, 3-col, or 2-col spans). **Never 5.** Use the same `subgrid` as the rest of the poster, not `repeat(stations.length, 1fr)`.
 - Branches (e.g. an optional share step) leave the line at **90°** with a short vertical stroke and a hollow ring (sometimes-stops)
 - No boxes unless a node truly is a *screen* the user visits; then a 1px ink border with a **flush-left** 10px uppercase label
 - No dashed borders, no bezier curves, no arrowheads on the main line — dots imply sequence left to right
@@ -163,11 +163,11 @@ Swiss quality gate — all must pass:
 - [ ] Two type roles only (display incl. numerals + body incl. folio)
 - [ ] **Display ≥ 96px on page 1**; display : body ratio ≥ 7:1
 - [ ] **Journey/talking-point numerals at display scale**, not body size
-- [ ] Primary copy in INK; INK_SOFT limited to folio, captions, status
-- [ ] Flush-left throughout; no centered paragraphs, no centered node labels
+- [ ] Primary copy in INK; INK_SOFT limited to folio **meta**, captions, status. Folio **label** is ink.
+- [ ] Flush-left throughout except folio right + grid toggle
 - [ ] One accent mark (red full stop); rules and diagrams in ink
 - [ ] **At least one deliberately empty grid zone**
-- [ ] Diagrams are transit lines with dots — no boxed flowchart clip-art
+- [ ] **Transit stations are 3, 4, or 6** on the 12-column grid — never 5, never `repeat(n, 1fr)`
 - [ ] Grid overlay shares content box with content
 - [ ] No rainbow blocks, no Card/Callout document components
 - [ ] Display type optically aligned to column line
@@ -191,8 +191,9 @@ Swiss quality gate — all must pass:
 | 4-column grid with no baseline | Grid as decoration | 12-col + 8px baseline lock |
 | Host dark theme colors | Breaks paper/ink discipline | Vignelli canon palette |
 | Stack of canvas components | Document, not poster | Raw grid + inline styles |
-| Nested subgrids per row | Columns drift between bands | Single outer 12-col grid |
+| Nested grid with a **different** column count | Columns drift between bands | Nested 12-col subgrids that re-expose the same 12 lines are fine. Do not nest a 4-col or `repeat(n, 1fr)` inside the 12. |
 | Fixed SVG viewBox diagrams | Diagram floats off column lines | CSS grid nodes inside col span |
+| **Five transit stations** | Cannot land on 12 columns | Use 3, 4, or 6 only |
 
 ---
 

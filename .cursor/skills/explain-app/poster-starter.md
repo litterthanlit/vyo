@@ -7,7 +7,7 @@ Key craft moves this starter encodes — do not regress them:
 - Masthead at **96–128px on one line** with a **red full stop** (the set's only accent mark)
 - 2px **ink** rule under the folio; 1px ink hairlines above section labels (type hangs from rules)
 - Journeys as **giant numerals** (44px), not body-size numbers
-- "Under the hood" as a **transit line** — 2px ink line, solid dots, flush-left labels — never boxed flowcharts
+- "Under the hood" as a **transit line** — 2px ink line, solid dots on the **12-column grid**, **3 / 4 / 6 stations only** — never boxed flowcharts
 - Primary copy in INK; INK_SOFT for folio/captions/status only
 - Purpose sentence spans cols 1–7/8; the remaining columns stay **empty**
 - Bands that pair a label with content wrap both in one grid cell — **no negative margins**
@@ -63,14 +63,16 @@ function GridOverlay() {
 type Station = { label: string; sub: string; branch?: { label: string; sub: string } };
 
 function TransitLine({ stations }: { stations: Station[] }) {
+  const n = stations.length;
+  const span = COLS / n; // 3 → 4, 4 → 3, 6 → 2. Never 5.
   const DOT = 12;
   const ROW = 72; // dot row height; branch lives in the space above the line
   return (
-    <div style={{ display: "grid", gridTemplateColumns: `repeat(${stations.length}, 1fr)` }}>
+    <div style={subgrid}>
       {stations.map((s, i) => {
         const last = i === stations.length - 1;
         return (
-          <div key={s.label}>
+          <div key={s.label} style={{ gridColumn: `${i * span + 1} / ${i * span + span + 1}` }}>
             <div style={{ position: "relative", height: ROW }}>
               {!last ? (
                 <div style={{ position: "absolute", left: DOT / 2, right: -DOT / 2, top: ROW - DOT - 1, height: 2, background: INK }} />
@@ -79,9 +81,9 @@ function TransitLine({ stations }: { stations: Station[] }) {
                 <>
                   <div style={{ position: "absolute", left: DOT / 2 - 1, top: DOT + BL, height: ROW - DOT * 2 - BL - 4, width: 2, background: INK }} />
                   <div style={{ position: "absolute", left: 0, top: BL, width: DOT, height: DOT, borderRadius: DOT, border: `2px solid ${INK}`, background: PAPER, boxSizing: "border-box" }} />
-                  <div style={{ position: "absolute", left: DOT + BL, top: 0 }}>
-                    <div style={{ ...folio, whiteSpace: "nowrap" }}>{s.branch.label}</div>
-                    <div style={{ ...meta, whiteSpace: "nowrap" }}>{s.branch.sub}</div>
+                  <div style={{ position: "absolute", left: DOT + BL, top: 0, paddingRight: GUTTER }}>
+                    <div style={folio}>{s.branch.label}</div>
+                    <div style={meta}>{s.branch.sub}</div>
                   </div>
                 </>
               ) : null}
@@ -100,6 +102,7 @@ export default function AppPoster() {
   const [showGrid, setShowGrid] = useCanvasState("showGridApp", false);
 
   const journeys = ["Journey one", "Journey two", "Journey three", "Journey four"];
+  const journeySpan = journeys.length === 2 ? 6 : journeys.length === 3 ? 4 : 3;
   const stations: Station[] = [
     { label: "You act", sub: "plain verb" },
     { label: "Saved", sub: "where it goes" },
@@ -148,7 +151,7 @@ export default function AppPoster() {
           {/* Journeys — giant numerals */}
           <div style={{ gridColumn: "1 / -1", ...sectionLabel, marginBottom: 0 }}>What you do</div>
           {journeys.map((j, i) => (
-            <div key={j} style={{ gridColumn: `${i * 3 + 1} / ${i * 3 + 4}` }}>
+            <div key={j} style={{ gridColumn: `${i * journeySpan + 1} / ${i * journeySpan + journeySpan + 1}` }}>
               <div style={numeral}>{i + 1}</div>
               <p style={{ ...body, marginTop: BL, paddingRight: GUTTER }}>{j}</p>
             </div>
@@ -183,7 +186,7 @@ export default function AppPoster() {
           <div style={{ gridColumn: "1 / -1", borderTop: `1px solid ${HAIRLINE}`, paddingTop: BL }}>
             <div style={subgrid}>
               <div style={{ gridColumn: "1 / 6", ...meta }}>{/* not-built items */}</div>
-              <div style={{ gridColumn: "6 / 10", ...meta }}>For clients &amp; operators</div>
+              <div style={{ gridColumn: "6 / 10", ...meta }}>{/* For [handoff audience — who is reading] */}</div>
               <div style={{ gridColumn: "10 / 13", textAlign: "right" }}>
                 <button
                   type="button"
