@@ -15,7 +15,7 @@ Not marketing fluff. Not a pitch deck. Plain language they can actually say out 
 - Default-export one React component
 - Import only from `cursor/canvas`
 - Inline all copy — no `fetch`, no helper files
-- Single viewport, ~900×1100px portrait, minimal scroll
+- Portrait, no taller than an A-series sheet at poster width (1028 × 1454px)
 - Same palette and grid constants as [poster-layout.md](poster-layout.md)
 
 ## Purpose vs Page 1
@@ -31,7 +31,7 @@ Not marketing fluff. Not a pitch deck. Plain language they can actually say out 
 
 ## Structure
 
-Reuse the same `.wrap` container, `GridOverlay`, style tokens (`folio`, `meta`, `body`, `sectionLabel`, `numeral`, `subgrid`), and grid constants from page 1. There is no `Band` component. Do not invent a new visual system.
+Paste the same [poster-kit.md](poster-kit.md) as page 1: container, `GridOverlay`, style tokens, grid constants and `HeroFigure`. Page 2 uses no schematics or transit line — it's outcomes, not mechanics. Do not invent a new visual system.
 
 ## Row-by-row spec
 
@@ -49,7 +49,8 @@ Owner audience examples: "For founders", "For solo builders", "For operators" �
 
 Page 2 is the marketing sheet, so the message leads, not the logo. The product name already owned page 1.
 
-- **Tagline set at display size** — 64, 72, or 80px (multiples of 8), weight 700, letter-spacing −0.03em, lineHeight = fontSize, cols 1–11, breaking over 2–3 lines
+- **Tagline set at display size** — 64, 72, or 80px (multiples of 8), weight 700, letter-spacing −0.03em, lineHeight = fontSize, **cols 1–7**, breaking over 2–3 short lines
+- **The page-1 hero figure** in cols 8–12: `<HeroFigure seed={product} span={5} height={216} … />` with the **same** `seed`, `rings`, `dataRing` and `outputRing` as page 1, so the pair reads as a set
 - Close with the **red full stop** — the set's single accent mark, same as page 1
 - Emotional outcome, not a feature list: "Your ideas, finally in one place." Not: "AI-powered spatial canvas with Convex backend."
 

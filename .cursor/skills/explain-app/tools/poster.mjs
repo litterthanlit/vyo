@@ -2,12 +2,12 @@
 // explain-app poster tools.
 //
 //   node poster.mjs check  <file.canvas.tsx>...            Enforce the Swiss poster rules
-//   node poster.mjs export <file.canvas.tsx>... [options]  Write PNG + PDF for sharing
+//   node poster.mjs export <file.canvas.tsx>... [options]  Write PNG, PDF and SVG for sharing
 //
 // Export options:
 //   --out <dir>          Output directory (default: <first file's dir>/exports)
 //   --paper fit|a4|letter  PDF page size (default: fit — one page sized to the poster)
-//   --no-png / --no-pdf  Skip a format
+//   --no-png / --no-pdf / --no-svg  Skip a format
 //
 // Page 1 vs page 2 rules are inferred from the filename (*project-story* = page 2).
 // Set POSTER_CHROMIUM to a Chromium binary to skip `npx playwright install chromium`.
@@ -16,18 +16,22 @@ import path from "node:path";
 import { chromium } from "playwright";
 import { buildPage, lintSource } from "./lib/build.mjs";
 import { inspectOverlay, inspectPoster } from "./lib/inspect.js";
+import { svgScript } from "./lib/to-svg.mjs";
 
-const PALETTE = { PAPER: "#FFFFFF", INK: "#0A0A0A", INK_SOFT: "#5B6066", ACCENT: "#E4002B", HAIRLINE: "rgba(10, 10, 10, 0.2)" };
+const PALETTE = {
+  PAPER: "#FFFFFF", INK: "#0A0A0A", INK_SOFT: "#5B6066", HAIRLINE: "rgba(10, 10, 10, 0.2)",
+  ACCENT: "#E4002B", RED: "#E4002B", BLUE: "#0039A6", YELLOW: "#FFCC00",
+};
 const POSTER_WIDTH = 1028; // MAXW 900 + 2 × MARGIN 64
 const CHECK_WIDTHS = [1440, POSTER_WIDTH];
 const NARROW_WIDTH = 720; // a canvas panel beside the chat
-const MAX_HEIGHT = 1300;
+const MAX_HEIGHT = 1454; // A-series portrait (1:√2) at the 1028px poster width
 const PAPER_PX = { a4: [794, 1123], letter: [816, 1056] };
 
 const pageOf = (file) => (/project-story/i.test(path.basename(file)) ? 2 : 1);
 const stem = (file) => path.basename(file).replace(/\.canvas\.tsx$|\.tsx$/, "");
 
-async function launch() {
+export async function launch() {
   try {
     return await chromium.launch({ executablePath: process.env.POSTER_CHROMIUM || undefined });
   } catch (e) {
@@ -62,7 +66,7 @@ export async function check(files, { browser, quiet = false } = {}) {
             errors.push(`Scrolls sideways at ${width}px`);
           }
           if (width === POSTER_WIDTH && !r.errors.some((e) => e.startsWith("Render error"))) {
-            if (r.height > MAX_HEIGHT) warnings.push(`Poster is ${r.height}px tall — aim for one screen (≤ ${MAX_HEIGHT}px); trim copy`);
+            if (r.height > MAX_HEIGHT) warnings.push(`Poster is ${r.height}px tall — taller than an A-series sheet (${MAX_HEIGHT}px); trim copy`);
             const toggle = p.getByRole("button", { name: /show grid/i });
             if (!(await toggle.count())) errors.push('No "Show grid" toggle');
             else {
@@ -98,7 +102,7 @@ function report({ file, page, errors, warnings }) {
   for (const w of warnings) console.log(`  ! ${w}`);
 }
 
-async function exportPosters(files, { out, paper = "fit", png = true, pdf = true }) {
+export async function exportPosters(files, { out, paper = "fit", png = true, pdf = true, svg = true }) {
   if (paper !== "fit" && !PAPER_PX[paper]) throw new Error(`Unknown --paper "${paper}" — use fit, a4, or letter`);
   out ??= path.join(path.dirname(path.resolve(files[0])), "exports");
   fs.mkdirSync(out, { recursive: true });
@@ -116,6 +120,24 @@ async function exportPosters(files, { out, paper = "fit", png = true, pdf = true
       for (const [i, file] of files.entries()) {
         const dest = path.join(out, `${stem(file)}.png`);
         await p.locator(`#poster-${i}`).screenshot({ path: dest });
+        written.push(dest);
+      }
+    }
+
+    if (svg) {
+      await p.addScriptTag({ content: await svgScript() });
+      for (const [i, file] of files.entries()) {
+        const dest = path.join(out, `${stem(file)}.svg`);
+        const markup = await p.evaluate((i) => {
+          // Interactive chrome stays out of the vector file entirely.
+          const root = document.getElementById(`poster-${i}`);
+          const hidden = [...root.querySelectorAll("button, [data-grid-overlay]")];
+          hidden.forEach((el) => (el.style.display = "none"));
+          const out = window.__posterToSVG(root);
+          hidden.forEach((el) => (el.style.display = ""));
+          return out;
+        }, i);
+        fs.writeFileSync(dest, markup);
         written.push(dest);
       }
     }
@@ -159,7 +181,7 @@ async function main(argv) {
   const files = rest.filter((a, i) => !a.startsWith("--") && !["--out", "--paper"].includes(rest[i - 1]));
   const opt = (name) => rest[rest.indexOf(name) + 1];
   if (!["check", "export"].includes(cmd) || !files.length) {
-    console.log("Usage:\n  node poster.mjs check <file.canvas.tsx>...\n  node poster.mjs export <file.canvas.tsx>... [--out dir] [--paper fit|a4|letter] [--no-png] [--no-pdf]");
+    console.log("Usage:\n  node poster.mjs check <file.canvas.tsx>...\n  node poster.mjs export <file.canvas.tsx>... [--out dir] [--paper fit|a4|letter] [--no-png] [--no-pdf] [--no-svg]");
     return 2;
   }
   const missing = files.filter((f) => !fs.existsSync(f));
@@ -178,6 +200,7 @@ async function main(argv) {
     paper: rest.includes("--paper") ? opt("--paper") : "fit",
     png: !rest.includes("--no-png"),
     pdf: !rest.includes("--no-pdf"),
+    svg: !rest.includes("--no-svg"),
   });
   console.log(written.map((w) => `wrote ${w}`).join("\n"));
   return 0;

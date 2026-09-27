@@ -29,7 +29,7 @@ export function inspectPoster({ index, page, palette }) {
     const t = (el.textContent || "").trim().replace(/\s+/g, " ");
     return t ? `"${t.slice(0, 40)}${t.length > 40 ? "…" : ""}"` : `<${el.tagName.toLowerCase()}>`;
   };
-  const inOverlay = (el) => !!el.closest("[aria-hidden='true'], [aria-hidden='']");
+  const inOverlay = (el) => !!el.closest("[data-grid-overlay]");
   const inFlow = (el) => {
     const cs = getComputedStyle(el);
     return cs.display !== "none" && cs.position !== "absolute" && cs.position !== "fixed";
@@ -146,31 +146,75 @@ export function inspectPoster({ index, page, palette }) {
     }
   }
 
-  // ── Transit line: every segment must end inside a station dot ───────────
-  const abs = content.filter((el) => getComputedStyle(el).position === "absolute");
-  const rect = (el) => el.getBoundingClientRect();
-  const dots = abs.filter((el) => {
-    const r = rect(el);
-    return near(r.width, r.height) && r.width >= 8 && r.width <= 16 && px(getComputedStyle(el).borderTopLeftRadius) >= r.width / 2 - 1;
-  });
-  const inDot = (x, y) => dots.some((d) => {
-    const r = rect(d);
-    return x >= r.left - 1 && x <= r.right + 1 && y >= r.top - 1 && y <= r.bottom + 1;
-  });
-  let segment = 0;
-  for (const el of abs) {
-    if (getComputedStyle(el).backgroundColor !== C.INK || dots.includes(el)) continue;
-    const r = rect(el);
-    const cy = (r.top + r.bottom) / 2;
-    const cx = (r.left + r.right) / 2;
-    if (r.height <= 3 && r.width > 16) {
-      segment++;
-      if (!(inDot(r.left, cy) && inDot(r.right, cy))) {
-        errors.push(`Transit line segment ${segment} does not join two stations — run it across the gutter to the next dot's centre`);
+  // ── SVG artwork ─────────────────────────────────────────────────────────
+  const SHAPES = "rect, circle, ellipse, line, path, polyline, polygon";
+  const svgColours = new Set(["none", C.PAPER, C.INK, C.INK_SOFT, C.HAIRLINE, C.RED, C.BLUE, C.YELLOW]);
+  const svgs = content.filter((el) => el.tagName.toLowerCase() === "svg" && !el.parentElement.closest("svg"));
+  let redShapes = 0;
+  for (const svg of svgs) {
+    const name = svg.getAttribute("aria-label") || "an SVG";
+    if (svg.getAttribute("aria-hidden") !== "true" && !(svg.getAttribute("role") === "img" && svg.getAttribute("aria-label"))) {
+      errors.push(`${name}: give figures role="img" and an aria-label (or aria-hidden if purely decorative)`);
+    }
+    const r = svg.getBoundingClientRect();
+    const vb = svg.viewBox && svg.viewBox.baseVal;
+    if (vb && vb.width && (!near(r.width, vb.width) || !near(r.height, vb.height))) {
+      errors.push(`${name}: drawn at ${r.width.toFixed(0)}×${r.height.toFixed(0)} but its viewBox is ${vb.width}×${vb.height} — draw SVG 1:1 with spanW()/snap8()`);
+    }
+    if (!starts.some((x) => near(r.left, x)) || !ends.some((x) => near(r.right, x))) {
+      errors.push(`${name}: not on the column lines (left ${r.left.toFixed(1)}, right ${r.right.toFixed(1)})`);
+    }
+    if (!onBaseline(r.height)) errors.push(`${name}: height ${r.height.toFixed(1)} is not a multiple of 8`);
+    const banned = [...svg.querySelectorAll("text, tspan, linearGradient, radialGradient, pattern, filter, image, foreignObject")];
+    for (const tag of new Set(banned.map((b) => b.tagName))) {
+      errors.push(`${name}: contains <${tag}> — ${/text|tspan/i.test(tag) ? "labels are HTML, never SVG text" : "flat colour only, no gradients, filters or images"}`);
+    }
+    for (const shape of svg.querySelectorAll(SHAPES)) {
+      const cs = getComputedStyle(shape);
+      // A line has no area, so its (default black) fill never paints.
+      const fill = shape.tagName.toLowerCase() === "line" ? "none" : cs.fill.startsWith("url(") ? "url" : cs.fill;
+      const strokeW = cs.stroke === "none" ? 0 : px(cs.strokeWidth);
+      for (const [what, c] of [["fill", fill], ["stroke", strokeW ? cs.stroke : "none"]]) {
+        if (!svgColours.has(c)) errors.push(`${name}: ${what} ${c} is outside the palette`);
+      }
+      if (fill === C.RED || (strokeW && cs.stroke === C.RED)) redShapes++;
+      if (strokeW && strokeW < 8 && cs.stroke === C.YELLOW) {
+        errors.push(`${name}: ${strokeW}px yellow stroke — yellow is a fill, or a stroke of at least 8px`);
       }
     }
-    if (r.width <= 3 && r.height > 16 && !(inDot(cx, r.top) && inDot(cx, r.bottom))) {
-      errors.push(`A branch stroke does not join its ring to the line`);
+  }
+  if (redShapes > 1) errors.push(`${redShapes} red shapes — red means the product: the full stop plus one core element`);
+
+  // Transit joins: every segment and branch end must sit inside a station or ring.
+  const centreOf = (el) => {
+    const svg = el.ownerSVGElement;
+    const pt = svg.createSVGPoint();
+    const m = el.getScreenCTM();
+    pt.x = +el.getAttribute("cx");
+    pt.y = +el.getAttribute("cy");
+    const c = pt.matrixTransform(m);
+    return { x: c.x, y: c.y, r: +el.getAttribute("r") * m.a };
+  };
+  const stops = content.filter((el) => /station|ring/.test(el.getAttribute("data-transit") || "")).map(centreOf);
+  const inStop = (p) => stops.some((s) => Math.hypot(p.x - s.x, p.y - s.y) <= s.r + 1);
+  let segment = 0;
+  for (const el of content.filter((e) => /segment|branch/.test(e.getAttribute("data-transit") || ""))) {
+    const kind = el.getAttribute("data-transit");
+    if (kind === "segment") segment++;
+    const svg = el.ownerSVGElement;
+    const m = el.getScreenCTM();
+    const end = (x, y) => {
+      const pt = svg.createSVGPoint();
+      pt.x = x;
+      pt.y = y;
+      return pt.matrixTransform(m);
+    };
+    const a = end(+el.getAttribute("x1"), +el.getAttribute("y1"));
+    const b = end(+el.getAttribute("x2"), +el.getAttribute("y2"));
+    if (!inStop(a) || !inStop(b)) {
+      errors.push(kind === "segment"
+        ? `Transit line segment ${segment} does not join two stations — run it from dot centre to dot centre`
+        : "A branch stroke does not join its ring to the line");
     }
   }
 
@@ -193,8 +237,8 @@ export function inspectPoster({ index, page, palette }) {
 // With the grid overlay switched on: the overlay must draw the same 12 columns.
 export function inspectOverlay({ index }) {
   const root = document.getElementById(`poster-${index}`);
-  const overlay = root.querySelector("[aria-hidden='true'], [aria-hidden='']");
-  if (!overlay) return ["Grid toggle did not draw an aria-hidden overlay"];
+  const overlay = root.querySelector("[data-grid-overlay]");
+  if (!overlay) return ["Grid toggle did not draw a [data-grid-overlay] layer"];
   const grids = [overlay, ...overlay.querySelectorAll("*")].filter((el) => getComputedStyle(el).display === "grid");
   const colsOf = (g) => {
     const cs = getComputedStyle(g);
@@ -207,7 +251,7 @@ export function inspectOverlay({ index }) {
     });
   };
   const content = [...root.querySelectorAll("*")].find(
-    (el) => !el.closest("[aria-hidden]") && getComputedStyle(el).display === "grid",
+    (el) => !el.closest("[data-grid-overlay]") && getComputedStyle(el).display === "grid",
   );
   const want = colsOf(content);
   const g = grids.find((el) => getComputedStyle(el).gridTemplateColumns.split(/\s+/).length === 12);

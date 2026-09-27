@@ -15,7 +15,7 @@ description: >-
 
 Turn a codebase into a plain-English app guide for people who will never read code. The deliverable is **two Swiss Style poster Canvases** (`.canvas.tsx`) on light paper — objective typography, real 12-column grid, one accent color. Not a dark UI mockup, not a scrolling doc.
 
-**Canvas skill override (read this before the canvas skill).** Swiss posters **must** use the fixed paper/ink/accent hex, display type at **104–128px** (page 1) / **64–80px** (page 2 tagline), and raw CSS grid. Ignore the canvas skill where it forbids hardcoded hex, type above 24px, or requires `useHostTheme()` for color. Those rules are for document canvases. This skill wins on poster files. Still follow the canvas skill for file location (`…/canvases/*.canvas.tsx`), `import` only from `cursor/canvas`, and no `fetch`.
+**Canvas skill override (read this before the canvas skill).** Swiss posters **must** use the fixed paper/ink hex and the three signal primaries (red, blue, yellow — in SVG figures only), display type at **104–128px** (page 1) / **64–80px** (page 2 tagline), and raw CSS grid. Ignore the canvas skill where it forbids hardcoded hex, type above 24px, or requires `useHostTheme()` for color. Those rules are for document canvases. This skill wins on poster files. Still follow the canvas skill for file location (`…/canvases/*.canvas.tsx`), `import` only from `cursor/canvas`, and no `fetch`.
 
 | Page | File | Purpose |
 |------|------|---------|
@@ -44,7 +44,7 @@ Turn a codebase into a plain-English app guide for people who will never read co
 3. Read [plain-language-rules.md](plain-language-rules.md) before writing copy.
 4. Read [poster-layout.md](poster-layout.md) for page 1 grid rows and content zones.
 5. Read [sell-sheet-layout.md](sell-sheet-layout.md) for page 2 — **always produce both pages** when an app is detected.
-6. Use [poster-starter.md](poster-starter.md) and [sell-sheet-starter.md](sell-sheet-starter.md) as structural starting points.
+6. Build each canvas file as [poster-kit.md](poster-kit.md) (shared constants and SVG figures) followed by the page component from [poster-starter.md](poster-starter.md) or [sell-sheet-starter.md](sell-sheet-starter.md).
 7. Skim [canvas-layout.md](canvas-layout.md) only if the user explicitly wants the legacy document-style fallback.
 
 ### Canonical copy
@@ -97,7 +97,9 @@ Build this map before writing copy. Do not dump it raw into the Canvas.
 | Actors | Who uses the app (end user, admin, guest) |
 | Jobs | What they come to do (sign up, book, pay, manage settings) |
 | Journeys | 2–4 primary flows as UI steps a human would take |
-| Under the hood | The data pipeline as **3, 4, or 6** stations (never 5 — it cannot land on a 12-column grid): what you do → where it's saved → what processes it → what comes back out |
+| Screens | The **3–4** screens a user spends time in, each with the closest schematic preset (`landing`, `dashboard`, `list`, `canvas`, `form`, `detail`, `settings`, `chat`) and at most one highlighted block with its role |
+| Under the hood | The data pipeline as **3, 4, or 6** stations (never 5 — it cannot land on a 12-column grid): what you do → where it's saved → what processes it → what comes back out. Mark the saved station `data` and the output station `output` |
+| Hero inputs | `rings` = journeys + stations (cap 6), plus which ring is data (blue) and which is output (yellow). Same values on both pages |
 | Behind the scenes | One "When you X, the app Y" sentence per journey ("When you pay, the app talks to Stripe") |
 | Status honesty | Works in UI / backend only / planned — never call backend-only "complete" |
 
@@ -117,12 +119,12 @@ Apply [plain-language-rules.md](plain-language-rules.md):
 1. Determine workspace canvases path: `~/.cursor/projects/<workspace>/canvases/`
 2. Filename: `<repo-name>-app-poster.canvas.tsx` (kebab-case, from git root basename)
 3. Follow [swiss-design-principles.md](swiss-design-principles.md) and [poster-layout.md](poster-layout.md):
-   - Light paper (`#FFFFFF`), ink (`#0A0A0A`), one accent mark — the **red full stop** after the masthead
+   - Light paper (`#FFFFFF`), ink (`#0A0A0A`) type; the **red full stop** after the masthead; colour otherwise only in the SVG figures (red product · blue data · yellow output)
    - Masthead at **104–128px on one line**, in a multiple of 8 (112 default); display : body ratio ≥ 7:1 over 14px body
    - 12-column grid, 8px baseline, 24px leading, 64px margins
    - Two type roles, four sizes (display + 44px numerals · 14px body + 10px folio); flush-left only
    - Primary copy in ink; gray reserved for folio, captions, status
-   - Journeys as **giant numerals**; "Under the hood" as a **transit-line diagram** with **3, 4, or 6** stations on the 12-column grid — no boxed flowcharts, colored tabs, or dark blocks
+   - Hero figure beside the purpose; journeys as **giant numerals**; a **What it looks like** band of 3–4 screen schematics; "Under the hood" as an SVG **transit line** with **3, 4, or 6** stations — no boxed flowcharts, colored tabs, or dark blocks
    - Grid overlay inside the same content box as the poster
 4. Import only from `cursor/canvas`; inline all content; no `fetch`
 5. Omit empty zones — never render placeholder blocks
@@ -166,7 +168,7 @@ node tools/poster.mjs export <canvases>/<repo>-app-poster.canvas.tsx <canvases>/
 ```
 
 1. `check` must print **PASS** for both posters. Every ✗ is a rule break — fix the canvas and re-run. Treat ! warnings (jargon, height, narrow panel) as copy edits unless there's a reason to keep them.
-2. `export` writes `<canvases>/exports/`: a PNG and a PDF per poster, plus `<repo>-poster-set.pdf` with both pages. Add `--paper a4` or `--paper letter` when the user wants to print.
+2. `export` writes `<canvases>/exports/`: a PNG, a PDF and an editable SVG (for Figma/Illustrator) per poster, plus `<repo>-poster-set.pdf` with both pages. Add `--paper a4` or `--paper letter` when the user wants to print.
 3. If the tools can't install (no network), say so in chat and deliver the canvases only — never skip `check` silently.
 
 ### Chat response
@@ -233,12 +235,13 @@ Before finishing, verify **both pages**:
 
 **Both pages**
 - [ ] `node tools/poster.mjs check` passes on both files (it enforces most of the list below)
-- [ ] Light paper, ink type, one red accent mark (the full stop) — Swiss canon palette
+- [ ] Light paper, ink type, one red full stop; colour only in the figures, one meaning per primary
 - [ ] Display type at poster scale (104–128px page 1 / 64–80px tagline page 2, multiples of 8); numerals at 40–48px
 - [ ] Primary copy in ink; gray only for folio, captions, status
 - [ ] 12-column grid with baseline lock; overlay shares content box
 - [ ] Two type roles; flush-left throughout; at least one deliberately empty zone
 - [ ] Diagrams are transit lines with **3, 4, or 6** dots on the 12-column grid — no boxed flowchart clip-art
+- [ ] Schematics show the app's **real** screens with the right presets; the hero is identical on both pages
 - [ ] No dark fields, rainbow tabs, or document-style canvas components
 - [ ] No unexplained jargon in visible poster copy
 - [ ] No file paths on either poster surface

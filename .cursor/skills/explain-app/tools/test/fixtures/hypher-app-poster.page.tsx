@@ -1,48 +1,38 @@
-# Poster Canvas Starter (Page 1)
-
-Structural reference for `<repo>-app-poster.canvas.tsx`. The file is **[poster-kit.md](poster-kit.md) pasted first, then this page component**. Read [swiss-design-principles.md](swiss-design-principles.md) first.
-
-Key craft moves this starter encodes — do not regress them:
-
-- Masthead at **104–128px on one line** (a multiple of 8 — 112 default) with a **red full stop**
-- **Hero figure** in cols 7–12 beside a short purpose in cols 1–5; the white under the purpose is the deliberate empty zone
-- Journeys as **giant numerals** (44px), not body-size numbers
-- **"What it looks like"**: 3 or 4 screen schematics drawn from the app's real screens
-- "Under the hood" as an **SVG transit line**, 3 / 4 / 6 stations; colour a station only for its role (data = blue, output = yellow)
-- Primary copy in INK; INK_SOFT for folio/captions/status only. **Colour lives in the graphics, never in type**
-- **Four sizes only:** 112 display · 44 numerals · 14 body · 10 folio
-- Rules and borders are paid for out of padding (`BL - 2`, `BL - 1`) so every block stays a multiple of 8px
-- Counts that can't land on the 12-column grid **throw** via `spanFor`
-
-```tsx
+// Showcase: page 1 filled with the Hypher sample copy from examples.md.
+// The test prepends poster-kit.md.
 export default function AppPoster() {
   const [showGrid, setShowGrid] = useCanvasState("showGridApp", false);
 
-  const product = "Product";
-  const journeys = ["Journey one", "Journey two", "Journey three", "Journey four"];
+  const product = "Hypher";
+  const journeys = [
+    "Capture a note or file and pick a project",
+    "Arrange it on the spatial canvas",
+    "Read the daily digest in your inbox",
+    "Share a read-only link to your canvas",
+  ];
   const journeySpan = spanFor(journeys.length, { 2: 6, 3: 4, 4: 3 }, "Journeys");
   const screens: Array<{ name: string; preset: PresetName; highlight?: { block: string; role: Role } }> = [
     { name: "Landing", preset: "landing" },
-    { name: "Home", preset: "form", highlight: { block: "submit", role: "data" } },
-    { name: "Workspace", preset: "canvas" },
+    { name: "Capture", preset: "form", highlight: { block: "submit", role: "data" } },
+    { name: "Spatial canvas", preset: "canvas", highlight: { block: "n2", role: "data" } },
     { name: "Dashboard", preset: "dashboard", highlight: { block: "feed", role: "output" } },
   ];
   const screenSpan = spanFor(screens.length, { 3: 4, 4: 3 }, "Screens");
   const stations: Station[] = [
-    { label: "You act", sub: "plain verb" },
-    { label: "Saved", sub: "where it goes", role: "data" },
-    { label: "Processed", sub: "what reads it", branch: { label: "Optional", sub: "side step" } },
-    { label: "Back out", sub: "what you receive", role: "output" },
+    { label: "You capture", sub: "a thought, a file" },
+    { label: "Saved live", sub: "stored in your database", role: "data" },
+    { label: "On the canvas", sub: "organise and connect", branch: { label: "Share", sub: "read-only link" } },
+    { label: "Digest out", sub: "a daily email", role: "output" },
   ];
   const whenYou: Array<[string, string]> = [
-    ["When you [act],", "plain consequence."],
-    ["When [trigger],", "plain consequence."],
-    ["When you [share],", "plain consequence."],
+    ["When you save a note,", "it is written to your database and appears in every open tab within a second."],
+    ["When the day ends,", "a short digest of what changed is written and sent to your inbox."],
+    ["When you share,", "the app publishes a read-only copy of your canvas at a link."],
   ];
   const whenYouSpan = spanFor(whenYou.length, { 2: 6, 3: 4 }, "When-you lines");
   const bodyColumns: Array<{ label: string; lines: string[] }> = [
-    { label: "The problem", lines: ["Why this app exists."] },
-    { label: "Connected", lines: ["Service — what it does for the user."] },
+    { label: "The problem", lines: ["Builders split ideas across notes, tabs, and chats. By the time they sit down to work, half of it is gone."] },
+    { label: "Connected", lines: ["Sign-in — your own private account", "Live database — saves as you type", "Daily digest — one email each evening"] },
   ];
   const bodySpan = spanFor(bodyColumns.length, { 2: 6 }, "Body columns");
 
@@ -56,8 +46,8 @@ export default function AppPoster() {
           <div style={{ gridColumn: "1 / -1" }}>
             <div style={subgrid}>
               <div style={{ gridColumn: "1 / 5", ...folio }}>App Guide — 01</div>
-              <div style={{ gridColumn: "5 / 10", ...meta }}>{/* one-line promise */}</div>
-              <div style={{ gridColumn: "10 / 13", ...meta, textAlign: "right" }}>{/* platform · audience */}</div>
+              <div style={{ gridColumn: "5 / 10", ...meta }}>How Hypher works, in plain English</div>
+              <div style={{ gridColumn: "10 / 13", ...meta, textAlign: "right" }}>Web app · Solo builders</div>
             </div>
             {/* 16px folio + 6 + 2px rule = 24px, one leading unit */}
             <div style={{ height: 2, background: INK, marginTop: BL - 2 }} />
@@ -72,7 +62,7 @@ export default function AppPoster() {
 
           {/* Purpose (cols 1–5) + hero figure (cols 7–12); the white below the purpose is the empty zone */}
           <div style={{ gridColumn: "1 / 6" }}>
-            <p style={body}>One-sentence purpose, set in ink.</p>
+            <p style={body}>A spatial project brain for solo builders — capture thoughts anywhere, watch them cluster on a canvas, and get a daily digest.</p>
           </div>
           <div style={{ gridColumn: "7 / 13" }}>
             <HeroFigure seed={product} span={6} height={232} rings={5} dataRing={2} outputRing={4} />
@@ -126,8 +116,8 @@ export default function AppPoster() {
           {/* Footer */}
           <div style={{ gridColumn: "1 / -1", borderTop: `1px solid ${HAIRLINE}`, paddingTop: BL - 1 }}>
             <div style={subgrid}>
-              <div style={{ gridColumn: "1 / 6", ...meta }}>{/* not-built items */}</div>
-              <div style={{ gridColumn: "6 / 10", ...meta }}>{/* For [handoff audience — who is reading] */}</div>
+              <div style={{ gridColumn: "1 / 6", ...meta }}>Not built yet: in-app billing, GitHub sign-in, voice capture</div>
+              <div style={{ gridColumn: "6 / 10", ...meta }}>For the client handoff</div>
               <div style={{ gridColumn: "10 / 13" }}>
                 <GridToggle on={showGrid} set={setShowGrid} />
               </div>
@@ -138,6 +128,3 @@ export default function AppPoster() {
     </div>
   );
 }
-```
-
-See [poster-layout.md](poster-layout.md) for content mapping and [poster-kit.md](poster-kit.md) for the schematic presets.

@@ -45,22 +45,33 @@ Purpose (cols 1–7, ink; right columns empty): A spatial project brain for solo
 3. Read the daily AI digest
 4. Share a read-only canvas link
 
+### Hero figure
+
+`seed="Hypher"`, `rings={5}`, `dataRing={2}`, `outputRing={4}` — identical on page 2.
+
+### What it looks like (4 schematics × 3 cols)
+
+| Screen | Preset | Highlight |
+|--------|--------|-----------|
+| Landing | `landing` | — |
+| Capture | `form` | `submit` → data (blue): the note goes in here |
+| Spatial canvas | `canvas` | `n2` → data (blue): a saved note on the canvas |
+| Dashboard | `dashboard` | `feed` → output (yellow): where the digest shows up |
+
 ### Under the hood (transit line)
 
-Stations (4, on the 12-col grid): You capture → Saved live (stored in your database) → On the canvas (organize, connect) → Digest out (daily email). Branch off "On the canvas": Share (read-only link).
+Stations (4, on the 12-col grid): You capture → Saved live (stored in your database, `role: "data"`) → On the canvas (organize, connect) → Digest out (daily email, `role: "output"`). Branch off "On the canvas": Share (read-only link).
 
 "When you…" lines: *When you save a note,* it is written to your database and appears in every open tab within a second. *When the day ends,* a short digest of what changed is written and sent to your inbox. *When you share,* the app publishes a read-only copy at a link.
 
-### Body columns
+### Body columns (6 + 6)
 
-**The problem** — Builders split ideas across notes, tabs, and repos…
-
-**The screens** — Landing · Capture home · Spatial canvas · Dashboard · Settings
+**The problem** — Builders split ideas across notes, tabs, and chats…
 
 **Connected** — Sign-in · live database · daily digest · GitHub activity
 
 ### Footer
-Not built: in-app billing, GitHub OAuth, voice capture, npm package
+Not built: in-app billing, GitHub sign-in, voice capture
 
 ## Sample Page 2 Copy (Hypher)
 
@@ -86,7 +97,7 @@ one place.
 **What to say**
 1. "Most builders lose ideas across ten tabs — you get them back before they vanish."
 2. "You capture a thought in seconds; the app organizes it on a canvas."
-3. "Share a read-only link when you want feedback, not repo access."
+3. "Share a read-only link when you want feedback, not the keys to your code."
 
 ### What's real today
 - Sign in and land on a personal dashboard
@@ -128,9 +139,21 @@ one place.
 **Good — transit line**
 > One 2px ink line, solid dots, flush-left station labels, a 90° branch with a hollow ring.
 
+**Bad — colour as decoration**
+> Blue section labels, a yellow callout box, red rules — colour in type and blocks.
+
+**Good — colour as signal**
+> Ink type and rules. Blue only where data lives, yellow only where results come back, red only for the product — in the figures.
+
+**Bad — clip-art**
+> Stock icons of a laptop, a cloud, a person with a lightbulb.
+
+**Good — schematics**
+> Line-drawn wireframes of the four real screens, each with a folio label.
+
 ## Verification Notes
 
-**hypher** — Both pages at `hypher-app-poster.canvas.tsx` and `hypher-project-story.canvas.tsx`. Monorepo; UI in hypher-web. Playbook items marked in footer only (same list on both pages). Reference build for the poster-scale masthead, giant numerals, 4-station transit line on the 12-col grid, and tagline-led page 2. Delete any leftover `hypher-app-guide.canvas.tsx`.
+**hypher** — Both pages at `hypher-app-poster.canvas.tsx` and `hypher-project-story.canvas.tsx`. A filled reference build of both lives in `tools/test/fixtures/` and passes `check`. Monorepo; UI in hypher-web. Playbook items marked in footer only (same list on both pages). Reference build for the poster-scale masthead, giant numerals, 4-station transit line on the 12-col grid, and tagline-led page 2. Delete any leftover `hypher-app-guide.canvas.tsx`.
 
 **learnr** — Single Next.js app, landing → intake → workspace.
 

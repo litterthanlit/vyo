@@ -21,19 +21,11 @@ Page 2 layout: [sell-sheet-layout.md](sell-sheet-layout.md)
 - Default-export one React component
 - Import only from `cursor/canvas`
 - Inline all copy — no `fetch`, no helper files
-- Single viewport, ~900×1150px portrait, minimal scroll
+- Portrait, no taller than an A-series sheet at poster width (1028 × 1454px)
 
 ## Palette (fixed — see swiss-design-principles.md)
 
-```tsx
-const PAPER = "#FFFFFF";
-const INK = "#0A0A0A";
-const INK_SOFT = "#5B6066";
-const ACCENT = "#E4002B";
-const GRID_FIELD = "rgba(228, 0, 43, 0.08)";
-```
-
-Accent appears **once** as an editorial mark — the red full stop after the masthead. Rules, dots, and numerals are ink. The grid toggle may use accent (functional chrome).
+Paper, ink, ink-soft and the three primaries — red (the product), blue (data), yellow (output). Constants live in [poster-kit.md](poster-kit.md). Type and rules are ink; colour appears only in the SVG figures, plus the red full stop and the grid toggle.
 
 ## Grid constants
 
@@ -77,9 +69,11 @@ Product name at **104–128px** in a multiple of 8 (112 default — keeps the ba
 
 Optical nudge: `marginLeft: "-0.05em"` so ink, not the box, hits column line 1.
 
-### Row 3 — Purpose (cols 1–7; cols 8–12 empty)
+### Row 3 — Purpose (cols 1–5) + hero figure (cols 7–12)
 
-One sentence, 14px/24px, **INK** (not gray), max-width ~28em. The empty right zone is deliberate — do not fill it.
+Purpose: one sentence, 14px/24px, **INK** (not gray). The white space below it, down to the hero's baseline, is the poster's deliberate empty zone — do not fill it.
+
+Hero: `<HeroFigure seed={product} span={6} height={232} rings={…} dataRing={…} outputRing={…} />`. `rings` = journeys + stations, capped at 6. Point `dataRing` and `outputRing` at the rings that stand for the data station and the output station.
 
 ### Row 4 — Journeys band ("What you do")
 
@@ -90,21 +84,29 @@ Section label (10px uppercase) across cols 1–12, then one column per journey:
 
 Three journeys → 4-col spans (cols 1–4, 5–8, 9–12). Two journeys → 6-col spans. Four journeys → 3-col spans. Any other count is not allowed — the starter's `spanFor` throws. Never render step numbers at body size. Do not leave the 3-journey case on 3-col spans.
 
+### Row 4b — What it looks like (screen schematics)
+
+Section label across cols 1–12, then **3 or 4** `ScreenSchematic`s on 4-col or 3-col spans — the app's real, most-used screens, in the order a user meets them. Pick each `preset` from the screen's actual layout (`landing`, `dashboard`, `list`, `canvas`, `form`, `detail`, `settings`, `chat`). A folio label with the screen's customer-facing name sits under each.
+
+Highlight at most one block per schematic, and only with its role colour: blue where the user's data goes in or is kept, yellow where a result comes back. Most schematics have no highlight.
+
 ### Row 5 — Under the hood (cols 1–12) — the code story
 
 This band answers "how does the code work?" for a non-technical reader. Two parts:
 
-**5a. Transit-line diagram** — one horizontal 2px ink line with **3, 4, or 6** solid ink dots (never 5). Place each station on the **12-column grid**: 3 stations → 4-col span, 4 stations → 3-col span, 6 stations → 2-col span. Do not use `repeat(stations.length, 1fr)` or `COLS / n` (5 stations gives a fractional span the browser silently drops). The line segment runs from each dot's centre **across the gutter** to the next dot's centre. Under each dot, flush-left: a 10px uppercase station label + one plain-verb line in ink-soft ("saved instantly", "a summary is written"). Stations narrate the pipeline: what you do → where it's stored → what processes it → what comes back out. Branch steps (optional paths) leave the line at 90° with a hollow ring. Keep branch labels short enough to wrap — no `whiteSpace: "nowrap"` that collides with the next station.
+**5a. Transit-line diagram** — `TransitLine` from the kit, drawn in SVG: one horizontal 2px ink line with **3, 4, or 6** solid ink dots (never 5). Place each station on the **12-column grid**: 3 stations → 4-col span, 4 stations → 3-col span, 6 stations → 2-col span. Do not use `repeat(stations.length, 1fr)` or `COLS / n` (5 stations gives a fractional span the browser silently drops). The line segment runs from each dot's centre **across the gutter** to the next dot's centre. Under each dot, flush-left: a 10px uppercase station label + one plain-verb line in ink-soft ("saved instantly", "a summary is written"). Stations narrate the pipeline: what you do → where it's stored → what processes it → what comes back out. Branch steps (optional paths) leave the line at 90° with a hollow ring. Keep branch labels short enough to wrap — no `whiteSpace: "nowrap"` that collides with the next station. Give the station where data is saved `role: "data"` (blue) and the one where something comes back `role: "output"` (yellow); the rest stay ink.
 
 **5b. "When you…" lines** — below the diagram, 2–3 columns (4 cols each): each a bold lead-in ("When you save a note,") followed by the plain consequence ("it's stored in your database and synced to every open tab."). Name **services**, not SDKs.
 
 No boxes, no dashed borders, no centered labels, no arrowheads on the main line.
 
-### Row 6 — Three-column body — 4 + 4 + 4
+### Row 6 — Two-column body — 6 + 6
 
-| cols 1–4 | cols 5–8 | cols 9–12 |
-|----------|----------|-----------|
-| **The problem** — 2–3 sentences, ink | **The screens** — main app areas as short lines, no paths | **Connected** — only services the user can use **today**, one line each. A backend with no UI (e.g. Stripe with no checkout screen) goes in the footer, not here. |
+| cols 1–6 | cols 7–12 |
+|----------|-----------|
+| **The problem** — 2–3 sentences, ink | **Connected** — only services the user can use **today**, one line each. A backend with no UI (e.g. Stripe with no checkout screen) goes in the footer, not here. |
+
+The screens now have their own band (4b), so there is no text list of screens.
 
 Column labels: 10px uppercase, letter-spacing 0.06em, weight 600, with a 1px ink hairline above each label (type hangs from the rule).
 
@@ -143,7 +145,7 @@ When `showGrid`:
 
 No `Stack`, `Card`, `Callout`, `Stat`, `Table`, `CollapsibleSection`, `Pill` as primary layout.
 
-Allowed from `cursor/canvas`: `useCanvasState`, `useHostTheme` (for grid toggle focus state only — not poster colors).
+Allowed from `cursor/canvas`: `useCanvasState`, `useHostTheme` (for grid toggle focus state only — not poster colors). All figures come from [poster-kit.md](poster-kit.md).
 
 ## Empty state
 
