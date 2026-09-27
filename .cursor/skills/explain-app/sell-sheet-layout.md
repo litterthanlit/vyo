@@ -49,7 +49,7 @@ Owner audience examples: "For founders", "For solo builders", "For operators" �
 
 Page 2 is the marketing sheet, so the message leads, not the logo. The product name already owned page 1.
 
-- **Tagline set at display size** — 64–80px, weight 700, letter-spacing −0.03em, lineHeight = fontSize, cols 1–11, breaking over 2–3 lines
+- **Tagline set at display size** — 64, 72, or 80px (multiples of 8), weight 700, letter-spacing −0.03em, lineHeight = fontSize, cols 1–11, breaking over 2–3 lines
 - Close with the **red full stop** — the set's single accent mark, same as page 1
 - Emotional outcome, not a feature list: "Your ideas, finally in one place." Not: "AI-powered spatial canvas with Convex backend."
 
@@ -64,7 +64,7 @@ Page 2 is the marketing sheet, so the message leads, not the logo. The product n
 Section label WHAT TO SAY across the band, then three columns, each:
 
 - **Giant numeral** (40–48px, ink, display role — same treatment as page 1 journeys)
-- One quoted, speakable sentence below it (13px/24px, ink)
+- One quoted, speakable sentence below it (14px/24px, ink)
 
 ```
 1  "Most builders lose ideas across ten tabs — this keeps everything in one workspace."

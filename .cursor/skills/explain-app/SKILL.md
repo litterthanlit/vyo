@@ -15,7 +15,7 @@ description: >-
 
 Turn a codebase into a plain-English app guide for people who will never read code. The deliverable is **two Swiss Style poster Canvases** (`.canvas.tsx`) on light paper — objective typography, real 12-column grid, one accent color. Not a dark UI mockup, not a scrolling doc.
 
-**Canvas skill override (read this before the canvas skill).** Swiss posters **must** use the fixed paper/ink/accent hex, display type at **96–128px** (page 1) / **64–80px** (page 2 tagline), and raw CSS grid. Ignore the canvas skill where it forbids hardcoded hex, type above 24px, or requires `useHostTheme()` for color. Those rules are for document canvases. This skill wins on poster files. Still follow the canvas skill for file location (`…/canvases/*.canvas.tsx`), `import` only from `cursor/canvas`, and no `fetch`.
+**Canvas skill override (read this before the canvas skill).** Swiss posters **must** use the fixed paper/ink/accent hex, display type at **104–128px** (page 1) / **64–80px** (page 2 tagline), and raw CSS grid. Ignore the canvas skill where it forbids hardcoded hex, type above 24px, or requires `useHostTheme()` for color. Those rules are for document canvases. This skill wins on poster files. Still follow the canvas skill for file location (`…/canvases/*.canvas.tsx`), `import` only from `cursor/canvas`, and no `fetch`.
 
 | Page | File | Purpose |
 |------|------|---------|
@@ -68,7 +68,8 @@ Explain App Progress:
 - [ ] Phase 4: App Guide poster (page 1)
 - [ ] Phase 5: Connection & sales synthesis (page 2)
 - [ ] Phase 6: Project Story poster (page 2)
-- [ ] Chat summary with both canvas links
+- [ ] Phase 7: Check + export (PNG/PDF)
+- [ ] Chat summary with both canvas links and the shareable PDF
 ```
 
 ### Phase 1 — Recon (read-only, parallel)
@@ -117,9 +118,9 @@ Apply [plain-language-rules.md](plain-language-rules.md):
 2. Filename: `<repo-name>-app-poster.canvas.tsx` (kebab-case, from git root basename)
 3. Follow [swiss-design-principles.md](swiss-design-principles.md) and [poster-layout.md](poster-layout.md):
    - Light paper (`#FFFFFF`), ink (`#0A0A0A`), one accent mark — the **red full stop** after the masthead
-   - Masthead at **96–128px on one line**; display : body ratio ≥ 7:1
+   - Masthead at **104–128px on one line**, in a multiple of 8 (112 default); display : body ratio ≥ 7:1 over 14px body
    - 12-column grid, 8px baseline, 24px leading, 64px margins
-   - Two type roles (display incl. 44px numerals + body incl. folio); flush-left only
+   - Two type roles, four sizes (display + 44px numerals · 14px body + 10px folio); flush-left only
    - Primary copy in ink; gray reserved for folio, captions, status
    - Journeys as **giant numerals**; "Under the hood" as a **transit-line diagram** with **3, 4, or 6** stations on the 12-column grid — no boxed flowcharts, colored tabs, or dark blocks
    - Grid overlay inside the same content box as the poster
@@ -127,7 +128,7 @@ Apply [plain-language-rules.md](plain-language-rules.md):
 5. Omit empty zones — never render placeholder blocks
 6. `useCanvasState("showGridApp", false)` on page 1; `useCanvasState("showGridStory", false)` on page 2 — **never** a shared `"showGrid"` key (it leaks across posters)
 7. If an older `<repo>-app-guide.canvas.tsx` (document-style) exists for the same product, **delete it** so the sidebar is only the two posters
-8. Run Swiss pre-delivery checklist in swiss-design-principles.md. Open both canvases. If the masthead is under 96px or there is no red full stop, the canvas skill override was ignored — fix before finishing.
+8. Run Swiss pre-delivery checklist in swiss-design-principles.md. Open both canvases. If the masthead is under 104px or there is no red full stop, the canvas skill override was ignored — fix before finishing.
 
 ### Phase 5 — Connection & sales synthesis (page 2)
 
@@ -155,16 +156,30 @@ Apply page 2 voice rules in [plain-language-rules.md](plain-language-rules.md#pa
 4. Footer center: "Pair with the App Guide — page 01"
 5. Same quality gates as page 1 — no jargon, no file paths, no hype
 
+### Phase 7 — Check and export
+
+The rules above are enforced by a checker in [tools/](tools/README.md). Run it from this skill's directory (first time only: `npm install --prefix tools && npx --prefix tools playwright install chromium`):
+
+```bash
+node tools/poster.mjs check  <canvases>/<repo>-app-poster.canvas.tsx <canvases>/<repo>-project-story.canvas.tsx
+node tools/poster.mjs export <canvases>/<repo>-app-poster.canvas.tsx <canvases>/<repo>-project-story.canvas.tsx
+```
+
+1. `check` must print **PASS** for both posters. Every ✗ is a rule break — fix the canvas and re-run. Treat ! warnings (jargon, height, narrow panel) as copy edits unless there's a reason to keep them.
+2. `export` writes `<canvases>/exports/`: a PNG and a PDF per poster, plus `<repo>-poster-set.pdf` with both pages. Add `--paper a4` or `--paper letter` when the user wants to print.
+3. If the tools can't install (no network), say so in chat and deliver the canvases only — never skip `check` silently.
+
 ### Chat response
 
-Keep chat short. Both poster canvases are the deliverable.
+Keep chat short. Both poster canvases are the deliverable; the set PDF is what the user sends to people without Cursor.
 
 1. One sentence: what the app does
 2. Link to **page 1** (App Guide) with full absolute path (markdown link)
 3. One sentence on **page 2**: who it's for and that it has talking points + what's real today
 4. Link to **page 2** (Project Story) with full absolute path
-5. If first canvas in workspace: one sentence on opening them beside the chat
-6. Note any gaps honestly ("billing UI is not built yet; backend exists only")
+5. Link to the **poster-set PDF** (`exports/<repo>-poster-set.pdf`) — "send this to your client"
+6. If first canvas in workspace: one sentence on opening them beside the chat
+7. Note any gaps honestly ("billing UI is not built yet; backend exists only")
 
 ## Edge Cases
 
@@ -217,8 +232,9 @@ Before finishing, verify **both pages**:
 - [ ] Differentiation is concrete, not generic hype
 
 **Both pages**
+- [ ] `node tools/poster.mjs check` passes on both files (it enforces most of the list below)
 - [ ] Light paper, ink type, one red accent mark (the full stop) — Swiss canon palette
-- [ ] Display type at poster scale (96–128px page 1 / 64–80px tagline page 2); numerals at 40–48px
+- [ ] Display type at poster scale (104–128px page 1 / 64–80px tagline page 2, multiples of 8); numerals at 40–48px
 - [ ] Primary copy in ink; gray only for folio, captions, status
 - [ ] 12-column grid with baseline lock; overlay shares content box
 - [ ] Two type roles; flush-left throughout; at least one deliberately empty zone
@@ -235,7 +251,7 @@ See [examples.md](examples.md) for sample prompts and filled section copy.
 
 | Skill | Use instead when |
 |-------|------------------|
-| `codebase-onboarding` | Developer joining the repo |
-| `codebase-documenter` | Contributor docs, README, API reference |
+| `codebase-onboarding` (if installed) | Developer joining the repo |
+| `codebase-documenter` (if installed) | Contributor docs, README, API reference |
 | `canvas` | Any Canvas authoring rules and SDK reference |
-| `project-handoff` | Build status and next-step handoff for agents |
+| `project-handoff` (if installed) | Build status and next-step handoff for agents |
