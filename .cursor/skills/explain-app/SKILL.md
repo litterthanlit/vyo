@@ -45,7 +45,8 @@ Turn a codebase into a plain-English app guide for people who will never read co
 4. Read [poster-layout.md](poster-layout.md) for page 1 grid rows and content zones.
 5. Read [sell-sheet-layout.md](sell-sheet-layout.md) for page 2 — **always produce both pages** when an app is detected.
 6. Build each canvas file as [poster-kit.md](poster-kit.md) (shared constants and SVG figures) followed by the page component from [poster-starter.md](poster-starter.md) or [sell-sheet-starter.md](sell-sheet-starter.md).
-7. Skim [canvas-layout.md](canvas-layout.md) only if the user explicitly wants the legacy document-style fallback.
+7. **Pick the poster style.** Swiss (above) is the default. Use the **Block** style when `project-context.md` says `Poster style: block`, or when the user asks for something bold, cover-like, record-sleeve or Farrow-like. If the ask is ambiguous and the poster is for showing off rather than a handoff, offer it. For Block, read [block-style.md](block-style.md) and build each file as [poster-kit.md](poster-kit.md) + [block-kit.md](block-kit.md) + [block-starter.md](block-starter.md) / [block-story-starter.md](block-story-starter.md). Both pages always use the same style.
+8. Skim [canvas-layout.md](canvas-layout.md) only if the user explicitly wants the legacy document-style fallback.
 
 ### Canonical copy
 
@@ -100,6 +101,7 @@ Build this map before writing copy. Do not dump it raw into the Canvas.
 | Screens | The **3–4** screens a user spends time in, each with the closest schematic preset (`landing`, `dashboard`, `list`, `canvas`, `form`, `detail`, `settings`, `chat`) and at most one highlighted block with its role |
 | Under the hood | The data pipeline as **3, 4, or 6** stations (never 5 — it cannot land on a 12-column grid): what you do → where it's saved → what processes it → what comes back out. Mark the saved station `data` and the output station `output` |
 | Hero inputs | `rings` = journeys + stations (cap 6), plus which ring is data (blue) and which is output (yellow). Same values on both pages |
+| Feature blocks (Block style) | 3–8 features in the order a user meets them: name, status (`live` / `behind` / `soon`), weight 1–3 (how central: routes and screens that touch it, code it owns, docs emphasis), one plain sentence each |
 | Behind the scenes | One "When you X, the app Y" sentence per journey ("When you pay, the app talks to Stripe") |
 | Status honesty | Works in UI / backend only / planned — never call backend-only "complete" |
 
@@ -115,6 +117,8 @@ Apply [plain-language-rules.md](plain-language-rules.md):
 - Adapt depth to audience (see rules file)
 
 ### Phase 4 — App Guide poster (page 1)
+
+**Block style:** skip steps 3 and 6 below and follow [block-style.md](block-style.md) and [block-starter.md](block-starter.md) instead. The file name, imports, no-placeholders rule and grid-state key are the same.
 
 1. Determine workspace canvases path: `~/.cursor/projects/<workspace>/canvases/`
 2. Filename: `<repo-name>-app-poster.canvas.tsx` (kebab-case, from git root basename)
@@ -154,7 +158,7 @@ Apply page 2 voice rules in [plain-language-rules.md](plain-language-rules.md#pa
 
 1. Same canvases path as page 1
 2. Filename: `<repo-name>-project-story.canvas.tsx`
-3. Follow [sell-sheet-layout.md](sell-sheet-layout.md) and [sell-sheet-starter.md](sell-sheet-starter.md) — same Swiss canon as page 1
+3. Follow [sell-sheet-layout.md](sell-sheet-layout.md) and [sell-sheet-starter.md](sell-sheet-starter.md) — same Swiss canon as page 1. **Block style:** [block-story-starter.md](block-story-starter.md), with the same `seed` and `hue` as page 1
 4. Footer center: "Pair with the App Guide — page 01"
 5. Same quality gates as page 1 — no jargon, no file paths, no hype
 
@@ -245,6 +249,8 @@ Before finishing, verify **both pages**:
 - [ ] No dark fields, rainbow tabs, or document-style canvas components
 - [ ] No unexplained jargon in visible poster copy
 - [ ] No file paths on either poster surface
+
+**Block style** — the checklist in [block-style.md](block-style.md) replaces the Swiss palette, hero, schematic and transit items above; the copy, status-honesty and jargon gates stay.
 
 ## Examples
 

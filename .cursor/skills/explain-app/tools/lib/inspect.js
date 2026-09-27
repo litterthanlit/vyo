@@ -1,6 +1,6 @@
 // Runs inside the page (via page.evaluate). Must stay self-contained: no
 // imports, no closures over module scope. Each rule maps to a line in
-// swiss-design-principles.md's pre-delivery checklist.
+// swiss-design-principles.md's (or block-style.md's) pre-delivery checklist.
 export function inspectPoster({ index, page, palette }) {
   const errors = [];
   const warnings = [];
@@ -36,7 +36,16 @@ export function inspectPoster({ index, page, palette }) {
   };
 
   const all = [...root.querySelectorAll("*")];
-  const content = all.filter((el) => !inOverlay(el));
+  // The Block style's colour field is checked on its own below.
+  const content = all.filter((el) => !inOverlay(el) && !el.closest("[data-poster-field]"));
+  const sheet = root.querySelector('[data-poster-style="block"]');
+  const block = !!sheet;
+  const rgba = (c) => {
+    const m = c.match(/rgba?\(([^)]+)\)/);
+    if (!m) return null;
+    const [r, g, b, a = 1] = m[1].split(/[,\s/]+/).filter(Boolean).map(Number);
+    return { r, g, b, a };
+  };
 
   // ── Grid ────────────────────────────────────────────────────────────────
   const tracksOf = (el) => {
@@ -107,11 +116,28 @@ export function inspectPoster({ index, page, palette }) {
       errors.push(`${cs.textAlign} text on ${label(el)} — flush-left only`);
     }
     if (cs.color === C.ACCENT) {
-      if (el.tagName === "BUTTON") continue;
       if (own === ".") fullStops++;
-      else errors.push(`Red text on ${label(el)} — the accent is reserved for the full stop and grid toggle`);
-    } else if (cs.color !== C.INK && cs.color !== C.INK_SOFT) {
-      errors.push(`Text colour ${cs.color} on ${label(el)} — use INK or INK_SOFT`);
+      else if (el.tagName !== "BUTTON") errors.push(`Red text on ${label(el)} — the accent is reserved for the full stop and grid toggle`);
+    } else if (block ? cs.color !== C.INK && cs.color !== C.PAPER : cs.color !== C.INK && cs.color !== C.INK_SOFT) {
+      errors.push(`Text colour ${cs.color} on ${label(el)} — use ${block ? "INK or PAPER" : "INK or INK_SOFT"}`);
+    }
+
+    // WCAG contrast against the nearest opaque background.
+    let bgEl = el;
+    while (bgEl && bgEl !== root && !(rgba(getComputedStyle(bgEl).backgroundColor)?.a >= 1)) bgEl = bgEl.parentElement;
+    if (block && (!bgEl || bgEl === root || bgEl === sheet)) {
+      errors.push(`Text on the field: ${label(el)} — put it on a block, a tab or a paper strip`);
+    } else if (bgEl && bgEl !== root) {
+      const lum = ({ r, g, b }) => {
+        const f = (v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+      };
+      const [l1, l2] = [lum(rgba(cs.color)), lum(rgba(getComputedStyle(bgEl).backgroundColor))].sort((a, b) => b - a);
+      const ratio = (l1 + 0.05) / (l2 + 0.05);
+      const large = size >= 24 || (size >= 18.66 && px(cs.fontWeight) >= 700);
+      if (ratio < (large ? 3 : 4.5)) {
+        errors.push(`Contrast ${ratio.toFixed(2)}:1 on ${label(el)} — needs ${large ? "3" : "4.5"}:1`);
+      }
     }
   }
   if (fullStops === 0) errors.push("No red full stop after the masthead");
@@ -121,7 +147,9 @@ export function inspectPoster({ index, page, palette }) {
   if (sorted.length > 4) errors.push(`${sorted.length} font sizes (${sorted.join(", ")}px) — four maximum: display · numeral · body · folio`);
   const display = sorted[0];
   const body = [...sizes.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-  if (page === 1) {
+  if (block) {
+    if (![64, 72, 80].includes(display)) errors.push(`Title is ${display}px — the Block style sets it at 64, 72, or 80px`);
+  } else if (page === 1) {
     if (!(display >= 104 && display <= 128 && display % 8 === 0)) {
       errors.push(`Masthead is ${display}px — page 1 needs 104–128px in a multiple of 8`);
     }
@@ -133,8 +161,9 @@ export function inspectPoster({ index, page, palette }) {
 
   for (const el of content) {
     const cs = getComputedStyle(el);
-    if (cs.backgroundColor !== TRANSPARENT && cs.backgroundColor !== C.PAPER && cs.backgroundColor !== C.INK) {
-      errors.push(`Background ${cs.backgroundColor} on ${label(el)} — paper and ink only`);
+    const bgs = block ? [C.PAPER, C.INK, C.YELLOW, C.BLUE, C.SILVER] : [C.PAPER, C.INK];
+    if (cs.backgroundColor !== TRANSPARENT && !bgs.includes(cs.backgroundColor)) {
+      errors.push(`Background ${cs.backgroundColor} on ${label(el)} — ${block ? "paper, ink, or a status colour" : "paper and ink only"}`);
     }
     if (cs.backgroundImage !== "none") errors.push(`Background image/gradient on ${label(el)}`);
     if (cs.boxShadow !== "none") errors.push(`Box shadow on ${label(el)}`);
@@ -215,6 +244,51 @@ export function inspectPoster({ index, page, palette }) {
       errors.push(kind === "segment"
         ? `Transit line segment ${segment} does not join two stations — run it from dot centre to dot centre`
         : "A branch stroke does not join its ring to the line");
+    }
+  }
+
+  // ── Block style: sheet, connected figure, colour field ──────────────────
+  if (block) {
+    const S = sheet.getBoundingClientRect();
+    if (!near(S.width, 1028) || !near(S.height, 1454)) {
+      errors.push(`Block sheet is ${S.width.toFixed(0)}×${S.height.toFixed(0)} — it must be the 1028×1454 A-series sheet`);
+    }
+    const legend = sheet.querySelector("[data-legend]")?.getBoundingClientRect();
+    const blocks = [...sheet.querySelectorAll("[data-block]")];
+    const minOverlap = (ends[1] - starts[0]); // two columns and the gutter between them
+    blocks.forEach((b, i) => {
+      const r = b.getBoundingClientRect();
+      if (r.bottom > S.bottom + 1 || r.right > S.right + 1 || r.left < S.left - 1) {
+        errors.push(`Block ${label(b)} runs off the sheet — shorten its text or use fewer blocks`);
+      }
+      if (legend && r.bottom > legend.top - 1) errors.push(`Block ${label(b)} collides with the legend bar — shorten its text or use fewer blocks`);
+      if (i === 0) return;
+      const p = blocks[i - 1].getBoundingClientRect();
+      const overlap = Math.min(p.right, r.right) - Math.max(p.left, r.left);
+      if (!near(r.top, p.bottom) || overlap < minOverlap - 1) {
+        errors.push(`Block ${label(b)} floats apart — each block must sit on the one above and overlap it by 2+ columns`);
+      }
+    });
+    const field = sheet.querySelector("[data-poster-field]");
+    if (!field) errors.push("Block sheet has no colour field");
+    else {
+      for (const f of field.querySelectorAll("filter *")) {
+        if (f.tagName !== "feGaussianBlur") errors.push(`Colour field uses <${f.tagName}> — the field is one hue, softened by feGaussianBlur only`);
+      }
+      const hues = [];
+      for (const shape of field.querySelectorAll(SHAPES)) {
+        const c = rgba(getComputedStyle(shape).fill);
+        if (!c) continue;
+        const [r, g, b] = [c.r / 255, c.g / 255, c.b / 255];
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const d = max - min;
+        if (d < 0.1) continue; // near-grey: no meaningful hue
+        const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+        hues.push((h * 60 + 360) % 360);
+      }
+      const spread = Math.max(0, ...hues.map((a) => Math.max(...hues.map((b) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b))))));
+      if (spread > 15) errors.push(`Colour field mixes hues (${spread.toFixed(0)}° apart) — one hue, lighter and darker`);
     }
   }
 

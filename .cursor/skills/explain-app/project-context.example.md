@@ -6,6 +6,14 @@ Copy this file into the **target app's repo** at `.cursor/skills/explain-app/pro
 
 <!-- e.g. Vyo — use this in the poster hero title, not the repo folder name -->
 
+## Poster style
+
+<!-- swiss (default — the full step-by-step guide) | block (bold feature-map cover, see block-style.md) -->
+
+## Brand hue (Block style)
+
+<!-- One saturated colour for the Block style's colour field, e.g. #FF5A1F. Not blue or purple. Leave blank to derive one from the product name. -->
+
 ## Primary audience for this explanation
 
 <!-- client | pm | exec | general — page 1 handoff audience -->

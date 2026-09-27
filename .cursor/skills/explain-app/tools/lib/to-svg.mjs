@@ -37,8 +37,25 @@ export async function svgScript() {
       contents: `
 import { elementToSVG } from "dom-to-svg";
 window.__posterToSVG = (el) => {
+  // The Block style's colour field is already SVG, but dom-to-svg misorders it
+  // against the z-indexed content. Convert without it, then put a verbatim copy
+  // back as the bottom layer at its exact position.
+  const field = el.querySelector("[data-poster-field]");
+  if (field) field.style.display = "none";
   const doc = elementToSVG(el);
+  if (field) field.style.display = "";
   const svg = doc.documentElement;
+  if (field) {
+    const r = field.getBoundingClientRect();
+    const copy = doc.importNode(field, true);
+    copy.removeAttribute("style");
+    copy.setAttribute("x", String(r.left));
+    copy.setAttribute("y", String(r.top));
+    copy.setAttribute("width", String(r.width));
+    copy.setAttribute("height", String(r.height));
+    const after = [...svg.children].find((c) => c.tagName !== "style" && c.tagName !== "defs");
+    svg.insertBefore(copy, after || null);
+  }
   // dom-to-svg forces each line to its measured width (textLength + glyph
   // stretching) on top of letter-spacing, which widens tracked type. Letter-
   // spacing alone reproduces the layout, and Figma ignores textLength anyway.

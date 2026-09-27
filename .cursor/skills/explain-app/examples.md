@@ -113,6 +113,23 @@ one place.
 
 **The vision** — You built this because scattered thinking was costing you momentum. What you have now is a single place to capture, see patterns, and share — on your terms.
 
+## Sample Block-style Copy (Hypher)
+
+Filled reference build: `tools/test/fixtures/hypher-block-*.page.tsx` (passes `check`).
+
+**Page 1 — feature blocks** (title: "Hypher." + "A spatial project brain for solo builders — capture anywhere, see it on a canvas, get a daily digest.")
+
+| Block | Status | Weight | Line |
+|-------|--------|--------|------|
+| Capture | live | 3 | Save a thought or a file in seconds and drop it into a project. |
+| Spatial canvas | live | 3 | Arrange notes on a canvas and draw the links between them. |
+| Daily digest | live | 2 | Each evening, an email of what changed across your projects. |
+| Share link | live | 1 | A read-only link to your canvas. |
+| Live sync | behind | 2 | Every open tab updates within a second. |
+| Billing | soon | 1 | Paid plans, planned next. |
+
+**Page 2 — sections:** title "Your ideas, / one place." · In one breath (3) · What to say ×3 with numerals (2) · What's real today, live (2) · Not yet, soon (1) · The vision (2).
+
 ## Anti-patterns
 
 **Bad — dark redacted layout with rainbow tabs**

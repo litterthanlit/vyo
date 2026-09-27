@@ -1,4 +1,4 @@
-// Self-test: the starters and the Hypher showcase must pass `check`, each
+// Self-test: the starters and the Hypher showcases (Swiss and Block) must pass `check`, each
 // planted bug must fail with the expected message, the kit and pages must
 // type-check, and the SVG export must match the PNG export.
 //
@@ -17,15 +17,20 @@ const OUT = path.join(TOOLS, "test", ".out");
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
 
-// A canvas file is the kit pasted first, then the page component.
+// A canvas file is the kit pasted first (plus block-kit for the Block style), then the page component.
 const code = (md) => fs.readFileSync(path.join(SKILL, md), "utf8").match(/```tsx\n([\s\S]*?)```/)[1];
 const kit = code("poster-kit.md");
+const blockKit = kit + code("block-kit.md");
 const fixture = (name) => fs.readFileSync(path.join(TOOLS, "test", "fixtures", name), "utf8");
 const pages = {
   app: code("poster-starter.md"),
   story: code("sell-sheet-starter.md"),
   hypherApp: fixture("hypher-app-poster.page.tsx"),
   hypherStory: fixture("hypher-project-story.page.tsx"),
+  blockApp: code("block-starter.md"),
+  blockStory: code("block-story-starter.md"),
+  hypherBlockApp: fixture("hypher-block-app-poster.page.tsx"),
+  hypherBlockStory: fixture("hypher-block-project-story.page.tsx"),
 };
 
 const write = (name, src) => {
@@ -41,12 +46,33 @@ const plant = (src, from, to) => {
 const bugKit = (from, to) => plant(kit, from, to) + pages.app;
 const bugPage = (from, to) => kit + plant(pages.app, from, to);
 const HERO_CORE = "<circle cx={ax} cy={ay} r={STROKE} fill={RED} />";
+// Block style: plant in block-kit (with the page-1 starter), or in a Block page.
+const bugBlockKit = (from, to) => kit + plant(code("block-kit.md"), from, to) + pages.blockApp;
+const bugBlockPage = (from, to, page = pages.blockApp) => blockKit + plant(page, from, to);
 
 const cases = [
   { file: write("starter-app-poster", kit + pages.app), expect: null },
   { file: write("starter-project-story", kit + pages.story), expect: null },
-  { file: write("hypher-app-poster", kit + pages.hypherApp), expect: null, showcase: true },
-  { file: write("hypher-project-story", kit + pages.hypherStory), expect: null, showcase: true },
+  { file: write("hypher-app-poster", kit + pages.hypherApp), expect: null, showcase: "swiss" },
+  { file: write("hypher-project-story", kit + pages.hypherStory), expect: null, showcase: "swiss" },
+  { file: write("block-starter-app-poster", blockKit + pages.blockApp), expect: null },
+  { file: write("block-starter-project-story", blockKit + pages.blockStory), expect: null },
+  { file: write("hypher-block-app-poster", blockKit + pages.hypherBlockApp), expect: null, showcase: "block" },
+  { file: write("hypher-block-project-story", blockKit + pages.hypherBlockStory), expect: null, showcase: "block" },
+
+  // Block style
+  { file: write("bug-block-white-on-yellow-app-poster", bugBlockKit('live: { fill: YELLOW, text: INK, word: "Live" }', 'live: { fill: YELLOW, text: PAPER, word: "Live" }')), expect: /Contrast .* needs 4.5:1/ },
+  { file: write("bug-block-text-on-field-app-poster", bugBlockKit("zIndex: 1, background: PAPER, padding: `${BL}px ${BL * 2}px`, display: \"flex\"", "zIndex: 1, padding: `${BL}px ${BL * 2}px`, display: \"flex\"")), expect: /Text on the field/ },
+  { file: write("bug-block-green-tab-app-poster", bugBlockKit("soon: { fill: SILVER,", 'soon: { fill: "#00AA55",')), expect: /Background rgb\(0, 170, 85\)/ },
+  { file: write("bug-block-nine-app-poster", bugBlockPage('{ name: "Feature five", status: "soon", weight: 1, lines: ["Planned next."] },', '{ name: "Feature five", status: "soon", weight: 1, lines: ["Planned next."] },\n    { name: "Six", status: "soon", weight: 1 }, { name: "Seven", status: "soon", weight: 1 }, { name: "Eight", status: "soon", weight: 1 }, { name: "Nine", status: "soon", weight: 1 },')), expect: /Blocks: 9 won't make a figure/ },
+  { file: write("bug-block-detached-app-poster", bugBlockKit('position: "relative", background: INK, minHeight: minH[i],', 'position: "relative", background: INK, minHeight: minH[i], marginTop: i === 1 ? 24 : 0,')), expect: /floats apart/ },
+  { file: write("bug-block-colour-matrix-app-poster", bugBlockKit("<feGaussianBlur stdDeviation={90} />", '<feGaussianBlur stdDeviation={90} /><feColorMatrix type="saturate" values="2" />')), expect: /feColorMatrix/ },
+  { file: write("bug-block-two-hues-app-poster", bugBlockKit("fill: `hsl(${h} ${s}%", "fill: `hsl(${(h + 120 * (k % 2)) % 360} ${s}%")), expect: /mixes hues/ },
+  { file: write("bug-block-short-sheet-app-poster", bugBlockKit("const SHEET_H = 1454;", "const SHEET_H = 1400;")), expect: /must be the 1028×1454/ },
+  { file: write("bug-block-fifth-size-project-story", kit + plant(code("block-kit.md"), "<p style={{ ...white, marginTop: BL, maxWidth: \"34em\" }}>", "<p style={{ ...white, fontSize: 13, marginTop: BL, maxWidth: \"34em\" }}>") + plant(pages.blockStory, 'display: ["Emotional", "outcome"] }', 'display: ["Emotional", "outcome"], sub: "A thirteen-pixel caption." }')), expect: /5 font sizes/ },
+
+  // Contrast applies to the Swiss style too
+  { file: write("bug-swiss-contrast-app-poster", bugPage('<div style={{ gridColumn: "10 / 13", ...meta, textAlign: "right" }}>{/* platform · audience */}</div>', '<div style={{ gridColumn: "10 / 13", ...meta, textAlign: "right", background: INK }}>Web app</div>')), expect: /Contrast/ },
 
   // Layout and type
   { file: write("bug-five-stations-app-poster", bugPage('{ label: "Back out", sub: "what you receive", role: "output" },', '{ label: "Back out", sub: "what you receive", role: "output" },\n    { label: "Fifth", sub: "x" },')), expect: /Transit stations: 5 won't land/ },
@@ -125,9 +151,12 @@ try {
 }
 
 // SVG export fidelity: render the exported SVG and compare it to the PNG export.
-const showcase = cases.filter((c) => c.showcase).map((c) => c.file);
 const exportDir = path.join(OUT, "exports");
-const written = await exportPosters(showcase, { out: exportDir });
+const showcase = cases.filter((c) => c.showcase).map((c) => c.file);
+const written = [];
+for (const style of ["swiss", "block"]) {
+  written.push(...(await exportPosters(cases.filter((c) => c.showcase === style).map((c) => c.file), { out: exportDir })));
+}
 const browser = await launch();
 try {
   for (const file of showcase) {

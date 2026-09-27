@@ -20,7 +20,7 @@ import { svgScript } from "./lib/to-svg.mjs";
 
 const PALETTE = {
   PAPER: "#FFFFFF", INK: "#0A0A0A", INK_SOFT: "#5B6066", HAIRLINE: "rgba(10, 10, 10, 0.2)",
-  ACCENT: "#E4002B", RED: "#E4002B", BLUE: "#0039A6", YELLOW: "#FFCC00",
+  ACCENT: "#E4002B", RED: "#E4002B", BLUE: "#0039A6", YELLOW: "#FFCC00", SILVER: "#CFCFCF",
 };
 const POSTER_WIDTH = 1028; // MAXW 900 + 2 × MARGIN 64
 const CHECK_WIDTHS = [1440, POSTER_WIDTH];
@@ -78,7 +78,9 @@ export async function check(files, { browser, quiet = false } = {}) {
           if (errors.some((e) => e.startsWith("Render error"))) break;
         }
         const narrow = await open(browser, [file], NARROW_WIDTH);
-        if (await narrow.evaluate(() => document.documentElement.scrollWidth > innerWidth)) {
+        // Block posters are fixed A-series sheets; only the fluid Swiss layout must fit a narrow panel.
+        const fixedSheet = await narrow.evaluate(() => !!document.querySelector('[data-poster-style="block"]'));
+        if (!fixedSheet && (await narrow.evaluate(() => document.documentElement.scrollWidth > innerWidth))) {
           warnings.push(`Scrolls sideways in a ${NARROW_WIDTH}px panel — shorten the masthead or stack it`);
         }
         await narrow.close();
