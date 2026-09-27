@@ -4,13 +4,16 @@ Structural reference for `<repo>-app-poster.canvas.tsx`. Read [swiss-design-prin
 
 Key craft moves this starter encodes — do not regress them:
 
-- Masthead at **96–128px on one line** with a **red full stop** (the set's only accent mark)
+- Masthead at **104–128px on one line** (a multiple of 8 — 112 default) with a **red full stop** (the set's only accent mark)
 - 2px **ink** rule under the folio; 1px ink hairlines above section labels (type hangs from rules)
 - Journeys as **giant numerals** (44px), not body-size numbers
 - "Under the hood" as a **transit line** — 2px ink line, solid dots on the **12-column grid**, **3 / 4 / 6 stations only** — never boxed flowcharts
 - Primary copy in INK; INK_SOFT for folio/captions/status only
 - Purpose sentence spans cols 1–7/8; the remaining columns stay **empty**
 - Bands that pair a label with content wrap both in one grid cell — **no negative margins**
+- **Four sizes only:** 112 display · 44 numerals · 14 body · 10 folio
+- Rules and borders are **paid for out of padding** (`BL - 2`, `BL - 1`) so every block stays a multiple of 8px
+- Counts that can't land on the 12-column grid (5 stations, 5 journeys…) **throw** via `spanFor` — never let them silently mis-place
 
 ```tsx
 import { useCanvasState } from "cursor/canvas";
@@ -37,13 +40,23 @@ const folio = {
   textTransform: "uppercase" as const, fontWeight: 600, color: INK,
 };
 const meta = { fontSize: 10, lineHeight: "16px", letterSpacing: "0.02em", color: INK_SOFT };
-const body = { fontSize: 13, lineHeight: `${LH}px`, margin: 0, color: INK };
-const sectionLabel = { ...folio, borderTop: `1px solid ${INK}`, paddingTop: BL, marginBottom: BL };
+const body = { fontSize: 14, lineHeight: `${LH}px`, margin: 0, color: INK };
+// 1px rule + 7 + 16 line + 8 = 32px — stays on the baseline
+const sectionLabel = { ...folio, borderTop: `1px solid ${INK}`, paddingTop: BL - 1, marginBottom: BL };
 const numeral = {
   fontSize: 44, lineHeight: "48px", fontWeight: 700,
   letterSpacing: "-0.02em", marginLeft: "-0.03em", color: INK,
 };
 const subgrid = { display: "grid", gridTemplateColumns: `repeat(${COLS}, 1fr)`, columnGap: GUTTER };
+
+// Only counts that land on the 12-column grid are allowed. Anything else throws,
+// so the mistake shows up in the canvas instead of cells silently mis-placing.
+function spanFor(n: number, allowed: Record<number, number>, what: string) {
+  const span = allowed[n];
+  if (!span) throw new Error(`${what}: ${n} won't land on the 12-column grid — use ${Object.keys(allowed).join(", ")}`);
+  return span;
+}
+const cols = (i: number, span: number) => `${i * span + 1} / ${i * span + span + 1}`;
 
 function GridOverlay() {
   return (
@@ -63,8 +76,7 @@ function GridOverlay() {
 type Station = { label: string; sub: string; branch?: { label: string; sub: string } };
 
 function TransitLine({ stations }: { stations: Station[] }) {
-  const n = stations.length;
-  const span = COLS / n; // 3 → 4, 4 → 3, 6 → 2. Never 5.
+  const span = spanFor(stations.length, { 3: 4, 4: 3, 6: 2 }, "Transit stations");
   const DOT = 12;
   const ROW = 72; // dot row height; branch lives in the space above the line
   return (
@@ -72,10 +84,11 @@ function TransitLine({ stations }: { stations: Station[] }) {
       {stations.map((s, i) => {
         const last = i === stations.length - 1;
         return (
-          <div key={s.label} style={{ gridColumn: `${i * span + 1} / ${i * span + span + 1}` }}>
+          <div key={i} style={{ gridColumn: cols(i, span) }}>
             <div style={{ position: "relative", height: ROW }}>
               {!last ? (
-                <div style={{ position: "absolute", left: DOT / 2, right: -DOT / 2, top: ROW - DOT - 1, height: 2, background: INK }} />
+                // Runs from this dot's centre across the gutter to the next dot's centre
+                <div style={{ position: "absolute", left: DOT / 2, right: -(GUTTER + DOT / 2), top: ROW - DOT - 1, height: 2, background: INK }} />
               ) : null}
               {s.branch ? (
                 <>
@@ -90,7 +103,7 @@ function TransitLine({ stations }: { stations: Station[] }) {
               <div style={{ position: "absolute", left: 0, top: ROW - DOT - 6, width: DOT, height: DOT, borderRadius: DOT, background: INK }} />
             </div>
             <div style={{ ...folio, marginTop: BL }}>{s.label}</div>
-            <div style={{ ...meta, marginTop: 2, paddingRight: GUTTER }}>{s.sub}</div>
+            <div style={{ ...meta, paddingRight: GUTTER }}>{s.sub}</div>
           </div>
         );
       })}
@@ -102,7 +115,7 @@ export default function AppPoster() {
   const [showGrid, setShowGrid] = useCanvasState("showGridApp", false);
 
   const journeys = ["Journey one", "Journey two", "Journey three", "Journey four"];
-  const journeySpan = journeys.length === 2 ? 6 : journeys.length === 3 ? 4 : 3;
+  const journeySpan = spanFor(journeys.length, { 2: 6, 3: 4, 4: 3 }, "Journeys");
   const stations: Station[] = [
     { label: "You act", sub: "plain verb" },
     { label: "Saved", sub: "where it goes" },
@@ -119,6 +132,8 @@ export default function AppPoster() {
     { label: "The screens", lines: ["Main screens, one line each."] },
     { label: "Connected", lines: ["Service — what it does for the user."] },
   ];
+  const whenYouSpan = spanFor(whenYou.length, { 2: 6, 3: 4 }, "When-you lines");
+  const bodySpan = spanFor(bodyColumns.length, { 3: 4 }, "Body columns");
 
   return (
     <div style={{ background: PAPER, minHeight: "100%", fontFamily: FONT, color: INK }}>
@@ -133,25 +148,26 @@ export default function AppPoster() {
               <div style={{ gridColumn: "5 / 10", ...meta }}>{/* one-line promise */}</div>
               <div style={{ gridColumn: "10 / 13", ...meta, textAlign: "right" }}>{/* platform · audience */}</div>
             </div>
-            <div style={{ height: 2, background: INK, marginTop: BL }} />
+            {/* 16px folio + 6 + 2px rule = 24px, one leading unit */}
+            <div style={{ height: 2, background: INK, marginTop: BL - 2 }} />
           </div>
 
-          {/* Masthead — one line, 96–128px, red full stop */}
+          {/* Masthead — one line, 104–128px in multiples of 8, red full stop */}
           <div style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontSize: 116, lineHeight: "116px", fontWeight: 700, letterSpacing: "-0.03em", marginLeft: "-0.05em" }}>
+            <div style={{ fontSize: 112, lineHeight: "112px", fontWeight: 700, letterSpacing: "-0.03em", marginLeft: "-0.05em" }}>
               Product<span style={{ color: ACCENT }}>.</span>
             </div>
           </div>
 
           {/* Purpose — right columns stay empty */}
           <div style={{ gridColumn: "1 / 8" }}>
-            <p style={{ ...body, fontSize: 14, maxWidth: "28em" }}>One-sentence purpose, set in ink.</p>
+            <p style={{ ...body, maxWidth: "28em" }}>One-sentence purpose, set in ink.</p>
           </div>
 
           {/* Journeys — giant numerals */}
           <div style={{ gridColumn: "1 / -1", ...sectionLabel, marginBottom: 0 }}>What you do</div>
           {journeys.map((j, i) => (
-            <div key={j} style={{ gridColumn: `${i * journeySpan + 1} / ${i * journeySpan + journeySpan + 1}` }}>
+            <div key={i} style={{ gridColumn: cols(i, journeySpan) }}>
               <div style={numeral}>{i + 1}</div>
               <p style={{ ...body, marginTop: BL, paddingRight: GUTTER }}>{j}</p>
             </div>
@@ -165,7 +181,7 @@ export default function AppPoster() {
             <TransitLine stations={stations} />
           </div>
           {whenYou.map(([lead, rest], i) => (
-            <div key={lead} style={{ gridColumn: `${i * 4 + 1} / ${i * 4 + 5}` }}>
+            <div key={i} style={{ gridColumn: cols(i, whenYouSpan) }}>
               <p style={{ ...body, paddingRight: GUTTER }}>
                 <span style={{ fontWeight: 600 }}>{lead}</span> {rest}
               </p>
@@ -174,16 +190,16 @@ export default function AppPoster() {
 
           {/* Three-column body — label + copy share a cell */}
           {bodyColumns.map((col, i) => (
-            <div key={col.label} style={{ gridColumn: `${i * 4 + 1} / ${i * 4 + 5}`, marginTop: BL }}>
+            <div key={i} style={{ gridColumn: cols(i, bodySpan), marginTop: BL }}>
               <div style={sectionLabel}>{col.label}</div>
-              {col.lines.map((line) => (
-                <p key={line} style={{ ...body, paddingRight: GUTTER }}>{line}</p>
+              {col.lines.map((line, j) => (
+                <p key={j} style={{ ...body, paddingRight: GUTTER }}>{line}</p>
               ))}
             </div>
           ))}
 
           {/* Footer */}
-          <div style={{ gridColumn: "1 / -1", borderTop: `1px solid ${HAIRLINE}`, paddingTop: BL }}>
+          <div style={{ gridColumn: "1 / -1", borderTop: `1px solid ${HAIRLINE}`, paddingTop: BL - 1 }}>
             <div style={subgrid}>
               <div style={{ gridColumn: "1 / 6", ...meta }}>{/* not-built items */}</div>
               <div style={{ gridColumn: "6 / 10", ...meta }}>{/* For [handoff audience — who is reading] */}</div>

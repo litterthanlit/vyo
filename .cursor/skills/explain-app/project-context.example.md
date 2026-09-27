@@ -1,14 +1,10 @@
 # Project context for explain-app
 
-Copy this file to `project-context.md` in the same directory and fill it in. The explain-app skill reads it before inspecting the repo.
+Copy this file into the **target app's repo** at `.cursor/skills/explain-app/project-context.md` and fill it in. The explain-app skill reads it there before inspecting that repo. Leave any section blank to let the skill infer it.
 
 ## Product name (customer-facing)
 
 <!-- e.g. Vyo — use this in the poster hero title, not the repo folder name -->
-
-## Poster variant
-
-<!-- deprecated — Swiss canon is the only layout; leave blank -->
 
 ## Primary audience for this explanation
 
@@ -40,7 +36,7 @@ Copy this file to `project-context.md` in the same directory and fill it in. The
 
 ## Terms to avoid
 
-<!-- e.g. internal codenames, "Hypher", repo name if different from product -->
+<!-- e.g. internal codenames, the repo folder name if it differs from the product name -->
 
 ## Features that are backend-only or not user-facing yet
 

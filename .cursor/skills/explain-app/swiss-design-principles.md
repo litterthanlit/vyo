@@ -51,16 +51,16 @@ Posters explain **what the app means** (semantics) using **objective typography 
 
 | Role | Size | Leading | Weight |
 |------|------|---------|--------|
-| Display (product name / page-2 tagline) | **96–128px** page 1 · **64–80px** page 2 | = fontSize (px values) | 700 |
+| Display (product name / page-2 tagline) | **104–128px** page 1 · **64–80px** page 2 — multiples of 8 | = fontSize (px values) | 700 |
 | Display numerals (journeys, talking points) | 40–48px | 48px | 700 |
-| Body | 13–14px | 24px | 400 |
-| Folio / meta / footer | 10–11px | 16px | 400–500 |
+| Body | 14px | 24px | 400 |
+| Folio / meta / footer | 10px | 16px | 400–600 |
 
 Rules:
 
 - **Grotesque sans only:** `"Helvetica Neue", Helvetica, Arial, system-ui, sans-serif`
 - **Flush-left, ragged-right.** Never center body copy. Never justify. Never center labels inside diagram nodes. **Two exceptions:** folio right cell (platform · audience) and the grid-toggle link may be `textAlign: "right"`.
-- **Two type roles maximum** on the poster surface: display and body. Giant numerals belong to the display role; folio belongs to the body role. That is four sizes, two roles — do not invent a fifth.
+- **Two type roles maximum** on the poster surface: display and body. Giant numerals belong to the display role; folio belongs to the body role. That is four sizes (display · numeral · 14 body · 10 folio), two roles — do not invent a fifth. The purpose sentence is body size, not a 'lead' size.
 - Hierarchy through **scale, weight, and white space** — not color, not novelty faces.
 - **Optical alignment:** Large display type has left side-bearing inset. Nudge display elements so **ink** aligns to the column line, not just the layout box.
 
@@ -68,7 +68,7 @@ Rules:
 
 A 48–64px masthead on a 900px canvas reads as a *document header*. Real Swiss posters live on violent scale contrast:
 
-- **Display : body ratio ≥ 7:1** on page 1 (e.g. 112px display over 13px body). Page 2 tagline may sit at 64–80px because it runs multiple lines.
+- **Display : body ratio ≥ 7:1** on page 1 (112px display over 14px body = 8:1; 104px is the floor). Display sizes are multiples of 8 so `lineHeight = fontSize` stays on the baseline. Page 2 tagline may sit at 64–80px because it runs multiple lines.
 - **Set the numbers big.** Journey steps and talking points get display-scale numerals (40–48px) with body copy beside or beneath them — Müller-Brockmann's signature move. Never render step numbers at body size.
 - **Ink first.** Primary copy — purpose sentence, body columns, journey text — is set in INK. INK_SOFT is reserved for folio, captions, and status lines only. A page of gray body copy is mush; black makes the white sing.
 - **Rules carry structure:** one 2px ink rule under the folio (type hangs from the ruler — Vignelli), 1px hairlines elsewhere. Rules are **ink**, not accent.
@@ -119,7 +119,7 @@ Map recon to these zones in order (full row spec: [poster-layout.md](poster-layo
 | Zone | Grid | Content |
 |------|------|---------|
 | Folio row + 2px ink rule | 12 cols | Left: "App Guide — 01" · Center: one-line promise · Right: platform, audience |
-| Masthead | cols 1–12 | Product name, 96–128px, one line if it fits, **red full stop** |
+| Masthead | cols 1–12 | Product name, 104–128px, one line if it fits, **red full stop** |
 | Purpose | cols 1–7 | One sentence, body size, INK — cols 8–12 stay empty |
 | Journeys band | 4× cols 3 | Giant numeral (40–48px) + one short body line each |
 | Under the hood | cols 1–12 | Transit-line diagram + "when you X, the app Y" lines — the plain-English code story |
@@ -146,7 +146,7 @@ Boxed flowcharts — little bordered rectangles with centered uppercase labels a
 
 - Page 1: `useCanvasState("showGridApp", false)` · Page 2: `useCanvasState("showGridStory", false)` — separate keys per poster
 - Toggle draws column fields + baseline lines **inside the same `.wrap` as content**
-- Button label: "Show grid" / "Hide grid" — folio size, ink-soft color
+- Button label: "Show grid" / "Hide grid" — folio size, **ACCENT** color (functional chrome, the one allowed second use of red)
 - Column fields: translucent accent tint; baseline: major every 24px, minor every 8px
 
 ---
@@ -159,9 +159,9 @@ Swiss quality gate — all must pass:
 - [ ] **One outer 12-column grid** — all rows share the same column lines
 - [ ] Diagrams use CSS grid inside their span — not fixed-width SVG viewBoxes
 - [ ] No negative margins or off-column header decorations
-- [ ] 8px baseline; body leading = 24px in px
+- [ ] 8px baseline; body leading = 24px in px; rules/borders subtracted from padding so blocks stay multiples of 8
 - [ ] Two type roles only (display incl. numerals + body incl. folio)
-- [ ] **Display ≥ 96px on page 1**; display : body ratio ≥ 7:1
+- [ ] **Display ≥ 104px on page 1**, a multiple of 8; display : body ratio ≥ 7:1
 - [ ] **Journey/talking-point numerals at display scale**, not body size
 - [ ] Primary copy in INK; INK_SOFT limited to folio **meta**, captions, status. Folio **label** is ink.
 - [ ] Flush-left throughout except folio right + grid toggle
@@ -183,7 +183,7 @@ Swiss quality gate — all must pass:
 |-----|-----|-----|
 | Dark field + black blocks | Not Swiss; reads as "redacted/censored" UI | White paper, ink type |
 | Colored journey tabs | Rainbow decoration; not objective | Giant numerals, typographic hierarchy |
-| **64px masthead** | Document header, not a poster | 96–128px display, one line, red full stop |
+| **64px masthead** | Document header, not a poster | 104–128px display, one line, red full stop |
 | **Gray body copy everywhere** | Nothing sings; hierarchy is mush | Ink for primary copy; gray for meta only |
 | **Boxed flowchart diagrams** | Whiteboard clip-art; centered labels | Transit line with solid dots, flush-left labels |
 | **Accent on rule + boxes + arrows + toggle** | Red everywhere = red nowhere | One red full stop; everything else ink |

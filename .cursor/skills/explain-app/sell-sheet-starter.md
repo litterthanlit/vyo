@@ -16,7 +16,7 @@ import { useCanvasState } from "cursor/canvas";
 
 // Same PAPER, INK, INK_SOFT, ACCENT, GRID_*, HAIRLINE, COLS, BL, LH, GUTTER,
 // MARGIN, MAXW, FONT, folio, meta, body, sectionLabel, numeral, subgrid,
-// GridOverlay as poster-starter.md.
+// spanFor, cols, GridOverlay as poster-starter.md.
 
 export default function ProjectStory() {
   const [showGrid, setShowGrid] = useCanvasState("showGridStory", false);
@@ -30,6 +30,7 @@ export default function ProjectStory() {
     ["Capability line one", "Capability line two", "Capability line three"],
     ["Capability line four", "Capability line five", "One honest limitation \u2014 coming next"],
   ];
+  const pointSpan = spanFor(talkingPoints.length, { 3: 4 }, "Talking points");
 
   return (
     <div style={{ background: PAPER, minHeight: "100%", fontFamily: FONT, color: INK }}>
@@ -44,12 +45,12 @@ export default function ProjectStory() {
               <div style={{ gridColumn: "5 / 10", ...meta }}>For the owner — say it out loud</div>
               <div style={{ gridColumn: "10 / 13", ...meta, textAlign: "right" }}>{/* product name */}</div>
             </div>
-            <div style={{ height: 2, background: INK, marginTop: BL }} />
+            <div style={{ height: 2, background: INK, marginTop: BL - 2 }} />
           </div>
 
           {/* Masthead — tagline as hero, red full stop */}
           <div style={{ gridColumn: "1 / 12" }}>
-            <div style={{ fontSize: 72, lineHeight: "76px", fontWeight: 700, letterSpacing: "-0.03em", marginLeft: "-0.05em" }}>
+            <div style={{ fontSize: 72, lineHeight: "72px", fontWeight: 700, letterSpacing: "-0.03em", marginLeft: "-0.05em" }}>
               Emotional
               <br />
               outcome, not
@@ -61,7 +62,7 @@ export default function ProjectStory() {
           {/* In one breath + who it's for */}
           <div style={{ gridColumn: "1 / 8" }}>
             <div style={sectionLabel}>In one breath</div>
-            <p style={{ ...body, fontSize: 14, maxWidth: "30em" }}>
+            <p style={{ ...body, maxWidth: "30em" }}>
               &ldquo;20-second script the owner can read aloud.&rdquo;
             </p>
           </div>
@@ -75,7 +76,7 @@ export default function ProjectStory() {
           {/* Talking points — giant numerals */}
           <div style={{ gridColumn: "1 / -1", ...sectionLabel, marginBottom: 0 }}>What to say</div>
           {talkingPoints.map((t, i) => (
-            <div key={t} style={{ gridColumn: `${i * 4 + 1} / ${i * 4 + 5}` }}>
+            <div key={i} style={{ gridColumn: cols(i, pointSpan) }}>
               <div style={numeral}>{i + 1}</div>
               <p style={{ ...body, marginTop: BL, paddingRight: GUTTER }}>{t}</p>
             </div>
@@ -87,8 +88,8 @@ export default function ProjectStory() {
             <div style={{ ...subgrid, marginTop: BL }}>
               {realToday.map((col, i) => (
                 <div key={i} style={{ gridColumn: i === 0 ? "1 / 7" : "7 / 13" }}>
-                  {col.map((line) => (
-                    <p key={line} style={body}>{line}</p>
+                  {col.map((line, j) => (
+                    <p key={j} style={body}>{line}</p>
                   ))}
                 </div>
               ))}
@@ -106,7 +107,7 @@ export default function ProjectStory() {
           </div>
 
           {/* Footer */}
-          <div style={{ gridColumn: "1 / -1", borderTop: `1px solid ${HAIRLINE}`, paddingTop: BL }}>
+          <div style={{ gridColumn: "1 / -1", borderTop: `1px solid ${HAIRLINE}`, paddingTop: BL - 1 }}>
             <div style={subgrid}>
               <div style={{ gridColumn: "1 / 6", ...meta }}>{/* coming soon items */}</div>
               <div style={{ gridColumn: "6 / 10", ...meta }}>Pair with the App Guide — page 01</div>

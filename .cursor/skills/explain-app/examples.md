@@ -19,9 +19,9 @@
 ```markdown
 This app is a team task board where members sign in, create projects, and track work on a shared dashboard.
 
-**Page 1 — how it works:** [taskflow-app-poster](/Users/niki_g/.cursor/projects/.../canvases/taskflow-app-poster.canvas.tsx)
+**Page 1 — how it works:** [taskflow-app-poster](/Users/<you>/.cursor/projects/<workspace>/canvases/taskflow-app-poster.canvas.tsx)
 
-**Page 2 — your story:** talking points, who it's for, and what's real today — [taskflow-project-story](/Users/niki_g/.cursor/projects/.../canvases/taskflow-project-story.canvas.tsx)
+**Page 2 — your story:** talking points, who it's for, and what's real today — [taskflow-project-story](/Users/<you>/.cursor/projects/<workspace>/canvases/taskflow-project-story.canvas.tsx)
 
 Note: billing is not in the app yet — marked in both footers. Do not list Stripe under Connected.
 ```
@@ -118,7 +118,7 @@ one place.
 > 64px stacked masthead, gray body copy everywhere, red on rule + boxes + arrows.
 
 **Good — poster scale**
-> 116px masthead on one line with a red full stop, ink body copy, one empty zone beside the purpose.
+> 112px masthead on one line with a red full stop, ink body copy, one empty zone beside the purpose.
 
 **Bad — boxed flowchart**
 > Dashed/solid bordered rectangles with centered uppercase labels and stubby arrows.
