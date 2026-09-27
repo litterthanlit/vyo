@@ -23,6 +23,8 @@ This app is a team task board where members sign in, create projects, and track 
 
 **Page 2 — your story:** talking points, who it's for, and what's real today — [taskflow-project-story](/Users/<you>/.cursor/projects/<workspace>/canvases/taskflow-project-story.canvas.tsx)
 
+**Share it:** [taskflow-poster-set.pdf](/Users/<you>/.cursor/projects/<workspace>/canvases/exports/taskflow-poster-set.pdf) — both pages, opens anywhere.
+
 Note: billing is not in the app yet — marked in both footers. Do not list Stripe under Connected.
 ```
 

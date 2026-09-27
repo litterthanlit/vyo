@@ -68,7 +68,8 @@ Explain App Progress:
 - [ ] Phase 4: App Guide poster (page 1)
 - [ ] Phase 5: Connection & sales synthesis (page 2)
 - [ ] Phase 6: Project Story poster (page 2)
-- [ ] Chat summary with both canvas links
+- [ ] Phase 7: Check + export (PNG/PDF)
+- [ ] Chat summary with both canvas links and the shareable PDF
 ```
 
 ### Phase 1 — Recon (read-only, parallel)
@@ -155,16 +156,30 @@ Apply page 2 voice rules in [plain-language-rules.md](plain-language-rules.md#pa
 4. Footer center: "Pair with the App Guide — page 01"
 5. Same quality gates as page 1 — no jargon, no file paths, no hype
 
+### Phase 7 — Check and export
+
+The rules above are enforced by a checker in [tools/](tools/README.md). Run it from this skill's directory (first time only: `npm install --prefix tools && npx --prefix tools playwright install chromium`):
+
+```bash
+node tools/poster.mjs check  <canvases>/<repo>-app-poster.canvas.tsx <canvases>/<repo>-project-story.canvas.tsx
+node tools/poster.mjs export <canvases>/<repo>-app-poster.canvas.tsx <canvases>/<repo>-project-story.canvas.tsx
+```
+
+1. `check` must print **PASS** for both posters. Every ✗ is a rule break — fix the canvas and re-run. Treat ! warnings (jargon, height, narrow panel) as copy edits unless there's a reason to keep them.
+2. `export` writes `<canvases>/exports/`: a PNG and a PDF per poster, plus `<repo>-poster-set.pdf` with both pages. Add `--paper a4` or `--paper letter` when the user wants to print.
+3. If the tools can't install (no network), say so in chat and deliver the canvases only — never skip `check` silently.
+
 ### Chat response
 
-Keep chat short. Both poster canvases are the deliverable.
+Keep chat short. Both poster canvases are the deliverable; the set PDF is what the user sends to people without Cursor.
 
 1. One sentence: what the app does
 2. Link to **page 1** (App Guide) with full absolute path (markdown link)
 3. One sentence on **page 2**: who it's for and that it has talking points + what's real today
 4. Link to **page 2** (Project Story) with full absolute path
-5. If first canvas in workspace: one sentence on opening them beside the chat
-6. Note any gaps honestly ("billing UI is not built yet; backend exists only")
+5. Link to the **poster-set PDF** (`exports/<repo>-poster-set.pdf`) — "send this to your client"
+6. If first canvas in workspace: one sentence on opening them beside the chat
+7. Note any gaps honestly ("billing UI is not built yet; backend exists only")
 
 ## Edge Cases
 
@@ -217,6 +232,7 @@ Before finishing, verify **both pages**:
 - [ ] Differentiation is concrete, not generic hype
 
 **Both pages**
+- [ ] `node tools/poster.mjs check` passes on both files (it enforces most of the list below)
 - [ ] Light paper, ink type, one red accent mark (the full stop) — Swiss canon palette
 - [ ] Display type at poster scale (104–128px page 1 / 64–80px tagline page 2, multiples of 8); numerals at 40–48px
 - [ ] Primary copy in ink; gray only for folio, captions, status

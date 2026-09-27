@@ -111,11 +111,12 @@ export default function ProjectStory() {
             <div style={subgrid}>
               <div style={{ gridColumn: "1 / 6", ...meta }}>{/* coming soon items */}</div>
               <div style={{ gridColumn: "6 / 10", ...meta }}>Pair with the App Guide — page 01</div>
-              <div style={{ gridColumn: "10 / 13", textAlign: "right" }}>
+              <div style={{ gridColumn: "10 / 13" }}>
+                {/* Block-level so the cell is exactly one 16px line — an inline button inherits the default line height */}
                 <button
                   type="button"
                   onClick={() => setShowGrid((v) => !v)}
-                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, lineHeight: "16px", color: ACCENT, padding: 0, fontFamily: FONT }}
+                  style={{ display: "block", marginLeft: "auto", textAlign: "right", background: "none", border: "none", cursor: "pointer", fontSize: 10, lineHeight: "16px", color: ACCENT, padding: 0, fontFamily: FONT }}
                 >
                   {showGrid ? "Hide grid" : "Show grid"}
                 </button>

@@ -153,22 +153,22 @@ Boxed flowcharts — little bordered rectangles with centered uppercase labels a
 
 ## Pre-delivery checklist
 
-Swiss quality gate — all must pass:
+Swiss quality gate — all must pass. `node tools/poster.mjs check` measures the items marked ⚙; the rest need your eyes.
 
-- [ ] Light paper field — not dark, not host-theme tinted
-- [ ] **One outer 12-column grid** — all rows share the same column lines
+- [ ] ⚙ Light paper field — not dark, not host-theme tinted
+- [ ] ⚙ **One outer 12-column grid** — all rows share the same column lines
 - [ ] Diagrams use CSS grid inside their span — not fixed-width SVG viewBoxes
-- [ ] No negative margins or off-column header decorations
-- [ ] 8px baseline; body leading = 24px in px; rules/borders subtracted from padding so blocks stay multiples of 8
-- [ ] Two type roles only (display incl. numerals + body incl. folio)
-- [ ] **Display ≥ 104px on page 1**, a multiple of 8; display : body ratio ≥ 7:1
+- [ ] ⚙ No negative margins or off-column header decorations
+- [ ] ⚙ 8px baseline; body leading = 24px in px; rules/borders subtracted from padding so blocks stay multiples of 8
+- [ ] ⚙ Two type roles only (display incl. numerals + body incl. folio)
+- [ ] ⚙ **Display ≥ 104px on page 1**, a multiple of 8; display : body ratio ≥ 7:1
 - [ ] **Journey/talking-point numerals at display scale**, not body size
 - [ ] Primary copy in INK; INK_SOFT limited to folio **meta**, captions, status. Folio **label** is ink.
-- [ ] Flush-left throughout except folio right + grid toggle
-- [ ] One accent mark (red full stop); rules and diagrams in ink
+- [ ] ⚙ Flush-left throughout except folio right + grid toggle
+- [ ] ⚙ One accent mark (red full stop); rules and diagrams in ink
 - [ ] **At least one deliberately empty grid zone**
-- [ ] **Transit stations are 3, 4, or 6** on the 12-column grid — never 5, never `repeat(n, 1fr)`
-- [ ] Grid overlay shares content box with content
+- [ ] ⚙ **Transit stations are 3, 4, or 6** on the 12-column grid — never 5, never `repeat(n, 1fr)`
+- [ ] ⚙ Grid overlay shares content box with content
 - [ ] No rainbow blocks, no Card/Callout document components
 - [ ] Display type optically aligned to column line
 - [ ] Non-engineer understands the app from the poster alone
