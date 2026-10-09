@@ -36,7 +36,8 @@ export function inspectPoster({ index, page, palette }) {
   };
 
   const all = [...root.querySelectorAll("*")];
-  const content = all.filter((el) => !inOverlay(el));
+  // SVG internals (page 3 drawing) follow their own rules below, not the HTML ones.
+  const content = all.filter((el) => !inOverlay(el) && !el.closest("svg"));
 
   // ── Grid ────────────────────────────────────────────────────────────────
   const tracksOf = (el) => {
@@ -121,9 +122,9 @@ export function inspectPoster({ index, page, palette }) {
   if (sorted.length > 4) errors.push(`${sorted.length} font sizes (${sorted.join(", ")}px) — four maximum: display · numeral · body · folio`);
   const display = sorted[0];
   const body = [...sizes.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-  if (page === 1) {
+  if (page !== 2) {
     if (!(display >= 104 && display <= 128 && display % 8 === 0)) {
-      errors.push(`Masthead is ${display}px — page 1 needs 104–128px in a multiple of 8`);
+      errors.push(`Masthead is ${display}px — page ${page} needs 104–128px in a multiple of 8`);
     }
     if (body && display / body < 7) errors.push(`Display : body is ${(display / body).toFixed(1)}:1 — needs at least 7:1`);
   } else if (![64, 72, 80].includes(display)) {
@@ -174,8 +175,58 @@ export function inspectPoster({ index, page, palette }) {
     }
   }
 
+  // ── Page 3 drawing: layer count, palette, labels, leader lines ───────────
+  // Nested so page.evaluate(inspectPoster) carries it along.
+  function inspectDrawing(root, C) {
+    const errors = [];
+    const fig = root.querySelector("figure svg");
+    if (!fig) return ["No drawing — page 3 needs one <figure> holding the SVG"];
+    const layers = [...fig.querySelectorAll("[data-layer]")];
+    if (layers.length < 3 || layers.length > 5) errors.push(`${layers.length} layers — use 3 to 5`);
+
+    // Every stroke and fill comes from the palette (light theme, the default and the export).
+    const allowed = new Set([C.PAPER, C.INK, C.INK_SOFT, C.HAIRLINE, C.TINT, "none"]);
+    const bad = new Set();
+    for (const el of fig.querySelectorAll("path, line, polyline, polygon, circle, ellipse, rect")) {
+      const cs = getComputedStyle(el);
+      if (!allowed.has(cs.stroke)) bad.add(`Stroke colour ${cs.stroke}`);
+      if (el.tagName !== "line" && !allowed.has(cs.fill)) bad.add(`Fill colour ${cs.fill}`); // a line paints no fill
+    }
+    for (const b of bad) errors.push(`${b} in the drawing — paper, ink, ink-soft, hairline, or the selected-layer tint only`);
+
+    // Labels never overlap each other.
+    const labels = [...root.querySelectorAll("[data-label]")].map((el) => ({ i: el.dataset.label, r: el.getBoundingClientRect() }));
+    for (let a = 0; a < labels.length; a++) {
+      for (let b = a + 1; b < labels.length; b++) {
+        const [p, q] = [labels[a].r, labels[b].r];
+        if (p.left < q.right - 1 && q.left < p.right - 1 && p.top < q.bottom - 1 && q.top < p.bottom - 1) {
+          errors.push(`Layer labels overlap (${+labels[a].i + 1} and ${+labels[b].i + 1}) — keep them LABEL_STEP apart`);
+        }
+      }
+    }
+
+    // Each leader line starts on its layer and ends at its label.
+    for (const el of fig.querySelectorAll("[data-leader]")) {
+      const i = el.dataset.leader;
+      const m = el.getScreenCTM();
+      const pts = [...el.points].map((p) => new DOMPoint(p.x, p.y).matrixTransform(m));
+      const layer = fig.querySelector(`[data-layer="${i}"]`)?.getBoundingClientRect();
+      const label = root.querySelector(`[data-label="${i}"]`)?.getBoundingClientRect();
+      const [a, z] = [pts[0], pts.at(-1)];
+      if (!layer || !(a.x >= layer.left - 2 && a.x <= layer.right + 2 && a.y >= layer.top - 2 && a.y <= layer.bottom + 2)) {
+        errors.push(`Leader line ${+i + 1} does not start on its layer`);
+      }
+      if (!label || !(z.x >= label.left - 24 && z.x <= label.left + 2 && z.y >= label.top - 2 && z.y <= label.bottom + 2)) {
+        errors.push(`Leader line ${+i + 1} does not end at its label`);
+      }
+    }
+    return errors;
+  }
+  if (page === 3) errors.push(...inspectDrawing(root, C));
+
   // ── Copy: no file paths; flag jargon for a rewrite ──────────────────────
-  const text = root.innerText;
+  const svgText = [...root.querySelectorAll("svg title, svg desc, svg text")].map((t) => t.textContent).join("\n");
+  const text = `${root.innerText}\n${svgText}`;
   const paths = text.match(/(?:^|[\s(])(?:\.{0,2}\/)?(?:[\w.-]+\/)+[\w.-]+\.(?:tsx?|jsx?|mjs|py|go|rb|rs|json|md|ya?ml|css|html)\b|(?:^|\s)(?:src|app|lib|pages|components)\/[\w./-]+/gm);
   if (paths) errors.push(`File paths on the poster: ${[...new Set(paths.map((p) => p.trim()))].join(", ")}`);
   const jargon = [

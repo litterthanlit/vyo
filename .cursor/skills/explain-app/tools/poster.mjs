@@ -9,7 +9,7 @@
 //   --paper fit|a4|letter  PDF page size (default: fit — one page sized to the poster)
 //   --no-png / --no-pdf  Skip a format
 //
-// Page 1 vs page 2 rules are inferred from the filename (*project-story* = page 2).
+// Page rules are inferred from the filename (*project-story* = page 2, *exploded-view* = page 3).
 // Set POSTER_CHROMIUM to a Chromium binary to skip `npx playwright install chromium`.
 import fs from "node:fs";
 import path from "node:path";
@@ -17,14 +17,14 @@ import { chromium } from "playwright";
 import { buildPage, lintSource } from "./lib/build.mjs";
 import { inspectOverlay, inspectPoster } from "./lib/inspect.js";
 
-const PALETTE = { PAPER: "#FFFFFF", INK: "#0A0A0A", INK_SOFT: "#5B6066", ACCENT: "#E4002B", HAIRLINE: "rgba(10, 10, 10, 0.2)" };
+const PALETTE = { PAPER: "#FFFFFF", INK: "#0A0A0A", INK_SOFT: "#5B6066", ACCENT: "#E4002B", HAIRLINE: "rgba(10, 10, 10, 0.2)", TINT: "#FCE1E6" };
 const POSTER_WIDTH = 1028; // MAXW 900 + 2 × MARGIN 64
 const CHECK_WIDTHS = [1440, POSTER_WIDTH];
 const NARROW_WIDTH = 720; // a canvas panel beside the chat
 const MAX_HEIGHT = 1300;
 const PAPER_PX = { a4: [794, 1123], letter: [816, 1056] };
 
-const pageOf = (file) => (/project-story/i.test(path.basename(file)) ? 2 : 1);
+const pageOf = (file) => (/project-story/i.test(path.basename(file)) ? 2 : /exploded-view/i.test(path.basename(file)) ? 3 : 1);
 const stem = (file) => path.basename(file).replace(/\.canvas\.tsx$|\.tsx$/, "");
 
 async function launch() {
@@ -69,6 +69,7 @@ export async function check(files, { browser, quiet = false } = {}) {
               await toggle.first().click();
               errors.push(...(await p.evaluate(inspectOverlay, { index: 0 })));
             }
+            if (page === 3) errors.push(...(await interact(p)));
           }
           await p.close();
           if (errors.some((e) => e.startsWith("Render error"))) break;
@@ -91,6 +92,64 @@ export async function check(files, { browser, quiet = false } = {}) {
   return results;
 }
 
+// Page 3 is interactive: the slider must open the layers, the layer list must
+// answer the arrow keys, pointing at a layer must highlight it, and the theme
+// button must flip the paper. Runs on a page that has already passed inspectPoster.
+async function interact(p) {
+  const errors = [];
+  const slider = p.getByRole("slider", { name: /open layers/i });
+  if (!(await slider.count())) return ['No "Open layers" slider — page 3 needs a range input labelled "Open layers"'];
+  const spread = () => p.evaluate(() => {
+    const tops = [...document.querySelectorAll("#poster-0 [data-layer]")].map((g) => g.getBoundingClientRect().top);
+    return Math.max(...tops) - Math.min(...tops);
+  });
+  await slider.focus();
+  await p.keyboard.press("Home");
+  const closed = await spread();
+  await p.keyboard.press("End");
+  const opened = await spread();
+  if (!(opened > closed + 40)) errors.push(`Slider does not open the layers (spread ${closed.toFixed(0)}px closed → ${opened.toFixed(0)}px open)`);
+
+  const list = p.getByRole("listbox");
+  if (!(await list.count())) errors.push("No layer listbox — labels must be role=listbox options so the arrow keys can pick a layer");
+  else {
+    await list.first().focus();
+    await p.keyboard.press("Home");
+    const before = await list.first().getAttribute("aria-activedescendant");
+    await p.keyboard.press("ArrowDown");
+    const after = await list.first().getAttribute("aria-activedescendant");
+    if (!before || before === after) errors.push("ArrowDown in the layer list does not move the selection");
+  }
+
+  // Point at layer 2's leader anchor — on its top face and clear of the layer above at full open.
+  const target = await p.evaluate(() => {
+    const el = document.querySelector('#poster-0 [data-leader="1"]');
+    if (!el) return null;
+    const pt = new DOMPoint(el.points[0].x, el.points[0].y).matrixTransform(el.getScreenCTM());
+    return { x: pt.x - 2, y: pt.y + 2 };
+  });
+  if (target) {
+    await p.mouse.move(target.x, target.y);
+    const lit = await p.waitForFunction((tint) => {
+      const face = document.querySelector('#poster-0 [data-layer="1"] [data-face="top"]');
+      return face && getComputedStyle(face).fill === tint;
+    }, "rgb(252, 225, 230)", { timeout: 1500 }).then(() => true, () => false);
+    if (!lit) errors.push("Pointing at a layer does not highlight it with the tint");
+  }
+
+  const theme = p.getByRole("button", { name: /theme/i });
+  if (!(await theme.count())) errors.push("No theme button");
+  else {
+    const bg = () => p.evaluate(() => getComputedStyle(document.querySelector("#poster-0 > div")).backgroundColor);
+    await theme.first().click();
+    const darkBg = await bg();
+    await theme.first().click();
+    const lightBg = await bg();
+    if (darkBg !== "rgb(10, 10, 10)" || lightBg !== "rgb(255, 255, 255)") errors.push(`Theme button does not flip paper to ink and back (${darkBg} → ${lightBg})`);
+  }
+  return errors;
+}
+
 function report({ file, page, errors, warnings }) {
   const status = errors.length ? "FAIL" : "PASS";
   console.log(`\n${status}  ${path.basename(file)}  (page ${page})`);
@@ -108,8 +167,8 @@ async function exportPosters(files, { out, paper = "fit", png = true, pdf = true
     const p = await open(browser, files, POSTER_WIDTH, 2);
     const errs = await p.evaluate(() => [...document.querySelectorAll("[data-poster-error]")].map((e) => e.textContent));
     if (errs.length) throw new Error(`Render error: ${errs.join("; ")} — run check first`);
-    // Interactive chrome (the grid toggle) has no place on a shared file; keep its space.
-    await p.addStyleTag({ content: "button{visibility:hidden}" });
+    // Interactive chrome (grid toggle, page 3 controls) has no place on a shared file; keep its space.
+    await p.addStyleTag({ content: "button,[data-chrome]{visibility:hidden}" });
     const heights = await p.evaluate((n) => [...Array(n).keys()].map((i) => Math.ceil(document.getElementById(`poster-${i}`).getBoundingClientRect().height)), files.length);
 
     if (png) {

@@ -85,7 +85,7 @@ Posters always render on **light paper**, regardless of IDE dark/light host them
 | Accent | `#E4002B` | **One editorial mark only** — canonical: the red full stop after the masthead |
 | Grid guide | `rgba(228, 0, 43, 0.08)` | Column fields when overlay is on |
 
-**The single accent mark.** The canonical accent usage is a **red full stop closing the masthead** ("Hypher<span style=red>.</span>" / "…one place<span style=red>.</span>"). It brands both pages as a set and forces restraint everywhere else. Rules, arrows, dots, numerals, and node borders are all ink. The grid-toggle link may also use accent — it is functional chrome, not part of the composition.
+**The single accent mark.** The canonical accent usage is a **red full stop closing the masthead** ("Hypher<span style=red>.</span>" / "…one place<span style=red>.</span>"). It brands every page as a set and forces restraint everywhere else. Rules, arrows, dots, numerals, and node borders are all ink. The grid-toggle link may also use accent — it is functional chrome, not part of the composition. Page 3 adds one more, the tint on the selected layer (see the page 3 drawing exception).
 
 **Forbidden:**
 
@@ -142,6 +142,23 @@ Boxed flowcharts — little bordered rectangles with centered uppercase labels a
 
 ---
 
+## Page 3 drawing exception
+
+Page 3 ([exploded-view-layout.md](exploded-view-layout.md)) is an **illustration**, not a diagram. Its job is to make the app feel like a real object you could hold. Transit lines can't do that, so inside **one `<figure>` spanning all 12 columns**, and nowhere else, these are allowed:
+
+| Allowed in the figure | Why it stays Swiss |
+|-----------------------|--------------------|
+| One SVG with a viewBox **900 units wide** | 1 unit = 1px at full width, so the drawing and the col 9 label line share the grid's coordinates |
+| Isometric line drawing: hairline outlines, rounded slabs | Technical-illustration tradition, line only, no shading in light mode |
+| **Dotted** assembly axes (`1 4` dash) | They show how the parts fit, and they're drawn behind the layers so they only appear in the gaps |
+| Hairline leader lines to labels on the **col 9 line** | Labels are HTML: flush-left, on the type scale |
+| The **accent tint** (`#FCE1E6`) on the selected layer | A state, not decoration: it moves with the reader's attention, and the outline and label change too |
+| A **dark blueprint theme** behind a toggle | On-screen only. The default and every export stay on light paper |
+
+Everything outside the figure is unchanged: masthead, folio, captions, grid, the four type sizes, ink rules, one red full stop. Inside the figure there is still no colour coding by meaning, no gradients, no shadows, no SVG text and no arrowheads. The checker enforces the palette on every SVG shape.
+
+---
+
 ## Grid toggle
 
 - Page 1: `useCanvasState("showGridApp", false)` · Page 2: `useCanvasState("showGridStory", false)` — separate keys per poster
@@ -157,7 +174,7 @@ Swiss quality gate — all must pass. `node tools/poster.mjs check` measures the
 
 - [ ] ⚙ Light paper field — not dark, not host-theme tinted
 - [ ] ⚙ **One outer 12-column grid** — all rows share the same column lines
-- [ ] Diagrams use CSS grid inside their span — not fixed-width SVG viewBoxes
+- [ ] Diagrams use CSS grid inside their span — not fixed-width SVG viewBoxes (page 3 drawing excepted)
 - [ ] ⚙ No negative margins or off-column header decorations
 - [ ] ⚙ 8px baseline; body leading = 24px in px; rules/borders subtracted from padding so blocks stay multiples of 8
 - [ ] ⚙ Two type roles only (display incl. numerals + body incl. folio)
@@ -192,7 +209,7 @@ Swiss quality gate — all must pass. `node tools/poster.mjs check` measures the
 | Host dark theme colors | Breaks paper/ink discipline | Vignelli canon palette |
 | Stack of canvas components | Document, not poster | Raw grid + inline styles |
 | Nested grid with a **different** column count | Columns drift between bands | Nested 12-col subgrids that re-expose the same 12 lines are fine. Do not nest a 4-col or `repeat(n, 1fr)` inside the 12. |
-| Fixed SVG viewBox diagrams | Diagram floats off column lines | CSS grid nodes inside col span |
+| Fixed SVG viewBox diagrams (except the page 3 drawing) | Diagram floats off column lines | CSS grid nodes inside col span |
 | **Five transit stations** | Cannot land on 12 columns | Use 3, 4, or 6 only |
 
 ---

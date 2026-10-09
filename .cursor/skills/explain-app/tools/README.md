@@ -18,13 +18,13 @@ npx playwright install chromium   # or set POSTER_CHROMIUM=/path/to/chromium
 ## Usage
 
 ```bash
-node poster.mjs check  <canvases>/acme-app-poster.canvas.tsx <canvases>/acme-project-story.canvas.tsx
-node poster.mjs export <canvases>/acme-app-poster.canvas.tsx <canvases>/acme-project-story.canvas.tsx
+node poster.mjs check  <canvases>/acme-app-poster.canvas.tsx <canvases>/acme-project-story.canvas.tsx <canvases>/acme-exploded-view.canvas.tsx
+node poster.mjs export <canvases>/acme-app-poster.canvas.tsx <canvases>/acme-project-story.canvas.tsx <canvases>/acme-exploded-view.canvas.tsx
 ```
 
-`export` options: `--out <dir>` (default `<canvases>/exports`), `--paper fit|a4|letter` (default `fit`: one page sized to the poster), `--no-png`, `--no-pdf`. The grid toggle is hidden in exports.
+`export` options: `--out <dir>` (default `<canvases>/exports`), `--paper fit|a4|letter` (default `fit`: one page sized to the poster), `--no-png`, `--no-pdf`. The grid toggle and page 3's controls (`[data-chrome]`) are hidden in exports.
 
-Page 2 rules apply when the filename contains `project-story`; everything else is checked as page 1.
+Page 2 rules apply when the filename contains `project-story`, and page 3 rules when it contains `exploded-view`. Everything else is checked as page 1.
 
 ## What `check` enforces
 
@@ -44,7 +44,11 @@ Errors (✗) fail the run. Warnings (!) are copy edits to consider.
 | Grid overlay columns match the content columns; a "Show grid" toggle exists | ✗ |
 | No file paths in visible copy | ✗ |
 | No sideways scroll at 1440px and 1028px | ✗ |
-| Jargon from plain-language-rules.md (page 2 adds marketing words) | ! |
+| Page 3: 3–5 `[data-layer]` groups in one `<figure>` SVG | ✗ |
+| Page 3: every SVG stroke and fill is paper, ink, ink-soft, hairline or the selected-layer tint | ✗ |
+| Page 3: layer labels don't overlap; each leader line starts on its layer and ends at its label | ✗ |
+| Page 3: an "Open layers" slider opens the stack; ↓ in the layer list moves the selection; pointing at a layer tints it; the theme button flips paper ↔ ink | ✗ |
+| Jargon from plain-language-rules.md (page 2 adds marketing words; SVG title/desc text included) | ! |
 | Taller than 1300px; sideways scroll in a 720px panel | ! |
 
 It does not judge copy quality, empty zones, status honesty, or whether a non-engineer would understand the poster. Those stay on the checklist in `swiss-design-principles.md`.

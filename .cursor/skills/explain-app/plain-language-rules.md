@@ -34,6 +34,21 @@ Do not move these to a glossary — **replace them**:
 | repository / repo | "project" or product name |
 | commit / branch / PR | omit in primary sections |
 
+## Naming layers and parts
+
+Page 3 names the layers of the exploded view and the parts on them. Name each one after what a person gets from it, never after the folder or library that provides it.
+
+| In the code | Layer | Part name |
+|-------------|-------|-----------|
+| `app/`, `pages/`, routes | What you see | The screen's name as a user says it: "Dashboard", "Checkout" |
+| `jobs/`, `cron`, queues, workers | What runs on its own | What it does: "Daily digest", "Reminder emails" |
+| `lib/`, `services/`, feature folders | The brains | The feature: "Canvas sorting", "Pricing rules" |
+| `auth/`, Clerk, NextAuth | Accounts (plate) or a data port | "Sign-in" |
+| `prisma/`, `db/`, Supabase, Convex | Where your data lives | (the layer itself, with no part) |
+| Stripe, Resend, Twilio, S3 | Ports on the data layer | "Payments (Stripe)", "Email", "Text messages", "File storage". Name the service only if the user would recognise it |
+
+The cap is **one analogy** for page 3, and it's the device itself. Don't add a second one inside it ("the brains is like a kitchen").
+
 ## Analogy Budget
 
 - At most **one** simple analogy per major section

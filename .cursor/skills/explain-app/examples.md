@@ -11,6 +11,9 @@
 **General**
 > Explain what this app does. Visualize the repo as a poster.
 
+**Exploded view (page 3 emphasis)**
+> Draw my app as an exploded isometric diagram, so my investors can see what it's made of.
+
 **Selling / connection (page 2 emphasis)**
 > Explain this codebase so I can talk about my product confidently — I need the second page with talking points.
 
@@ -23,7 +26,9 @@ This app is a team task board where members sign in, create projects, and track 
 
 **Page 2 — your story:** talking points, who it's for, and what's real today — [taskflow-project-story](/Users/<you>/.cursor/projects/<workspace>/canvases/taskflow-project-story.canvas.tsx)
 
-**Share it:** [taskflow-poster-set.pdf](/Users/<you>/.cursor/projects/<workspace>/canvases/exports/taskflow-poster-set.pdf) — both pages, opens anywhere.
+**Page 3 — taken apart:** the app drawn as a small device, drag to open it — [taskflow-exploded-view](/Users/<you>/.cursor/projects/<workspace>/canvases/taskflow-exploded-view.canvas.tsx)
+
+**Share it:** [taskflow-poster-set.pdf](/Users/<you>/.cursor/projects/<workspace>/canvases/exports/taskflow-poster-set.pdf) — all three pages, opens anywhere.
 
 Note: billing is not in the app yet — marked in both footers. Do not list Stripe under Connected.
 ```
@@ -102,6 +107,29 @@ one place.
 
 **The vision** — You built this because scattered thinking was costing you momentum. What you have now is a single place to capture, see patterns, and share — on your terms.
 
+## Sample Page 3 Data (Hypher)
+
+Only the data changes; the starter draws everything else.
+
+```tsx
+const product = "Hypher";
+const purpose = "Hypher, taken apart: the layers that turn a passing thought into an organised canvas and a daily digest.";
+const layers: Layer[] = [
+  { kind: "screens", name: "What you see", line: "When you open Hypher, you move between five screens: landing, capture, canvas, dashboard and settings.",
+    parts: [{ label: "Landing" }, { label: "Capture" }, { label: "Canvas" }, { label: "Dashboard" }, { label: "Settings" }] },
+  { kind: "engine", name: "What runs on its own", line: "When the day ends, Hypher writes a short digest of what changed and sends it to your inbox.",
+    parts: [{ label: "Daily digest" }, { label: "Activity feed" }] },
+  { kind: "brains", name: "The brains", line: "When you drop a note on the canvas, Hypher sorts it next to related ideas and keeps every open tab in step.",
+    parts: [{ label: "Canvas sorting", size: "l" }, { label: "Live sync" }, { label: "Sharing", size: "s" }] },
+  { kind: "data", name: "Where your data lives", line: "When you save, your notes and files are kept in your own account and are waiting next time.",
+    parts: [{ label: "Sign-in" }, { label: "Email" }] },
+];
+const notBuilt = "Not built yet: in-app billing, voice capture";
+const audience = "For solo builders and the people they pitch";
+```
+
+Note that GitHub activity isn't a port, because GitHub OAuth isn't built. It stays in the footer on all three pages.
+
 ## Anti-patterns
 
 **Bad — dark redacted layout with rainbow tabs**
@@ -128,9 +156,15 @@ one place.
 **Good — transit line**
 > One 2px ink line, solid dots, flush-left station labels, a 90° branch with a hollow ring.
 
+**Bad — architecture diagram dressed as an exploded view**
+> Layers named "Next.js", "tRPC", "Prisma"; a blue database, a green frontend; SVG text labels inside the drawing.
+
+**Good — the app taken apart**
+> "What you see", "The brains", "Where your data lives"; ink line-art with one tinted layer; HTML labels on the col 9 line; a caption that says what the layer does for you.
+
 ## Verification Notes
 
-**hypher** — Both pages at `hypher-app-poster.canvas.tsx` and `hypher-project-story.canvas.tsx`. Monorepo; UI in hypher-web. Playbook items marked in footer only (same list on both pages). Reference build for the poster-scale masthead, giant numerals, 4-station transit line on the 12-col grid, and tagline-led page 2. Delete any leftover `hypher-app-guide.canvas.tsx`.
+**hypher** — All three pages at `hypher-app-poster.canvas.tsx`, `hypher-project-story.canvas.tsx` and `hypher-exploded-view.canvas.tsx` (4 layers). Monorepo; UI in hypher-web. Playbook items marked in footer only (same list on all three pages). Reference build for the poster-scale masthead, giant numerals, 4-station transit line on the 12-col grid, and tagline-led page 2. Delete any leftover `hypher-app-guide.canvas.tsx`.
 
 **learnr** — Single Next.js app, landing → intake → workspace.
 

@@ -2,18 +2,20 @@
 name: explain-app
 description: >-
   Inspects a repository and explains what the app does and how it works in
-  plain English for non-technical stakeholders. Produces two Swiss Style poster
-  Canvases: page 1 (how the app and the code behind it work) and page 2
-  (project story — the marketing/summary sheet for selling and sharing). Use
+  plain English for non-technical stakeholders. Produces three Swiss Style poster
+  Canvases: page 1 (how the app and the code behind it work), page 2
+  (project story — the marketing/summary sheet for selling and sharing) and
+  page 3 (an interactive isometric exploded view of the app's parts). Use
   when the user asks to explain the app, walk through how it works for a
   client/PM/stakeholder, create a non-technical overview, demystify the
   codebase for someone who does not code, help someone sell or talk about their
-  product, or visualize the repo as a poster.
+  product, visualize the repo as a poster, or draw the codebase as an
+  exploded / isometric diagram.
 ---
 
 # Explain App
 
-Turn a codebase into a plain-English app guide for people who will never read code. The deliverable is **two Swiss Style poster Canvases** (`.canvas.tsx`) on light paper — objective typography, real 12-column grid, one accent color. Not a dark UI mockup, not a scrolling doc.
+Turn a codebase into a plain-English app guide for people who will never read code. The deliverable is **three Swiss Style poster Canvases** (`.canvas.tsx`) on light paper — objective typography, real 12-column grid, one accent color. Not a dark UI mockup, not a scrolling doc.
 
 **Canvas skill override (read this before the canvas skill).** Swiss posters **must** use the fixed paper/ink/accent hex, display type at **104–128px** (page 1) / **64–80px** (page 2 tagline), and raw CSS grid. Ignore the canvas skill where it forbids hardcoded hex, type above 24px, or requires `useHostTheme()` for color. Those rules are for document canvases. This skill wins on poster files. Still follow the canvas skill for file location (`…/canvases/*.canvas.tsx`), `import` only from `cursor/canvas`, and no `fetch`.
 
@@ -21,6 +23,7 @@ Turn a codebase into a plain-English app guide for people who will never read co
 |------|------|---------|
 | **1 — App Guide** | `<repo>-app-poster.canvas.tsx` | How the app **and the code behind it** work, for a non-technical reader — journeys, an "Under the hood" band, screens, connected services |
 | **2 — Project Story** | `<repo>-project-story.canvas.tsx` | The summary / marketing sheet — tagline as hero, talking points, who it's for, what's real, the vision |
+| **3 — Exploded View** | `<repo>-exploded-view.canvas.tsx` | The app drawn as a small device taken apart — 3–5 isometric layers (what you see → where your data lives), a slider that opens them, one plain sentence per layer |
 
 ## When to Use
 
@@ -29,6 +32,7 @@ Turn a codebase into a plain-English app guide for people who will never read co
 - User asks "what does this app do?" or "demystify this codebase"
 - User needs a visual overview for handoff, sales, or investor context
 - User wants to feel connected to their project or talk about it confidently without technical detail
+- User asks for an exploded view, isometric drawing, or "show me what it's made of"
 
 ## When NOT to Use
 
@@ -43,8 +47,8 @@ Turn a codebase into a plain-English app guide for people who will never read co
 2. Read [swiss-design-principles.md](swiss-design-principles.md) — **mandatory** design discipline (Müller-Brockmann + Vignelli, from [hyperagent-public-skills](https://github.com/alexmcdonnell-airtable/hyperagent-public-skills)).
 3. Read [plain-language-rules.md](plain-language-rules.md) before writing copy.
 4. Read [poster-layout.md](poster-layout.md) for page 1 grid rows and content zones.
-5. Read [sell-sheet-layout.md](sell-sheet-layout.md) for page 2 — **always produce both pages** when an app is detected.
-6. Use [poster-starter.md](poster-starter.md) and [sell-sheet-starter.md](sell-sheet-starter.md) as structural starting points.
+5. Read [sell-sheet-layout.md](sell-sheet-layout.md) for page 2 and [exploded-view-layout.md](exploded-view-layout.md) for page 3 — **always produce all three pages** when an app is detected.
+6. Use [poster-starter.md](poster-starter.md), [sell-sheet-starter.md](sell-sheet-starter.md) and [exploded-view-starter.md](exploded-view-starter.md) as structural starting points.
 7. Skim [canvas-layout.md](canvas-layout.md) only if the user explicitly wants the legacy document-style fallback.
 
 ### Canonical copy
@@ -68,8 +72,9 @@ Explain App Progress:
 - [ ] Phase 4: App Guide poster (page 1)
 - [ ] Phase 5: Connection & sales synthesis (page 2)
 - [ ] Phase 6: Project Story poster (page 2)
+- [ ] Phase 6b: Exploded View (page 3)
 - [ ] Phase 7: Check + export (PNG/PDF)
-- [ ] Chat summary with both canvas links and the shareable PDF
+- [ ] Chat summary with the three canvas links and the shareable PDF
 ```
 
 ### Phase 1 — Recon (read-only, parallel)
@@ -99,6 +104,7 @@ Build this map before writing copy. Do not dump it raw into the Canvas.
 | Journeys | 2–4 primary flows as UI steps a human would take |
 | Under the hood | The data pipeline as **3, 4, or 6** stations (never 5 — it cannot land on a 12-column grid): what you do → where it's saved → what processes it → what comes back out |
 | Behind the scenes | One "When you X, the app Y" sentence per journey ("When you pay, the app talks to Stripe") |
+| Layers (page 3) | 3–5 layers from what you see to where your data lives, with their parts — vocabulary in [exploded-view-layout.md](exploded-view-layout.md#from-codebase-to-layers) |
 | Status honesty | Works in UI / backend only / planned — never call backend-only "complete" |
 
 If the user named an audience (client, PM, exec), note it. If not, default to general non-technical.
@@ -127,7 +133,7 @@ Apply [plain-language-rules.md](plain-language-rules.md):
 4. Import only from `cursor/canvas`; inline all content; no `fetch`
 5. Omit empty zones — never render placeholder blocks
 6. `useCanvasState("showGridApp", false)` on page 1; `useCanvasState("showGridStory", false)` on page 2 — **never** a shared `"showGrid"` key (it leaks across posters)
-7. If an older `<repo>-app-guide.canvas.tsx` (document-style) exists for the same product, **delete it** so the sidebar is only the two posters
+7. If an older `<repo>-app-guide.canvas.tsx` (document-style) exists for the same product, **delete it** so the sidebar is only the three posters
 8. Run Swiss pre-delivery checklist in swiss-design-principles.md. Open both canvases. If the masthead is under 104px or there is no red full stop, the canvas skill override was ignored — fix before finishing.
 
 ### Phase 5 — Connection & sales synthesis (page 2)
@@ -156,30 +162,39 @@ Apply page 2 voice rules in [plain-language-rules.md](plain-language-rules.md#pa
 4. Footer center: "Pair with the App Guide — page 01"
 5. Same quality gates as page 1 — no jargon, no file paths, no hype
 
+### Phase 6b — Exploded View (page 3)
+
+1. Same canvases path. Filename: `<repo-name>-exploded-view.canvas.tsx`
+2. Start from [exploded-view-starter.md](exploded-view-starter.md) and **only edit its data**: `product`, `purpose`, `layers`, `notBuilt`, `audience`. The starter derives every coordinate; never hand-place SVG
+3. Layers come from the Phase 2 map. Use the [vocabulary](exploded-view-layout.md#from-codebase-to-layers): `screens` on top, `data` at the bottom, and skip any layer the app doesn't have
+4. Each layer's `line` is a "When you…" sentence. Parts are named the way a user would ([plain-language-rules.md](plain-language-rules.md#naming-layers-and-parts))
+5. Footer: the same not-built list as pages 1 and 2
+
 ### Phase 7 — Check and export
 
 The rules above are enforced by a checker in [tools/](tools/README.md). Run it from this skill's directory (first time only: `npm install --prefix tools && npx --prefix tools playwright install chromium`):
 
 ```bash
-node tools/poster.mjs check  <canvases>/<repo>-app-poster.canvas.tsx <canvases>/<repo>-project-story.canvas.tsx
-node tools/poster.mjs export <canvases>/<repo>-app-poster.canvas.tsx <canvases>/<repo>-project-story.canvas.tsx
+node tools/poster.mjs check  <canvases>/<repo>-app-poster.canvas.tsx <canvases>/<repo>-project-story.canvas.tsx <canvases>/<repo>-exploded-view.canvas.tsx
+node tools/poster.mjs export <canvases>/<repo>-app-poster.canvas.tsx <canvases>/<repo>-project-story.canvas.tsx <canvases>/<repo>-exploded-view.canvas.tsx
 ```
 
-1. `check` must print **PASS** for both posters. Every ✗ is a rule break — fix the canvas and re-run. Treat ! warnings (jargon, height, narrow panel) as copy edits unless there's a reason to keep them.
-2. `export` writes `<canvases>/exports/`: a PNG and a PDF per poster, plus `<repo>-poster-set.pdf` with both pages. Add `--paper a4` or `--paper letter` when the user wants to print.
+1. `check` must print **PASS** for all three posters. On page 3 it also drives the drawing: the slider, arrow keys, pointing at a layer, and the theme button. Every ✗ is a rule break — fix the canvas and re-run. Treat ! warnings (jargon, height, narrow panel) as copy edits unless there's a reason to keep them.
+2. `export` writes `<canvases>/exports/`: a PNG and a PDF per poster, plus `<repo>-poster-set.pdf` with all pages. Page 3 exports in its default state (light, 80% open); the controls are hidden. Add `--paper a4` or `--paper letter` when the user wants to print.
 3. If the tools can't install (no network), say so in chat and deliver the canvases only — never skip `check` silently.
 
 ### Chat response
 
-Keep chat short. Both poster canvases are the deliverable; the set PDF is what the user sends to people without Cursor.
+Keep chat short. The three poster canvases are the deliverable; the set PDF is what the user sends to people without Cursor.
 
 1. One sentence: what the app does
 2. Link to **page 1** (App Guide) with full absolute path (markdown link)
 3. One sentence on **page 2**: who it's for and that it has talking points + what's real today
 4. Link to **page 2** (Project Story) with full absolute path
-5. Link to the **poster-set PDF** (`exports/<repo>-poster-set.pdf`) — "send this to your client"
-6. If first canvas in workspace: one sentence on opening them beside the chat
-7. Note any gaps honestly ("billing UI is not built yet; backend exists only")
+5. One sentence on **page 3**, "the app taken apart, drag to open it", with a link to `<repo>-exploded-view.canvas.tsx`
+6. Link to the **poster-set PDF** (`exports/<repo>-poster-set.pdf`) — "send this to your client"
+7. If first canvas in workspace: one sentence on opening them beside the chat
+8. Note any gaps honestly ("billing UI is not built yet; backend exists only")
 
 ## Edge Cases
 
@@ -187,7 +202,7 @@ Keep chat short. Both poster canvases are the deliverable; the set PDF is what t
 
 If there is no `package.json`, no routes, and no product docs:
 
-- Do **not** produce either Canvas with placeholder content
+- Do **not** produce any Canvas with placeholder content
 - Tell the user honestly: no application detected in this repository
 - Suggest what would help: README, filled `project-context.md`, or a different repo path
 
@@ -216,7 +231,7 @@ When a playbook or audit distinguishes UI from server work:
 
 ## Output Quality Gates
 
-Before finishing, verify **both pages**:
+Before finishing, verify **all three pages**:
 
 **Page 1 — App Guide**
 - [ ] A non-engineer can describe what the app does from the poster alone
@@ -231,14 +246,20 @@ Before finishing, verify **both pages**:
 - [ ] Vision copy uses ownership language ("you", "your product")
 - [ ] Differentiation is concrete, not generic hype
 
-**Both pages**
-- [ ] `node tools/poster.mjs check` passes on both files (it enforces most of the list below)
+**Page 3 — Exploded View**
+- [ ] 3–5 layers, `screens` on top and `data` at the bottom, with no padding layers
+- [ ] Every part works today. Ports are only services a user actually touches; anything else goes in the footer
+- [ ] A non-engineer can say what each layer does from its caption sentence
+- [ ] Only data was edited. No hand-placed coordinates, no SVG text, no extra colours
+
+**All pages**
+- [ ] `node tools/poster.mjs check` passes on every file (it enforces most of the list below)
 - [ ] Light paper, ink type, one red accent mark (the full stop) — Swiss canon palette
 - [ ] Display type at poster scale (104–128px page 1 / 64–80px tagline page 2, multiples of 8); numerals at 40–48px
 - [ ] Primary copy in ink; gray only for folio, captions, status
 - [ ] 12-column grid with baseline lock; overlay shares content box
 - [ ] Two type roles; flush-left throughout; at least one deliberately empty zone
-- [ ] Diagrams are transit lines with **3, 4, or 6** dots on the 12-column grid — no boxed flowchart clip-art
+- [ ] Page 1 diagrams are transit lines with **3, 4, or 6** dots on the 12-column grid — no boxed flowchart clip-art. Page 3's drawing is the one SVG exception
 - [ ] No dark fields, rainbow tabs, or document-style canvas components
 - [ ] No unexplained jargon in visible poster copy
 - [ ] No file paths on either poster surface

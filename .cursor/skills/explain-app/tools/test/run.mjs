@@ -17,7 +17,9 @@ fs.mkdirSync(OUT, { recursive: true });
 const code = (md) => fs.readFileSync(path.join(SKILL, md), "utf8").match(/```tsx\n([\s\S]*?)```/)[1];
 const app = code("poster-starter.md");
 // Page 2 reuses page 1's constants and helpers ("copy from poster-starter.md").
-const story = app.split("export default function AppPoster")[0] + code("sell-sheet-starter.md").replace(/^import .*\n/, "");
+const shared = app.split("export default function AppPoster")[0];
+const story = shared + code("sell-sheet-starter.md").replace(/^import .*\n/, "");
+const exploded = shared + code("exploded-view-starter.md").replace(/^import .*\n/, "");
 
 const write = (name, src) => {
   const f = path.join(OUT, `${name}.canvas.tsx`);
@@ -32,6 +34,7 @@ const plant = (src, from, to) => {
 const cases = [
   { file: write("starter-app-poster", app), expect: null },
   { file: write("starter-project-story", story), expect: null },
+  { file: write("starter-exploded-view", exploded), expect: null },
   {
     file: write("bug-five-stations-app-poster", plant(app, '{ label: "Back out", sub: "what you receive" },', '{ label: "Back out", sub: "what you receive" },\n    { label: "Fifth", sub: "x" },')),
     expect: /5 won't land on the 12-column grid/,
@@ -72,6 +75,30 @@ const cases = [
     file: write("bug-overlay-drift-app-poster", plant(app, "inset: MARGIN, ...subgrid", "inset: 0, ...subgrid")),
     expect: /overlay columns do not match/,
   },
+  {
+    file: write("bug-six-layers-exploded-view", plant(exploded, '    { kind: "data", name:', '    { kind: "plate", name: "Extra one", line: "x", parts: [] },\n    { kind: "plate", name: "Extra two", line: "x", parts: [] },\n    { kind: "data", name:')),
+    expect: /6 layers — use 3 to 5/,
+  },
+  {
+    file: write("bug-blue-stroke-exploded-view", plant(exploded, "? { line: T.ink, detail: T.ink,", '? { line: "#0057FF", detail: T.ink,')),
+    expect: /Stroke colour/,
+  },
+  {
+    file: write("bug-file-path-exploded-view", plant(exploded, '{ label: "Search", size: "s" }', '{ label: "src/app/search.tsx", size: "s" }')),
+    expect: /File paths on the poster/,
+  },
+  {
+    file: write("bug-no-slider-exploded-view", plant(exploded, 'type="range"', 'type="number"')),
+    expect: /No "Open layers" slider/,
+  },
+  {
+    file: write("bug-labels-overlap-exploded-view", plant(exploded, "Math.max(y, ly[i - 1] + LABEL_STEP)", "ly[i - 1]")),
+    expect: /labels overlap/,
+  },
+  {
+    file: write("bug-leader-drift-exploded-view", plant(exploded, "return [X0 + x, oy - z[i] + y];", "return [X0 + x + 80, oy - z[i] + y];")),
+    expect: /Leader line \d does not start on its layer/,
+  },
 ];
 
 let failed = 0;
@@ -85,14 +112,14 @@ for (const [i, r] of results.entries()) {
   if (!ok) for (const e of r.errors.length ? r.errors : ["(no errors reported)"]) console.log(`       ${e}`);
 }
 
-// Type-check both starters against the cursor/canvas shim.
+// Type-check the three starters against the cursor/canvas shim.
 fs.writeFileSync(path.join(OUT, "tsconfig.json"), JSON.stringify({
   compilerOptions: {
     jsx: "react-jsx", strict: true, noEmit: true, target: "es2020", module: "esnext", moduleResolution: "bundler", skipLibCheck: true,
     typeRoots: [path.join(TOOLS, "node_modules", "@types")],
     paths: { "cursor/canvas": [path.join(TOOLS, "shim", "canvas.tsx")], "react": [path.join(TOOLS, "node_modules", "@types", "react")], "react/jsx-runtime": [path.join(TOOLS, "node_modules", "@types", "react", "jsx-runtime")] },
   },
-  files: [cases[0].file, cases[1].file],
+  files: [cases[0].file, cases[1].file, cases[2].file],
 }));
 try {
   execFileSync(process.execPath, [path.join(TOOLS, "node_modules", "typescript", "bin", "tsc"), "-p", OUT], { stdio: "pipe" });
