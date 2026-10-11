@@ -214,6 +214,25 @@ test("error: a non-feature part that counts nothing", () => {
   assert.deepEqual(wire(facts, [P("Box", "feature", ["area:a", "!area:a"]), P("Beta", "feature", ["area:b"])]).errors, ['feature part "Box" counts nothing']);
 });
 
+test("error: detail must be a non-empty string of at most 120 characters", () => {
+  const msg = (name) => `Part "${name}": detail must be a sentence of 120 characters at most`;
+  const withDetail = (detail) => [{ ...P("Alpha", "feature", ["area:a"]), detail }, P("Beta", "feature", ["area:b"])];
+  assert.deepEqual(errs(withDetail("A".repeat(120))), [], "120 characters is fine");
+  assert.deepEqual(errs(withDetail("Short and plain.")), []);
+  assert.deepEqual(errs(withDetail("A".repeat(121))), [msg("Alpha")]);
+  assert.deepEqual(errs(withDetail("")), [msg("Alpha")]);
+  assert.deepEqual(errs(withDetail("   ")), [msg("Alpha")]);
+  assert.deepEqual(errs(withDetail(42)), [msg("Alpha")]);
+  assert.deepEqual(errs(withDetail(null)), [msg("Alpha")]);
+  assert.deepEqual(errs(withDetail(["x"])), [msg("Alpha")]);
+  assert.deepEqual(errs([P("Alpha", "feature", ["area:a"]), P("Beta", "feature", ["area:b"])]), [], "detail is optional");
+  // it stays out of WIRING and the parts hash
+  const plain = ok(wire(base(), [P("Alpha", "feature", ["area:a"]), P("Beta", "feature", ["area:b"])]));
+  const detailed = ok(wire(base(), withDetail("Everything you see on the page.")));
+  assert.equal(JSON.stringify(detailed.wiring), JSON.stringify(plain.wiring));
+  assert.equal(JSON.stringify(detailed.wiring).includes("Everything"), false);
+});
+
 test("error: malformed parts do not crash", () => {
   const r = wire(base(), [{ role: "feature", from: ["area:a"] }, { name: "Bad role", role: "walls", from: ["area:a"] }, { name: "No from", role: "feature", from: [] }, null]);
   assert.ok(r.errors.some((e) => e === 'Part 1 has no "name"'));
@@ -405,6 +424,33 @@ test("links: uses of unowned files that were reached count, uses of owned files 
   assert.deepEqual(linksOf(fourth), []);
 });
 
+test("links: one file reaching a part through many facts or routes counts once", () => {
+  // a generated client that lists 15 endpoints, imported by 3 files of Alpha
+  const endpoints = Array.from({ length: 15 }, (_, i) => fact(`endpoint:/api/e${String(i).padStart(2, "0")}`, [`srv/e${i}.ts`]));
+  const facts = mk({
+    facts: [area("a"), ...endpoints],
+    files: { "a/x1.ts": 1, "a/x2.ts": 1, "a/x3.ts": 1, "client/index.ts": 1 },
+    imports: [["a/x1.ts", "client/index.ts"], ["a/x2.ts", "client/index.ts"], ["a/x3.ts", "client/index.ts"]],
+    uses: endpoints.map((e) => ["client/index.ts", e.id, "http"]),
+  });
+  const parts = [P("Alpha", "feature", ["area:a"]), P("Door", "api", ["endpoint:**"])];
+  const r = ok(wire(facts, parts));
+  assert.deepEqual(linksOf(r), [[0, 1, 3]], "3 source files, not 45 witnesses");
+  assert.equal(r.witnesses.get("0-1").length, 45, "all witnesses are still kept for `why`");
+  // one file reaching the other part by an import, a package use and an orm use is still one source file
+  const three = mk({
+    facts: [area("a"), area("b"), fact("service:pay", ["b/pay.ts"]), fact("table:T", ["b/t.ts"])],
+    files: { "a/x.ts": 1, "b/y.ts": 1 },
+    imports: [["a/x.ts", "b/y.ts"], ["a/x.ts", "m/1.ts"], ["m/1.ts", "b/y2.ts"]],
+    uses: [["a/x.ts", "service:pay", "package"], ["a/x.ts", "table:T", "orm"]],
+  });
+  const rb = ok(wire(three, [P("Alpha", "feature", ["area:a"]), P("Beta", "feature", ["area:b"]), P("Pay", "service", ["service:pay"]), P("Saved", "data", ["table:T"])]));
+  assert.deepEqual(linksOf(rb), [[0, 1, 1], [0, 2, 1], [0, 3, 1]]);
+  // …and the same file importing a part plus that part importing back adds the second source file
+  const back = ab({ imports: [["a/x.ts", "b/y.ts"], ["b/y.ts", "a/x.ts"], ["a/x.ts", "m/1.ts"], ["m/1.ts", "b/y.ts"]] });
+  assert.deepEqual(linksOf(ok(wire(back.facts, back.parts))), [[0, 1, 2]]);
+});
+
 test("links: self-links are dropped", () => {
   const facts = mk({
     facts: [area("a"), area("b"), fact("table:T", ["db/t.ts"]), fact("service:pay")],
@@ -418,19 +464,19 @@ test("links: self-links are dropped", () => {
   assert.deepEqual(r.warnings.filter((w) => /no links/.test(w)), ['"Saved" has no links', '"Beta" has no links']);
 });
 
-test("links: weight = distinct witnesses per unordered pair", () => {
+test("links: weight = distinct source files that reach the other part (both directions)", () => {
   // two files in A import the same file in B → 2
   const two = ab({ files: { "a/x2.ts": 1 }, imports: [["a/x.ts", "b/y.ts"], ["a/x2.ts", "b/y.ts"]] });
   assert.deepEqual(linksOf(ok(wire(two.facts, two.parts))), [[0, 1, 2]]);
-  // the same file pair imported both ways is one wire
+  // imported both ways: each side has one source file that reaches the other (2), but it is one witness
   const both = ab({ imports: [["a/x.ts", "b/y.ts"], ["b/y.ts", "a/x.ts"]] });
   const rb = ok(wire(both.facts, both.parts));
-  assert.deepEqual(linksOf(rb), [[0, 1, 1]]);
-  assert.equal(rb.witnesses.get("0-1").length, 1);
+  assert.deepEqual(linksOf(rb), [[0, 1, 2]]);
+  assert.equal(rb.witnesses.get("0-1").length, 1, "the file pair is still one witness for `why`");
   // two routes to the same file are one witness
   const routes = ab({ imports: [["a/x.ts", "m/1.ts"], ["a/x.ts", "m/2.ts"], ["m/1.ts", "b/y.ts"], ["m/2.ts", "b/y.ts"]] });
   assert.deepEqual(linksOf(ok(wire(routes.facts, routes.parts))), [[0, 1, 1]]);
-  // file witnesses and uses witnesses add up on one pair; a fact used from two files is two witnesses
+  // a fact used from two files is two source files
   const mixed = mk({
     facts: [area("a"), area("b"), fact("service:pay", ["b/pay.ts"])],
     files: { "a/x.ts": 1, "a/x2.ts": 1, "b/y.ts": 1 },
@@ -468,11 +514,56 @@ test("counts: a feature with one area counts its direct child areas", () => {
   });
   const r = ok(wire(facts, [P("Lib", "feature", ["area:lib"]), P("Other", "feature", ["area:other"])]));
   const n = r.wiring.n[0];
-  assert.equal(n.count, 2);
-  assert.deepEqual(n.names, ["A", "B"], "grandchildren are not chips; biggest first");
-  assert.deepEqual(n.items, [0.667, 0.333], "LOC share among the chips");
+  assert.equal(n.count, 3, "two children plus the area's own files (100 − 60 − 30 = 10 LOC)");
+  assert.deepEqual(n.names, ["A", "B", "Lib"], "grandchildren are not chips; biggest first");
+  assert.deepEqual(n.items, [0.6, 0.3, 0.1], "LOC share among the chips");
   // one area with no children → that area itself
   assert.deepEqual(r.wiring.n[1], { count: 1, drawn: 1, items: [1], size: 0, loc: 0, names: ["Other"] });
+});
+
+test("counts: a single area also gets a chip for its own files outside the child areas", () => {
+  // the taxonomy case: components/ has many direct files and a big kit folder ui/
+  const facts = mk({ facts: [area("components", 100), area("components/ui", 62), area("elsewhere", 5)], files: {} });
+  const r = ok(wire(facts, [P("Pieces", "feature", ["area:components"]), P("Other", "feature", ["area:elsewhere"])]));
+  assert.equal(r.wiring.n[0].count, 2);
+  assert.deepEqual(r.wiring.n[0].names, ["Ui", "Components"], "own files (38 LOC) are named after the area; chips sorted by LOC");
+  assert.deepEqual(r.wiring.n[0].items, [0.62, 0.38]);
+  const many = mk({ facts: [area("components", 100), area("components/ui", 30), area("elsewhere", 5)], files: {} });
+  const m = ok(wire(many, [P("Pieces", "feature", ["area:components"]), P("Other", "feature", ["area:elsewhere"])]));
+  assert.deepEqual(m.wiring.n[0].names, ["Components", "Ui"]);
+  assert.deepEqual(m.wiring.n[0].items, [0.7, 0.3]);
+  // no own files → no extra chip
+  const tight = mk({ facts: [area("lib", 90), area("lib/a", 60), area("lib/b", 30), area("o", 5)], files: {} });
+  assert.deepEqual(ok(wire(tight, [P("Lib", "feature", ["area:lib"]), P("O", "feature", ["area:o"])])).wiring.n[0].names, ["A", "B"]);
+  // the own-files chip is computed from the facts' LOC, so zero-LOC leftovers (e.g. only generated files) do not count
+  const empty = mk({ facts: [area("lib", 90), area("lib/a", 90), area("o", 5)], files: {} });
+  assert.deepEqual(ok(wire(empty, [P("Lib", "feature", ["area:lib"]), P("O", "feature", ["area:o"])])).wiring.n[0].names, ["A"]);
+  // an area with no children at all is one chip, itself
+  assert.deepEqual(ok(wire(tight, [P("A", "feature", ["area:lib/a"]), P("B", "feature", ["area:lib/b"])])).wiring.n[0].names, ["A"]);
+});
+
+test("counts: !area: patterns remove child chips; the removed children's code is not the area's own", () => {
+  const facts = mk({
+    facts: [area("app/api", 100), area("app/api/posts", 30), area("app/api/og", 20), area("app/api/users", 40), area("elsewhere", 5)],
+    files: {},
+  });
+  const parts = (from) => [P("Server", "feature", from), P("Other", "feature", ["area:elsewhere"])];
+  const r = ok(wire(facts, parts(["area:app/api", "!area:app/api/posts", "!area:app/api/og"])));
+  assert.deepEqual(r.wiring.n[0].names, ["Users", "Api"], "no Posts, no Og; 100 − 30 − 20 − 40 = 10 LOC of its own");
+  assert.equal(r.wiring.n[0].count, 2);
+  assert.deepEqual(r.wiring.n[0].items, [0.8, 0.2]);
+  // globs work in exclusions
+  const g = ok(wire(facts, parts(["area:app/api", "!area:app/api/p*", "!area:app/api/o*"])));
+  assert.deepEqual(g.wiring.n[0].names, ["Users", "Api"]);
+  // every child removed and no own files → the area itself
+  const all = mk({ facts: [area("app/api", 90), area("app/api/posts", 90), area("elsewhere", 5)], files: {} });
+  const none = ok(wire(all, [P("Server", "feature", ["area:app/api", "!area:app/api/posts"]), P("Other", "feature", ["area:elsewhere"])]));
+  assert.deepEqual(none.wiring.n[0].names, ["Api"]);
+  assert.equal(none.wiring.n[0].count, 1);
+  // exclusions do not change which files the part owns
+  const files = mk({ facts: [area("app/api", 100), area("app/api/posts", 30), area("elsewhere", 5)], files: { "app/api/posts/p.ts": 30 } });
+  const own = ok(wire(files, [P("Server", "feature", ["area:app/api", "!area:app/api/posts"]), P("Other", "feature", ["area:elsewhere"])]));
+  assert.equal(own.owners.get("app/api/posts/p.ts"), 0);
 });
 
 test("counts: a feature with several areas counts those areas, not their children", () => {
@@ -486,7 +577,8 @@ test("counts: a feature with several areas counts those areas, not their childre
 test("counts: a child is a direct child of the nearest emitted ancestor, and area:. has top-level children", () => {
   const facts = mk({ facts: [area("."), area("lib", 50), area("lib/x/y", 30), area("app", 20)], files: {} }); // lib/x was merged away
   const lib = ok(wire(facts, [P("Lib", "feature", ["area:lib"]), P("Other", "feature", ["area:app"])]));
-  assert.deepEqual(lib.wiring.n[0].names, ["Y"]);
+  assert.deepEqual(lib.wiring.n[0].names, ["Y", "Lib"], "y is lib's direct child; lib's own files are the other 20 LOC");
+  assert.deepEqual(lib.wiring.n[0].items, [0.6, 0.4]);
   const rootCase = mk({ facts: [area(".", 100), area("lib", 60), area("app", 40), area("lib/x", 10)], files: {} });
   const r = wire(rootCase, [P("All", "feature", ["area:."]), P("Only", "service", ["area:lib/x"])]);
   assert.match(r.errors[0], /counts nothing/, "service part with only an area counts nothing");

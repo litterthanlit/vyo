@@ -14,6 +14,7 @@ const MAX_NAMES = 12;
 const MIN_PARTS = 2;
 const MAX_PARTS = 9;
 const MAX_NAME_LEN = 18;
+const MAX_DETAIL_LEN = 120;
 const MAX_HOPS = 3;
 // Facts whose `files` are the files that define them, so they confer ownership (service / ai do not).
 const DEFINING_KINDS = new Set(["screen", "endpoint", "table", "job"]);
@@ -228,7 +229,8 @@ const dirOf = (file) => (file.lastIndexOf("/") < 0 ? "." : file.slice(0, file.la
  *
  * Returns { wiring, errors, warnings, witnesses, owners, chains }:
  *  - errors / warnings are plain messages (no "✗ " / "! " prefix). With any error, `wiring` is null.
- *  - witnesses: "a-b" (a < b) → one chain per distinct witness (so length === link weight).
+ *  - witnesses: "a-b" (a < b) → one chain per distinct witness. A link's weight is the number of distinct
+ *    SOURCE FILES that reach the other part (both directions), so it can be smaller than the witness count.
  *    A chain is [file, …files, file] or [file, …files, factId]; an http hop through an uncited endpoint
  *    reads [file, endpointId, endpointFile].
  *  - owners: file → index of the part that owns it.
@@ -270,6 +272,9 @@ export function wire(facts, parts) {
     if (!ROLES.includes(p.role)) {
       errors.push(`Part ${who}: role ${JSON.stringify(p.role)} is not one of ${ROLES.join(", ")}`);
       ok = false;
+    }
+    if (p.detail !== undefined && (typeof p.detail !== "string" || p.detail.trim() === "" || charLen(p.detail) > MAX_DETAIL_LEN)) {
+      errors.push(`Part ${who}: detail must be a sentence of ${MAX_DETAIL_LEN} characters at most`);
     }
     if (!Array.isArray(p.from) || p.from.length === 0 || p.from.some((s) => typeof s !== "string" || s === "")) {
       errors.push(`Part ${who}: "from" must be a non-empty array of id patterns`);
@@ -331,10 +336,14 @@ export function wire(facts, parts) {
     for (const [file, info] of Object.entries(files)) if (!info.gen && (dir === "." || file.startsWith(`${dir}/`))) sum += info.loc ?? 0;
     return sum;
   };
-  const featureChips = (areaIds) => {
-    let chips = areaIds.map((id) => factById.get(id));
-    if (chips.length === 1) {
-      const top = chips[0];
+  // Feature chips. One cited area → its direct child areas (minus those the part removes with `!area:…`)
+  // plus one chip, named after the area, for its own files outside all its children (if they have LOC).
+  // Several cited areas → those areas. A single area that yields no chip at all is one chip itself.
+  const featureChips = (areaIds, from) => {
+    const cited = areaIds.map((id) => factById.get(id));
+    let chips;
+    if (cited.length === 1) {
+      const top = cited[0];
       const topDir = top.id.slice(5);
       const kids = factList.filter((f) => {
         if (f.kind !== "area" || f.id === top.id) return false;
@@ -342,12 +351,17 @@ export function wire(facts, parts) {
         while (d !== null && !areaByDir.has(d)) d = parentDir(d);
         return d === topDir;
       });
-      if (kids.length) chips = kids;
+      const removed = from.filter((s) => s.startsWith("!")).map((s) => globToRegExp(s.slice(1)));
+      chips = kids.filter((k) => !removed.some((re) => re.test(k.id))).map((k) => ({ name: k.name ?? k.id, loc: areaLoc(k) }));
+      const own = areaLoc(top) - kids.reduce((sum, k) => sum + areaLoc(k), 0);
+      if (own > 0) chips.push({ name: top.name ?? top.id, loc: own });
+      if (chips.length === 0) chips.push({ name: top.name ?? top.id, loc: areaLoc(top) });
+    } else {
+      chips = cited.map((f) => ({ name: f.name ?? f.id, loc: areaLoc(f) }));
     }
-    const withLoc = chips.map((f) => ({ name: f.name ?? f.id, loc: areaLoc(f) }));
-    withLoc.sort((a, b) => b.loc - a.loc || cmp(a.name, b.name));
-    const total = withLoc.reduce((s, c) => s + c.loc, 0);
-    return withLoc.map((c) => ({ name: c.name, w: total > 0 ? c.loc / total : 1 }));
+    chips.sort((a, b) => b.loc - a.loc || cmp(a.name, b.name));
+    const total = chips.reduce((sum, c) => sum + c.loc, 0);
+    return chips.map((c) => ({ name: c.name, w: total > 0 ? c.loc / total : 1 }));
   };
 
   const listed = parts.map((p, i) => {
@@ -355,7 +369,7 @@ export function wire(facts, parts) {
     const ids = citedIds[i];
     let list;
     if (p.role === "feature") {
-      list = featureChips(ids.filter((id) => factById.get(id).kind === "area"));
+      list = featureChips(ids.filter((id) => factById.get(id).kind === "area"), p.from);
     } else {
       list = ids.filter((id) => factById.get(id).kind !== "area").map((id) => ({ name: factById.get(id).name ?? id, w: 1 }));
     }
@@ -466,7 +480,7 @@ export function wire(facts, parts) {
     return c;
   };
 
-  const pairs = new Map(); // "a-b" → { distinct: Map(key → chain), directed: Map(key → {from, chain}) }
+  const pairs = new Map(); // "a-b" → { sources: Set(file), distinct: Map(key → chain), directed: Map(key → {from, chain}) }
   const chainTo = (parent, node) => {
     const out = [];
     for (let cur = node; ; ) {
@@ -483,7 +497,8 @@ export function wire(facts, parts) {
     const b = Math.max(p, q);
     const pk = `${a}-${b}`;
     let rec = pairs.get(pk);
-    if (!rec) pairs.set(pk, (rec = { distinct: new Map(), directed: new Map() }));
+    if (!rec) pairs.set(pk, (rec = { sources: new Set(), distinct: new Map(), directed: new Map() }));
+    rec.sources.add(source); // weight counts source files, not witnesses
     const uk = p < q ? `${source}\0${other}` : `${other}\0${source}`; // lower part's end first: (f,g) and (g,f) are one wire
     const dk = `${p}\0${source}\0${other}`;
     const newDistinct = !rec.distinct.has(uk);
@@ -532,7 +547,7 @@ export function wire(facts, parts) {
   const chains = new Map();
   for (const [key, rec] of pairs) {
     const [a, b] = key.split("-").map(Number);
-    links.push([a, b, rec.distinct.size]);
+    links.push([a, b, rec.sources.size]);
     witnesses.set(key, [...rec.distinct.values()]);
     chains.set(key, [...rec.directed.values()]);
   }
@@ -745,7 +760,7 @@ export async function whyMain(argv, io = defaultIo()) {
     io.out(`No wire between ${nameA} and ${nameB}`);
     return 0;
   }
-  const weight = result.witnesses.get(pair).length;
+  const weight = result.wiring.links.find((l) => l[0] === Math.min(ia, ib) && l[1] === Math.max(ia, ib))?.[2] ?? 0;
   io.out(`${nameA} ↔ ${nameB} (weight ${weight})`);
   for (const [from, to] of [[ia, ib], [ib, ia]]) {
     const best = recs
