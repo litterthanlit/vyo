@@ -3,6 +3,10 @@ import { aiName, SERVICE_NAMES } from "./names.mjs";
 import { pkgNameOf } from "./imports.mjs";
 import { cmp } from "./util.mjs";
 
+// OAuth providers loaded through next-auth / Auth.js: the provider is the outside company.
+const AUTH_PROVIDERS = ["github", "google", "apple", "discord", "gitlab", "twitter", "facebook", "linkedin", "slack", "azure-ad", "auth0", "okta", "cognito", "keycloak"];
+const PROVIDER_PATTERNS = AUTH_PROVIDERS.flatMap((p) => [[`next-auth/providers/${p}`, p], [`@auth/core/providers/${p}`, p]]);
+
 // [pattern, vendor]. JS patterns: "name", "@scope/*", "prefix*". Python patterns: dotted module roots.
 const SERVICES = {
   payments: {
@@ -15,10 +19,10 @@ const SERVICES = {
     py: [["sendgrid", "sendgrid"], ["emails", "emails"], ["fastapi_mail", "fastapi-mail"], ["flask_mail", "flask-mail"]],
   },
   // Hosted sign-in companies only. next-auth, @auth/*, lucia, better-auth, passlib, pwdlib, pyjwt, python-jose and
-  // authlib run inside the app, so they are not outside services.
+  // authlib run inside the app, so they are not outside services; the OAuth providers they load are.
   "sign-in": {
     js: [["@clerk/*", "clerk"], ["@auth0/*", "auth0"], ["auth0", "auth0"], ["auth0-js", "auth0"], ["@workos-inc/*", "workos"], ["@stytch/*", "stytch"], ["@kinde-oss/*", "kinde"],
-      ["@supabase/auth-helpers-*", "supabase"], ["@supabase/ssr", "supabase"], ["firebase/auth", "firebase"], ["@okta/*", "okta"]],
+      ["@supabase/auth-helpers-*", "supabase"], ["@supabase/ssr", "supabase"], ["firebase/auth", "firebase"], ["@okta/*", "okta"], ...PROVIDER_PATTERNS],
     py: [["auth0", "auth0"], ["firebase_admin", "firebase"]],
   },
   "file-storage": {

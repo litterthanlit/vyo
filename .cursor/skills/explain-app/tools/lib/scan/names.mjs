@@ -160,8 +160,12 @@ export function clip(name, n = MAX_NAME) {
 
 const sentence = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
+// A `routes` folder holds screens in a frontend package (TanStack, React Router, SvelteKit, Remix) and requests on a
+// server (FastAPI api/routes, Express). `hint` says which: "pages" | "requests", or a function returning one.
+const ROUTE_FOLDERS = new Set(["routes", "route"]);
+
 // A folder's plain-English name: no jargon, 16 characters at most.
-export function plainAreaName(dir, repoName = "") {
+export function plainAreaName(dir, repoName = "", hint) {
   let name;
   if (dir === "") {
     const words = splitWords(repoName || "");
@@ -172,6 +176,7 @@ export function plainAreaName(dir, repoName = "") {
     const last = foldKey(segs[segs.length - 1]);
     const pair = segs.length > 1 ? `${foldKey(segs[segs.length - 2])}/${last}` : "";
     name = PAIR_NAMES[pair] || FOLDER_NAMES[last];
+    if (ROUTE_FOLDERS.has(last) && (typeof hint === "function" ? hint() : hint) === "pages") name = "Pages";
     if (!name) {
       const words = splitWords(cleanSeg(segs[segs.length - 1])).split(" ").filter(Boolean);
       const fixed = words.map((w) => WORD_FIXES[w] || w);
@@ -185,4 +190,4 @@ export function plainAreaName(dir, repoName = "") {
 
 
 // Areas (CONTRACTS §2.5): the plain-English folder map; unmapped basenames are title-cased with jargon words replaced.
-export const areaName = plainAreaName;
+export const areaName = (dir, repoName, hint) => plainAreaName(dir, repoName, hint);

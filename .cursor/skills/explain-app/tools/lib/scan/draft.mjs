@@ -126,7 +126,7 @@ export function draftParts(facts) {
   }
   const used = new Set();
   for (const c of chosen) {
-    const base = plainAreaName(c.dir, facts.repo && facts.repo.name);
+    const base = c.a.name && c.a.name.length <= MAX_NAME && !isJargon(c.a.name) ? c.a.name : plainAreaName(c.dir, facts.repo && facts.repo.name);
     let name = base;
     for (let n = 2; used.has(name.toLowerCase()); n++) name = `${clip(base, MAX_NAME - 2)} ${n}`;
     used.add(name.toLowerCase());

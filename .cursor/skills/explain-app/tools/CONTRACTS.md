@@ -136,7 +136,7 @@ A file is `kit` when it defines no fact **and** is imported from at least `max(4
 |---|---|---|
 | `service:payments` | Payments | stripe, @stripe/*, @lemonsqueezy/*, paddle* / stripe |
 | `service:email` | Email | resend, @sendgrid/*, postmark, nodemailer, mailgun* / sendgrid, emails, fastapi-mail (template-only packages like `@react-email/*` are **not** a service) |
-| `service:sign-in` | Sign-in | **hosted sign-in companies only**: @clerk/*, @auth0/*, @workos-inc/*, @stytch/*, @kinde-oss/*, @supabase/auth-helpers-*, @supabase/ssr, firebase/auth, @okta/* / auth0-python, firebase-admin. Sign-in libraries that run inside the app (next-auth, @auth/*, lucia, better-auth, passlib, pwdlib, pyjwt, python-jose, authlib) are **not** outside services |
+| `service:sign-in` | Sign-in | **hosted sign-in companies only**: @clerk/*, @auth0/*, @workos-inc/*, @stytch/*, @kinde-oss/*, @supabase/auth-helpers-*, @supabase/ssr, firebase/auth, @okta/* / auth0-python, firebase-admin. Sign-in libraries that run inside the app (next-auth, @auth/*, lucia, better-auth, passlib, pwdlib, pyjwt, python-jose, authlib) are **not** outside services, but an OAuth provider they load is: a file importing `next-auth/providers/<p>` or `@auth/core/providers/<p>` for p in github, google, apple, discord, gitlab, twitter, facebook, linkedin, slack, azure-ad, auth0, okta, cognito, keycloak (not `credentials`, `email`, `nodemailer`) counts as sign-in through that company, `meta.vendor` = p |
 | `service:file-storage` | File storage | @aws-sdk/client-s3, @vercel/blob, uploadthing, @uploadthing/*, cloudinary / boto3 |
 | `service:analytics` | Analytics | posthog-js, posthog-node, @vercel/analytics, mixpanel*, @segment/* / posthog |
 | `service:error-alerts` | Error alerts | @sentry/* / sentry-sdk |
@@ -337,12 +337,12 @@ Each drawn unit is an element with `data-item`.
 - **Side:** a part goes left when its slot centre is left of the drawing centre. A centre slot goes to the side with fewer labels; ties go right.
 - **Per-side y:** sort by desired y. A forward pass sets y = max(desired, prev + 40, PAD). On overflow, shift up and run a backward pass.
 - **Leader path:** horizontal, then an elbow in the gutter, then a stub at the label's near edge.
-- **Text:** line 1 is a folio, `01 — NAME`. Line 2 is a meta count phrase from the table below. **Never wraps.**
+- **Text:** line 1 is the number and name in sentence case, `01  Name` (10px, weight 600, tracking ≤ 0.02em, so an 18-character name fits the 130px gutter). Line 2 is a meta count phrase from the table below. **Never wraps.** Below ~880px figure width the labels become a numbered legend under the drawing.
 
 | role | line 2 |
 |---|---|
 | screens | `{n} screen(s)` |
-| api | `Answers {n} kind(s) of request` |
+| api | `{n} kind(s) of request` |
 | feature | `{pct}% of the code` |
 | ai | `{n} AI model(s)` + ` · {t} tools` when tools > 0 |
 | jobs | `Runs {n} job(s) on its own` |

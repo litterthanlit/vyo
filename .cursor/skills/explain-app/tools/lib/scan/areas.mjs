@@ -130,12 +130,12 @@ export function computeAreas({ sources, pkgIndex }) {
   return { areaOfFile, areas };
 }
 
-export function areaFacts(areas, repoName, multiPackage) {
+export function areaFacts(areas, repoName, hintFor) {
   return [...areas.values()]
     .map((a) => ({
       id: areaId(a.dir),
       kind: "area",
-      name: areaName(a.dir, repoName),
+      name: areaName(a.dir, repoName, hintFor ? () => hintFor(a.dir) : undefined),
       files: [],
       loc: a.loc,
       meta: { fileCount: a.fileCount, leaf: a.leaf, package: pub(a.pkg) },

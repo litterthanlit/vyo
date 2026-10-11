@@ -15,7 +15,7 @@ import { detectServices } from "./detect-services.mjs";
 import { computeAreas, areaFacts, areaId } from "./areas.mjs";
 import { detectUses } from "./uses.mjs";
 import { detectKit } from "./kit.mjs";
-import { cmp, extname, pub, sortedUnique } from "./util.mjs";
+import { cmp, extname, isUnder, pub, sortedUnique } from "./util.mjs";
 
 const UNRESOLVED_CAP = 200;
 
@@ -117,8 +117,22 @@ export function scanRepoDetailed(dirArg) {
   const kit = detectKit({ imports: res.imports, info, pkgOf: pkgIndex.pkgOf });
   for (const k of kit) info.get(k).kit = 1;
 
-  const multi = new Set([...sources.keys()].map((f) => pkgIndex.pkgOf(f))).size > 1;
-  const allFacts = [...baseFacts, ...areaFacts(areas, repoName, multi)].sort((a, b) => cmp(a.id, b.id));
+  // a `routes` folder is "Pages" when its files declare screens, "Requests" when they declare endpoints
+  const routesHint = (dir) => {
+    let screens = 0;
+    let endpoints = 0;
+    for (const [file, ids] of defines) {
+      if (!isUnder(file, dir)) continue;
+      for (const id of ids) {
+        if (id.startsWith("screen:")) screens++;
+        else if (id.startsWith("endpoint:")) endpoints++;
+      }
+    }
+    if (screens !== endpoints) return screens > endpoints ? "pages" : "requests";
+    for (const file of sources.keys()) if (isUnder(file, dir) && /\.(tsx|jsx|vue|svelte|astro)$/.test(file)) return "pages";
+    return "requests";
+  };
+  const allFacts = [...baseFacts, ...areaFacts(areas, repoName, routesHint)].sort((a, b) => cmp(a.id, b.id));
 
   const unresolved = {};
   [...res.unresolved].sort((a, b) => b[1] - a[1] || cmp(a[0], b[0])).slice(0, UNRESOLVED_CAP).forEach(([k, n]) => (unresolved[k] = n));

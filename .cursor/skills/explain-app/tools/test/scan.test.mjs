@@ -874,6 +874,133 @@ describe(".mdx is content that counts (§2.2)", () => {
     ));
 });
 
+describe("sign-in through an outside company's OAuth provider (§2.5)", () => {
+  const withRepo = async (spec, fn) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "scan-oauth-"));
+    for (const [rel, text] of Object.entries(spec)) {
+      fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+      fs.writeFileSync(path.join(root, rel), text);
+    }
+    try {
+      return await fn(await scanRepo(root));
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  };
+
+  test("next-auth and Auth.js providers are sign-in through that company; credentials, email and nodemailer are not", () =>
+    withRepo(
+      {
+        "package.json": '{"name":"o","dependencies":{"next":"14","next-auth":"4"}}',
+        "lib/auth.ts":
+          'import NextAuth from "next-auth";\nimport GitHub from "next-auth/providers/github";\nimport Credentials from "next-auth/providers/credentials";\nimport Email from "next-auth/providers/email";\nexport const a = [NextAuth, GitHub, Credentials, Email];\n',
+        "lib/auth2.ts": 'import Google from "@auth/core/providers/google";\nimport Nodemailer from "@auth/core/providers/nodemailer";\nimport type Discord from "next-auth/providers/discord";\nexport const b = [Google, Nodemailer];\n',
+        "lib/plain.ts": 'import NextAuth from "next-auth";\nimport Creds from "next-auth/providers/credentials";\nexport const c = [NextAuth, Creds];\n',
+      },
+      (f) => {
+        assert.deepEqual(ids(f, "service"), ["service:sign-in"]);
+        assert.deepEqual(fact(f, "service:sign-in").meta.vendor, ["github", "google"], "type-only discord import is not wiring");
+        assert.deepEqual(fact(f, "service:sign-in").files, ["lib/auth.ts", "lib/auth2.ts"]);
+        assert.ok(hasUse(f, "lib/auth.ts", "service:sign-in", "package"));
+        assert.ok(hasUse(f, "lib/auth2.ts", "service:sign-in", "package"));
+        assert.ok(!hasUse(f, "lib/plain.ts", "service:sign-in", "package"), "next-auth alone is not an outside service");
+      },
+    ));
+
+  test("every listed provider counts", () => {
+    const providers = ["github", "google", "apple", "discord", "gitlab", "twitter", "facebook", "linkedin", "slack", "azure-ad", "auth0", "okta", "cognito", "keycloak"];
+    const spec = { "package.json": '{"name":"o","dependencies":{"next-auth":"4"}}' };
+    providers.forEach((p, i) => (spec[`p${i}.ts`] = `import P from "next-auth/providers/${p}";\nexport const x = P;\n`));
+    return withRepo(spec, (f) => assert.deepEqual(fact(f, "service:sign-in").meta.vendor, [...providers].sort()));
+  });
+});
+
+describe("a routes folder is Pages for screens and Requests for server routes (§2.5)", () => {
+  const withRepo = async (spec, fn) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "scan-routes-"));
+    for (const [rel, text] of Object.entries(spec)) {
+      fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+      fs.writeFileSync(path.join(root, rel), text);
+    }
+    try {
+      return await fn(await scanRepo(root));
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  };
+  const page = "export default function P() { return null }\n";
+  const names = (f) => Object.fromEntries(f.facts.filter((x) => x.kind === "area").map((x) => [x.id, x.name]));
+
+  test("TanStack, SvelteKit and Remix route folders are Pages", async () => {
+    await withRepo(
+      {
+        "package.json": '{"name":"t","dependencies":{"@tanstack/react-router":"1"}}',
+        "src/routes/__root.tsx": page,
+        "src/routes/index.tsx": page,
+        "src/routes/items.tsx": page,
+        "src/routes/login.tsx": page,
+      },
+      (f) => assert.equal(names(f)["area:src/routes"], "Pages"),
+    );
+    await withRepo(
+      {
+        "package.json": '{"name":"s","devDependencies":{"@sveltejs/kit":"2"}}',
+        "src/routes/+page.svelte": "<p>hi</p>\n",
+        "src/routes/about/+page.svelte": "<p>hi</p>\n",
+        "src/routes/blog/+page.svelte": "<p>hi</p>\n",
+        "src/routes/api/posts/+server.ts": "export const GET = () => new Response();\n",
+      },
+      (f) => {
+        assert.equal(names(f)["area:src/routes"], "Pages");
+      },
+    );
+    await withRepo(
+      {
+        "package.json": '{"name":"r","dependencies":{"@remix-run/react":"2"}}',
+        "app/routes/_index.tsx": page,
+        "app/routes/about.tsx": page,
+        "app/routes/recipes.$id.tsx": page,
+      },
+      (f) => assert.equal(names(f)["area:app/routes"], "Pages"),
+    );
+  });
+
+  test("a routes folder of components with no declared screens is still Pages; server route folders are Requests", async () => {
+    await withRepo(
+      {
+        "package.json": '{"name":"spa","dependencies":{"react":"18"}}',
+        "src/routes/Home.tsx": page,
+        "src/routes/About.tsx": page,
+        "src/routes/Contact.tsx": page,
+      },
+      (f) => assert.equal(names(f)["area:src/routes"], "Pages"),
+    );
+    await withRepo(
+      {
+        "package.json": '{"name":"e","dependencies":{"express":"4"}}',
+        "src/server.js": 'const express = require("express");\nconst users = require("./routes/users");\nconst app = express();\napp.use("/api/users", users);\n',
+        "src/routes/users.js": 'const router = require("express").Router();\nrouter.get("/", (req, res) => {});\nrouter.post("/", (req, res) => {});\nmodule.exports = router;\n',
+        "src/routes/orders.js": 'const router = require("express").Router();\nrouter.get("/orders", (req, res) => {});\nmodule.exports = router;\n',
+        "src/routes/health.js": 'const router = require("express").Router();\nrouter.get("/health", (req, res) => {});\nmodule.exports = router;\n',
+      },
+      (f) => assert.equal(names(f)["area:src/routes"], "Requests"),
+    );
+    // the shared map keeps "routes/api" and a bare routes folder on the server side by default
+    assert.equal(plainAreaName("routes/api", "x"), "Requests");
+    assert.equal(plainAreaName("src/routes", "x"), "Requests");
+    assert.equal(plainAreaName("src/routes", "x", "pages"), "Pages");
+    assert.equal(plainAreaName("src/routes", "x", () => "pages"), "Pages");
+    assert.equal(plainAreaName("backend/app/api/routes", "x", "requests"), "Requests");
+  });
+
+  test("the fastapi-svc fixture: frontend routes are Pages, backend routes stay Requests", () => {
+    assert.equal(fact(fastapi, "area:frontend/src/routes").name, "Pages");
+    assert.equal(fact(fastapi, "area:backend/app/api").name, "Requests");
+    const draft = draftParts(fastapi);
+    assert.ok(!draft.some((p) => p.role === "feature" && p.name === "Requests"));
+  });
+});
+
 describe("draft names are plain English (never jargon, 16 characters at most)", () => {
   test("known folders map to plain words", () => {
     const cases = {
@@ -942,10 +1069,13 @@ describe("draft names are plain English (never jargon, 16 characters at most)", 
     assert.equal(name(fastapi, "area:frontend"), "Front room");
     assert.equal(name(fastapi, "area:frontend/src/components"), "Screen pieces");
     assert.equal(name(fastapi, "area:backend/app/api"), "Requests");
+    assert.equal(name(fastapi, "area:frontend/src/routes"), "Pages", "a routes folder of screens is Pages");
     for (const f of [recipe, fastapi, empty]) {
       for (const a of f.facts.filter((x) => x.kind === "area")) {
         assert.ok(a.name.length >= 1 && a.name.length <= 16 && !isJargon(a.name), `${a.id}: "${a.name}"`);
-        assert.equal(a.name, plainAreaName(a.id === "area:." ? "" : a.id.slice(5), f.repo.name), `${a.id} uses the shared map`);
+        const dir = a.id === "area:." ? "" : a.id.slice(5);
+        const hint = /(^|\/)routes$/.test(dir) ? (f === fastapi && dir.startsWith("frontend") ? "pages" : "requests") : undefined;
+        assert.equal(a.name, plainAreaName(dir, f.repo.name, hint), `${a.id} uses the shared map`);
       }
     }
     assert.match(showFacts(recipe), /area:components\/ui {2,}Look and feel/);
