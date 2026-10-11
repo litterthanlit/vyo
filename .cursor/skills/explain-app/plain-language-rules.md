@@ -34,20 +34,30 @@ Do not move these to a glossary — **replace them**:
 | repository / repo | "project" or product name |
 | commit / branch / PR | omit in primary sections |
 
-## Naming layers and parts
+## Naming parts
 
-Page 3 names the layers of the exploded view and the parts on them. Name each one after what a person gets from it, never after the folder or library that provides it.
+Page 3 draws the app's real parts. You name each part and write its one-sentence `line`; the drawing writes everything else (item names, counts) from the scan. Name each part after what a person gets from it, never after the folder or library that provides it.
 
-| In the code | Layer | Part name |
-|-------------|-------|-----------|
-| `app/`, `pages/`, routes | What you see | The screen's name as a user says it: "Dashboard", "Checkout" |
-| `jobs/`, `cron`, queues, workers | What runs on its own | What it does: "Daily digest", "Reminder emails" |
-| `lib/`, `services/`, feature folders | The brains | The feature: "Canvas sorting", "Pricing rules" |
-| `auth/`, Clerk, NextAuth | Accounts (plate) or a data port | "Sign-in" |
-| `prisma/`, `db/`, Supabase, Convex | Where your data lives | (the layer itself, with no part) |
-| Stripe, Resend, Twilio, S3 | Ports on the data layer | "Payments (Stripe)", "Email", "Text messages", "File storage". Name the service only if the user would recognise it |
+| In the code (fact kind, typical folder) | Part (role) | Part name | What the drawing lists under it |
+|-----------------------------------------|-------------|-----------|---------------------------------|
+| `screen:` facts; `app/(dashboard)`, `pages/`, routes | screens | "What you see" | Screen names as a user says them: "Dashboard", "Recipe detail", "Billing" |
+| `area:lib/billing`, `area:components/billing` | feature | The feature: "Billing", "Recipe box", "Pricing rules" | Its sub-folders by plain name, plus its share of the code |
+| `area:` for a whole product area (`app/(chat)`) | feature | What it is for: "Chat", "Planner" | Sub-folders |
+| `ai:` facts; `lib/ai` | ai | What it does for the user: "Recipe ideas", "Smart replies" | The model provider; AI tool count |
+| `job:` facts; `jobs/`, cron, queues, workers | jobs | What it does: "Weekly email", "Daily digest", "Reminders" | Job names |
+| `table:` facts; `prisma/`, `db/`, Supabase, Convex | data | What is kept: "Saved recipes", "Your data" | Kinds of saved record: "Recipe", "Meal plan" |
+| `service:payments`, `service:email`, `service:sign-in` | service | "Outside services" for all, or one by capability: "Payments", "Sign-in" | Capability names: "Payments", "Email", "Sign-in" |
+| `endpoint:` facts, when the API is the product | api | What callers get: "Message intake", "Partner access" | Kinds of request |
 
-The cap is **one analogy** for page 3, and it's the device itself. Don't add a second one inside it ("the brains is like a kitchen").
+Rules:
+
+- **Part names are noun phrases, 18 characters at most**, first letter capital, in a user's words. A name that wraps in the label is too long.
+- **Role words never appear on the poster as jargon**: API, endpoint, table, component, module, schema, backend. "Outside services" and "kinds of saved record" are plain English and fine.
+- **Library and vendor names are not part names** ("Prisma", "Next.js", "tRPC", "Supabase"). A vendor may appear in a `line` only if the user would recognise it and can use it today.
+- **Folder names become what people get**: `lib/billing` → "Billing", `lib/ai` → "Recipe ideas".
+- **The drawing phrases the counts**: "12 screens", "Answers 8 kinds of request", "40% of the code", "1 AI model · 2 tools", "Runs 1 job on its own", "5 kinds of saved record", "3 outside services". Never type one, and don't repeat a count in a `line`.
+- **Each `line` is one sentence**: "When you X, the app Y". For automatic work, "When [trigger], …" or "Every week, …".
+- **Page 3 has no analogy.** The drawing already is the app's real parts. Don't add "the kitchen" or "the engine room" on top.
 
 ## Analogy Budget
 

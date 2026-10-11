@@ -5,7 +5,8 @@ description: >-
   plain English for non-technical stakeholders. Produces three Swiss Style poster
   Canvases: page 1 (how the app and the code behind it work), page 2
   (project story — the marketing/summary sheet for selling and sharing) and
-  page 3 (an interactive isometric exploded view of the app's parts). Use
+  page 3 (the app's real parts and wiring, drawn as an isometric exploded
+  view, built from a scan of the code). Use
   when the user asks to explain the app, walk through how it works for a
   client/PM/stakeholder, create a non-technical overview, demystify the
   codebase for someone who does not code, help someone sell or talk about their
@@ -23,7 +24,7 @@ Turn a codebase into a plain-English app guide for people who will never read co
 |------|------|---------|
 | **1 — App Guide** | `<repo>-app-poster.canvas.tsx` | How the app **and the code behind it** work, for a non-technical reader — journeys, an "Under the hood" band, screens, connected services |
 | **2 — Project Story** | `<repo>-project-story.canvas.tsx` | The summary / marketing sheet — tagline as hero, talking points, who it's for, what's real, the vision |
-| **3 — Exploded View** | `<repo>-exploded-view.canvas.tsx` | The app drawn as a small device taken apart — 3–5 isometric layers (what you see → where your data lives), a slider that opens them, one plain sentence per layer |
+| **3 — Exploded View** | `<repo>-exploded-view.canvas.tsx` | The app's real parts and wiring as an isometric exploded view, built from a scan of the code — a shape per part, cables for real connections, a slider that opens it, one plain sentence per part |
 
 ## When to Use
 
@@ -66,24 +67,40 @@ Copy this checklist and track progress:
 
 ```
 Explain App Progress:
-- [ ] Phase 1: Recon
+- [ ] Phase 1: Recon (scan first)
 - [ ] Phase 2: User feature map
 - [ ] Phase 3: Plain English synthesis (page 1)
 - [ ] Phase 4: App Guide poster (page 1)
 - [ ] Phase 5: Connection & sales synthesis (page 2)
 - [ ] Phase 6: Project Story poster (page 2)
-- [ ] Phase 6b: Exploded View (page 3)
+- [ ] Phase 6b: Exploded View (page 3: PARTS → wire)
 - [ ] Phase 7: Check + export (PNG/PDF)
 - [ ] Chat summary with the three canvas links and the shareable PDF
 ```
 
 ### Phase 1 — Recon (read-only, parallel)
 
-Gather signals without reading every file:
+**Scan first.** From this skill's directory (Node only, no install):
+
+```bash
+node tools/scan.mjs scan <repo> --out <canvases>/<repo>-facts.json
+node tools/scan.mjs show <canvases>/<repo>-facts.json
+```
+
+`facts.json` is a deterministic reading of the code: screens, endpoints, saved-data tables, outside services, AI use, background jobs, and how much code each folder holds. It is the input to page 3 and the ground truth for pages 1 and 2:
+
+| Fact | Use |
+|------|-----|
+| Screens | Page 1 journeys and "The screens" must match them. Never invent a screen |
+| Services | Page 1 **Connected**. A service fact proves the code talks to it, not that a user can use it: list it only if a screen exposes it today, else footer |
+| Tables, jobs, AI | Page 1 "Under the hood" stations (what's saved, what runs on its own, what comes back out) and page 2 "what's real today" |
+| Endpoints, jobs or services with no screen | Status **Behind the scenes**, never **Available now** |
+
+A fact shows that code exists, not that it is finished. Skim for stubs before calling anything live. Then add what a scan cannot read, in parallel:
 
 1. **Product context** — `README*`, `docs/`, marketing copy, playbooks
 2. **Stack fingerprint** — `package.json`, `pyproject.toml`, `go.mod`, etc. (internal mapping only)
-3. **User-facing surface** — pages, routes, screens:
+3. **User-facing surface** — confirm the scan's screens are reachable, not stubs:
    - Next.js: `app/`, `pages/`, `src/app/`
    - React SPA: router config, `routes/`
    - API-only: note "no UI in this repo" and what a frontend would call
@@ -104,7 +121,7 @@ Build this map before writing copy. Do not dump it raw into the Canvas.
 | Journeys | 2–4 primary flows as UI steps a human would take |
 | Under the hood | The data pipeline as **3, 4, or 6** stations (never 5 — it cannot land on a 12-column grid): what you do → where it's saved → what processes it → what comes back out |
 | Behind the scenes | One "When you X, the app Y" sentence per journey ("When you pay, the app talks to Stripe") |
-| Layers (page 3) | 3–5 layers from what you see to where your data lives, with their parts — vocabulary in [exploded-view-layout.md](exploded-view-layout.md#from-codebase-to-layers) |
+| Parts (page 3) | 2–9 named parts grouped from the scan's facts, each with a role and a "When you…" line — rules in [exploded-view-layout.md](exploded-view-layout.md#from-codebase-to-parts) |
 | Status honesty | Works in UI / backend only / planned — never call backend-only "complete" |
 
 If the user named an audience (client, PM, exec), note it. If not, default to general non-technical.
@@ -165,10 +182,18 @@ Apply page 2 voice rules in [plain-language-rules.md](plain-language-rules.md#pa
 ### Phase 6b — Exploded View (page 3)
 
 1. Same canvases path. Filename: `<repo-name>-exploded-view.canvas.tsx`
-2. Start from [exploded-view-starter.md](exploded-view-starter.md) and **only edit its data**: `product`, `purpose`, `layers`, `notBuilt`, `audience`. The starter derives every coordinate; never hand-place SVG
-3. Layers come from the Phase 2 map. Use the [vocabulary](exploded-view-layout.md#from-codebase-to-layers): `screens` on top, `data` at the bottom, and skip any layer the app doesn't have
-4. Each layer's `line` is a "When you…" sentence. Parts are named the way a user would ([plain-language-rules.md](plain-language-rules.md#naming-layers-and-parts))
-5. Footer: the same not-built list as pages 1 and 2
+2. Copy [exploded-view-starter.md](exploded-view-starter.md). Edit only its data (`product`, `purpose`, `notBuilt`, `audience`) and the `PARTS` block. The starter derives every coordinate; never hand-place SVG
+3. `node tools/scan.mjs draft <canvases>/<repo>-facts.json` prints a starting `PARTS` array. Paste it between `PARTS:BEGIN` and `PARTS:END`
+4. Rename and merge it into **2–9 plain-English parts** ([choosing parts](exploded-view-layout.md#choosing-parts), [naming](plain-language-rules.md#naming-parts)):
+   - `name` ≤ 18 characters; one "When you…" `line` each
+   - `from` lists fact ids or globs, and every pattern must match real facts
+   - no fact is cited by two parts; at most 4 parts per tier
+5. `node tools/scan.mjs wire <canvases>/<repo>-facts.json --into <canvas>` writes the `WIRING` block (counts, sizes, links)
+   - Fix every `✗`. These are honesty errors (a pattern that cites nothing, a fact claimed twice), not style
+   - Weigh every `!`. "Not drawn: …" means the drawing hides a service, table, job or screen: cite it, or leave it out on purpose and name it in the footer
+6. To confirm a surprising cable: `node tools/scan.mjs why <facts.json> --canvas <canvas> "A" "B"` prints the real file path behind it. If you can't defend a link in one sentence, change `from`
+7. **Never hand-edit `WIRING`; never type a count.** Changing `name` or `line` needs no re-wire. Changing `from` or `role` does (the canvas throws `PARTS changed — re-run wire`). After a re-scan, re-run `wire`
+8. Footer: the same not-built list as pages 1 and 2, plus any important fact you left undrawn on purpose
 
 ### Phase 7 — Check and export
 
@@ -179,7 +204,7 @@ node tools/poster.mjs check  <canvases>/<repo>-app-poster.canvas.tsx <canvases>/
 node tools/poster.mjs export <canvases>/<repo>-app-poster.canvas.tsx <canvases>/<repo>-project-story.canvas.tsx <canvases>/<repo>-exploded-view.canvas.tsx
 ```
 
-1. `check` must print **PASS** for all three posters. On page 3 it also drives the drawing: the slider, arrow keys, pointing at a layer, and the theme button. Every ✗ is a rule break — fix the canvas and re-run. Treat ! warnings (jargon, height, narrow panel) as copy edits unless there's a reason to keep them.
+1. `check` must print **PASS** for all three posters. Page 3 needs `<repo>-facts.json` beside the canvas: `check` re-runs `wire` against it and fails if `WIRING` or the hashes are stale, then drives the drawing (the slider, arrow keys, pointing at a part, the theme button). Every ✗ is a rule break — fix the canvas and re-run. Treat ! warnings (jargon, height, narrow panel) as copy edits unless there's a reason to keep them.
 2. `export` writes `<canvases>/exports/`: a PNG and a PDF per poster, plus `<repo>-poster-set.pdf` with all pages. Page 3 exports in its default state (light, 80% open); the controls are hidden. Add `--paper a4` or `--paper letter` when the user wants to print.
 3. If the tools can't install (no network), say so in chat and deliver the canvases only — never skip `check` silently.
 
@@ -191,7 +216,7 @@ Keep chat short. The three poster canvases are the deliverable; the set PDF is w
 2. Link to **page 1** (App Guide) with full absolute path (markdown link)
 3. One sentence on **page 2**: who it's for and that it has talking points + what's real today
 4. Link to **page 2** (Project Story) with full absolute path
-5. One sentence on **page 3**, "the app taken apart, drag to open it", with a link to `<repo>-exploded-view.canvas.tsx`
+5. One sentence on **page 3**: "the app taken apart into its real parts — drag to open; lines are real connections in the code", with a link to `<repo>-exploded-view.canvas.tsx`
 6. Link to the **poster-set PDF** (`exports/<repo>-poster-set.pdf`) — "send this to your client"
 7. If first canvas in workspace: one sentence on opening them beside the chat
 8. Note any gaps honestly ("billing UI is not built yet; backend exists only")
@@ -200,17 +225,19 @@ Keep chat short. The three poster canvases are the deliverable; the set PDF is w
 
 ### Empty or scaffold-only repo
 
-If there is no `package.json`, no routes, and no product docs:
+If the scan reports `empty: true` and there are no product docs (README, playbook, `project-context.md`):
 
 - Do **not** produce any Canvas with placeholder content
 - Tell the user honestly: no application detected in this repository
 - Suggest what would help: README, filled `project-context.md`, or a different repo path
 
+If the scan is empty but docs describe a product, write pages 1 and 2 from the docs and skip page 3 (nothing to draw), saying so in chat.
+
 ### Monorepo (UI in a subfolder)
 
 When the git root contains multiple packages:
 
-1. Find the package with user-facing pages (`*/src/app/`, `*/pages/`)
+1. Scan the git root; `show` lists the packages. Find the one with user-facing pages (`*/src/app/`, `*/pages/`)
 2. Explain the **product** from that package. Do not mention "monorepo" on the poster.
 3. Example: `hypher-web/` holds the screens; other folders are supporting packages
 
@@ -221,6 +248,7 @@ If there are no pages or screens:
 - Say clearly: "There is no user interface in this repository"
 - Describe what the service **does** in plain terms (e.g. "stores and sends messages")
 - Note where the UI likely lives if mentioned in docs, or that a separate frontend would be needed
+- Page 3 still works: with no screens, its top tier is an `api` part (the requests the service answers)
 
 ### Backend-only features
 
@@ -247,10 +275,14 @@ Before finishing, verify **all three pages**:
 - [ ] Differentiation is concrete, not generic hype
 
 **Page 3 — Exploded View**
-- [ ] 3–5 layers, `screens` on top and `data` at the bottom, with no padding layers
-- [ ] Every part works today. Ports are only services a user actually touches; anything else goes in the footer
-- [ ] A non-engineer can say what each layer does from its caption sentence
-- [ ] Only data was edited. No hand-placed coordinates, no SVG text, no extra colours
+- [ ] Every part traces to facts: each `from` pattern matches real facts and `wire` ran with no ✗
+- [ ] 2–9 real parts, none added to fill space; each is a thing a non-engineer would recognise
+- [ ] Every link is real: `WIRING` came from `wire`, and one surprising cable was confirmed with `why`
+- [ ] Counts and sizes match the scan (`show`). None was typed by hand, and no `line` repeats one
+- [ ] Plain names: no role words (API, table, service) and no library names
+- [ ] Every `!` "Not drawn" fact is either drawn or deliberately left out and named in the footer. Everything drawn works today
+- [ ] A non-engineer can say what each part does from its caption sentence
+- [ ] Only `PARTS` and the data constants were edited. `WIRING` untouched, no hand-placed coordinates, no SVG text, no extra colours
 
 **All pages**
 - [ ] `node tools/poster.mjs check` passes on every file (it enforces most of the list below)

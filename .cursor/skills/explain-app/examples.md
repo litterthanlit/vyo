@@ -12,7 +12,7 @@
 > Explain what this app does. Visualize the repo as a poster.
 
 **Exploded view (page 3 emphasis)**
-> Draw my app as an exploded isometric diagram, so my investors can see what it's made of.
+> Draw my app as an exploded isometric diagram, so my investors can see what it's made of and how the parts connect.
 
 **Selling / connection (page 2 emphasis)**
 > Explain this codebase so I can talk about my product confidently — I need the second page with talking points.
@@ -26,11 +26,11 @@ This app is a team task board where members sign in, create projects, and track 
 
 **Page 2 — your story:** talking points, who it's for, and what's real today — [taskflow-project-story](/Users/<you>/.cursor/projects/<workspace>/canvases/taskflow-project-story.canvas.tsx)
 
-**Page 3 — taken apart:** the app drawn as a small device, drag to open it — [taskflow-exploded-view](/Users/<you>/.cursor/projects/<workspace>/canvases/taskflow-exploded-view.canvas.tsx)
+**Page 3 — taken apart:** the app taken apart into its real parts — drag to open; lines are real connections in the code — [taskflow-exploded-view](/Users/<you>/.cursor/projects/<workspace>/canvases/taskflow-exploded-view.canvas.tsx)
 
 **Share it:** [taskflow-poster-set.pdf](/Users/<you>/.cursor/projects/<workspace>/canvases/exports/taskflow-poster-set.pdf) — all three pages, opens anywhere.
 
-Note: billing is not in the app yet — marked in both footers. Do not list Stripe under Connected.
+Note: billing is not in the app yet — marked in all three footers. Do not list Stripe under Connected or draw it on page 3.
 ```
 
 ## Sample Poster Copy (Hypher)
@@ -107,28 +107,52 @@ one place.
 
 **The vision** — You built this because scattered thinking was costing you momentum. What you have now is a single place to capture, see patterns, and share — on your terms.
 
-## Sample Page 3 Data (Hypher)
+## Sample Page 3 PARTS (Pantry)
 
-Only the data changes; the starter draws everything else.
+Pantry is the recipe test fixture (`tools/test/fixtures/recipe`). `scan` finds 6 screens, 3 endpoints, 1 weekly cron job, 4 tables, 3 outside services (payments, email, sign-in) and 1 AI provider with 2 tools. Group those facts into parts. Only the `PARTS` array is written by hand; `wire` and the starter do the rest.
 
-```tsx
-const product = "Hypher";
-const purpose = "Hypher, taken apart: the layers that turn a passing thought into an organised canvas and a daily digest.";
-const layers: Layer[] = [
-  { kind: "screens", name: "What you see", line: "When you open Hypher, you move between five screens: landing, capture, canvas, dashboard and settings.",
-    parts: [{ label: "Landing" }, { label: "Capture" }, { label: "Canvas" }, { label: "Dashboard" }, { label: "Settings" }] },
-  { kind: "engine", name: "What runs on its own", line: "When the day ends, Hypher writes a short digest of what changed and sends it to your inbox.",
-    parts: [{ label: "Daily digest" }, { label: "Activity feed" }] },
-  { kind: "brains", name: "The brains", line: "When you drop a note on the canvas, Hypher sorts it next to related ideas and keeps every open tab in step.",
-    parts: [{ label: "Canvas sorting", size: "l" }, { label: "Live sync" }, { label: "Sharing", size: "s" }] },
-  { kind: "data", name: "Where your data lives", line: "When you save, your notes and files are kept in your own account and are waiting next time.",
-    parts: [{ label: "Sign-in" }, { label: "Email" }] },
-];
-const notBuilt = "Not built yet: in-app billing, voice capture";
-const audience = "For solo builders and the people they pitch";
+```json
+[
+  {"name": "What you see", "role": "screens", "line": "When you open Pantry, you move between your recipes, the weekly plan and your settings.", "from": ["screen:**"]},
+  {"name": "Recipe box", "role": "feature", "line": "When you save a recipe, Pantry keeps it in your box so you can find it, change it and cook it again.", "from": ["area:lib/recipes", "area:components/recipes"]},
+  {"name": "Meal planner", "role": "feature", "line": "When you plan your week, Pantry puts your recipes on the days you choose.", "from": ["area:lib/plan", "area:components/plan"]},
+  {"name": "Recipe ideas", "role": "ai", "line": "When you ask for ideas, an AI model suggests recipes for you to try.", "from": ["ai:*", "area:lib/ai"]},
+  {"name": "Weekly email", "role": "jobs", "line": "Once a week, on its own, Pantry prepares your meal plan and emails it to you.", "from": ["job:**"]},
+  {"name": "Saved recipes", "role": "data", "line": "When you save a recipe, a plan or your details, it is kept here, so it is waiting next time you come back.", "from": ["table:*"]},
+  {"name": "Outside services", "role": "service", "line": "When Pantry takes payment, sends mail or checks who you are, it hands that job to an outside company.", "from": ["service:*"]}
+]
 ```
 
-Note that GitHub activity isn't a port, because GitHub OAuth isn't built. It stays in the footer on all three pages.
+The drawing then reads: "6 screens", "1 AI model · 2 tools", "Runs 1 job on its own", "4 kinds of saved record", "3 outside services", and a share of the code for each feature. None of those numbers is in the `PARTS`. The three endpoints are not cited, so the screens' calls to them are followed into the code behind them and drawn as cables to the parts that own that code. Billing, email and sign-in are folded into one part because each is a small plug.
+
+### Sample `wire` output
+
+Illustrative; the wording follows `tools/CONTRACTS.md` §3 and the ids depend on the repo. A first attempt that fails (exit 1):
+
+```
+$ node tools/scan.mjs wire <canvases>/pantry-facts.json --into <canvases>/pantry-exploded-view.canvas.tsx
+✗ Part "Saved recipes": "table:Recipes" matches nothing — did you mean table:Recipe, table:User, table:MealPlan?
+✗ service:sign-in is cited by both "Outside services" and "Sign-in"
+```
+
+A later attempt that passes (exit 0) but warns:
+
+```
+! "Weekly email" has no links
+! Not drawn: Payments (service), 2 tables
+```
+
+| Line | What it means | What to do |
+|------|---------------|------------|
+| `✗ … matches nothing` | The pattern is a typo or the fact is gone. Citing it would draw something that isn't there | Use a suggested id, or `table:*`. Look it up with `show` |
+| `✗ … cited by both` | One fact claimed by two parts, so counts would double | Remove it from one part, or exclude it: `["service:*", "!service:sign-in"]` |
+| `✗ … counts nothing` | A part with no facts to count | Fix `from`, or remove the part |
+| `Tier with <n> parts — merge parts` | Thrown when the canvas opens: more than four parts in one tier | Merge parts |
+| `! … has no links` | Nothing in the code connects it to another part within three hops, or it reaches code you left uncited | Check `from`. If it really stands alone, leave it: the caption says "Not wired to the other parts". Never invent a link |
+| `! Not drawn: Payments (service)` | The drawing hides a fact | Deliberate when billing isn't in the app yet: keep `"!service:payments"` and add "in-app billing" to the footer. Otherwise cite it |
+| `! Not drawn: … 2 tables` | The data part cites only some tables, so "kinds of saved record" understates the app | Cite them all (`table:*`) |
+
+Then confirm anything surprising: `node tools/scan.mjs why <canvases>/pantry-facts.json --canvas <canvases>/pantry-exploded-view.canvas.tsx "What you see" "Recipe ideas"` prints the real chain of files behind that cable.
 
 ## Anti-patterns
 
@@ -157,15 +181,17 @@ Note that GitHub activity isn't a port, because GitHub OAuth isn't built. It sta
 > One 2px ink line, solid dots, flush-left station labels, a 90° branch with a hollow ring.
 
 **Bad — architecture diagram dressed as an exploded view**
-> Layers named "Next.js", "tRPC", "Prisma"; a blue database, a green frontend; SVG text labels inside the drawing.
+> Parts named "Next.js", "tRPC", "Prisma"; "12 endpoints" typed by hand when the scan finds 8; a decorative "Infrastructure" part nothing connects to; arrows drawn because they look right; a blue database, a green frontend; SVG text labels inside the drawing.
 
-**Good — the app taken apart**
-> "What you see", "The brains", "Where your data lives"; ink line-art with one tinted layer; HTML labels on the col 9 line; a caption that says what the layer does for you.
+**Good — the app's real parts and wiring**
+> "What you see", "Recipe box", "Saved recipes"; a shape per role; counts and sizes from the scan; a cable only where the code really connects two parts (one checked with `why`); one tinted part; HTML labels in the two gutters; a caption that says what the part does for you.
 
 ## Verification Notes
 
-**hypher** — All three pages at `hypher-app-poster.canvas.tsx`, `hypher-project-story.canvas.tsx` and `hypher-exploded-view.canvas.tsx` (4 layers). Monorepo; UI in hypher-web. Playbook items marked in footer only (same list on all three pages). Reference build for the poster-scale masthead, giant numerals, 4-station transit line on the 12-col grid, and tagline-led page 2. Delete any leftover `hypher-app-guide.canvas.tsx`.
+**pantry** (`tools/test/fixtures/recipe`) — 7 parts on 3 tiers: screens on top, then features, AI and the weekly job (the AI/jobs tier folds in because 2 + 2 ≤ 4), then data and outside services. No `api` part, so the endpoints are cables, not a box. The page 3 starter ships these `PARTS`, and its `WIRING` equals a fresh `wire` of them.
+
+**hypher** — All three pages at `hypher-app-poster.canvas.tsx`, `hypher-project-story.canvas.tsx` and `hypher-exploded-view.canvas.tsx`. Monorepo; UI in hypher-web. Playbook items marked in footer only (same list on all three pages). Reference build for the poster-scale masthead, giant numerals, 4-station transit line on the 12-col grid, and tagline-led page 2. Page 3 must be rebuilt from a scan (`scan` → `draft` → `wire`); the earlier hand-written page 3 data no longer applies. Delete any leftover `hypher-app-guide.canvas.tsx`.
 
 **learnr** — Single Next.js app, landing → intake → workspace.
 
-**vyo (empty scaffold)** — No poster. Report no application detected.
+**vyo (empty scaffold)** — `scan` reports `empty: true`. No poster. Report no application detected.

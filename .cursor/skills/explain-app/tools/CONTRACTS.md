@@ -270,6 +270,8 @@ The canvas never recounts.
 | feature | 1 cited area → its direct child area facts (min 1, then that area itself); several areas → those areas | LOC share among chips | area names | 6 |
 | ai | cited ai facts | 1 each | provider names (`tools` = Σ meta.tools) | 4 |
 | jobs | cited job facts | 1 each | job names | 4 |
+
+`names` are de-duplicated (first occurrence kept). For example, two chips both called "Recipes", from `lib/recipes` and `components/recipes`, are listed once. Counts are not affected.
 | data | cited table facts | 1 each | table names | 10 |
 | service | cited service facts | 1 each | service names | 6 |
 
@@ -405,6 +407,6 @@ Under `tools/test/fixtures/`:
 | Recipe box | feature | `["area:lib/recipes", "area:components/recipes"]` |
 | Meal planner | feature | `["area:lib/plan", "area:components/plan"]` |
 | Recipe ideas | ai | `["ai:*", "area:lib/ai"]` |
-| Weekly email | jobs | `["job:*"]` |
+| Weekly email | jobs | `["job:**"]` |
 | Saved recipes | data | `["table:*"]` |
 | Outside services | service | `["service:*"]` |

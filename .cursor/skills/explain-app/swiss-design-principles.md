@@ -85,7 +85,7 @@ Posters always render on **light paper**, regardless of IDE dark/light host them
 | Accent | `#E4002B` | **One editorial mark only** — canonical: the red full stop after the masthead |
 | Grid guide | `rgba(228, 0, 43, 0.08)` | Column fields when overlay is on |
 
-**The single accent mark.** The canonical accent usage is a **red full stop closing the masthead** ("Hypher<span style=red>.</span>" / "…one place<span style=red>.</span>"). It brands every page as a set and forces restraint everywhere else. Rules, arrows, dots, numerals, and node borders are all ink. The grid-toggle link may also use accent — it is functional chrome, not part of the composition. Page 3 adds one more, the tint on the selected layer (see the page 3 drawing exception).
+**The single accent mark.** The canonical accent usage is a **red full stop closing the masthead** ("Hypher<span style=red>.</span>" / "…one place<span style=red>.</span>"). It brands every page as a set and forces restraint everywhere else. Rules, arrows, dots, numerals, and node borders are all ink. The grid-toggle link may also use accent — it is functional chrome, not part of the composition. Page 3 adds one more, the tint on the selected part (see the page 3 drawing exception).
 
 **Forbidden:**
 
@@ -144,18 +144,18 @@ Boxed flowcharts — little bordered rectangles with centered uppercase labels a
 
 ## Page 3 drawing exception
 
-Page 3 ([exploded-view-layout.md](exploded-view-layout.md)) is an **illustration**, not a diagram. Its job is to make the app feel like a real object you could hold. Transit lines can't do that, so inside **one `<figure>` spanning all 12 columns**, and nowhere else, these are allowed:
+Page 3 ([exploded-view-layout.md](exploded-view-layout.md)) is an **illustration**, not a diagram. Its job is to show the repo's real parts as objects and their real connections as cables. Transit lines can't do that, so inside **one `<figure>` spanning all 12 columns**, and nowhere else, these are allowed:
 
 | Allowed in the figure | Why it stays Swiss |
 |-----------------------|--------------------|
-| One SVG with a viewBox **900 units wide** | 1 unit = 1px at full width, so the drawing and the col 9 label line share the grid's coordinates |
-| Isometric line drawing: hairline outlines, rounded slabs | Technical-illustration tradition, line only, no shading in light mode |
-| **Dotted** assembly axes (`1 4` dash) | They show how the parts fit, and they're drawn behind the layers so they only appear in the gaps |
-| Hairline leader lines to labels on the **col 9 line** | Labels are HTML: flush-left, on the type scale |
-| The **accent tint** (`#FCE1E6`) on the selected layer | A state, not decoration: it moves with the reader's attention, and the outline and label change too |
+| One SVG with a viewBox **900 units wide**; the drawing sits in cols 3–10 (592 units) | 1 unit = 1px at full width, so the drawing and the label gutters share the grid's coordinates |
+| Isometric line drawing of the repo's parts: hairline outlines, rounded slabs, cylinders, gears, plugs | Technical-illustration tradition, line only, no shading in light mode. Shape follows the part's role, never decoration |
+| **Cables** between parts: hairline strands, 1–3 by link weight, **no arrowheads** | Each cable is a real connection found in the code, so the lines carry information, not style |
+| Hairline leader lines to labels in **two gutters**, cols 1–2 and cols 11–12, hung on column lines | Labels are HTML: flush-left, on the type scale, never wrapped |
+| The **accent tint** (`#FCE1E6`) on the selected part, with its cables turning ink | A state, not decoration: it moves with the reader's attention, and the outline and label change too |
 | A **dark blueprint theme** behind a toggle | On-screen only. The default and every export stay on light paper |
 
-Everything outside the figure is unchanged: masthead, folio, captions, grid, the four type sizes, ink rules, one red full stop. Inside the figure there is still no colour coding by meaning, no gradients, no shadows, no SVG text and no arrowheads. The checker enforces the palette on every SVG shape.
+Everything outside the figure is unchanged: masthead, folio, captions, grid, the four type sizes, ink rules, one red full stop. Inside the figure there is still no colour coding by meaning (no colour for a role or a tier), no gradients, no shadows, no SVG text and no arrowheads. The checker enforces the palette on every SVG shape.
 
 ---
 
