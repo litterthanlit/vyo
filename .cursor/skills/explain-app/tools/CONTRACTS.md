@@ -129,7 +129,7 @@ A file is `kit` when it defines no fact **and** is imported from at least `max(4
 
 - **Screens and endpoints:** the last static segment, title-cased (`/recipes/[id]` → "Recipe detail", `/` → "Home", `/settings/billing` → "Billing").
 - **Tables:** split camel case and underscores, strip `_v\d+` (`Message_v2` → "Message").
-- **Areas:** basename title-cased, with route-group parentheses removed.
+- **Areas:** the plain-English folder map `draft` uses (components → "Screen pieces", ui → "Look and feel", lib → "Inner workings", hooks → "Screen behaviour", api → "Requests", …), so jargon never reaches the poster through chip names. Anything not in the map: basename title-cased, with route-group parentheses removed and jargon words replaced.
 - **Services:** the capability name. **AI:** the provider name.
 
 | service id | name | packages (JS / Python) |
