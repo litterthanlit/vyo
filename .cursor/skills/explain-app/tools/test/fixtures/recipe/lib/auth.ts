@@ -1,13 +1,11 @@
-import NextAuth, { getServerSession, type NextAuthOptions } from "next-auth";
-import EmailProvider from "next-auth/providers/email";
+import { auth, currentUser } from "@clerk/nextjs/server";
 
-export const authOptions: NextAuthOptions = {
-  providers: [EmailProvider({ server: process.env.EMAIL_SERVER, from: process.env.EMAIL_FROM })],
-  session: { strategy: "jwt" },
-};
-
-export const handler = NextAuth(authOptions);
-
-export function getSession() {
-  return getServerSession(authOptions);
+// The signed-in person, in the shape the pages expect. Clerk keeps the accounts; Pantry only asks who is here.
+export async function getSession() {
+  const { userId } = await auth();
+  if (!userId) return null;
+  const user = await currentUser();
+  return {
+    user: { id: userId, email: user?.emailAddresses[0]?.emailAddress ?? null, name: user?.fullName ?? null },
+  };
 }

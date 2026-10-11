@@ -6,7 +6,7 @@ const TRY_EXT = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".vue", ".svelte"
 const JS_TO_TS = [".ts", ".tsx", ".mts", ".cts"];
 const ASSET_EXT = new Set([
   ".css", ".scss", ".sass", ".less", ".styl", ".json", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".ico",
-  ".md", ".mdx", ".woff", ".woff2", ".ttf", ".otf", ".eot", ".txt", ".yaml", ".yml", ".html", ".wasm", ".csv", ".mp3",
+  ".md", ".woff", ".woff2", ".ttf", ".otf", ".eot", ".txt", ".yaml", ".yml", ".html", ".wasm", ".csv", ".mp3",
   ".mp4", ".webm", ".pdf", ".graphql", ".gql", ".node", ".toml", ".xml", ".lock",
 ]);
 
@@ -29,7 +29,7 @@ export function isDataSpec(spec, lang) {
 
 const RE_JS_FROM = /\b(import|export)\s+(type\s+|typeof\s+)?([\w$]+\s*,?\s*)?(\*(?:\s*as\s+[\w$]+)?\s*|\{[^}]*\}\s*)?from\s*(['"])([^'"\n]+)\5/g;
 const RE_JS_SIDE = /\bimport\s*(['"])([^'"\n]+)\1/g;
-const RE_JS_DYN = /\bimport\s*\(\s*(['"`])([^'"`\n$]+)\1\s*[,)]/g;
+const RE_JS_DYN = /(?<!\btypeof\s+)\bimport\s*\(\s*(['"`])([^'"`\n$]+)\1\s*[,)]/g;
 const RE_JS_REQ = /\brequire\s*\(\s*(['"`])([^'"`\n$]+)\1\s*\)/g;
 
 function parseNamed(clause, def) {
@@ -70,6 +70,28 @@ export function parseJsImports(code) {
   RE_JS_REQ.lastIndex = 0;
   while ((m = RE_JS_REQ.exec(code))) out.push({ spec: m[2], names: [], typeOnly: false });
   return out;
+}
+
+// Python: imports under `if TYPE_CHECKING:` never run; blank those blocks before parsing.
+export function blankTypeChecking(code) {
+  if (!code.includes("TYPE_CHECKING")) return code;
+  const lines = code.split("\n");
+  const blank = (l) => l.replace(/\S/g, " ");
+  for (let i = 0; i < lines.length; i++) {
+    const m = /^([ \t]*)if[ \t]+(?:\w+\.)?TYPE_CHECKING[ \t]*:(.*)$/.exec(lines[i]);
+    if (!m) continue;
+    const indent = m[1].length;
+    if (m[2].trim()) lines[i] = m[1] + "if TYPE_CHECKING:";
+    let j = i + 1;
+    for (; j < lines.length; j++) {
+      if (lines[j].trim() === "") continue;
+      const lead = /^[ \t]*/.exec(lines[j])[0].length;
+      if (lead <= indent) break;
+      lines[j] = blank(lines[j]);
+    }
+    i = j - 1;
+  }
+  return lines.join("\n");
 }
 
 const RE_PY_FROM = /^[ \t]*from[ \t]+(\.*)([\w.]*)[ \t]+import[ \t]+(\([^)]*\)|[^\n]*)/gm;
@@ -289,7 +311,7 @@ export function resolveAll({ sources, allPathSet, pkgIndex, tsconfig }) {
     const pkgRoot = pkgIndex.pkgOf(from);
     stats.files++;
     if (e === ".py") {
-      const recs = parsePyImports(src.code);
+      const recs = parsePyImports(blankTypeChecking(src.code));
       const entry = { js: new Set(), py: new Set() };
       const nm = [];
       for (const rec of recs) {
@@ -312,15 +334,16 @@ export function resolveAll({ sources, allPathSet, pkgIndex, tsconfig }) {
       const entry = { js: new Set(), py: new Set() };
       const nm = [];
       for (const rec of recs) {
+        if (rec.typeOnly) continue; // erased at build time: nothing runs through it, so it is not wiring
         const r = resolveJs(from, rec.spec, pkgRoot);
         if (r.kind === "file") {
           addEdge(from, r.file);
           if (rec.names.length) nm.push({ to: r.file, names: rec.names });
         } else if (r.kind === "unresolved") miss(rec.spec);
         else if (r.kind === "external") {
-          if (!rec.typeOnly) entry.js.add(rec.spec); // a type-only import is erased: no runtime link
+          entry.js.add(rec.spec);
 
-          if (!rec.typeOnly && isDataSpec(rec.spec, "js") && usesDbRuntime(rec)) data.add(from);
+          if (isDataSpec(rec.spec, "js") && usesDbRuntime(rec)) data.add(from);
         }
       }
       if (entry.js.size) ext.set(from, entry);

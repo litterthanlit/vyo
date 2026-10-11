@@ -1,4 +1,5 @@
 // `draft`: a suggested PARTS array from facts. A starting point only: the agent rewrites names and lines.
+import { MAX_NAME, clip, isJargon, plainAreaName } from "./names.mjs";
 import { cmp, isUnder } from "./util.mjs";
 
 const MAX_PARTS = 7;
@@ -9,14 +10,7 @@ const areaDir = (id) => (id === "area:." ? "" : id.slice(5));
 // folders that hold plumbing rather than something a person would call a part of the app
 const PLUMBING = /^(ui|primitives|icons|styles|theme|types|utils|config|constants|hooks|shared|common|assets|mocks|fixtures)$/i;
 
-function clip(name, n = 18) {
-  if (name.length <= n) return name;
-  const cut = name.slice(0, n);
-  const sp = cut.lastIndexOf(" ");
-  return (sp > 8 ? cut.slice(0, sp) : cut).trim();
-}
-
-const lower = (s) => s.charAt(0).toLowerCase() + s.slice(1);
+const lower = (s) => (/^[A-Z]{2}/.test(s) ? s : s.charAt(0).toLowerCase() + s.slice(1));
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const list = (names) => (names.length <= 2 ? names.join(" and ") : `${names.slice(0, 2).join(", ")} and ${names.length - 2} more`);
 
@@ -46,7 +40,7 @@ export function draftParts(facts) {
   }
   if (wantApi) {
     parts.api = {
-      name: "Behind the screens",
+      name: "Requests",
       role: "api",
       line: `When you ask for something, the app answers ${plural(apiEndpoints.length, "kind", "kinds")} of request.`,
       from: ["endpoint:**", ...excluded.map((e) => "!" + e.id)],
@@ -54,7 +48,7 @@ export function draftParts(facts) {
   }
   if (ais.length) {
     parts.ai = {
-      name: clip(ais.length === 1 ? `${ais[0].name} helper` : "AI helpers"),
+      name: ais.length === 1 && `${ais[0].name} helper`.length <= MAX_NAME && !isJargon(ais[0].name) ? `${ais[0].name} helper` : ais.length === 1 ? "AI helper" : "AI helpers",
       role: "ai",
       line: `When you ask for help, the app asks ${list(ais.map((a) => a.name))}.`,
       from: ["ai:*"],
@@ -132,13 +126,14 @@ export function draftParts(facts) {
   }
   const used = new Set();
   for (const c of chosen) {
-    let name = clip(c.a.name);
-    if (used.has(name.toLowerCase())) name = clip(`${name} ${used.size + 1}`);
+    const base = plainAreaName(c.dir, facts.repo && facts.repo.name);
+    let name = base;
+    for (let n = 2; used.has(name.toLowerCase()); n++) name = `${clip(base, MAX_NAME - 2)} ${n}`;
     used.add(name.toLowerCase());
     parts.feature.push({
       name,
       role: "feature",
-      line: `When you use ${lower(c.a.name)}, the app handles it here.`,
+      line: `When you use ${lower(name)}, the app handles it here.`,
       from: [c.a.id],
     });
   }

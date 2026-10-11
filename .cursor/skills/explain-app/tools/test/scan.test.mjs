@@ -7,7 +7,7 @@ import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { stableStringify, factsHash } from "../lib/hash.mjs";
-import { scanRepo, draftParts, showFacts, matchGlob, selectIds } from "../scan.mjs";
+import { scanRepo, draftParts, showFacts, matchGlob, selectIds, plainAreaName, isJargon } from "../scan.mjs";
 import { scanJs, stripPy, parseJsonc } from "../lib/scan/tokenize.mjs";
 import { normRoutePath, segSuffixMatch, matchSegs } from "../lib/scan/routes.mjs";
 import { routeName, tableName, areaName } from "../lib/scan/names.mjs";
@@ -87,6 +87,7 @@ describe("recipe fixture (Next.js app router + Prisma)", () => {
     assert.deepEqual(fact(recipe, "service:payments").files, ["lib/billing.ts"]);
     assert.deepEqual(fact(recipe, "service:email").files, ["lib/email.ts"]);
     assert.deepEqual(fact(recipe, "service:sign-in").files, ["lib/auth.ts"]);
+    assert.deepEqual(fact(recipe, "service:sign-in").meta.vendor, ["clerk"], "Clerk is a hosted sign-in company");
     assert.deepEqual(ids(recipe, "ai"), ["ai:openai"]);
     const ai = fact(recipe, "ai:openai");
     assert.equal(ai.name, "OpenAI");
@@ -145,7 +146,10 @@ describe("recipe fixture (Next.js app router + Prisma)", () => {
     assert.ok(hasImport(recipe, "app/api/recipes/route.ts", "lib/recipes/query.ts"), "@/ alias resolves");
     assert.ok(hasImport(recipe, "components/recipes/recipe-list.tsx", "components/recipes/recipe-card.tsx"), "./relative resolves");
     assert.ok(hasImport(recipe, "app/layout.tsx", "components/header.tsx"));
-    assert.ok(hasImport(recipe, "lib/plan/query.ts", "components/plan/plan-grid.tsx"));
+    assert.ok(hasImport(recipe, "components/recipes/recipe-list.tsx", "components/recipes/recipe-card.tsx"), "import { A, type B } still counts");
+    assert.ok(!hasImport(recipe, "lib/plan/query.ts", "components/plan/plan-grid.tsx"), "import type is not wiring");
+    assert.ok(!hasImport(recipe, "components/plan/plan-day.tsx", "components/plan/plan-grid.tsx"), "import type is not wiring");
+    assert.ok(!hasImport(recipe, "lib/recipes/mutations.ts", "lib/recipes/schema.ts"), "import type is not wiring");
     assert.deepEqual(recipe.unresolved, {}, "the commented-out imports are not counted");
     assert.ok(!recipe.imports.some((e) => /old-totals|legacy-list/.test(e[1])));
     for (const [from, to] of recipe.imports) {
@@ -414,7 +418,8 @@ describe("show and draft", () => {
     const seen = new Set();
     for (const p of parts) {
       assert.ok(roles.has(p.role));
-      assert.ok(p.name.length > 0 && p.name.length <= 18, `name "${p.name}"`);
+      assert.ok(p.name.length > 0 && p.name.length <= 16, `name "${p.name}"`);
+      assert.ok(!isJargon(p.name) && !isJargon(p.line), `"${p.name}" / "${p.line}" has no jargon`);
       assert.match(p.line, /^When you .*, the app .*\.$/);
       assert.ok(p.from.length >= 1);
       for (const pat of p.from.filter((x) => !x.startsWith("!"))) {
@@ -657,11 +662,11 @@ describe("other frameworks", () => {
   test("http matching: base-path templates count, matcher patterns and type-only imports do not, the tightest endpoint wins", () =>
     withRepo(
       {
-        "package.json": '{"name":"n","dependencies":{"next":"14","stripe":"1","next-auth":"4"}}',
+        "package.json": '{"name":"n","dependencies":{"next":"14","stripe":"1","@clerk/nextjs":"5"}}',
         "app/api/users/[userId]/route.ts": "export async function PATCH() { return null }\n",
         "app/api/users/stripe/route.ts": "export async function GET() { return null }\n",
         "app/api/chat/route.ts": "export async function POST() { return null }\n",
-        "app/page.tsx": 'import type { Session } from "next-auth";\nexport default function P() { fetch(`${process.env.BASE ?? ""}/api/chat?x=1`); fetch(`/api/users/${id}`); fetch("/api/users/stripe"); return null }\n',
+        "app/page.tsx": 'import type { User } from "@clerk/nextjs/server";\nexport default function P() { fetch(`${process.env.BASE ?? ""}/api/chat?x=1`); fetch(`/api/users/${id}`); fetch("/api/users/stripe"); return null }\n',
         "middleware.ts": 'export const config = { matcher: ["/api/:path*", "/"] };\n',
       },
       (f) => {
@@ -687,6 +692,276 @@ describe("other frameworks", () => {
         assert.equal(f.files["lib/db/queries.ts"].kit, undefined);
       },
     ));
+});
+
+describe("type-only imports are not wiring (§2.3)", () => {
+  const withRepo = async (spec, fn) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "scan-types-"));
+    for (const [rel, text] of Object.entries(spec)) {
+      fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+      fs.writeFileSync(path.join(root, rel), text);
+    }
+    try {
+      return await fn(await scanRepo(root));
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  };
+
+  test("import type, export type … from and all-`type X` specifiers draw no edge; a mixed import still does", () =>
+    withRepo(
+      {
+        "package.json": '{"name":"t","dependencies":{"next":"14","drizzle-orm":"1"}}',
+        "lib/db/schema.ts": 'import { pgTable, text } from "drizzle-orm/pg-core";\nexport const chat = pgTable("Chat", { id: text("id") });\nexport type Chat = { id: string };\nexport type Vote = { id: string };\n',
+        "lib/db/other.ts": "export const other = 1;\nexport type Other = string;\n",
+        "components/a.tsx": 'import type { Chat } from "@/lib/db/schema";\nexport const A = (c: Chat) => c;\n',
+        "components/b.tsx": 'import { type Chat, type Vote } from "@/lib/db/schema";\nexport const B = (c: Chat, v: Vote) => [c, v];\n',
+        "components/c.tsx": 'export type { Chat } from "@/lib/db/schema";\nexport type * from "@/lib/db/other";\n',
+        "components/d.tsx": 'import { type Chat, chat } from "@/lib/db/schema";\nexport const D = (c: Chat) => chat && c;\n',
+        "components/e.tsx": 'import { chat } from "@/lib/db/schema";\nexport const E = chat;\n',
+        "components/f.tsx": 'type T = typeof import("@/lib/db/other");\nexport const F: T | null = null;\n',
+        "components/g.tsx": 'export const G = () => import("@/lib/db/other");\n',
+        "app/page.tsx": "export default function P() { return null }\n",
+      },
+      (f) => {
+        const importers = f.imports.filter((e) => e[1] === "lib/db/schema.ts").map((e) => e[0]);
+        assert.deepEqual(importers, ["components/d.tsx", "components/e.tsx"], "only the value imports");
+        assert.ok(!hasImport(f, "components/c.tsx", "lib/db/other.ts"), "export type * from");
+        assert.ok(!hasImport(f, "components/f.tsx", "lib/db/other.ts"), "typeof import(...) is a type");
+        assert.ok(hasImport(f, "components/g.tsx", "lib/db/other.ts"), "a real dynamic import is wiring");
+        assert.deepEqual(f.unresolved, {});
+      },
+    ));
+
+  test("a type-only import of a missing file is not counted as unresolved, and brings no package use", () =>
+    withRepo(
+      {
+        "package.json": '{"name":"t","dependencies":{"@clerk/nextjs":"5","stripe":"1"}}',
+        "a.ts": 'import type { X } from "./gone";\nimport type { User } from "@clerk/nextjs/server";\nimport { type Stripe } from "stripe";\nexport const a = 1;\n',
+        "b.ts": 'import { auth } from "@clerk/nextjs/server";\nexport const b = auth;\n',
+      },
+      (f) => {
+        assert.deepEqual(f.unresolved, {});
+        assert.deepEqual(f.uses, [["b.ts", "service:sign-in", "package"]]);
+        assert.deepEqual(fact(f, "service:sign-in").files, ["b.ts"]);
+        assert.equal(fact(f, "service:payments"), undefined);
+      },
+    ));
+
+  test("Python: imports under `if TYPE_CHECKING:` are skipped, runtime imports and the else branch are kept", () =>
+    withRepo(
+      {
+        "requirements.txt": "fastapi\n",
+        "app/__init__.py": "",
+        "app/models.py": "class User: pass\n",
+        "app/other.py": "x = 1\n",
+        "app/later.py": "y = 1\n",
+        "app/svc.py":
+          "from typing import TYPE_CHECKING\nfrom app.other import x\n\nif TYPE_CHECKING:\n    from app.models import User\n    import app.later\n\ndef f(u: 'User'):\n    return x\n\nif TYPE_CHECKING: from app import models\nelse:\n    from app import later\n",
+      },
+      (f) => {
+        assert.ok(hasImport(f, "app/svc.py", "app/other.py"));
+        assert.ok(hasImport(f, "app/svc.py", "app/later.py"), "the else branch runs");
+        assert.ok(!hasImport(f, "app/svc.py", "app/models.py"));
+        assert.deepEqual(f.imports.filter((e) => e[0] === "app/svc.py").map((e) => e[1]), ["app/later.py", "app/other.py"]);
+      },
+    ));
+});
+
+describe("services are outside companies (§2.5)", () => {
+  const withRepo = async (spec, fn) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "scan-svc-"));
+    for (const [rel, text] of Object.entries(spec)) {
+      fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+      fs.writeFileSync(path.join(root, rel), text);
+    }
+    try {
+      return await fn(await scanRepo(root));
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  };
+
+  test("libraries that run inside the app are not services", () =>
+    withRepo(
+      {
+        "package.json": '{"name":"s","dependencies":{"next":"14"}}',
+        "a.ts": 'import NextAuth from "next-auth";\nimport { Auth } from "@auth/core";\nimport { Lucia } from "lucia";\nimport { betterAuth } from "better-auth";\nimport { render } from "@react-email/components";\nexport const x = [NextAuth, Auth, Lucia, betterAuth, render];\n',
+        "py/requirements.txt": "x\n",
+        "py/a.py": "from passlib.context import CryptContext\nimport jwt\nfrom jose import jwt as j\nfrom pwdlib import PasswordHash\nfrom authlib.integrations.starlette_client import OAuth\n",
+      },
+      (f) => {
+        assert.deepEqual(ids(f, "service"), []);
+        assert.deepEqual(f.uses.filter((u) => u[2] === "package"), []);
+      },
+    ));
+
+  test("hosted sign-in companies and mail senders are services", () =>
+    withRepo(
+      {
+        "package.json": '{"name":"s","dependencies":{"next":"14"}}',
+        "clerk.ts": 'import { auth } from "@clerk/nextjs/server";\nexport const a = auth;\n',
+        "auth0.ts": 'import { handleAuth } from "@auth0/nextjs-auth0";\nexport const a = handleAuth;\n',
+        "workos.ts": 'import { WorkOS } from "@workos-inc/node";\nexport const a = WorkOS;\n',
+        "stytch.ts": 'import { Client } from "@stytch/nextjs";\nexport const a = Client;\n',
+        "kinde.ts": 'import { x } from "@kinde-oss/kinde-auth-nextjs";\nexport const a = x;\n',
+        "okta.ts": 'import { x } from "@okta/okta-auth-js";\nexport const a = x;\n',
+        "fb.ts": 'import { getAuth } from "firebase/auth";\nexport const a = getAuth;\n',
+        "supa.ts": 'import { createServerClient } from "@supabase/ssr";\nexport const a = createServerClient;\n',
+        "mail.ts": 'import { Resend } from "resend";\nimport { render } from "@react-email/render";\nexport const a = [Resend, render];\n',
+        "py/requirements.txt": "x\n",
+        "py/a.py": "from auth0.authentication import GetToken\nimport firebase_admin\n",
+      },
+      (f) => {
+        assert.deepEqual(ids(f, "service"), ["service:email", "service:sign-in"]);
+        assert.deepEqual(fact(f, "service:sign-in").meta.vendor, ["auth0", "clerk", "firebase", "kinde", "okta", "stytch", "supabase", "workos"]);
+        assert.deepEqual(fact(f, "service:email").files, ["mail.ts"], "Resend yes, @react-email/render only renders the message");
+        assert.equal(fact(f, "service:sign-in").files.length, 9);
+      },
+    ));
+});
+
+describe(".mdx is content that counts (§2.2)", () => {
+  const withRepo = async (spec, fn) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "scan-mdx-"));
+    for (const [rel, text] of Object.entries(spec)) {
+      fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+      fs.writeFileSync(path.join(root, rel), text);
+    }
+    try {
+      return await fn(await scanRepo(root));
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  };
+  const post = (n, extra = "") => `---\ntitle: Post ${n}\n---\n\n${extra}Some words about post ${n}.\n\nMore words, on a line of their own.\n`;
+
+  test("a folder of posts becomes an area; ESM blocks are imports, prose and code fences are not", () =>
+    withRepo(
+      {
+        "package.json": '{"name":"c","dependencies":{"next":"14"}}',
+        "tsconfig.json": '{"compilerOptions":{"baseUrl":".","paths":{"@/*":["./*"]}}}',
+        "components/callout.tsx": "export const Callout = () => null;\n",
+        "components/other.tsx": "export const Other = () => null;\n",
+        "content/blog/one.mdx": post(1, 'import { Callout } from "@/components/callout"\n\n'),
+        "content/blog/two.mdx": post(2, '```tsx\nimport { Other } from "@/components/other"\n```\n\nYou can import { Other } from "@/components/other" in prose.\n\n'),
+        "content/blog/three.mdx": post(3),
+        "content/blog/four.mdx": post(4),
+        "app/page.tsx": "export default function P() { return null }\n",
+      },
+      (f) => {
+        for (const n of ["one", "two", "three", "four"]) assert.ok(f.files[`content/blog/${n}.mdx`], `${n}.mdx is a kept file`);
+        assert.equal(f.files["content/blog/one.mdx"].loc, 6, "prose lines count as LOC");
+        assert.ok(ids(f, "area").includes("area:content/blog"), "4 posts make an area");
+        assert.equal(f.files["content/blog/one.mdx"].area, "area:content/blog");
+        assert.equal(fact(f, "area:content/blog").meta.fileCount, 4);
+        assert.ok(fact(f, "area:content/blog").loc >= 20);
+        assert.ok(hasImport(f, "content/blog/one.mdx", "components/callout.tsx"), "an ESM block is parsed like JS");
+        assert.ok(!hasImport(f, "content/blog/two.mdx", "components/other.tsx"), "code fences and prose are not imports");
+        assert.equal(f.files["content/blog/one.mdx"].gen, undefined, "long prose lines are not a minified bundle");
+        assert.deepEqual(f.unresolved, {});
+      },
+    ));
+
+  test("an .mdx page in the app folder is a screen", () =>
+    withRepo(
+      {
+        "package.json": '{"name":"c","dependencies":{"next":"14"}}',
+        "app/page.tsx": "export default function P() { return null }\n",
+        "app/about/page.mdx": "# About\n\nHello.\n",
+      },
+      (f) => assert.deepEqual(ids(f, "screen"), ["screen:/", "screen:/about"]),
+    ));
+});
+
+describe("draft names are plain English (never jargon, 16 characters at most)", () => {
+  test("known folders map to plain words", () => {
+    const cases = {
+      components: "Screen pieces",
+      "frontend/src/components": "Screen pieces",
+      ui: "Look and feel",
+      "components/ui": "Look and feel",
+      "lib/utils": "Helpers",
+      utils: "Helpers",
+      lib: "Inner workings",
+      hooks: "Screen behaviour",
+      "routes/api": "Requests",
+      "app/api": "Requests",
+      "backend/app/api": "Requests",
+      backend: "Back room",
+      frontend: "Front room",
+      config: "Settings",
+      "app/(chat)": "Chat",
+      "components/chat": "Chat",
+      "components/ai-elements": "AI elements",
+      "components/UserSettings": "User settings",
+      "lib/billing": "Billing",
+      "components/recipes": "Recipes",
+      "src/features/weekly-plan": "Weekly plan",
+    };
+    for (const [dir, name] of Object.entries(cases)) assert.equal(plainAreaName(dir, "x"), name, dir);
+  });
+
+  test("jargon words inside folder names are replaced, and every result is short and clean", () => {
+    const dirs = [
+      "lib/api-client", "packages/module-loader", "components/endpoint-list", "app/backend-for-frontend", "tools/repo-sync", "src/webhooks",
+      "frontend/src/components/Admin", "modules/payments-and-subscriptions-center", "lib/middleware", "db/schema", "x/deployment-checks", "pr-review", "lib/orm",
+      "(marketing)", "[slug]", "weird_snake_case_folder_name_that_goes_on", "",
+    ];
+    for (const dir of dirs) {
+      const name = plainAreaName(dir, "full-stack-fastapi-template");
+      assert.ok(name.length >= 1 && name.length <= 16, `"${name}" for ${dir}`);
+      assert.ok(!isJargon(name), `"${name}" for ${dir} has jargon`);
+    }
+    assert.equal(plainAreaName("lib/api-client", "x"), "Request client");
+    assert.equal(plainAreaName("", "full-stack-fastapi-template"), "The whole app");
+    assert.equal(plainAreaName("", "pantry"), "Pantry");
+  });
+
+  test("the checker's jargon list is mirrored", () => {
+    for (const w of ["API", "apis", "SDK", "ORM", "REST", "GraphQL", "PR", "CI", "endpoint", "middleware", "webhook", "deploy", "frontend", "backend", "monorepo", "repository", "repo", "component", "Components", "module", "commit", "table", "schema"]) {
+      assert.ok(isJargon(`The ${w} here`), w);
+    }
+    for (const w of ["Screen pieces", "Look and feel", "Requests", "Back room", "Saved records", "Outside services", "Runs on its own", "What you see"]) assert.ok(!isJargon(w), w);
+  });
+
+  test("area facts carry the same plain names, so chip names never read Ui, Components or Api (§2.5)", () => {
+    const name = (f, id) => fact(f, id).name;
+    assert.equal(name(recipe, "area:components"), "Screen pieces");
+    assert.equal(name(recipe, "area:components/ui"), "Look and feel");
+    assert.equal(name(recipe, "area:lib"), "Inner workings");
+    assert.equal(name(recipe, "area:app/api"), "Requests");
+    assert.equal(name(recipe, "area:app"), "Main app");
+    assert.equal(name(recipe, "area:.") , "Recipe", "the repo name is an ordinary word");
+    // ordinary product words are unchanged
+    assert.equal(name(recipe, "area:components/recipes"), "Recipes");
+    assert.equal(name(recipe, "area:lib/recipes"), "Recipes");
+    assert.equal(name(recipe, "area:lib/plan"), "Plan");
+    assert.equal(name(recipe, "area:lib/ai"), "AI features");
+    assert.equal(name(fastapi, "area:backend"), "Back room");
+    assert.equal(name(fastapi, "area:frontend"), "Front room");
+    assert.equal(name(fastapi, "area:frontend/src/components"), "Screen pieces");
+    assert.equal(name(fastapi, "area:backend/app/api"), "Requests");
+    for (const f of [recipe, fastapi, empty]) {
+      for (const a of f.facts.filter((x) => x.kind === "area")) {
+        assert.ok(a.name.length >= 1 && a.name.length <= 16 && !isJargon(a.name), `${a.id}: "${a.name}"`);
+        assert.equal(a.name, plainAreaName(a.id === "area:." ? "" : a.id.slice(5), f.repo.name), `${a.id} uses the shared map`);
+      }
+    }
+    assert.match(showFacts(recipe), /area:components\/ui {2,}Look and feel/);
+  });
+
+  test("every drafted part of every fixture is plain", () => {
+    for (const f of [recipe, fastapi]) {
+      for (const p of draftParts(f)) {
+        assert.ok(p.name.length <= 16 && !isJargon(p.name) && !isJargon(p.line), `${p.name}: ${p.line}`);
+      }
+    }
+    const names = draftParts(fastapi).map((p) => p.name);
+    assert.ok(names.includes("Screen pieces"), "frontend components are not called Components");
+    assert.ok(!names.includes("Components"));
+    assert.ok(!names.some((n) => /^Behind the screens$/.test(n)), "no 18-character placeholder");
+  });
 });
 
 describe("real-world edges", () => {

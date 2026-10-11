@@ -222,3 +222,37 @@ export function parseJsonc(text) {
     return null;
   }
 }
+
+// MDX: prose and code fences are content. Only the ESM blocks (paragraphs that start with `import` / `export`,
+// outside code fences) are code, so keep those and blank everything else.
+export function prepareMdx(text) {
+  const lines = text.split("\n");
+  let fence = null;
+  let esm = false;
+  let prevBlank = true;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const f = /^\s*(```|~~~)/.exec(line);
+    if (f) {
+      if (!fence) fence = f[1];
+      else if (f[1] === fence) fence = null;
+      esm = false;
+      lines[i] = line.replace(/\S/g, " ");
+      prevBlank = false;
+      continue;
+    }
+    if (fence) {
+      lines[i] = line.replace(/\S/g, " ");
+      continue;
+    }
+    if (line.trim() === "") {
+      esm = false;
+      prevBlank = true;
+      continue;
+    }
+    if (prevBlank) esm = /^(import|export)\s/.test(line);
+    prevBlank = false;
+    if (!esm) lines[i] = line.replace(/\S/g, " ");
+  }
+  return lines.join("\n");
+}

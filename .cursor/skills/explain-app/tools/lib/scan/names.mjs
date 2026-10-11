@@ -27,13 +27,6 @@ export function tableName(name) {
   return sentenceCase(name.replace(/_v\d+$/i, ""));
 }
 
-// Areas: basename title-cased, route-group parentheses removed.
-export function areaName(dir, repoName) {
-  if (dir === "") return sentenceCase(repoName || "Project");
-  const base = dir.slice(dir.lastIndexOf("/") + 1).replace(/^\((.*)\)$/, "$1").replace(/^\[+(\.\.\.)?(.*?)\]+$/, "$2");
-  return sentenceCase(base) || "Main";
-}
-
 const GENERIC_ADD = new Set(["new", "create", "add"]);
 const GENERIC_EDIT = new Set(["edit", "update"]);
 
@@ -106,3 +99,90 @@ export const AI_NAMES = {
 export function aiName(key) {
   return AI_NAMES[key] || sentenceCase(key);
 }
+
+// ---- Areas: plain-English folder names (shared by area facts and `draft`) ----
+
+export const MAX_NAME = 16;
+
+// The words the poster checker flags (tools/lib/inspect.js). A part name must never contain one.
+const JARGON = [
+  /\bAPIs?\b/i, /\bSDKs?\b/, /\bORM\b/, /\bREST\b/, /\bGraphQL\b/, /\bPRs?\b/, /\bCI\b/,
+  ...["endpoint", "middleware", "webhook", "deploy", "deployment", "env var", "environment variable", "frontend", "front-end", "backend", "back-end", "monorepo", "repository", "repo", "component", "module", "commit", "pull request", "table", "schema"].map(
+    (w) => new RegExp(`\\b${w}s?\\b`, "i"),
+  ),
+];
+export const isJargon = (text) => JARGON.some((re) => re.test(text));
+
+// Known folder names -> what a person gets from them. Keys are lower-case with "-" and "_" removed.
+const FOLDER_NAMES = {
+  components: "Screen pieces", component: "Screen pieces", widgets: "Screen pieces",
+  ui: "Look and feel", styles: "Look and feel", style: "Look and feel", theme: "Look and feel", themes: "Look and feel", design: "Look and feel",
+  lib: "Inner workings", libs: "Inner workings", core: "Inner workings", internal: "Inner workings", services: "Inner workings", service: "Inner workings", logic: "Inner workings",
+  utils: "Helpers", util: "Helpers", helpers: "Helpers", helper: "Helpers", utilities: "Helpers",
+  hooks: "Screen behaviour", hook: "Screen behaviour",
+  api: "Requests", routes: "Requests", route: "Requests", router: "Requests", routers: "Requests", handlers: "Requests", controllers: "Requests", endpoints: "Requests", rest: "Requests",
+  app: "Main app", src: "Main app", main: "Main app",
+  pages: "Screens", views: "Screens", screens: "Screens", screen: "Screens", layouts: "Page layouts", layout: "Page layouts",
+  config: "Settings", configs: "Settings", settings: "Settings", constants: "Settings", env: "Settings",
+  types: "Data shapes", typings: "Data shapes", schemas: "Data shapes", schema: "Data shapes", models: "Data shapes", model: "Data shapes", entities: "Data shapes", interfaces: "Data shapes", validations: "Data shapes", validators: "Data shapes",
+  db: "Saved data", database: "Saved data", prisma: "Saved data", drizzle: "Saved data", migrations: "Saved data", repositories: "Saved data", data: "Saved data", storage: "Saved data",
+  auth: "Signing in", authentication: "Signing in", login: "Signing in", session: "Signing in", sessions: "Signing in",
+  jobs: "Background work", tasks: "Background work", workers: "Background work", worker: "Background work", queues: "Background work", cron: "Background work", scheduler: "Background work",
+  emails: "Emails", email: "Emails", mail: "Emails", mailers: "Emails", notifications: "Notices",
+  scripts: "Helper scripts", bin: "Helper scripts", tools: "Helper scripts", cli: "Helper scripts",
+  store: "App memory", stores: "App memory", state: "App memory", context: "App memory", contexts: "App memory", providers: "App memory", redux: "App memory",
+  middleware: "Safety checks", guards: "Safety checks",
+  common: "Shared parts", shared: "Shared parts", modules: "Features", packages: "Shared parts",
+  server: "Back room", backend: "Back room", back: "Back room", client: "Front room", frontend: "Front room", front: "Front room", web: "Front room", www: "Front room",
+  ai: "AI features", llm: "AI features", agents: "AI features",
+  i18n: "Translations", locales: "Translations", lang: "Translations", translations: "Translations",
+};
+// Pairs win over single folders: "routes/api" and "app/api" are both "Requests", "lib/utils" is "Helpers".
+const PAIR_NAMES = { "lib/utils": "Helpers", "src/lib": "Inner workings", "src/utils": "Helpers", "components/ui": "Look and feel" };
+
+// Jargon words inside a folder name -> plain words
+const WORD_FIXES = {
+  component: "piece", components: "pieces", module: "part", modules: "parts", api: "request", apis: "requests", endpoint: "request", endpoints: "requests",
+  backend: "back room", frontend: "front room", repo: "project", repos: "projects", repository: "project", webhook: "notice", webhooks: "notices",
+  middleware: "check", sdk: "tools", orm: "data", graphql: "queries", deploy: "launch", deployment: "launch", commit: "save", commits: "saves", table: "list", tables: "lists", schema: "shape", schemas: "shapes",
+  ai: "AI", ui: "UI", id: "ID", db: "data", auth: "sign-in",
+};
+
+const cleanSeg = (seg) => seg.replace(/^\((.*)\)$/, "$1").replace(/^\[+(?:\.\.\.)?(.*?)\]+$/, "$1");
+const foldKey = (seg) => cleanSeg(seg).toLowerCase().replace(/[-_.]/g, "");
+
+export function clip(name, n = MAX_NAME) {
+  if (name.length <= n) return name;
+  const cut = name.slice(0, n);
+  const sp = cut.lastIndexOf(" ");
+  return (sp > 6 ? cut.slice(0, sp) : cut).trim();
+}
+
+const sentence = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
+// A folder's plain-English name: no jargon, 16 characters at most.
+export function plainAreaName(dir, repoName = "") {
+  let name;
+  if (dir === "") {
+    const words = splitWords(repoName || "");
+    const guess = sentence(words);
+    name = guess && guess.length <= MAX_NAME && !isJargon(guess) && !/template|starter|boilerplate/i.test(guess) ? guess : "The whole app";
+  } else {
+    const segs = dir.split("/");
+    const last = foldKey(segs[segs.length - 1]);
+    const pair = segs.length > 1 ? `${foldKey(segs[segs.length - 2])}/${last}` : "";
+    name = PAIR_NAMES[pair] || FOLDER_NAMES[last];
+    if (!name) {
+      const words = splitWords(cleanSeg(segs[segs.length - 1])).split(" ").filter(Boolean);
+      const fixed = words.map((w) => WORD_FIXES[w] || w);
+      name = sentence(fixed.join(" ")) || "Main part";
+    }
+  }
+  name = clip(name);
+  if (isJargon(name)) name = "Main part";
+  return name;
+}
+
+
+// Areas (CONTRACTS §2.5): the plain-English folder map; unmapped basenames are title-cased with jargon words replaced.
+export const areaName = plainAreaName;

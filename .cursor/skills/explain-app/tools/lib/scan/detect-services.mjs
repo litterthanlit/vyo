@@ -9,15 +9,17 @@ const SERVICES = {
     js: [["stripe", "stripe"], ["@stripe/*", "stripe"], ["@lemonsqueezy/*", "lemonsqueezy"], ["paddle*", "paddle"], ["@paddle/*", "paddle"]],
     py: [["stripe", "stripe"], ["paddle", "paddle"], ["paddle_billing", "paddle"]],
   },
+  // Template packages (@react-email/*) only render the message; they are not a company that sends it.
   email: {
-    js: [["resend", "resend"], ["@sendgrid/*", "sendgrid"], ["postmark", "postmark"], ["nodemailer", "nodemailer"], ["@react-email/*", "react-email"], ["mailgun*", "mailgun"]],
-    py: [["sendgrid", "sendgrid"], ["emails", "emails"], ["fastapi_mail", "fastapi-mail"], ["flask_mail", "flask-mail"], ["django.core.mail", "django"]],
+    js: [["resend", "resend"], ["@sendgrid/*", "sendgrid"], ["postmark", "postmark"], ["nodemailer", "nodemailer"], ["mailgun*", "mailgun"]],
+    py: [["sendgrid", "sendgrid"], ["emails", "emails"], ["fastapi_mail", "fastapi-mail"], ["flask_mail", "flask-mail"]],
   },
+  // Hosted sign-in companies only. next-auth, @auth/*, lucia, better-auth, passlib, pwdlib, pyjwt, python-jose and
+  // authlib run inside the app, so they are not outside services.
   "sign-in": {
-    js: [["next-auth", "next-auth"], ["@next-auth/*", "next-auth"], ["@auth/*", "auth.js"], ["@clerk/*", "clerk"], ["lucia", "lucia"], ["better-auth", "better-auth"],
-      ["@supabase/auth-helpers-*", "supabase"], ["@supabase/ssr", "supabase"], ["firebase/auth", "firebase"], ["@auth0/*", "auth0"], ["passport", "passport"], ["passport-*", "passport"],
-      ["jsonwebtoken", "jsonwebtoken"], ["jose", "jose"], ["iron-session", "iron-session"], ["@kinde-oss/*", "kinde"], ["@workos-inc/*", "workos"]],
-    py: [["authlib", "authlib"], ["jose", "python-jose"], ["passlib", "passlib"], ["jwt", "pyjwt"], ["pwdlib", "pwdlib"], ["fastapi_users", "fastapi-users"], ["flask_login", "flask-login"], ["flask_jwt_extended", "flask-jwt-extended"]],
+    js: [["@clerk/*", "clerk"], ["@auth0/*", "auth0"], ["auth0", "auth0"], ["auth0-js", "auth0"], ["@workos-inc/*", "workos"], ["@stytch/*", "stytch"], ["@kinde-oss/*", "kinde"],
+      ["@supabase/auth-helpers-*", "supabase"], ["@supabase/ssr", "supabase"], ["firebase/auth", "firebase"], ["@okta/*", "okta"]],
+    py: [["auth0", "auth0"], ["firebase_admin", "firebase"]],
   },
   "file-storage": {
     js: [["@aws-sdk/client-s3", "aws-s3"], ["@vercel/blob", "vercel-blob"], ["uploadthing", "uploadthing"], ["@uploadthing/*", "uploadthing"], ["cloudinary", "cloudinary"], ["next-cloudinary", "cloudinary"], ["@google-cloud/storage", "google-cloud-storage"], ["@azure/storage-blob", "azure-blob"]],

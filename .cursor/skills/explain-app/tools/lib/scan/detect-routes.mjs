@@ -80,7 +80,7 @@ export function detectFileRoutes(ctx) {
 
     // ---- Next.js ----
     if (F.next) {
-      if ((m = /^(?:src\/)?app\/(?:(.*)\/)?(page|route)\.(?:tsx|ts|jsx|js|mjs)$/.exec(rel)) || (m = /^(?:src\/)?app\/()(page|route)\.(?:tsx|ts|jsx|js|mjs)$/.exec(rel))) {
+      if ((m = /^(?:src\/)?app\/(?:(.*)\/)?(page|route)\.(?:tsx|ts|jsx|js|mjs|mdx)$/.exec(rel)) || (m = /^(?:src\/)?app\/()(page|route)\.(?:tsx|ts|jsx|js|mjs|mdx)$/.exec(rel))) {
         const segs = nextSegments(m[1] ? m[1].split("/") : []);
         if (segs) {
           if (m[2] === "page") addScreen(ctx, segs, p, pkg);
@@ -88,7 +88,7 @@ export function detectFileRoutes(ctx) {
         }
         continue;
       }
-      if ((m = /^(?:src\/)?pages\/(.+)\.(?:tsx|ts|jsx|js|mjs)$/.exec(rel))) {
+      if ((m = /^(?:src\/)?pages\/(.+)\.(?:tsx|ts|jsx|js|mjs|mdx)$/.exec(rel))) {
         const parts = m[1].split("/");
         const last = parts[parts.length - 1];
         if (last.startsWith("_") || /^(404|500)$/.test(last) || parts.slice(0, -1).some((s) => s.startsWith("_"))) continue;

@@ -2,7 +2,7 @@
 import path from "node:path";
 import { factsHash } from "../hash.mjs";
 import { listFiles, readSourceFiles } from "./files.mjs";
-import { scanJs, stripPy, stripSql } from "./tokenize.mjs";
+import { scanJs, stripPy, stripSql, prepareMdx } from "./tokenize.mjs";
 import { buildPackageIndex, buildTsconfigResolver } from "./packages.mjs";
 import { resolveAll } from "./imports.mjs";
 import { FactSet } from "./facts.mjs";
@@ -43,6 +43,7 @@ export function scanRepoDetailed(dirArg) {
     try {
       if (ext === ".py") code = stripPy(text);
       else if (ext === ".sql") code = stripSql(text);
+      else if (ext === ".mdx") code = scanJs(prepareMdx(text)).code;
       else {
         const r = scanJs(text);
         code = r.code;

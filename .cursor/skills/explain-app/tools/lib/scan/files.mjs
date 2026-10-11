@@ -6,9 +6,10 @@ import { basename, cmp, countLoc, dirname, extname } from "./util.mjs";
 
 export const SOURCE_EXT = new Set([
   ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts", ".vue", ".svelte", ".astro",
-  ".py", ".go", ".rb", ".rs", ".php", ".java", ".kt", ".swift", ".sql", ".prisma",
+  ".py", ".go", ".rb", ".rs", ".php", ".java", ".kt", ".swift", ".sql", ".prisma", ".mdx",
 ]);
-export const JS_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts", ".vue", ".svelte", ".astro"]);
+// Files whose `import` lines are parsed JS-style. .mdx is content, but its ESM blocks are code.
+export const JS_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts", ".vue", ".svelte", ".astro", ".mdx"]);
 
 export const MAX_BYTES = 512 * 1024;
 export const MAX_FILES = 20000;
@@ -94,6 +95,7 @@ const GEN_HEAD = /@generated|auto-?generated|automatically generated|do not edit
 // Generated files keep their place in `files` but never count toward LOC or kit detection.
 export function detectGen(rel, text) {
   if (GEN_NAME.test(basename(rel)) || GEN_DIR.test(dirname(rel) + "/") || MIGRATION_DIR.test(dirname(rel) + "/")) return true;
+  if (rel.endsWith(".mdx")) return false; // prose: markdown headings start with "#", paragraphs are long lines
   const head = text
     .slice(0, 700)
     .split("\n")

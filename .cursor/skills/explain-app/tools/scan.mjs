@@ -12,10 +12,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { stableStringify, factsHash } from "./lib/hash.mjs";
 import { scanRepoDetailed } from "./lib/scan/index.mjs";
 import { draftParts } from "./lib/scan/draft.mjs";
+import { plainAreaName, isJargon } from "./lib/scan/names.mjs";
 import { showFacts } from "./lib/scan/show.mjs";
 import { matchGlob, selectIds, globToRegExp } from "./lib/scan/glob.mjs";
 
-export { draftParts, showFacts, matchGlob, selectIds, globToRegExp };
+export { draftParts, showFacts, matchGlob, selectIds, globToRegExp, plainAreaName, isJargon };
 
 /** Scan a repo directory into a FactsFile. Never writes anything. */
 export async function scanRepo(dir) {
