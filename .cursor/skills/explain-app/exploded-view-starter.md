@@ -4,7 +4,7 @@ Structural reference for `<repo>-exploded-view.canvas.tsx`. Read [exploded-view-
 
 Copy grid helpers (`GridOverlay`, constants, `folio`/`meta`/`body`/`sectionLabel`/`subgrid` styles) from [poster-starter.md](poster-starter.md) — same visual system, do not invent a new one.
 
-**The drawing shows this repo's real parts and real wiring.** The starter draws `PARTS` (what you write) and `WIRING` (what `node tools/scan.mjs wire <facts.json> --into <this file>` writes: counts, sizes and links computed from the code). You only edit `PARTS` and the `product` / `purpose` / `notBuilt` / `audience` copy. Every coordinate is derived. Do not hand-place anything in the SVG and do not edit the `WIRING` block.
+**The drawing shows this repo's real parts and real wiring.** The starter draws `PARTS` (what you write) and `WIRING` (what `node tools/scan.mjs wire <facts.json> --into <this file>` writes: counts, sizes and links computed from the code). You only edit `PARTS` (including each part's optional `detail`) and the `product` / `purpose` / `notBuilt` / `audience` copy. Every coordinate is derived. Do not hand-place anything in the SVG and do not edit the `WIRING` block.
 
 Key craft moves this starter encodes — do not regress them:
 
@@ -12,11 +12,15 @@ Key craft moves this starter encodes — do not regress them:
 - **Cables are real paths.** Each link from `WIRING` is a screen-space curve from the lower part's top face into the upper part's underside, ports spread and ordered by the far end's x, one to three strands by weight. Same-tier links are arches behind the parts. The selected part's cables turn ink
 - **2 to 9 parts in four tiers:** top = screens and API; features; AI and jobs; data and outside services. Empty tiers drop out, AI and jobs merge up into the feature tier when that tier stays at four or fewer, and a tier of more than four **throws**. Order inside a tier is four barycenter sweeps on the link weights, then a column assignment that keeps linked parts in line
 - One 12-column `figure`; the SVG viewBox is **900 units wide = 1px per unit at full width**. The drawing lives in cols 3–10 (592 units), the labels in the two gutters (cols 1–2 and 11–12). Labels are HTML, **never wrap**, and are joined to their part by an elbow leader that starts on the part's top face
-- The gap between tiers is driven by the slider (8 at 0, the part's own diagonal at 100). The drawing is fitted once at 100 so the figure never changes height; a fit below 0.6 **throws**
+- **Labels fit 18-character names.** Line 1 is `01  Name` in sentence case, 10px, weight 600, tracking 0.02em; line 2 is the count phrase. Measured in Chromium with the real font stack, the widest 18-character names ("Customer messaging", "Accounts and plans", all capitals) take 115–128px of the 130px gutter
+- **Leaders are routed, not drawn straight.** A leader leaves a visible spot on the part's top face (never one a later-painted part covers) and runs straight out; if another part is in the way it takes a riser beside the part to a lane between the tiers, so nothing is crossed at 50% open or wider. It ends on its label with a straight run, a 45° slant or a riser and a stub
+- **Cables take off from a clear strip.** A feature packs its chips toward the front and a job its gears, so the cable ports (rings) sit on bare top face along the back, not on a chip outline
+- The gap between tiers is driven by the slider (8 at 0, the part's own diagonal at 100). The drawing is fitted once at 100, centred in cols 3–10 and scaled up to 1.5× when the width allows, so the figure never changes height; it is also held to what is left of a 1300px page after the copy rows. A fit below 0.6 **throws**
+- **The caption has a fixed height**: it reserves the tallest any part needs (lines estimated from string length, so nothing measures text) so the slider row never jumps as the selection moves. A part's `detail` (plain English, 120 characters at most) replaces the scanned item names after "Made of:" — use it when folder or route names would mean nothing to a reader
 - Paint order, bottom tier first: arches, parts, the cables that leave this tier upward (skip-tier cables included, so they pass behind the middle parts), then every leader on top
 - Selected part: opaque **accent tint** fill + ink outline at 1.25 + ink cables + ink label. Colour is never the only cue
 - Interaction: slider opens the tiers; pointer or click selects a part; **↑/↓/Home/End** in the part list moves the selection; the caption under the drawing (`aria-live`) reads the selected part's line, what it is made of and what it is connected to
-- A scoped `<style>` (`xv-` classes) draws the hairline slider, focus rings and the reduced-motion switch — the only CSS that isn't inline
+- A scoped `<style>` (`xv-` classes) draws the hairline slider, focus rings and the reduced-motion switch, and — when the figure is narrower than 880px — hides the leaders and flows the labels as a numbered two-column legend under the drawing (a container query; every `data-label`, `data-side` and option role stays). It is the only CSS that isn't inline
 - Light paper by default; the **theme** button flips to a dark blueprint (dot field, dot-screen side faces). Exports always use the light default
 - `PARTS` must be valid JSON between its markers (the wire tool parses it). Changing a part's `role` or `from` changes its hash and the canvas **throws** until you re-run `wire`; names and lines can change freely
 
@@ -31,13 +35,14 @@ import { useCanvasState } from "cursor/canvas";
 const TINT = "#FCE1E6";
 
 type Role = "screens" | "api" | "feature" | "ai" | "jobs" | "data" | "service";
-type PartSpec = { name: string; role: Role; line: string; from: string[] };
+type PartSpec = { name: string; role: Role; line: string; from: string[]; detail?: string };
 type PartWiring = { count: number; drawn: number; items: number[]; size: number; loc: number; names: string[]; tools?: number };
 type Wiring = { facts: string; parts: string; n: PartWiring[]; links: [number, number, number][] };
 type Pt = [number, number];
 type Pen = { line: string; detail: string; face: string; w: number; screen: boolean };
-type Scene = { x0: number; y0: number; x1: number; y1: number };
-type Built = { node: JSX.Element; hb: number; H: number; top: Pt[] };
+type Scene = { x0: number; y0: number; x1: number; y1: number; pts: Pt[] };
+// band: where cables leave the top face, as a fraction of its half-height from the centre line (negative = toward the back).
+type Built = { node: JSX.Element; hb: number; H: number; top: Pt[]; band?: number };
 
 // ── Copy ── the words around the drawing. Plain language, no file paths.
 const product = "Pantry";
@@ -57,7 +62,7 @@ const PARTS: PartSpec[] = [
 ];
 // PARTS:END
 // WIRING:BEGIN — generated by `node tools/scan.mjs wire`; do not edit
-const WIRING: Wiring = {"facts":"19d4e6317f18","parts":"0650545e","n":[{"count":6,"drawn":6,"items":[1,1,1,1,1,1],"size":0.169,"loc":100,"names":["Home","Plan","Recipes","Recipe detail","New recipe","Settings"]},{"count":2,"drawn":2,"items":[0.589,0.411],"size":0.189,"loc":112,"names":["Recipes"]},{"count":2,"drawn":2,"items":[0.524,0.476],"size":0.177,"loc":105,"names":["Plan"]},{"count":1,"drawn":1,"items":[1],"size":0.071,"loc":42,"names":["OpenAI"],"tools":2},{"count":1,"drawn":1,"items":[1],"size":0.015,"loc":9,"names":["Weekly plan"]},{"count":4,"drawn":4,"items":[1,1,1,1],"size":0.084,"loc":50,"names":["Ingredient","Meal plan","Recipe","User"]},{"count":3,"drawn":3,"items":[1,1,1],"size":0,"loc":0,"names":["Email","Payments","Sign-in"]}],"links":[[0,1,13],[0,2,3],[0,3,1],[0,6,2],[1,2,1],[1,5,5],[2,4,1],[2,5,7],[4,6,1]]};
+const WIRING: Wiring = {"facts":"d73b88fe2d4e","parts":"0650545e","n":[{"count":6,"drawn":6,"items":[1,1,1,1,1,1],"size":0.169,"loc":100,"names":["Home","Plan","Recipes","Recipe detail","New recipe","Settings"]},{"count":2,"drawn":2,"items":[0.589,0.411],"size":0.189,"loc":112,"names":["Recipes"]},{"count":2,"drawn":2,"items":[0.524,0.476],"size":0.177,"loc":105,"names":["Plan"]},{"count":1,"drawn":1,"items":[1],"size":0.071,"loc":42,"names":["OpenAI"],"tools":2},{"count":1,"drawn":1,"items":[1],"size":0.015,"loc":9,"names":["Weekly plan"]},{"count":4,"drawn":4,"items":[1,1,1,1],"size":0.084,"loc":50,"names":["Ingredient","Meal plan","Recipe","User"]},{"count":3,"drawn":3,"items":[1,1,1],"size":0,"loc":0,"names":["Email","Payments","Sign-in"]}],"links":[[0,1,4],[0,2,1],[0,3,1],[0,6,1],[1,2,1],[1,5,2],[2,4,1],[2,5,3],[4,6,1]]};
 // WIRING:END
 
 // The canvas carries its own copy of the wire tool's hash (tools/lib/hash.mjs): keep the two identical.
@@ -94,7 +99,7 @@ const DRAW_W = 8 * COLW + 7 * GUTTER; // cols 3–10 = 592
 const DRAW_C = DRAW_X + DRAW_W / 2;
 const GUT_W = 2 * COLW + GUTTER; // a label gutter: cols 1–2, or 11–12
 const GUT_R = MAXW - GUT_W; // the col 11 line
-const FIT_H = 592; // tallest drawing at full open; with the chrome this keeps the poster under 1300px (VBH ≤ 656)
+const FIT_H = 640; // tallest drawing at full open (the figure stays within 704); the page's other rows can shrink it further
 const LABEL_STEP = 40; // a label is 32px tall; keep 8 between them
 const PAD = 32;
 const TIER: Record<Role, number> = { screens: 0, api: 0, feature: 1, ai: 2, jobs: 2, data: 3, service: 3 };
@@ -119,8 +124,9 @@ const fine = (pen: Pen) => ({
   strokeLinejoin: "round" as const, vectorEffect: "non-scaling-stroke" as const,
 });
 
-const newScene = (): Scene => ({ x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity });
+const newScene = (): Scene => ({ x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity, pts: [] });
 const grow = (sc: Scene, pts: Pt[]) => {
+  sc.pts.push(...pts);
   for (const [x, y] of pts) {
     sc.x0 = Math.min(sc.x0, x);
     sc.x1 = Math.max(sc.x1, x);
@@ -128,6 +134,25 @@ const grow = (sc: Scene, pts: Pt[]) => {
     sc.y1 = Math.max(sc.y1, y);
   }
 };
+
+// The silhouette of a part: the convex hull of everything drawn, and a point-in-hull test. A leader's anchor must not sit under one.
+function hull(pts: Pt[]): Pt[] {
+  const sorted = [...pts].sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+  if (sorted.length < 3) return sorted;
+  const turn3 = (o: Pt, p: Pt, q: Pt) => (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0]);
+  const chain = (list: Pt[]) => {
+    const h: Pt[] = [];
+    for (const q of list) {
+      while (h.length > 1 && turn3(h[h.length - 2], h[h.length - 1], q) <= 0) h.pop();
+      h.push(q);
+    }
+    h.pop();
+    return h;
+  };
+  return [...chain(sorted), ...chain([...sorted].reverse())];
+}
+const within = (poly: Pt[], [x, y]: Pt) =>
+  poly.length > 2 && poly.every(([x1, y1], k) => (poly[(k + 1) % poly.length][0] - x1) * (y - y1) - (poly[(k + 1) % poly.length][1] - y1) * (x - x1) >= 0);
 
 // Extrudes a plan outline (points in increasing angle) into a body: the side faces the viewer sees, then the top.
 // `runs` names the faces by vertex range; `facets` makes one face per edge; otherwise the visible edges are one smooth face.
@@ -273,26 +298,33 @@ function api(sc: Scene, w: PartWiring, f: number, pen: Pen): Built {
 }
 
 // A block whose footprint and height grow with its share of the code, chips on top sized by theirs. A bundle chip is stacked.
+// The chips are packed toward the front, leaving a clear strip along the back of the top face where the cables take off.
 function feature(sc: Scene, w: PartWiring, f: number, pen: Pen): Built {
   const size = clamp(w.size, 0, 1);
   const hb = 12 + 32 * Math.sqrt(size);
   const n = w.drawn;
   const cols = n <= 2 ? n : n <= 4 ? 2 : 3;
   const rows = Math.max(1, Math.ceil(n / Math.max(cols, 1)));
-  const cs = (n <= 4 ? 0.54 : 0.5) * f;
-  const back = (n <= 4 ? 0.14 : 0.06) * f; // chips sit toward the back, so the top face's centre line stays free for cables
   const top = Math.max(...w.items, 0.001);
-  const chips = Array.from({ length: n }, (_, k) => {
-    const r = Math.floor(k / cols);
-    const m = Math.min(cols, n - r * cols);
-    const wn = clamp((w.items[k] ?? 1) / top, 0.05, 1);
-    return {
-      k, x: (k - r * cols - (m - 1) / 2) * cs - back, y: (r - (rows - 1) / 2) * cs - back,
-      half: cs * 0.46 * (0.55 + 0.45 * Math.sqrt(wn)), h: 3 + 5 * wn,
-      bundle: w.count > w.drawn && k === n - 1,
-    };
-  }).sort((p, q) => p.x + p.y - (q.x + q.y));
-  const H = Math.max(hb + 2, ...chips.map((c) => hb + c.h * (c.bundle ? 2 : 1)));
+  const band = -0.4; // the strip's centre line, as a fraction of the top face's half-height
+  const limit = band * f + Math.max(6, 0.12 * f); // chips stay in front of this screen line
+  const pack = (k: number) => {
+    const cs = (n <= 4 ? 0.54 : 0.5) * f * k;
+    const cells = Array.from({ length: n }, (_, j) => {
+      const r = Math.floor(j / cols);
+      const m = Math.min(cols, n - r * cols);
+      const wn = clamp((w.items[j] ?? 1) / top, 0.05, 1);
+      const h = 3 + 5 * wn;
+      const bundle = w.count > w.drawn && j === n - 1;
+      return { k: j, x: (j - r * cols - (m - 1) / 2) * cs, y: (r - (rows - 1) / 2) * cs, half: cs * 0.46 * (0.55 + 0.45 * Math.sqrt(wn)), h, bundle, rise: h * (bundle ? 2 : 1) };
+    });
+    const ahead = Math.max(0, limit - Math.min(...cells.map((c) => (c.x + c.y) / 2 - c.half - c.rise), limit));
+    return cells.map((c) => ({ ...c, x: c.x + ahead, y: c.y + ahead }));
+  };
+  let chips = pack(1);
+  for (let k = 0.95; k >= 0.45 && chips.some((c) => Math.max(c.x, c.y) + c.half > 0.9 * f); k -= 0.05) chips = pack(k);
+  chips = [...chips].sort((p, q) => p.x + p.y - (q.x + q.y));
+  const H = Math.max(hb + 2, ...chips.map((c) => hb + c.rise));
   const bands: number[] = [];
   for (let z = 10; z < hb - 5; z += 10) bands.push(z);
   const node = (
@@ -307,7 +339,7 @@ function feature(sc: Scene, w: PartWiring, f: number, pen: Pen): Built {
       ))}
     </g>
   );
-  return { node, hb, H, top: topOf(loop(f, 6), hb) };
+  return { node, hb, H, top: topOf(loop(f, 6), hb), band };
 }
 
 // A hexagonal prism ringed by one satellite per tool. One mark on a facet per provider; a bundle mark is three dots.
@@ -319,8 +351,9 @@ function ai(sc: Scene, w: PartWiring, f: number, pen: Pen): Built {
   const tools = clamp(w.tools ?? 0, 0, 6);
   const orbit = 0.95 * f;
   const rs = Math.min(5, 0.13 * f);
+  // The satellites sit on the near half of the ring, so the prism never hides one.
   const sats = Array.from({ length: tools }, (_, j) => {
-    const a = -Math.PI / 2 + (2 * Math.PI * (j + 0.5)) / tools + Math.PI / 6;
+    const a = Math.PI / 4 + ((((j + 0.5) / tools) * 2 - 1) * 80 * Math.PI) / 180;
     return { j, x: orbit * Math.cos(a), y: orbit * Math.sin(a) };
   });
   const sphere = (x: number, y: number) => {
@@ -359,18 +392,15 @@ function ai(sc: Scene, w: PartWiring, f: number, pen: Pen): Built {
       </g>
     );
   };
-  const behind = sats.filter((s) => s.x + s.y < 0);
-  const front = sats.filter((s) => s.x + s.y >= 0);
   const node = (
     <g>
       {tools ? <ellipse {...disc(0, 0, 0, orbit)} {...fine(pen)} strokeDasharray="1 4" /> : null}
-      {behind.map((s) => sphere(s.x, s.y))}
       {solid(sc, { poly, z: 0, h: hb, facets: true, main: true }, pen)}
       {Array.from({ length: n }, (_, k) => mark(k))}
-      {front.map((s) => sphere(s.x, s.y))}
+      {sats.map((s) => sphere(s.x, s.y))}
     </g>
   );
-  if (tools) grow(sc, [iso(-orbit, orbit, 0), iso(orbit, -orbit, 0), iso(-orbit, -orbit, 0), iso(orbit, orbit, 0)]);
+  if (tools) grow(sc, ring(orbit, 16).map(([x, y]) => iso(x, y, 0)));
   return { node, hb, H: hb, top: topOf(poly, hb) };
 }
 
@@ -400,10 +430,18 @@ function jobs(sc: Scene, w: PartWiring, f: number, pen: Pen): Built {
   const hi = [0, 1].map((i) => Math.max(...plan.map((p, k) => p[i] + 1.09 * mult[k % 4])));
   const centred = plan.map(([x, y]): Pt => [x - (lo[0] + hi[0]) / 2, y - (lo[1] + hi[1]) / 2]);
   const rb = (0.9 * f) / Math.max(...centred.map(([x, y], k) => Math.max(Math.abs(x), Math.abs(y)) + 1.09 * mult[k % 4]));
-  const gears = centred.map(([x, y], k) => {
-    const r = rb * mult[k % 4];
-    return { x: x * rb, y: y * rb, r, teeth: clamp(Math.round((2 * Math.PI * r) / 10), 8, 20), th: Math.min(4.2, 0.2 * r) };
-  });
+  const bundle = w.count > w.drawn;
+  // The gears sit toward the front, leaving a clear strip along the back of the plate where the cables take off.
+  const band = -0.4;
+  const limit = band * f + Math.max(6, 0.12 * f);
+  const lay = (kk: number) => {
+    const raw = centred.map(([x, y], k) => ({ x: x * rb * kk, y: y * rb * kk, r: rb * kk * mult[k % 4], rise: gh * (bundle && k === n - 1 ? 2 : 1) }));
+    const ahead = Math.max(0, limit - Math.min(...raw.map((g) => (g.x + g.y) / 2 - (1.09 * g.r) / Math.SQRT2 - g.rise), limit));
+    return raw.map((g) => ({ ...g, x: g.x + ahead, y: g.y + ahead }));
+  };
+  let placed = lay(1);
+  for (let kk = 0.95; kk >= 0.45 && placed.some((g) => Math.max(g.x, g.y) + 1.09 * g.r > 0.92 * f); kk -= 0.05) placed = lay(kk);
+  const gears = placed.map((g) => ({ ...g, teeth: clamp(Math.round((2 * Math.PI * g.r) / 10), 8, 20), th: Math.min(4.2, 0.2 * g.r) }));
   // Phases: each gear's gap faces the tooth of the one before it.
   const phase: number[] = [];
   gears.forEach((g, k) => {
@@ -418,7 +456,6 @@ function jobs(sc: Scene, w: PartWiring, f: number, pen: Pen): Built {
     const want = (((pitch / 2 - sA) % pitch) + pitch) % pitch;
     phase[k] = al + Math.PI - want / g.r;
   });
-  const bundle = w.count > w.drawn;
   const plate = loop(f, 8);
   const node = (
     <g>
@@ -438,7 +475,7 @@ function jobs(sc: Scene, w: PartWiring, f: number, pen: Pen): Built {
       })}
     </g>
   );
-  return { node, hb, H: hb + gh * (bundle ? 2 : 1), top: topOf(plate, hb) };
+  return { node, hb, H: hb + gh * (bundle ? 2 : 1), top: topOf(plate, hb), band };
 }
 
 // A stack of disks, one per kind of record. A bundle disk is hatched on its side.
@@ -584,7 +621,7 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 function phrase(p: PartSpec, w: PartWiring) {
   switch (p.role) {
     case "screens": return plural(w.count, "screen", "screens");
-    case "api": return `Answers ${plural(w.count, "kind", "kinds")} of request`;
+    case "api": return `${plural(w.count, "kind", "kinds")} of request`;
     case "feature": {
       const pct = Math.round(w.size * 100);
       return `${pct < 1 ? "<1" : pct}% of the code`;
@@ -611,6 +648,12 @@ const css = (t: { paper: string; ink: string; tint: string }) => `
 .xv-range:focus-visible::-moz-range-thumb{box-shadow:0 0 0 4px ${t.tint}}
 .xv-list:focus{outline:none}
 .xv-list:focus-visible [aria-selected="true"]{outline:1px solid ${t.ink};outline-offset:4px}
+.xv-fig{container-type:inline-size;container-name:xv}
+@container xv (max-width:880px){
+.xv-lead{display:none}
+.xv-list{position:static!important;display:grid!important;grid-auto-flow:column;grid-template-rows:repeat(var(--xv-rows),auto);grid-template-columns:1fr 1fr;column-gap:${GUTTER}px;row-gap:${BL}px;margin-top:${LH}px;pointer-events:auto!important}
+.xv-opt{position:static!important;width:auto!important}
+}
 .xv-ease path,.xv-ease ellipse,.xv-ease circle{transition:fill 160ms ease,stroke 160ms ease}
 @media (prefers-reduced-motion:reduce){.xv-ease path,.xv-ease ellipse,.xv-ease circle{transition:none}}
 `;
@@ -629,7 +672,29 @@ export default function ExplodedView() {
   if (nP < 2 || nP > 9) throw new Error(`${nP} parts — use 2 to 9`);
   for (const p of PARTS) {
     if (p.name.length > 18) throw new Error(`Part name "${p.name}" is ${p.name.length} characters — 18 at most`);
+    if ((p.detail ?? "").length > 120) throw new Error(`Part "${p.name}" detail is ${(p.detail ?? "").length} characters — 120 at most`);
   }
+
+  // ── Words around the drawing ── the caption's text and the room it needs.
+  const links = PARTS.map((_, i) => WIRING.links.filter(([p, q]) => p === i || q === i).sort((u, v) => v[2] - u[2]).map(([p, q]) => PARTS[p === i ? q : p].name));
+  const linkLine = (i: number) => (links[i].length ? `Connected to: ${links[i].join(", ")}` : "Not wired to the other parts");
+  // What a part is made of: the optional plain-English `detail`, else its item names (a, b and N more).
+  const madeFor = (i: number) => {
+    if (PARTS[i].detail) return PARTS[i].detail as string;
+    const w = WIRING.n[i];
+    const head = w.names.slice(0, w.count <= 3 ? 3 : 2);
+    return head.length ? andList([...head, ...(w.count > 3 ? [`${w.count - head.length} more`] : [])]) : "";
+  };
+  // The caption never changes height as the selection moves: reserve what the tallest part needs, estimated from string
+  // length (about 54 characters a line in cols 1–6 at 14px, 56 in cols 7–12), so nothing has to measure text.
+  const rows = (text: string, chars: number) => Math.max(1, Math.ceil(text.length / chars));
+  const capH = Math.max(...PARTS.map((p, i) => Math.max(
+    16 + 24 * rows(p.line, 54),
+    16 + 24 * ((madeFor(i) ? rows(`Made of: ${madeFor(i)}`, 56) : 0) + rows(linkLine(i), 56)),
+  )));
+  // Every page 3 row but the drawing: the figure may use what is left of 1296px. Estimated from string length too.
+  const pageRows = 480 + 24 * rows(purpose, 54) + capH + 8 + 16 * Math.max(rows(notBuilt, 68), rows(audience, 54));
+  const fitH = Math.min(FIT_H, 1296 - pageRows - 64);
 
   // ── Order, place, size ──
   const { tiers, col, K } = arrange(PARTS.map((p) => p.role), WIRING.links);
@@ -654,12 +719,17 @@ export default function ExplodedView() {
     const b = SHAPE[p.role](sc, WIRING.n[i], footprint(p.role, WIRING.n[i], a), penFor(i));
     return { ...b, box: sc };
   });
-  // The top face as the cables and leaders see it: its left, right and back corners, centre line and half width.
-  const face = built.map(({ top }) => {
+  // The top face as the cables and leaders see it: its corners, centre, half width and half height, and the line
+  // where cables leave it (the centre line, or a strip toward the back that a feature's chips or a job's gears leave clear).
+  const face = built.map(({ top, band }) => {
     const by = (k: 0 | 1, sign: number) => top.reduce((m, q) => (sign * q[k] < sign * m[k] ? q : m), top[0]);
     const L = by(0, 1);
     const R = by(0, -1);
-    return { L, R, B: by(1, 1), cy: (by(1, 1)[1] + by(1, -1)[1]) / 2, hw: (R[0] - L[0]) / 2 };
+    const B = by(1, 1);
+    const F = by(1, -1);
+    const cy = (B[1] + F[1]) / 2;
+    const hh = (F[1] - B[1]) / 2;
+    return { L, R, B, F, cx: (L[0] + R[0]) / 2, cy, hw: (R[0] - L[0]) / 2, hh, py: cy + (band ?? 0) * hh, pw: ((R[0] - L[0]) / 2) * (1 - Math.abs(band ?? 0)) };
   });
 
   // Tiers stack bottom-up: each sits on the one below by the slider's gap (8 closed, one part's diagonal open).
@@ -688,12 +758,12 @@ export default function ExplodedView() {
     return e;
   };
   const full = extent(100);
-  const s = Math.min(1, DRAW_W / (full.x1 - full.x0), FIT_H / (full.y1 - full.y0));
+  const s = Math.min(1.5, DRAW_W / (full.x1 - full.x0), fitH / (full.y1 - full.y0)); // small drawings scale up to 1.5×
   if (s < 0.6) throw new Error(`Drawing needs ${s.toFixed(2)}× scale — merge parts (fewer tiers or fewer parts per tier)`);
   const VBH = Math.ceil(((full.y1 - full.y0) * s + 2 * PAD) / BL) * BL; // fixed, so the page never jumps
   const z = stack(open);
   const now = extent(open);
-  const X = (x: number) => DRAW_C + s * (x - DRAW_C);
+  const X = (x: number) => DRAW_C + s * (x - (full.x0 + full.x1) / 2); // the drawing is centred in cols 3–10
   const Y = (y: number) => VBH / 2 + s * (y - (now.y0 + now.y1) / 2);
   const at = (p: number, lx: number, ly: number): Pt => [X(cxOf[p] + lx), Y(-z[tierOf[p]] + ly)];
 
@@ -714,7 +784,7 @@ export default function ExplodedView() {
   const port = (p: number, list: number[], k: number) => {
     list.sort((u, v) => cxOf[far(u, p)] - cxOf[far(v, p)]);
     const m = list.length;
-    return m < 2 ? 0 : (list.indexOf(k) - (m - 1) / 2) * Math.min(12, (1.1 * face[p].hw) / (m - 1));
+    return m < 2 ? 0 : (list.indexOf(k) - (m - 1) / 2) * Math.min(12, (1.1 * face[p].pw) / (m - 1));
   };
   type Wire = { k: number; arch: boolean; tier: number; hot: boolean; strands: string[]; ends: Pt[] };
   const wires: Wire[] = WIRING.links.map(([p, q, wt], k): Wire => {
@@ -722,8 +792,9 @@ export default function ExplodedView() {
     const nStrand = wt >= 16 ? 3 : wt >= 4 ? 2 : 1;
     const shift = (m: number) => (m - (nStrand - 1) / 2) * 3;
     if (tierOf[p] === tierOf[q]) {
-      const [x1, y1] = at(p, port(p, arches[p], k), face[p].B[1] + 3);
-      const [x2, y2] = at(q, port(q, arches[q], k), face[q].B[1] + 3);
+      const [dp, dq] = [port(p, arches[p], k), port(q, arches[q], k)];
+      const [x1, y1] = at(p, face[p].cx + dp, face[p].B[1] + 3 + Math.abs(dp) * 0.58);
+      const [x2, y2] = at(q, face[q].cx + dq, face[q].B[1] + 3 + Math.abs(dq) * 0.58);
       const lift = (rise * s) / 0.75;
       return {
         k, arch: true, tier: tierOf[p], hot, ends: [[x1, y1], [x2, y2]],
@@ -732,8 +803,8 @@ export default function ExplodedView() {
     }
     const lo = tierOf[p] > tierOf[q] ? p : q;
     const up = lo === p ? q : p;
-    const [x1, y1] = at(lo, port(lo, lows[lo], k), face[lo].cy);
-    const [x2, y2] = at(up, port(up, ups[up], k), 0);
+    const [x1, y1] = at(lo, face[lo].cx + port(lo, lows[lo], k), face[lo].py);
+    const [x2, y2] = at(up, face[up].cx + port(up, ups[up], k), 0);
     const bend = 0.45 * (y1 - y2);
     return {
       k, arch: false, tier: tierOf[lo], hot, ends: [[x1, y1]],
@@ -771,8 +842,8 @@ export default function ExplodedView() {
   let nl = 0;
   let nr = 0;
   PARTS.forEach((_, i) => {
-    if (cxOf[i] < DRAW_C - 1) { side[i] = "left"; nl++; }
-    else if (cxOf[i] > DRAW_C + 1) { side[i] = "right"; nr++; }
+    if (X(cxOf[i]) < DRAW_C - 1) { side[i] = "left"; nl++; }
+    else if (X(cxOf[i]) > DRAW_C + 1) { side[i] = "right"; nr++; }
   });
   PARTS.forEach((_, i) => {
     if (side[i]) return;
@@ -785,26 +856,67 @@ export default function ExplodedView() {
     const [x, y] = side[i] === "left" ? L : R;
     return at(i, x + (side[i] === "left" ? 0.1 : -0.1) * 2 * hw, y);
   };
-  // A leader runs straight out from the outer corner of the top face. If another part is in the way it goes up from the
-  // back corner instead, over the tier, and out from there.
+  // A leader runs straight out from the outer corner of the top face. If another part is in the way, or its anchor sits
+  // under a part painted later, it tries other visible spots on the face and, failing that, climbs a riser just outside
+  // the part to a lane between the tiers and runs out along that.
   const box = built.map((b, i) => ({
     x0: X(cxOf[i] + b.box.x0), x1: X(cxOf[i] + b.box.x1), y0: Y(-z[tierOf[i]] + b.box.y0), y1: Y(-z[tierOf[i]] + b.box.y1),
   }));
+  const hulls = built.map((b, i) => hull(b.box.pts).map(([x, y]) => at(i, x, y)));
+  const paint: number[] = []; // parts in painting order, bottom tier first
+  [...tiers.keys()].reverse().forEach((ti) => tiers[ti].forEach((i) => paint.push(i)));
+  const hidden = (i: number, pt: Pt) => PARTS.map((_, j) => j).filter((j) => paint.indexOf(j) > paint.indexOf(i) && within(hulls[j], pt));
+  // A leader keeps 4px clear of every other part's outline box.
   const blockers = (i: number, [x1, y1]: Pt, [x2, y2]: Pt) =>
-    box.filter((r, j) => j !== i && Math.max(x1, x2) > r.x0 + 2 && Math.min(x1, x2) < r.x1 - 2 && Math.max(y1, y2) > r.y0 + 2 && Math.min(y1, y2) < r.y1 - 2);
+    PARTS.map((_, j) => j).filter((j) => j !== i && Math.max(x1, x2) > box[j].x0 - 4 && Math.min(x1, x2) < box[j].x1 + 4 && Math.max(y1, y2) > box[j].y0 - 4 && Math.min(y1, y2) < box[j].y1 + 4);
+  // Lanes: just above and below every part, and midway between neighbouring tiers.
+  const lanes = [...new Set([
+    ...box.flatMap((r) => [r.y0 - 8, r.y1 + 8]),
+    ...tiers.slice(1).map((t, k) => {
+      const above = Math.max(...tiers[k].map((j) => box[j].y1));
+      const below = Math.min(...t.map((j) => box[j].y0));
+      return below - above > 20 ? (above + below) / 2 : -1;
+    }),
+  ].map(Math.round))].filter((y) => y > 12 && y < VBH - 12);
+  const taken: Record<string, number[]> = { left: [], right: [] };
   const route = (i: number): { pts: Pt[]; hint: number } => {
-    const edge = side[i] === "left" ? DRAW_X - 4 : DRAW_X + DRAW_W + 4;
+    const left = side[i] === "left";
+    const edge = left ? DRAW_X - 4 : DRAW_X + DRAW_W + 4;
     const [ax, ay] = anchor(i);
     const direct = { pts: [[ax, ay], [edge, ay]] as Pt[], hint: ay };
-    const hit = blockers(i, [ax, ay], [edge, ay]);
+    const hit = [...hidden(i, [ax, ay]), ...blockers(i, [ax, ay], [edge, ay])];
     if (!hit.length) return direct;
-    const [bx, by] = at(i, face[i].B[0], face[i].B[1] + 3);
-    const yh = Math.max(12, Math.min(...hit.map((r) => r.y0)) - 8);
-    const cost = blockers(i, [bx, by], [bx, yh]).length + blockers(i, [bx, yh], [edge, yh]).length + (box[i].y0 < by - 8 ? 0.5 : 0);
-    return cost < hit.length ? { pts: [[bx, by], [bx, yh], [edge, yh]], hint: yh } : direct;
+    const { L, R, B, F, cx, cy } = face[i];
+    const mid: Pt = [cx, cy];
+    const toward = (p: Pt, q: Pt, t: number): Pt => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+    const spots = [toward(left ? L : R, mid, 0.3), toward(toward(left ? L : R, B, 0.5), mid, 0.15), toward(toward(left ? L : R, F, 0.5), mid, 0.15), toward(B, mid, 0.1), toward(F, mid, 0.1)].map(([x, y]) => at(i, x, y));
+    // Risers: just outside this part, or in the gap beside any other part that is further out.
+    const xs = hulls[i].map((q) => q[0]);
+    const outer = left ? Math.min(...xs) - 7 : Math.max(...xs) + 7;
+    const risers = [...new Set([outer, ...box.flatMap((r, j) => (j === i ? [] : [r.x0 - 8, r.x1 + 8])).filter((x) => (left ? x < outer : x > outer))].map(Math.round))]
+      .filter((x) => x > DRAW_X - 2 && x < DRAW_X + DRAW_W + 2);
+    let best = { cost: hit.length * 1000 + 50, ...direct };
+    spots.forEach((pt, k) => {
+      const tries: Pt[][] = [[pt, [edge, pt[1]]], ...risers.flatMap((riser) => lanes.map((lane): Pt[] => [pt, [riser, pt[1]], [riser, lane], [edge, lane]]))];
+      for (const pts of tries) {
+        let cost = hidden(i, pt).length * 1000 + k * 4 + (pts.length > 2 ? 30 : 0);
+        for (let q = 0; q + 1 < pts.length; q++) {
+          cost += 1000 * blockers(i, pts[q], pts[q + 1]).length + Math.hypot(pts[q + 1][0] - pts[q][0], pts[q + 1][1] - pts[q][1]) / 40;
+        }
+        const y = pts[pts.length - 1][1];
+        if (taken[side[i]].some((t) => Math.abs(t - y) < 6)) cost += 200;
+        if (cost < best.cost) best = { cost, pts, hint: y };
+      }
+    });
+    return { pts: best.pts, hint: best.hint };
   };
-  const routes = PARTS.map((_, i) => route(i));
+  const routes: { pts: Pt[]; hint: number }[] = [];
+  PARTS.forEach((_, i) => {
+    routes[i] = route(i);
+    taken[side[i]].push(routes[i].hint);
+  });
   const ly: number[] = [];
+  const rank: number[] = [];
   for (const sd of ["left", "right"]) {
     const ids = PARTS.map((_, i) => i).filter((i) => side[i] === sd).sort((u, v) => routes[u].hint - routes[v].hint);
     const ys: number[] = [];
@@ -813,11 +925,27 @@ export default function ExplodedView() {
       ys[ids.length - 1] = VBH - PAD;
       for (let k = ids.length - 2; k >= 0; k--) ys[k] = Math.min(ys[k], ys[k + 1] - LABEL_STEP);
     }
-    ids.forEach((i, k) => (ly[i] = ys[k]));
+    ids.forEach((i, k) => {
+      ly[i] = ys[k];
+      rank[i] = k;
+    });
   }
+  // The way out ends at the gutter's edge. The leader may land anywhere on its label's height (±13px of its middle), so a
+  // small offset is absorbed by a straight run; a bigger one takes a 45° slant, and a long drop a riser and a stub.
   const leader = (i: number) => {
     const left = side[i] === "left";
-    const pts: Pt[] = [...routes[i].pts, [left ? GUT_W + 8 : GUT_R - 8, ly[i]], [left ? GUT_W + 2 : GUT_R - 2, ly[i]]];
+    const dir = left ? 1 : -1;
+    const stub = left ? GUT_W + 2 : GUT_R - 2;
+    const { pts: way, hint } = routes[i];
+    const end = clamp(hint, ly[i] - 13, ly[i] + 13);
+    const dy = end - hint;
+    const riserX = (left ? DRAW_X - 4 : DRAW_X + DRAW_W + 4) - dir * 4 * (rank[i] % 4);
+    const tail: Pt[] = Math.abs(dy) < 0.5
+      ? [[stub, end]]
+      : Math.abs(dy) <= 18
+        ? [[stub + dir * Math.abs(dy), hint], [stub, end]]
+        : [[riserX, hint], [riserX, end], [stub, end]];
+    const pts: Pt[] = [...way.slice(0, -1), ...tail];
     const c = i === sel ? T.ink : T.soft;
     return (
       <g key={i}>
@@ -827,10 +955,6 @@ export default function ExplodedView() {
     );
   };
 
-  const links = PARTS.map((_, i) => WIRING.links.filter(([p, q]) => p === i || q === i).sort((u, v) => v[2] - u[2]).map(([p, q]) => PARTS[p === i ? q : p].name));
-  const cur = WIRING.n[sel];
-  const head = cur.names.slice(0, cur.count <= 3 ? 3 : 2);
-  const madeOf = andList([...head, ...(cur.count > 3 ? [`${cur.count - head.length} more`] : [])]);
   const chrome = { fontFamily: FONT, background: "none", border: "none", padding: 0, cursor: "pointer" };
 
   return (
@@ -866,7 +990,7 @@ export default function ExplodedView() {
           </div>
 
           {/* The drawing — the one place SVG is allowed (swiss-design-principles.md, page 3 exception) */}
-          <figure data-facts-hash={WIRING.facts} data-parts-hash={WIRING.parts} style={{ gridColumn: "1 / -1", margin: 0, position: "relative" }}>
+          <figure className="xv-fig" data-facts-hash={WIRING.facts} data-parts-hash={WIRING.parts} style={{ gridColumn: "1 / -1", margin: 0, position: "relative" }}>
             <svg viewBox={`0 0 ${MAXW} ${VBH}`} role="img" aria-labelledby="xv-title xv-desc" style={{ display: "block", width: "100%", height: "auto" }}>
               <title id="xv-title">{`${product}, drawn as ${nP} connected parts`}</title>
               <desc id="xv-desc">
@@ -911,7 +1035,7 @@ export default function ExplodedView() {
               ))}
 
               {/* Leader lines: anchor on the top face → elbow in the gutter → label */}
-              <g pointerEvents="none">{PARTS.map((_, i) => leader(i))}</g>
+              <g className="xv-lead" pointerEvents="none">{PARTS.map((_, i) => leader(i))}</g>
             </svg>
 
             {/* Labels — HTML in the two gutters, positioned in viewBox units; they never wrap */}
@@ -927,11 +1051,12 @@ export default function ExplodedView() {
                 e.preventDefault();
                 setPicked(clamp(next, 0, nP - 1));
               }}
-              style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+              style={{ position: "absolute", inset: 0, pointerEvents: "none", ["--xv-rows" as string]: Math.ceil(nP / 2) }}
             >
               {PARTS.map((p, i) => (
                 <div
                   key={i}
+                  className="xv-opt"
                   id={`xv-part-${i}`}
                   role="option"
                   aria-selected={i === sel}
@@ -949,7 +1074,7 @@ export default function ExplodedView() {
                     cursor: "pointer",
                   }}
                 >
-                  <div style={{ ...folio, color: i === sel ? T.ink : T.soft }}>{pad2(i + 1)} — {p.name}</div>
+                  <div style={{ ...folio, textTransform: "none", letterSpacing: "0.02em", color: i === sel ? T.ink : T.soft }}>{`${pad2(i + 1)}\u00A0\u00A0${p.name}`}</div>
                   <div style={{ ...meta, color: T.soft }}>{phrase(p, WIRING.n[i])}</div>
                 </div>
               ))}
@@ -957,15 +1082,15 @@ export default function ExplodedView() {
           </figure>
 
           {/* Caption — the selected part: its line, what it is made of, what it is connected to */}
-          <div aria-live="polite" style={{ gridColumn: "1 / -1" }}>
+          <div aria-live="polite" style={{ gridColumn: "1 / -1", minHeight: capH }}>
             <div style={subgrid}>
               <div style={{ gridColumn: "1 / 7" }}>
                 <div style={{ ...folio, color: T.ink }}>{pad2(sel + 1)} / {pad2(nP)} — {PARTS[sel].name}</div>
                 <p style={{ ...body, color: T.ink, paddingRight: GUTTER }}>{PARTS[sel].line}</p>
               </div>
               <div style={{ gridColumn: "7 / 13", paddingTop: 16 }}>
-                {madeOf ? <p style={{ ...body, color: T.ink }}>Made of: {madeOf}</p> : null}
-                <p style={{ ...body, color: T.ink }}>{links[sel].length ? `Connected to: ${links[sel].join(", ")}` : "Not wired to the other parts"}</p>
+                {madeFor(sel) ? <p style={{ ...body, color: T.ink }}>Made of: {madeFor(sel)}</p> : null}
+                <p style={{ ...body, color: T.ink }}>{linkLine(sel)}</p>
               </div>
             </div>
           </div>

@@ -142,11 +142,12 @@ const cases = [
   { file: write3("bug-file-path", plant(exploded, "the parts that save your recipes, plan your week and suggest what to cook.", "see src/app/page.tsx for the parts.")), expect: /File paths on the poster/ },
   // labels and leaders
   { file: write3("bug-labels-overlap", plant(exploded, "Math.max(routes[i].hint, k ? ys[k - 1] + LABEL_STEP : PAD)", "k ? ys[k - 1] : PAD")), expect: /labels overlap/ },
-  { file: write3("bug-label-wraps", plant(exploded, 'whiteSpace: "nowrap",', "")), expect: /Label \d wraps/ },
+  // Labels fit 18 ordinary characters, so the wrap and overrun cases need a deliberately wide name.
+  { file: write3("bug-label-wraps", plant(plant(exploded, 'whiteSpace: "nowrap",', ""), '"name": "Outside services"', '"name": "Wwwwwwwwww Wwwwwww"')), expect: /Label \d wraps/ },
   { file: write3("bug-leader-drift", plant(exploded, 'return at(i, x + (side[i] === "left" ? 0.1 : -0.1) * 2 * hw, y);', 'return at(i, x + 80 + (side[i] === "left" ? 0.1 : -0.1) * 2 * hw, y);')), expect: /Leader line \d does not start on its part/ },
   { file: write3("bug-gutter", plant(exploded, '"name": "Outside services"', '"name": "WWWWWWWWWWWWWWWWWW"')), expect: /Label 7 leaves its gutter/ },
   // warnings: these pass, and say what to look at
-  { file: write3("warn-long-name", plant(exploded, '"name": "Outside services"', '"name": "Customer messaging"')), expect: null, warns: /Label 7 runs \d+px past its gutter/ },
+  { file: write3("warn-long-name", plant(exploded, '"name": "Outside services"', '"name": "Wwwwwwwwww Wwwwwww"')), expect: null, warns: /Label 7 runs \d+px past its gutter/ },
   { file: write3("warn-not-drawn", withParts(exploded, (parts) => parts.slice(0, 6), { rewire: true })), expect: null, warns: /Not drawn: Email \(service\)/ },
   { file: write3("warn-one-tier", withParts(exploded, (parts) => [parts[1], parts[2], { ...parts[5], role: "feature", from: ["area:lib/ai"] }], { rewire: true })), expect: null, warns: [/has no links/, /slider has nothing to open/] },
   { file: write3("warn-leader-crosses", plant(exploded, "if (!hit.length) return direct;", "return direct;")), expect: null, warns: /Leader line \d runs across part/ },
