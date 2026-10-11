@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    // Pantry uses the "@/" alias for everything under the project root.
+    "target": "es2017",
+    "lib": ["dom", "esnext"],
+    "strict": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": { "@/*": ["./*"] },
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+}

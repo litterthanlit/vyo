@@ -2,14 +2,15 @@
 
 Section spec for explain-app deliverables. Read [swiss-design-principles.md](swiss-design-principles.md) first — always.
 
-The output is a **two-page Swiss Style poster set** on light paper. Not a dark UI mockup. Not a scrolling document.
+The output is a **three-page Swiss Style poster set** on light paper. Not a dark UI mockup. Not a scrolling document.
 
 | Page | File | Job |
 |------|------|-----|
 | 1 — App Guide | `<repo-name>-app-poster.canvas.tsx` | How the app **and the code behind it** work, in plain English |
 | 2 — Project Story | `<repo-name>-project-story.canvas.tsx` | The summary / marketing sheet — tagline, talking points, what's real |
+| 3 — Exploded View | `<repo-name>-exploded-view.canvas.tsx` | The app's real parts and wiring, drawn as an isometric exploded view from a scan of the code |
 
-Page 2 layout: [sell-sheet-layout.md](sell-sheet-layout.md)
+Page 2 layout: [sell-sheet-layout.md](sell-sheet-layout.md) · Page 3 layout: [exploded-view-layout.md](exploded-view-layout.md)
 
 ## File Location
 
