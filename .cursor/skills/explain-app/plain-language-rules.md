@@ -55,7 +55,7 @@ Rules:
 - **Role words never appear on the poster as jargon**: API, endpoint, table, component, module, schema, backend. "Outside services" and "kinds of saved record" are plain English and fine.
 - **Library and vendor names are not part names** ("Prisma", "Next.js", "tRPC", "Supabase"). A vendor may appear in a `line` only if the user would recognise it and can use it today.
 - **Folder names become what people get**: `lib/billing` → "Billing", `lib/ai` → "Recipe ideas".
-- **The drawing phrases the counts**: "12 screens", "Answers 8 kinds of request", "40% of the code", "1 AI model · 2 tools", "Runs 1 job on its own", "5 kinds of saved record", "3 outside services". Never type one, and don't repeat a count in a `line`.
+- **The drawing phrases the counts**: "12 screens", "8 kinds of request", "40% of the code", "1 AI model · 2 tools", "Runs 1 job on its own", "5 kinds of saved record", "3 outside services". Never type one, and don't repeat a count in a `line`.
 - **Each `line` is one sentence**: "When you X, the app Y". For automatic work, "When [trigger], …" or "Every week, …".
 - **Page 3 has no analogy.** The drawing already is the app's real parts. Don't add "the kitchen" or "the engine room" on top.
 

@@ -186,6 +186,7 @@ Apply page 2 voice rules in [plain-language-rules.md](plain-language-rules.md#pa
 3. `node tools/scan.mjs draft <canvases>/<repo>-facts.json` prints a starting `PARTS` array. Paste it between `PARTS:BEGIN` and `PARTS:END`
 4. Rename and merge it into **2–9 plain-English parts** ([choosing parts](exploded-view-layout.md#choosing-parts), [naming](plain-language-rules.md#naming-parts)):
    - `name` ≤ 18 characters; one "When you…" `line` each
+   - optional `detail`: a noun phrase that replaces the caption's "Made of" list when scanned names (routes, folders) mean nothing to a reader
    - `from` lists fact ids or globs, and every pattern must match real facts
    - no fact is cited by two parts; at most 4 parts per tier
 5. `node tools/scan.mjs wire <canvases>/<repo>-facts.json --into <canvas>` writes the `WIRING` block (counts, sizes, links)

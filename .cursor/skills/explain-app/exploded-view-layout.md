@@ -57,6 +57,7 @@ const WIRING: Wiring = {"facts":"…","parts":"…","n":[…],"links":[…]};
 - **A fact belongs to one part.** No id may be cited twice. The same `area:` may not appear in two parts (nested areas are fine; the deepest wins).
 - **A part must count something.** A non-feature part with nothing to count is an error.
 - **Any role may also cite `area:` folders** to claim the code in them. That changes which part owns a file, so it changes the cables, but never the counts. A `feature` part cites only `area:`.
+- **`detail`** (optional, ≤ 120 characters) replaces the caption's list of scanned names after "Made of:". Use it when those names are route or folder names that mean nothing to a reader ("Home, Slug and 6 more"). Write it as a **noun phrase**, because it follows "Made of:": "Your dashboard, billing and settings, and the post editor." Like `name` and `line`, changing it needs no re-wire.
 
 ## Roles, shapes and units
 
@@ -72,7 +73,7 @@ Each drawn unit is one mark you can point at. When there are more facts than the
 | `data` | Cylinder, a stack of disks | kind of saved record | What the app saves (`table:`) | 10 |
 | `service` | Plug block with prongs | outside service | Companies the app plugs into, named by what they do for you (`service:`) | 6 |
 
-Labels (written by the drawing, never by you) read "6 screens", "Answers 3 kinds of request", "40% of the code", "1 AI model · 2 tools", "Runs 1 job on its own", "4 kinds of saved record", "3 outside services".
+Labels (written by the drawing, never by you) read "6 screens", "3 kinds of request", "40% of the code", "1 AI model · 2 tools", "Runs 1 job on its own", "4 kinds of saved record", "3 outside services".
 
 ## Choosing parts
 
@@ -87,6 +88,7 @@ Start from `draft`, which cites the scanner's balanced split of the folders. The
 - **Tables are usually one `data` part.** Split only when users name the groups differently ("Saved recipes" and "Your account").
 - **Group by what works today.** Backend-only or planned work is excluded with a `!` pattern (`"service:*", "!service:payments"`) and named in the footer, the same list as pages 1 and 2.
 - **Read the `!` warnings.** "Not drawn: Payments (service), 2 tables" means the drawing hides those. Draw them or leave them out on purpose.
+- **Don't draw what the scan can't wire.** Some real things reach the app in ways an import scan can't see: content compiled at build time (e.g. Contentlayer's `contentlayer/generated`), or templates loaded from a file path. A part for them gets no cables, and its caption would say "Not wired to the other parts", which is false. Leave it out and name it in the footer ("The blog and docs text is not drawn: the scan cannot see how pages load it").
 
 ## Tiers
 
@@ -115,11 +117,12 @@ Same outer 12-column grid, 8px baseline and 64px margins as pages 1 and 2.
 | Purpose | 1–7 | One sentence on what the drawing shows. Cols 8–12 stay empty |
 | Section label | 1–12 | "Taken apart — drag to open, point at a part to read it" |
 | Figure | 1–12 | `<figure>`: the drawing in cols 3–10; part labels in the gutters, left parts in cols 1–2 and right parts in cols 11–12, each on a column line with a hairline leader |
-| Caption | 1–8 | Selected part: folio "02 / 07 — Recipe box", its line, "Made of: …", "Connected to: …" (`aria-live`) |
+| Caption | 1–6 · 7–12 | Selected part: folio "02 / 07 — Recipe box" and its line on the left; "Made of: …" and "Connected to: …" on the right (`aria-live`). Its height is reserved for the longest part, so the controls never jump |
 | Controls | 1–12 | "Open layers" slider · percent · theme button (hidden in exports) |
 | Footer | 12 | Not built yet · audience · Show grid |
 
-- **Labels never wrap.** Line 1 is a folio (`01 — RECIPE BOX`), line 2 is the count phrase. This is why names stop at 18 characters.
+- **Labels never wrap.** Line 1 is the number and name in sentence case (`01  Recipe box`), line 2 is the count phrase. Both fit an 18-character name in the two-column gutter, which is why names stop at 18 characters.
+- **Narrow panels.** When the figure is narrower than about 880px (a canvas beside the chat), the leaders hide and the labels become a numbered two-column legend under the drawing.
 - The drawing is at most **704px** tall, fixed from its open state so the page never jumps. If the parts can't fit, the canvas throws; merge parts.
 - The footer lists what is not built, plus any important fact you left out on purpose.
 
