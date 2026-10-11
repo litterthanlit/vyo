@@ -92,7 +92,7 @@ type Fact = {
 
 ### 2.2 Areas
 
-- **Kept files:** source extensions only (`.ts .tsx .js .jsx .mjs .cjs .mts .cts .vue .svelte .astro .py .go .rb .rs .php .java .kt .swift .sql .prisma`).
+- **Kept files:** source extensions only (`.ts .tsx .js .jsx .mjs .cjs .mts .cts .vue .svelte .astro .py .go .rb .rs .php .java .kt .swift .sql .prisma .mdx`). `.mdx` is app content (blog posts, docs pages): it counts toward areas and LOC, so a content folder can become a feature part, and its `import` lines are parsed like JS.
 - **Excluded:**
   - `node_modules .git dist build out .next .nuxt .svelte-kit .turbo .vercel coverage vendor venv .venv __pycache__`
   - tests: `*.test.* *.spec.* __tests__/ tests/ test/ e2e/ cypress/ playwright/`
@@ -109,6 +109,7 @@ type Fact = {
 
 - **imports:**
   - Parse with regex: `import … from`, `export … from`, `import(…)`, `require(…)`, and Python `import x` / `from x import y` (relative dots too).
+  - **Type-only imports are not wiring.** Skip `import type …`, `export type … from`, and imports whose every named specifier is `type X`. Also skip Python imports under `if TYPE_CHECKING:`. Nothing runs through them, so they would draw false cables (e.g. UI files that only import a database row's *type*).
   - Resolve relative specifiers and tsconfig/jsconfig `compilerOptions.paths` (per package, honouring `baseUrl`), plus Python package-relative modules.
   - Try extensions `.ts .tsx .js .jsx .mjs .cjs .vue .svelte .py` and `/index.*` / `__init__.py`.
   - Specifiers that look internal but don't resolve are counted in `unresolved`. Bare package specifiers are not imports; they may be `uses`.
@@ -134,8 +135,8 @@ A file is `kit` when it defines no fact **and** is imported from at least `max(4
 | service id | name | packages (JS / Python) |
 |---|---|---|
 | `service:payments` | Payments | stripe, @stripe/*, @lemonsqueezy/*, paddle* / stripe |
-| `service:email` | Email | resend, @sendgrid/*, postmark, nodemailer, @react-email/*, mailgun* / sendgrid, emails, fastapi-mail |
-| `service:sign-in` | Sign-in | next-auth, @auth/*, @clerk/*, lucia, better-auth, @supabase/auth-helpers-*, firebase/auth / authlib, python-jose, passlib |
+| `service:email` | Email | resend, @sendgrid/*, postmark, nodemailer, mailgun* / sendgrid, emails, fastapi-mail (template-only packages like `@react-email/*` are **not** a service) |
+| `service:sign-in` | Sign-in | **hosted sign-in companies only**: @clerk/*, @auth0/*, @workos-inc/*, @stytch/*, @kinde-oss/*, @supabase/auth-helpers-*, @supabase/ssr, firebase/auth, @okta/* / auth0-python, firebase-admin. Sign-in libraries that run inside the app (next-auth, @auth/*, lucia, better-auth, passlib, pwdlib, pyjwt, python-jose, authlib) are **not** outside services |
 | `service:file-storage` | File storage | @aws-sdk/client-s3, @vercel/blob, uploadthing, @uploadthing/*, cloudinary / boto3 |
 | `service:analytics` | Analytics | posthog-js, posthog-node, @vercel/analytics, mixpanel*, @segment/* / posthog |
 | `service:error-alerts` | Error alerts | @sentry/* / sentry-sdk |
@@ -191,7 +192,8 @@ const WIRING: Wiring = {"facts":"…","parts":"…","n":[…],"links":[…]};
 
 ```ts
 type Role = "screens" | "api" | "feature" | "ai" | "jobs" | "data" | "service";
-type PartSpec = { name: string; role: Role; line: string; from: string[] };
+type PartSpec = { name: string; role: Role; line: string; from: string[]; detail?: string };
+// detail: optional plain-English replacement for the caption's "Made of: …" list (≤ 120 chars). Use it when the scanned item names (folder or route names) wouldn't mean anything to a reader. Like name and line, it is not part of the parts hash.
 type PartWiring = {
   count: number;     // true number of items (role table §4)
   drawn: number;     // min(count, cap)
@@ -252,7 +254,7 @@ For every owned, non-kit file `f` (owner `p`), walk breadth-first:
 - **Targets found from `f` or any unowned file reached:**
   - an owned file of another part `q` gives `(p,q)` with witness `(f, file)`
   - each `uses` entry of `f` or of an unowned file reached, whose fact is cited by part `q`, gives `(p,q)` with witness `(f, factId)`. This covers `package`, `orm` and `http` to cited endpoints.
-- **Weight:** the number of distinct witnesses per unordered pair. Self-links are dropped.
+- **Weight:** the number of distinct **source files** that reach the other part, counted in both directions: |{f ∈ p reaching q}| + |{g ∈ q reaching p}|. It is not the number of witnesses, so one file importing a generated client that lists 15 endpoints counts once, not 15 times. Witnesses are still kept (for `why`). Self-links are dropped.
 - **Warnings:**
   - a part with no links: `"! "<name>" has no links"`
   - uncited facts: `"! Not drawn: Payments (service), 2 tables, …"` for uncited service, ai, job, table and screen facts
@@ -267,7 +269,7 @@ The canvas never recounts.
 |---|---|---|---|---|
 | screens | cited screen facts | 1 each | friendly screen names | 12 |
 | api | cited endpoint facts | 1 each | friendly endpoint names | 16 |
-| feature | 1 cited area → its direct child area facts (min 1, then that area itself); several areas → those areas | LOC share among chips | area names | 6 |
+| feature | 1 cited area → its direct child area facts **plus** one chip for the area's own files outside those children (named after the area, only if they have LOC), skipping children removed by `!area:` patterns; several areas → those areas | LOC share among chips | area names | 6 |
 | ai | cited ai facts | 1 each | provider names (`tools` = Σ meta.tools) | 4 |
 | jobs | cited job facts | 1 each | job names | 4 |
 
@@ -384,7 +386,7 @@ Under `tools/test/fixtures/`:
   - **services:**
     - Stripe in `lib/billing.ts`
     - Resend in `lib/email.ts`
-    - next-auth in `lib/auth.ts`
+    - Clerk (`@clerk/nextjs`, a hosted sign-in company) in `lib/auth.ts`
   - **AI:** openai in `lib/ai/suggest.ts`, with 2 `tool({` definitions
   - **areas:**
     - `components/recipes`, `components/plan`
