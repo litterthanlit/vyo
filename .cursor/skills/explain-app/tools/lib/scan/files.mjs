@@ -23,6 +23,14 @@ const EXCLUDED_DIRS = new Set([
 // Skipped while walking / listing: these directories never hold anything we read.
 const NEVER_WALK = new Set(["node_modules", ".git", "__pycache__", "site-packages", "bower_components", ".venv", "venv", ".next", ".nuxt", ".svelte-kit", ".turbo", ".vercel"]);
 
+// True when a repo-relative path lies under a directory the scanner never walks (node_modules, .git, …).
+// Only those directories: tests and configs are skipped when reading sources, but their existence still counts.
+export function inNeverWalkDir(rel) {
+  const segs = rel.split("/");
+  for (let i = 0; i < segs.length - 1; i++) if (NEVER_WALK.has(segs[i])) return true;
+  return false;
+}
+
 // True when a repo-relative path is outside the "kept source files" set.
 export function isExcluded(rel) {
   const segs = rel.split("/");
