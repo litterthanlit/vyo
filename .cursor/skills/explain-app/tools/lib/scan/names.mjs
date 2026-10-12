@@ -75,6 +75,22 @@ export const SERVICE_NAMES = {
   maps: "Maps",
 };
 
+// What a service lets the app do, as a verb phrase that follows "your app can now …". One per SERVICE_NAMES key.
+// The change briefing uses it (lib/briefing.mjs); keep both maps in step when a service is added.
+export const SERVICE_VERBS = {
+  payments: "take payments",
+  email: "send email",
+  "sign-in": "sign people in",
+  "file-storage": "store files",
+  analytics: "see how people use it",
+  "error-alerts": "tell you when something breaks",
+  "fast-cache": "remember things so pages load faster",
+  "live-updates": "show changes as they happen",
+  "text-messages": "send text messages",
+  search: "search your content",
+  maps: "show maps",
+};
+
 export const AI_NAMES = {
   openai: "OpenAI",
   anthropic: "Anthropic",
