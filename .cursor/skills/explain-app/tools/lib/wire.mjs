@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { factsHash, partsHash } from "./hash.mjs";
+import { buildLinkGraph, chainTo, makeView, walk } from "./reach.mjs";
 
 export const ROLES = ["screens", "api", "feature", "ai", "jobs", "data", "service"];
 // Role → the one non-area kind it may count. Any role may also cite area: facts (ownership only).
@@ -15,7 +16,6 @@ const MIN_PARTS = 2;
 const MAX_PARTS = 9;
 const MAX_NAME_LEN = 18;
 const MAX_DETAIL_LEN = 120;
-const MAX_HOPS = 3;
 // Facts whose `files` are the files that define them, so they confer ownership (service / ai do not).
 const DEFINING_KINDS = new Set(["screen", "endpoint", "table", "job"]);
 
@@ -440,58 +440,10 @@ export function wire(facts, parts) {
     if (owners.has(file)) ownedLoc[owners.get(file)] += loc;
   }
 
-  /* 7. links (§3.3) */
-  const importsOut = new Map();
-  for (const [a, b] of facts.imports ?? []) {
-    if (!files[a] || !files[b]) continue;
-    const l = importsOut.get(a);
-    if (l) l.push(b);
-    else importsOut.set(a, [b]);
-  }
-  const usesOf = new Map();
-  for (const [file, id] of facts.uses ?? []) {
-    if (!files[file]) continue;
-    const l = usesOf.get(file);
-    if (l) l.push(id);
-    else usesOf.set(file, [id]);
-  }
-  const httpOf = new Map(); // file → [endpoint ids it calls]
-  for (const [file, id, via] of facts.uses ?? []) {
-    if (via !== "http" || !files[file]) continue;
-    const l = httpOf.get(file);
-    if (l) l.push(id);
-    else httpOf.set(file, [id]);
-  }
-  for (const l of usesOf.values()) l.sort(cmp);
-  const neighbourCache = new Map();
-  // Sorted [file, viaEndpointId | undefined]: imports, plus http calls to uncited endpoints followed to their files.
-  const neighboursOf = (file) => {
-    let c = neighbourCache.get(file);
-    if (c) return c;
-    const m = new Map();
-    for (const to of importsOut.get(file) ?? []) if (!m.has(to)) m.set(to, undefined);
-    for (const id of [...(httpOf.get(file) ?? [])].sort(cmp)) {
-      const ep = factById.get(id);
-      if (!ep || ep.kind !== "endpoint" || citedBy.has(id)) continue;
-      for (const to of ep.files ?? []) if (files[to] && !m.has(to)) m.set(to, id);
-    }
-    c = [...m].sort((x, y) => cmp(x[0], y[0]));
-    neighbourCache.set(file, c);
-    return c;
-  };
-
+  /* 7. links (§3.3): the walk itself is in reach.mjs */
+  // A cited endpoint is a target, not a way through: the walk reports it as a use (and stops at owned files).
+  const view = makeView(buildLinkGraph(facts), { skipEndpoint: (id) => citedBy.has(id) });
   const pairs = new Map(); // "a-b" → { sources: Set(file), distinct: Map(key → chain), directed: Map(key → {from, chain}) }
-  const chainTo = (parent, node) => {
-    const out = [];
-    for (let cur = node; ; ) {
-      out.push(cur);
-      const e = parent.get(cur);
-      if (!e) break;
-      if (e.via) out.push(e.via);
-      cur = e.prev;
-    }
-    return out.reverse();
-  };
   const addWitness = (p, q, source, other, makeChain) => {
     const a = Math.min(p, q);
     const b = Math.max(p, q);
@@ -511,35 +463,20 @@ export function wire(facts, parts) {
   for (const f of fileNames) {
     const p = owners.get(f);
     if (p === undefined || files[f].kit) continue;
-    const parent = new Map([[f, null]]);
-    const examineUses = (u) => {
-      for (const id of usesOf.get(u) ?? []) {
-        const q = citedBy.get(id)?.[0];
-        if (q === undefined || q === p || factById.get(id).kind === "area") continue;
-        addWitness(p, q, f, id, () => [...chainTo(parent, u), id]);
-      }
-    };
-    examineUses(f);
-    let frontier = [f];
-    for (let hop = 1; hop <= MAX_HOPS && frontier.length; hop++) {
-      const next = [];
-      for (const cur of frontier) {
-        for (const [to, via] of neighboursOf(cur)) {
-          if (parent.has(to)) continue;
-          const info = files[to];
-          if (!info || info.kit) continue;
-          parent.set(to, { prev: cur, via });
-          const q = owners.get(to);
-          if (q !== undefined) {
-            if (q !== p) addWitness(p, q, f, to, () => chainTo(parent, to));
-            continue; // stop at the first owned file on this branch
-          }
-          examineUses(to);
-          if (hop < MAX_HOPS) next.push(to);
+    walk(view, f, {
+      stopAt: (to) => owners.has(to), // stop at the first owned file on a branch
+      onStop: (to, parent) => {
+        const q = owners.get(to);
+        if (q !== p) addWitness(p, q, f, to, () => chainTo(parent, to));
+      },
+      onUses: (u, ids, parent) => {
+        for (const id of ids) {
+          const q = citedBy.get(id)?.[0];
+          if (q === undefined || q === p || factById.get(id).kind === "area") continue;
+          addWitness(p, q, f, id, () => [...chainTo(parent, u), id]);
         }
-      }
-      frontier = next;
-    }
+      },
+    });
   }
 
   const links = [];

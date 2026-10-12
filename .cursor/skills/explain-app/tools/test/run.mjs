@@ -192,12 +192,12 @@ try {
   console.log(`FAIL --state values parse\n       ${e.message}`);
 }
 
-// The scanner and the wire tool have their own unit tests.
-const unit = spawnSync(process.execPath, ["--test", path.join(TOOLS, "test", "scan.test.mjs"), path.join(TOOLS, "test", "wire.test.mjs")], { cwd: TOOLS, encoding: "utf8" });
-if (unit.status === 0) console.log(`ok   scan + wire unit tests (${/^# pass (\d+)/m.exec(unit.stdout)?.[1] ?? "?"} pass)`);
+// The scanner, the wire tool and the link walker have their own unit tests.
+const unit = spawnSync(process.execPath, ["--test", path.join(TOOLS, "test", "scan.test.mjs"), path.join(TOOLS, "test", "wire.test.mjs"), path.join(TOOLS, "test", "reach.test.mjs")], { cwd: TOOLS, encoding: "utf8" });
+if (unit.status === 0) console.log(`ok   scan + wire + reach unit tests (${/^# pass (\d+)/m.exec(unit.stdout)?.[1] ?? "?"} pass)`);
 else {
   failed++;
-  console.log(`FAIL scan + wire unit tests\n${unit.stdout.split("\n").filter((l) => /^\s*not ok|^# (fail|tests)/.test(l)).map((l) => `       ${l.trim()}`).join("\n") || unit.stderr}`);
+  console.log(`FAIL scan + wire + reach unit tests\n${unit.stdout.split("\n").filter((l) => /^\s*not ok|^# (fail|tests)/.test(l)).map((l) => `       ${l.trim()}`).join("\n") || unit.stderr}`);
 }
 
 // Type-check the three starters against the cursor/canvas shim.
