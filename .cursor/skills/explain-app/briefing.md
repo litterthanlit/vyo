@@ -160,7 +160,7 @@ The title and the line under it say what was compared. Relay them as printed.
 | A facts file, such as a bookmark | What changed | Since your earlier scan (pantry-bookmark.json) · compared with your files right now. |
 | `empty` | Where your app stands now | This is everything the scan found in your files right now. |
 | A date before the first saved version | Where your app stands now | This is everything the scan found in your files right now. Your first saved version is from 2026-10-07, after the date you asked about, so everything counts as new. |
-| `diff` on two facts files | What changed | Comparing two scans of pantry. |
+| `diff` on two facts files | What changed | Comparing two scans of Pantry. |
 
 The date in brackets is the day of that saved version, not the day you asked about. When nothing changed at all, the line under the title is followed by just "Nothing changed.", with no numbers or sections.
 

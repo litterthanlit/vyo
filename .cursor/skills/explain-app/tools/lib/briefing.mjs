@@ -506,7 +506,7 @@ function numbersOf(ch, standing) {
 }
 
 function ledeOf(ch) {
-  const app = ch.after.repo ? plainName(ch.after.repo) : "your app";
+  const app = ch.after.repo ? plainName(sentenceCase(ch.after.repo)) : "your app";
   const b = ch.before.label;
   const a = ch.after.label;
   const standing = ch.before.empty && !ch.after.empty;

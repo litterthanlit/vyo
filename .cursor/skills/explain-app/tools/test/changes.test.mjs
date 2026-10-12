@@ -799,7 +799,7 @@ test("buildBriefing: the same scan says 'Nothing changed.'", () => {
   assert.equal(doc.short, "Nothing changed.");
   assert.deepEqual(doc.sections, []);
   assert.equal(doc.title, "What changed");
-  assert.equal(renderText(doc), "What changed\n\nComparing two scans of pantry.\n\nNothing changed.\n");
+  assert.equal(renderText(doc), "What changed\n\nComparing two scans of Pantry.\n\nNothing changed.\n");
   noJargon(doc);
   assert.throws(() => buildBriefing({}), /expected a Changes/);
 });
@@ -1071,7 +1071,7 @@ test("buildBriefing: without labels it says what it compared", () => {
   const w = world();
   w.facts.push(fact("screen:/more", ["more.tsx"]));
   const doc = buildBriefing(diffFacts(a, mk(w)));
-  assert.equal(doc.lede, "Comparing two scans of pantry.");
+  assert.equal(doc.lede, "Comparing two scans of Pantry.");
   assert.ok(!/\d{1,2}\/\d{1,2}\/\d{2,4}|ago|yesterday|last week/i.test(doc.lede), "absolute dates only");
 });
 

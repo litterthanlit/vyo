@@ -71,7 +71,7 @@ describe("diff", () => {
   test("prints the briefing in plain English and exits 0", async () => {
     const r = await run(diffMain, [beforeFile, afterFile]);
     assert.equal(r.code, 0, r.errText);
-    assert.match(r.stdout, /^What changed\n\nComparing two scans of pantry\./);
+    assert.match(r.stdout, /^What changed\n\nComparing two scans of Pantry\./);
     assert.match(r.stdout, /1 new screen/);
     assert.match(r.stdout, /Screens {11}6 → 7 \(\+1\)/);
     assert.match(r.stdout, /The saved record Ingredient is gone\./);
@@ -631,6 +631,11 @@ describe("changes (git)", { skip: SKIP }, () => {
     const bad = cli([dir, "--since", path.join(root, "bookmarks", "bad.json")]);
     assert.equal(bad.status, 1);
     assert.match(bad.stderr, /^✗ .*bad\.json is not a facts\.json/m);
+    // a run that fails to write its page leaves the bookmark where it was
+    const kept = fs.readFileSync(bookmark, "utf8");
+    const failed = cli([dir, "--since", bookmark, "--save-facts", bookmark, "--html", path.join(root, "bookmarks", "bad.json", "brief.html")]);
+    assert.equal(failed.status, 1);
+    assert.equal(fs.readFileSync(bookmark, "utf8"), kept);
     // moving the bookmark forward in one go: compare with it, then replace it
     const forward = cli([dir, "--since", bookmark, "--save-facts", bookmark]);
     assert.equal(forward.status, 0, forward.stderr);

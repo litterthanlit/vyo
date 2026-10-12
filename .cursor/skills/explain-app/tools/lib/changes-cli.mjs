@@ -262,10 +262,11 @@ export async function changesMain(argv, io = defaultIo()) {
   warnCapped(io, baseline.label, baseline.facts);
   warnCapped(io, NOW, live.facts);
 
+  const code = await deliver(baseline.facts, live.facts, { flags, io, canvas, labels: { before: baseline.label, after: NOW }, notes: baseline.notes });
+  // The bookmark moves only once the briefing and its files are out, so a failed run can be repeated against the same baseline.
   const bookmark = flags["save-facts"];
-  if (bookmark) {
-    if (!writeFile(bookmark, stableStringify(live.facts, 1), io)) return 1;
-    io.err(`→ ${bookmark} (a bookmark of ${NOW}: compare with it later using --since ${bookmark})`);
-  }
-  return deliver(baseline.facts, live.facts, { flags, io, canvas, labels: { before: baseline.label, after: NOW }, notes: baseline.notes });
+  if (code !== 0 || !bookmark) return code;
+  if (!writeFile(bookmark, stableStringify(live.facts, 1), io)) return 1;
+  io.err(`→ ${bookmark} (a bookmark of ${NOW}: compare with it later using --since ${bookmark})`);
+  return 0;
 }
