@@ -2,13 +2,39 @@
 
 ## Sample Prompts
 
+### What changed (the default for change questions)
+
+[briefing.md](briefing.md) turns each of these into a `--since` value.
+
+**Catch up**
+> What changed in my app since yesterday?
+
+**After an agent session**
+> What did the agent just do? I didn't read any of it.
+
+**Before saving a version**
+> Before I commit, tell me what's different.
+
+**Since last time**
+> Catch me up. What's new since last time we looked?
+
+**Where it stands**
+> What's actually in my app right now?
+
+**Follow-ups**
+> Where is that? Show me the files.
+
+> Can I get that as a page I can send to my developer?
+
+### Posters (Explain mode)
+
 **Client handoff**
 > Explain this app to my client as a Swiss Style poster — they need to understand what we built without any code.
 
 **PM overview**
 > Walk me through how this product works for a PM. Poster format, focus on flows and what's actually live.
 
-**General**
+**General** (page 1, then one line offering pages 2 and 3)
 > Explain what this app does. Visualize the repo as a poster.
 
 **Exploded view (page 3 emphasis)**
@@ -17,7 +43,102 @@
 **Selling / connection (page 2 emphasis)**
 > Explain this codebase so I can talk about my product confidently — I need the second page with talking points.
 
-## Sample Chat Response
+**All three pages**
+> Make me the poster set for my investor meeting.
+
+## Sample Briefing (Pantry)
+
+Pantry is the recipe test fixture (`tools/test/fixtures/recipe`). After these six edits, `node tools/scan.mjs changes <pantry> --since HEAD` prints the text below. The saved version in its first line (commit and date) is fixed in the test; yours will show your own. <!-- verify: label wording for --since HEAD -->
+
+- the Plan page starts importing the AI helper
+- a new Billing page
+- a new file that imports Twilio, which no page links to
+- the Settings folder is renamed Preferences
+- `vercel.json` moves the weekly job to Friday at 17:00
+- the Ingredient model is deleted from `schema.prisma`
+
+The block is generated, not typed. `tools/test/examples.test.mjs` makes the same edits to a copy of the fixture, scans both versions and fails if this block differs from what the tool prints. Rewrite it with `UPDATE_EXAMPLES=1 node --test tools/test/examples.test.mjs`.
+
+<!-- briefing-sample:BEGIN -->
+```text
+What changed
+
+Since your last saved version (a1b2c3d, 2026-10-07) · compared with your files right now.
+
+1 new screen, 1 new outside service, the AI is now used from the Plan screen, 1 saved record was removed, and 2 other changes.
+
+Screens           6 → 7 (+1)
+Saved records     4 → 3 (−1)
+Outside services  3 → 4 (+1)
+AI                1 (no change)
+Background jobs   1 (no change)
+Requests          3 (no change)
+
+New
+- The Billing screen is new.
+- Text messages (Twilio): your app can now send text messages.
+
+Gone
+- The saved record Ingredient is gone.
+
+Changed
+- The Settings screen is now the Preferences screen (moved from /settings to /preferences).
+- The Weekly plan job now runs every Friday at 17:00 (it used to run every Monday at 08:00).
+
+Now connected
+- OpenAI is now used from the Plan screen.
+
+Not on a screen yet
+- Text messages (Twilio) is in the code, but no screen seems to lead to it yet.
+
+Worth a look
+- Ingredient (saved data) was removed. Anything stored in it may be lost if you publish this.
+- Text messages (Twilio) is new. It needs an account and keys, and it may cost money.
+
+Size
+- Your app is 2 files and 73 lines bigger (+12%). Grew most: Main app (+78).
+
+I can only see how your app is put together: screens, saved records, outside services, AI, background jobs and how they connect. I can't see wording, colour or settings changes.
+```
+<!-- briefing-sample:END -->
+
+What to notice:
+
+| In the output | Why |
+|---|---|
+| The Settings screen "is now the Preferences screen", not one gone and one new | A renamed folder keeps the same size and the same links, so it is a move. Nothing is lost |
+| Ingredient is "gone" and under Worth a look; no other record takes its place | A removed saved record may hold real data. Records are never matched by the file they share |
+| Text messages (Twilio) is under New, Not on a screen yet and Worth a look | A new outside service needs an account and may cost money. No screen leads to it, which is not the same as broken |
+| The Weekly plan job shows the old and new time | The schedule is read from `vercel.json` |
+| The footer | The scan cannot see wording, colour or settings, so the briefing says so. It never claims "no changes users would notice" |
+
+Ask "where?" and the same command with `--receipts` adds a `↳` line under each item: the files behind it, or for "OpenAI is now used from the Plan screen", the chain `app/(app)/plan/page.tsx → lib/ai/suggest.ts ─uses→ ai:openai`.
+
+## Sample Chat Response (what changed)
+
+One orienting sentence, the briefing as printed, then one line offering the next step. The numbers are the tool's, not retyped.
+
+```markdown
+Here is what changed since your last saved version.
+
+[the briefing, pasted as printed]
+
+I can show you where any of these are in your files, or make this a page you can send.
+```
+
+## Sample Chat Response (posters)
+
+When the person asked for "explain my app", make page 1 only and offer the rest in one line. Page 1 only:
+
+```markdown
+This app is a team task board where members sign in, create projects, and track work on a shared dashboard.
+
+**Page 1 — how it works:** [taskflow-app-poster](/Users/<you>/.cursor/projects/<workspace>/canvases/taskflow-app-poster.canvas.tsx)
+
+I can also make the project story (page 2: talking points and what's real today) and the exploded view (page 3: what it's made of).
+```
+
+All three pages (only for "poster set", "all three" or "share pack"):
 
 ```markdown
 This app is a team task board where members sign in, create projects, and track work on a shared dashboard.
@@ -32,6 +153,8 @@ This app is a team task board where members sign in, create projects, and track 
 
 Note: billing is not in the app yet — marked in all three footers. Do not list Stripe under Connected or draw it on page 3.
 ```
+
+The links above are Cursor's. In Claude Code there is no canvas panel: link the exported files in `~/.explain-app/<repo>/exports/` instead (`taskflow-app-poster.html` for each page, `taskflow-poster-set.html` or the PDF for the set).
 
 ## Sample Poster Copy (Hypher)
 
