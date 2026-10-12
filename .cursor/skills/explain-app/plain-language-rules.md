@@ -1,6 +1,6 @@
 # Plain Language Rules
 
-Writing rules for explain-app. Primary Canvas sections must pass these checks.
+Writing rules for explain-app. Primary Canvas sections must pass these checks. The What-changed briefing speaks to the builder, not to a stakeholder: see [Briefing voice](#briefing-voice-what-changed).
 
 **Swiss posters (the default deliverable) have no glossary and no technical appendix.** If a banned term is still on the poster, rewrite. Do not park jargon in a collapsed section that does not exist.
 
@@ -117,6 +117,24 @@ Not bullet fragments: ~~"idea capture, spatial canvas, AI digest"~~
 Connect the owner to the *why* behind the build. Pull from README mission, playbook positioning, or product name etymology if docs are thin. Example tone:
 
 > You started this because scattered notes were costing you momentum. What you've built is a single place to think, organize, and share — without becoming a project manager.
+
+## Briefing voice (What changed)
+
+The briefing ([briefing.md](briefing.md)) is for the **builder**: the person who made the app with AI and does not read the code. Its lines come from `tools/lib/briefing.mjs`. The same rules apply to any sentence you add around them.
+
+| Rule | Example |
+|---|---|
+| **"You" and "your app".** Speak to the builder about their own work | "Your app is 14 files bigger", not "the codebase grew" |
+| **Vendor names are fine.** The builder chose them, and they need to know which account to check. (Posters still avoid them unless a user can use the thing today) | "Payments (Stripe): your app can now take payments" |
+| **Name things by what they are.** Say the kind, then the name | "the Recipes screen", "the saved record Ingredient", "the Weekly plan job" |
+| **Still no code jargon.** The banned terms above apply. A table is a "saved record", an endpoint or API call is a "request", a commit is a "saved version", a deploy is "publish" | "Anything stored in it may be lost if you publish this" |
+| **No file paths** unless they ask where. Then add `--receipts` | "The Billing screen is new", with `app/(app)/billing/page.tsx` only on request |
+| **Absolute dates**, never "yesterday" or "3 days ago" in the briefing itself. It may be read days later | "Since your last saved version (a1b2c3d, 2026-10-07)" |
+| **"No screen seems to lead to it"**, never "does not work", "unused" or "dead code". The scan cannot see wiring done higher up | "Text messages (Twilio) is in the code, but no screen seems to lead to it yet" |
+| **Never "no changes users would notice".** The scan cannot see wording, colour or settings | "Nothing structural changed … (I can't see wording, colour or settings changes.)" |
+| **Numbers come from the tool.** Never retype or tally them | Paste "Screens           6 → 7 (+1)" as printed; do not write "about seven screens now" |
+
+Every line the tool prints already passes the poster checker's jargon list (`isJargon` in `tools/lib/scan/names.mjs`). Run any sentence you write yourself through the same list.
 
 ## Section Voice
 
