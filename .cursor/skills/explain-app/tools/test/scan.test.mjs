@@ -373,6 +373,34 @@ describe("output rules", () => {
     }
   });
 
+  test("diff and changes are forwarded to lib/changes-cli.mjs; without it they exit 2 with a message naming it", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "scan-nochanges-"));
+    try {
+      fs.mkdirSync(path.join(tmp, "lib"), { recursive: true });
+      fs.copyFileSync(CLI, path.join(tmp, "scan.mjs"));
+      fs.copyFileSync(path.join(TOOLS, "lib", "hash.mjs"), path.join(tmp, "lib", "hash.mjs"));
+      fs.cpSync(path.join(TOOLS, "lib", "scan"), path.join(tmp, "lib", "scan"), { recursive: true });
+      for (const cmd of ["diff", "changes"]) {
+        const r = spawnSync("node", [path.join(tmp, "scan.mjs"), cmd, "a.json", "b.json"], { encoding: "utf8" });
+        assert.equal(r.status, 2, r.stderr);
+        assert.match(r.stderr, /changes-cli\.mjs/);
+        assert.match(r.stderr, new RegExp(`\`${cmd}\` is unavailable`));
+      }
+      fs.writeFileSync(
+        path.join(tmp, "lib", "changes-cli.mjs"),
+        'export async function diffMain(argv) { console.log("diff " + argv.join(",")); return 0; }\nexport async function changesMain(argv) { console.log("changes " + argv.join(",")); return 1; }\n',
+      );
+      const d = spawnSync("node", [path.join(tmp, "scan.mjs"), "diff", "a.json", "b.json", "--json"], { encoding: "utf8" });
+      assert.equal(d.status, 0);
+      assert.equal(d.stdout.trim(), "diff a.json,b.json,--json");
+      const c = spawnSync("node", [path.join(tmp, "scan.mjs"), "changes", ".", "--since", "HEAD"], { encoding: "utf8" });
+      assert.equal(c.status, 1, "the return value of changesMain is the exit code");
+      assert.equal(c.stdout.trim(), "changes .,--since,HEAD");
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
   test("CLI usage errors exit 2; unknown file exits 1", () => {
     assert.equal(spawnSync("node", [CLI], { encoding: "utf8" }).status, 2);
     assert.equal(spawnSync("node", [CLI, "bogus"], { encoding: "utf8" }).status, 2);

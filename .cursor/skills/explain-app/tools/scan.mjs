@@ -6,6 +6,8 @@
 //   node tools/scan.mjs draft <facts.json>
 //   node tools/scan.mjs wire  <facts.json> --into <canvas.tsx>      (lib/wire.mjs)
 //   node tools/scan.mjs why   <facts.json> --canvas <canvas.tsx> "<part A>" "<part B>"
+//   node tools/scan.mjs diff    <before.json> <after.json> [--out ...]        (lib/changes-cli.mjs)
+//   node tools/scan.mjs changes <repo> --since <X> [--out ...]                (lib/changes-cli.mjs)
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -33,6 +35,10 @@ const USAGE = `Usage:
   node tools/scan.mjs draft <facts.json>                    suggested PARTS array (JSON)
   node tools/scan.mjs wire  <facts.json> --into <canvas.tsx>  rewrite the WIRING block
   node tools/scan.mjs why   <facts.json> --canvas <canvas.tsx> "<part A>" "<part B>"
+  node tools/scan.mjs diff    <before.json> <after.json> [--out changes.json] [--json] [--canvas <canvas.tsx>] [--html <file>] [--receipts]
+                              what changed between two scans, in plain English
+  node tools/scan.mjs changes <repo> --since <empty|facts.json|rev|date> [diff flags] [--save-facts <file>]
+                              what changed in a repo since a saved version, a date or an earlier scan
 
 Exit codes: 0 ok, 1 rule error, 2 usage.`;
 
@@ -177,6 +183,10 @@ export async function main(argv) {
       return forward("wire.mjs", "wireMain", cmd, args);
     case "why":
       return forward("wire.mjs", "whyMain", cmd, args);
+    case "diff":
+      return forward("changes-cli.mjs", "diffMain", cmd, args);
+    case "changes":
+      return forward("changes-cli.mjs", "changesMain", cmd, args);
     case undefined:
     case "-h":
     case "--help":
