@@ -19,14 +19,16 @@ import { cmp, extname, isUnder, pub, sortedUnique } from "./util.mjs";
 
 const UNRESOLVED_CAP = 200;
 
-export function scanRepoDetailed(dirArg) {
+// `useGit: false` lists files by walking the directory, even inside a git work tree: for a tree that was
+// unpacked from a commit and must be read as it is, whatever repo its temp folder happens to sit in.
+export function scanRepoDetailed(dirArg, { useGit = true } = {}) {
   const dir = path.resolve(dirArg);
   const diag = { errors: [], skipped: null, git: false, files: 0, ms: {} };
   const t0 = Date.now();
   const lap = (name, t) => (diag.ms[name] = Date.now() - t);
 
   let t = Date.now();
-  const { paths: allPaths, git } = listFiles(dir);
+  const { paths: allPaths, git } = listFiles(dir, { useGit });
   diag.git = git;
   const allPathSet = new Set(allPaths);
   const { files: raw, skipped } = readSourceFiles(dir, allPaths);
@@ -159,6 +161,6 @@ export function scanRepoDetailed(dirArg) {
   return { facts: out, diag };
 }
 
-export function scanRepo(dir) {
-  return scanRepoDetailed(dir).facts;
+export function scanRepo(dir, opts) {
+  return scanRepoDetailed(dir, opts).facts;
 }

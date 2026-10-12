@@ -11,6 +11,9 @@ import { scanRepo, draftParts, showFacts, matchGlob, selectIds, plainAreaName, i
 import { scanJs, stripPy, parseJsonc } from "../lib/scan/tokenize.mjs";
 import { normRoutePath, segSuffixMatch, matchSegs } from "../lib/scan/routes.mjs";
 import { routeName, tableName, areaName } from "../lib/scan/names.mjs";
+import { scanRepoDetailed } from "../lib/scan/index.mjs";
+import { listFiles } from "../lib/scan/files.mjs";
+import { outputInsideRepo } from "../lib/scan/io.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TOOLS = path.resolve(HERE, "..");
@@ -351,6 +354,11 @@ describe("output rules", () => {
         assert.equal(r.status, 2, r.stderr);
         assert.match(r.stderr, /wire\.mjs/);
       }
+      fs.writeFileSync(path.join(tmp, "lib", "wire.mjs"), 'import "./nope.mjs";\nexport async function wireMain() { return 0; }\n');
+      const broken = spawnSync("node", [path.join(tmp, "scan.mjs"), "wire", "facts.json"], { encoding: "utf8" });
+      assert.equal(broken.status, 2, broken.stderr);
+      assert.match(broken.stderr, /Could not load tools\/lib\/wire\.mjs/, "a missing import inside wire.mjs is not reported as wire.mjs missing");
+      assert.doesNotMatch(broken.stderr, /is not installed/);
       fs.writeFileSync(
         path.join(tmp, "lib", "wire.mjs"),
         'export async function wireMain(argv) { console.log("wire " + argv.join(",")); return 0; }\nexport async function whyMain(argv) { console.log("why " + argv.join(",")); return 1; }\n',
@@ -1141,6 +1149,101 @@ describe("real-world edges", () => {
       const facts = await scanRepo(root);
       assert.ok(!Object.keys(facts.files).some((f) => f.startsWith("ignored/")), "ignored/ is left out");
       assert.ok(facts.files["app/page.tsx"]);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // Git helpers for the next tests: a throwaway repo with a fixed identity and no signing.
+  const haveGit = () => {
+    try {
+      execFileSync("git", ["--version"], { stdio: "ignore" });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const git = (cwd, ...args) =>
+    execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", ...args], { cwd, stdio: "pipe" });
+  const commitAll = (root) => {
+    git(root, "init", "-q");
+    git(root, "add", "-A");
+    git(root, "commit", "-q", "-m", "init");
+  };
+
+  test("useGit:false walks a git work tree: the same facts as git mode on a clean commit", async (t) => {
+    if (!haveGit()) return t.skip("git not available");
+    const root = mk();
+    try {
+      const dir = path.join(root, "recipe"); // the folder name is the repo name, so both scans must agree on it
+      fs.cpSync(path.join(FIX, "recipe"), dir, { recursive: true });
+      commitAll(dir);
+      const viaGit = scanRepoDetailed(dir);
+      const walked = scanRepoDetailed(dir, { useGit: false });
+      assert.equal(viaGit.diag.git, true);
+      assert.equal(walked.diag.git, false, "the flag reaches listFiles");
+      assert.equal(stableStringify(walked.facts, 1), stableStringify(viaGit.facts, 1));
+      assert.equal(stableStringify(await scanRepo(dir, { useGit: false }), 1), stableStringify(walked.facts, 1), "scanRepo forwards the option");
+      // the two modes differ only where git knows more than the disk: an ignored folder is walked, not listed
+      write(dir, ".gitignore", "ignored/\n");
+      write(dir, "ignored/lib/extra.ts", "export const extra = 1;\n");
+      assert.ok(!(await scanRepo(dir)).files["ignored/lib/extra.ts"], "git mode follows .gitignore");
+      assert.ok((await scanRepo(dir, { useGit: false })).files["ignored/lib/extra.ts"], "walk mode does not");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("git mode lists what is on disk: a tracked file deleted without staging leaves no ghost path", async (t) => {
+    if (!haveGit()) return t.skip("git not available");
+    const root = mk();
+    try {
+      write(root, "package.json", JSON.stringify({ name: "g", dependencies: { next: "14.0.0" } }));
+      write(root, "app/page.tsx", 'import { gone } from "../lib/gone";\nimport { kept } from "../lib/kept";\nexport default function P(){ return gone + kept }\n');
+      write(root, "lib/gone.ts", "export const gone = 1;\n");
+      write(root, "lib/kept.ts", "export const kept = 1;\n");
+      write(root, "lib/staged-away.ts", "export const s = 1;\n");
+      commitAll(root);
+      const clean = await scanRepo(root);
+      assert.ok(clean.files["lib/gone.ts"] && hasImport(clean, "app/page.tsx", "lib/gone.ts"));
+
+      fs.rmSync(path.join(root, "lib/gone.ts")); // deleted on disk, still in the index
+      git(root, "rm", "-q", "lib/staged-away.ts"); // deleted and staged
+      write(root, "lib/fresh.ts", "export const fresh = 1;\n"); // untracked
+      const { paths, git: viaGit } = listFiles(root);
+      assert.equal(viaGit, true);
+      assert.ok(!paths.includes("lib/gone.ts"), "unstaged deletion is not listed");
+      assert.ok(!paths.includes("lib/staged-away.ts"));
+      assert.ok(paths.includes("lib/fresh.ts") && paths.includes("lib/kept.ts"));
+      assert.deepEqual(paths, listFiles(root, { useGit: false }).paths, "git mode now agrees with the disk");
+
+      const facts = await scanRepo(root);
+      assert.ok(!facts.files["lib/gone.ts"]);
+      assert.ok(!hasImport(facts, "app/page.tsx", "lib/gone.ts"));
+      assert.ok(hasImport(facts, "app/page.tsx", "lib/kept.ts"));
+      assert.equal(facts.unresolved["../lib/gone"], 1, "an import of the deleted file is unresolved, not silently 'excluded'");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("outputInsideRepo: refuses the repo itself, its subfolders and a symlinked way in; allows the rest", (t) => {
+    const root = mk();
+    try {
+      const repo = path.join(root, "repo");
+      fs.mkdirSync(path.join(repo, "sub"), { recursive: true });
+      assert.match(outputInsideRepo(path.join(repo, "facts.json"), repo), /^--out .* is inside the scanned repo; the scanner never writes there\. Pick a path outside /);
+      assert.ok(outputInsideRepo(path.join(repo, "sub", "x", "facts.json"), repo), "a folder that does not exist yet");
+      assert.ok(outputInsideRepo(path.join(repo, "sub", "..", "facts.json"), repo), "dot-dot is resolved");
+      assert.equal(outputInsideRepo(path.join(root, "facts.json"), repo), null);
+      assert.equal(outputInsideRepo(path.join(root, "repo-facts.json"), repo), null, "a sibling with the same prefix is outside");
+      assert.match(outputInsideRepo(path.join(repo, "o.html"), repo, { flag: "--html", shown: "my-app" }), /^--html .* outside my-app$/);
+      try {
+        fs.symlinkSync(path.join(repo, "sub"), path.join(root, "link"), "dir");
+      } catch {
+        return t.skip("cannot create symlinks here");
+      }
+      assert.ok(outputInsideRepo(path.join(root, "link", "facts.json"), repo), "through a symlink into the repo");
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

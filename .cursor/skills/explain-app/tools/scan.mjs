@@ -9,8 +9,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { stableStringify, factsHash } from "./lib/hash.mjs";
+import { stableStringify } from "./lib/hash.mjs";
 import { scanRepoDetailed } from "./lib/scan/index.mjs";
+import { readFacts as readFactsFile, outputInsideRepo } from "./lib/scan/io.mjs";
 import { draftParts } from "./lib/scan/draft.mjs";
 import { plainAreaName, isJargon } from "./lib/scan/names.mjs";
 import { showFacts } from "./lib/scan/show.mjs";
@@ -18,9 +19,12 @@ import { matchGlob, selectIds, globToRegExp } from "./lib/scan/glob.mjs";
 
 export { draftParts, showFacts, matchGlob, selectIds, globToRegExp, plainAreaName, isJargon };
 
-/** Scan a repo directory into a FactsFile. Never writes anything. */
-export async function scanRepo(dir) {
-  return scanRepoDetailed(dir).facts;
+/**
+ * Scan a repo directory into a FactsFile. Never writes anything.
+ * `{ useGit: false }` walks the directory even inside a git work tree (for a tree materialised from a commit).
+ */
+export async function scanRepo(dir, opts) {
+  return scanRepoDetailed(dir, opts).facts;
 }
 
 const USAGE = `Usage:
@@ -43,39 +47,7 @@ function usage(msg) {
 }
 
 function readFacts(file) {
-  let text;
-  try {
-    text = fs.readFileSync(file, "utf8");
-  } catch (e) {
-    fail(`Cannot read ${file}: ${e.code || e.message}`);
-    return null;
-  }
-  let facts;
-  try {
-    facts = JSON.parse(text);
-  } catch (e) {
-    fail(`${file} is not valid JSON: ${e.message}`);
-    return null;
-  }
-  if (!facts || facts.version !== 1 || !Array.isArray(facts.facts) || typeof facts.files !== "object") {
-    fail(`${file} is not a facts.json (expected version 1 with facts and files)`);
-    return null;
-  }
-  if (facts.hash !== factsHash(facts)) warn(`${file}: hash does not match its content; was it edited by hand?`);
-  return facts;
-}
-
-function isInside(child, parent) {
-  const rel = path.relative(parent, child);
-  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
-}
-
-function realOrResolved(p) {
-  try {
-    return fs.realpathSync(p);
-  } catch {
-    return path.resolve(p);
-  }
+  return readFactsFile(file, { err });
 }
 
 function parseOut(args) {
@@ -111,10 +83,9 @@ function cmdScan(args) {
     return 1;
   }
   if (out !== "-") {
-    const outAbs = path.resolve(out);
-    const outDirReal = realOrResolved(path.dirname(outAbs));
-    if (isInside(outAbs, dir) || isInside(path.join(outDirReal, path.basename(outAbs)), realOrResolved(dir))) {
-      fail(`--out ${out} is inside the scanned repo; the scanner never writes there. Pick a path outside ${rest[0]}`);
+    const inside = outputInsideRepo(out, dir, { flag: "--out", shown: rest[0] });
+    if (inside) {
+      fail(inside);
       return 1;
     }
   }
@@ -168,21 +139,25 @@ function cmdDraft(args) {
   return 0;
 }
 
-async function forward(name, args) {
+// Lazily load tools/lib/<moduleFile> and run its `exportName(args)`; the return value is the exit code.
+// A command whose module is not installed exits 2 with a message naming the file.
+async function forward(moduleFile, exportName, cmdName, args) {
+  const url = new URL(`./lib/${moduleFile}`, import.meta.url);
   let mod;
   try {
-    mod = await import(new URL("./lib/wire.mjs", import.meta.url).href);
+    mod = await import(url.href);
   } catch (e) {
-    if (e && e.code === "ERR_MODULE_NOT_FOUND" && /wire\.mjs/.test(String(e.message))) {
-      fail(`tools/lib/wire.mjs is not installed, so \`${name}\` is unavailable.`);
+    // Only when that very file is missing: a missing import inside it is a different problem.
+    if (e && e.code === "ERR_MODULE_NOT_FOUND" && String(e.message).includes(`'${fileURLToPath(url)}'`)) {
+      fail(`tools/lib/${moduleFile} is not installed, so \`${cmdName}\` is unavailable.`);
     } else {
-      fail(`Could not load tools/lib/wire.mjs: ${e && e.message ? e.message : e}`);
+      fail(`Could not load tools/lib/${moduleFile}: ${e && e.message ? e.message : e}`);
     }
     return 2;
   }
-  const fn = name === "wire" ? mod.wireMain : mod.whyMain;
+  const fn = mod[exportName];
   if (typeof fn !== "function") {
-    fail(`tools/lib/wire.mjs does not export ${name === "wire" ? "wireMain" : "whyMain"}`);
+    fail(`tools/lib/${moduleFile} does not export ${exportName}`);
     return 2;
   }
   const code = await fn(args);
@@ -199,8 +174,9 @@ export async function main(argv) {
     case "draft":
       return cmdDraft(args);
     case "wire":
+      return forward("wire.mjs", "wireMain", cmd, args);
     case "why":
-      return forward(cmd, args);
+      return forward("wire.mjs", "whyMain", cmd, args);
     case undefined:
     case "-h":
     case "--help":

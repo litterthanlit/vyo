@@ -43,24 +43,35 @@ export function isSourcePath(rel) {
   return SOURCE_EXT.has(extname(rel)) && !isExcluded(rel);
 }
 
-function gitOutput(dir, args) {
-  return execFileSync(
-    "git",
-    ["-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null", "-C", dir, ...args],
-    { encoding: "utf8", maxBuffer: 512 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] },
-  );
+// How every git call here is made, so a caller can spawn git the same way: `git <GIT_FLAGS> -C <dir> …` with
+// `env: gitEnv()`. No fsmonitor daemon, no hooks, no optional index refresh, so reading never writes into .git.
+export const GIT_FLAGS = ["-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null"];
+export const gitEnv = () => ({ ...process.env, GIT_OPTIONAL_LOCKS: "0" });
+
+/** Run git in `dir` and return stdout as text. Throws when git is missing or the command fails. */
+export function gitOutput(dir, args) {
+  return execFileSync("git", [...GIT_FLAGS, "-C", dir, ...args], {
+    encoding: "utf8",
+    maxBuffer: 512 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "ignore"],
+    env: gitEnv(),
+  });
 }
 
+const nulList = (raw) => raw.split("\0").filter(Boolean);
+
 // List every file in the repo (unfiltered), sorted. Uses git when `dir` is a work-tree root, else walks.
+// In git mode the listing is what is on disk now: tracked files minus those deleted without staging
+// (`ls-files -d`), plus untracked files that are not ignored.
 export function listFiles(dir, { useGit = true } = {}) {
   if (useGit) {
     try {
       const prefix = gitOutput(dir, ["rev-parse", "--show-prefix"]).trim();
       const inside = gitOutput(dir, ["rev-parse", "--is-inside-work-tree"]).trim() === "true";
       if (inside && prefix === "") {
-        const raw = gitOutput(dir, ["ls-files", "-co", "--exclude-standard", "-z"]);
-        const paths = raw.split("\0").filter(Boolean);
-        return { paths: [...new Set(paths)].sort(cmp), git: true };
+        const listed = nulList(gitOutput(dir, ["ls-files", "-co", "--exclude-standard", "-z"]));
+        const gone = new Set(nulList(gitOutput(dir, ["ls-files", "-d", "-z"])));
+        return { paths: [...new Set(listed.filter((p) => !gone.has(p)))].sort(cmp), git: true };
       }
     } catch {
       // not a git work tree (or git unavailable): fall through to the walk
