@@ -1,20 +1,28 @@
 # explain-app poster tools
 
-Commands that turn the Swiss rules from prose into something measured, get the posters out of Cursor, and read a repo for page 3.
+Commands that read a repo, say what changed in it, turn the Swiss rules from prose into something measured, and get the posters out of Cursor.
 
-| Command | What it does |
-|---------|--------------|
-| `poster.mjs check` | Renders each poster in headless Chromium and fails on rule breaks. Page 3 is also checked against its `facts.json` |
-| `poster.mjs export` | Writes a PNG (2×) and a PDF per poster, plus one combined set PDF |
-| `scan.mjs scan` / `show` / `draft` | Repo → `<repo>-facts.json`, a summary with fact ids, a suggested `PARTS` array |
-| `scan.mjs wire` / `why` | `facts.json` + `PARTS` → the `WIRING` block of the page 3 canvas; show why two parts are linked |
+| Command | What it does | Needs |
+|---------|--------------|-------|
+| `scan.mjs scan` / `show` / `draft` | Repo → `<repo>-facts.json`, a summary with fact ids, a suggested `PARTS` array | Node |
+| `scan.mjs wire` / `why` | `facts.json` + `PARTS` → the `WIRING` block of the page 3 canvas; show why two parts are linked | Node |
+| `scan.mjs diff` | Two `facts.json` files → what changed, in plain English (text, `--html`, or the raw Changes with `--json`) | Node |
+| `scan.mjs changes` | A repo and a point in its history → the same briefing, comparing the repo as it is now with then | Node; git for a commit or date |
+| `install.mjs` | Copies the skill to where Claude Code and Cursor load it | Node |
+| `poster.mjs check` | Renders each poster in headless Chromium and fails on rule breaks. Page 3 is also checked against its `facts.json` | `npm install`, Chromium |
+| `poster.mjs export` | Writes a PNG (2×) and a PDF per poster, plus one combined set PDF | `npm install`, Chromium |
+| `poster.mjs export --html` | Writes each poster as one offline web page that keeps its controls | `npm install` |
 
 ## Setup (once)
 
+The scanner and the briefing (`scan`, `show`, `draft`, `wire`, `why`, `diff`, `changes`) and `install.mjs` use only Node 18+ and git. **Nothing to install.**
+
+The poster commands need packages. `export --html` needs only the first step:
+
 ```bash
-cd ~/.cursor/skills/explain-app/tools
+cd <skill folder>/tools          # e.g. ~/.claude/skills/explain-app/tools
 npm install
-npx playwright install chromium   # or set POSTER_CHROMIUM=/path/to/chromium
+npx playwright install chromium   # PNG, PDF and check only; or set POSTER_CHROMIUM=/path/to/chromium
 ```
 
 ## Usage
@@ -24,7 +32,18 @@ node poster.mjs check  <canvases>/acme-app-poster.canvas.tsx <canvases>/acme-pro
 node poster.mjs export <canvases>/acme-app-poster.canvas.tsx <canvases>/acme-project-story.canvas.tsx <canvases>/acme-exploded-view.canvas.tsx
 ```
 
-`export` options: `--out <dir>` (default `<canvases>/exports`), `--paper fit|a4|letter` (default `fit`: one page sized to the poster), `--no-png`, `--no-pdf`. The grid toggle and page 3's controls (`[data-chrome]`) are hidden in exports.
+`export` options: `--out <dir>` (default `<canvases>/exports`), `--paper fit|a4|letter` (default `fit`: one page sized to the poster), `--no-png`, `--no-pdf`, `--html`. The grid toggle and page 3's controls (`[data-chrome]`) are hidden in the PNG and PDF.
+
+### `export --html`
+
+```bash
+node poster.mjs export <canvases>/acme-app-poster.canvas.tsx <canvases>/acme-exploded-view.canvas.tsx --html
+node poster.mjs export <canvases>/acme-app-poster.canvas.tsx --html --no-png --no-pdf   # no browser at all
+```
+
+Writes `<stem>.html` per poster, plus `<repo>-poster-set.html` when there are two or more, into `--out` (default `<first file's folder>/exports`). Each is one file with its script and styles inline. It opens offline in any browser and has a viewport tag for phones. The interactive controls stay: the grid toggle, and page 3's slider, theme button and part list. `--state` seeds the starting state, as for PNG and PDF.
+
+With `--no-png --no-pdf` no browser starts, so this works with just `npm install` (esbuild and react). It is how a Claude Code user, who has no canvas panel, looks at a poster. Without `--html`, `export` behaves as before.
 
 Page 2 rules apply when the filename contains `project-story`, and page 3 rules when it contains `exploded-view`. Everything else is checked as page 1.
 
@@ -46,6 +65,55 @@ Page 2 rules apply when the filename contains `project-story`, and page 3 rules 
   ```
 
   `check` judges the light theme, so `--state themeExploded=dark` makes its palette rule fail by design: use it to look, not to pass.
+
+## What changed: diff and changes
+
+These answer "what changed in my app?" in plain English. The workflow for an agent is [../briefing.md](../briefing.md); the output shape is [CONTRACTS.md](CONTRACTS.md) §7. Run them from the skill directory. Nothing is installed and nothing is written inside the repo.
+
+```bash
+node tools/scan.mjs diff    <before-facts.json> <after-facts.json> [--out changes.json] [--json] [--canvas <canvas.tsx>] [--html <file>] [--receipts]
+node tools/scan.mjs changes <repo> --since <commit|date|facts.json|empty> [same flags] [--save-facts <file>]
+```
+
+`diff` compares two `facts.json` files. `changes` scans `<repo>` as it is now (uncommitted and untracked work included, so `--since HEAD` means "what did the agent just change?") and compares it with `--since`:
+
+| `--since` | The older side is |
+|---|---|
+| `empty` (or `none`) | Nothing: the briefing says where the app stands now |
+| a file that exists | That `facts.json`, e.g. a bookmark saved earlier |
+| a commit, tag or branch | That commit, read out of git into a temp folder |
+| a date (`2026-10-11`) | The last commit before it. A bare date means 00:00. If there is none, the empty baseline and a note |
+
+Reading a commit never writes in the repo or its `.git`. Rev and date need git history and the repo's top-level folder; a shallow clone or a sub-folder stops with a message. <!-- verify: error cases against lib/changes-cli.mjs -->
+
+| Flag | What it does |
+|---|---|
+| `--receipts` | Adds the files behind each line (the default text has no paths) |
+| `--html <file>` | Also writes the briefing as one offline web page |
+| `--json` | Prints the raw Changes instead of text |
+| `--out <file>` | Saves the raw Changes |
+| `--canvas <canvas.tsx>` | Reads its `PARTS` and adds poster lines: out of date, can't be redrawn, new things not on it |
+| `--save-facts <file>` | (`changes`) Saves the scan of the repo now, as the next `--since <file>` |
+
+Exit codes: 0 ok (changes or not), 1 error, 2 usage. An output path inside the repo is refused. <!-- verify: flags and exit codes against lib/changes-cli.mjs -->
+
+The wording comes from `lib/briefing.mjs` and the comparison from `lib/changes.mjs`; `lib/briefing-html.mjs` draws the page from the same document, so text and page cannot drift apart.
+
+## Install the skill
+
+```bash
+node tools/install.mjs [--cursor] [--claude] [--project <dir>] [--dry-run]
+```
+
+| Flags | Installs to |
+|---|---|
+| none, or `--claude` | `~/.claude/skills/explain-app`. Claude Code reads it, and so does Cursor ([Cursor's skills docs](https://cursor.com/docs/skills): it also loads `.claude/skills/` and `~/.claude/skills/`). One copy serves both |
+| `--cursor` | `~/.cursor/skills/explain-app` |
+| `--cursor --claude` | Both. Cursor then lists the skill twice, and the installer warns |
+| `--project <dir>` | `<dir>/.claude/skills/explain-app`; with `--cursor`, `<dir>/.cursor/skills/explain-app` |
+| `--dry-run` | Prints what would change and writes nothing |
+
+It copies over what is there and never deletes the destination folder. A `project-context.md` you keep there stays. It leaves out `tools/node_modules`, `tools/test/.out`, `.git` and the source's own `project-context.md`. `.explain-app-install.json` in the destination lists what was copied, so a file removed from the skill is removed on the next install and nothing else is. It warns if a second copy exists in the other host's folder. Exit codes: 0 ok, 1 error, 2 usage. It ends by printing the next steps: nothing for the scanner and briefing; `npm install --prefix <dest>/tools` for posters, plus Chromium (`npx --prefix <dest>/tools playwright install chromium`, or `POSTER_CHROMIUM`) for PNG, PDF and `check`; `export --html` needs only the npm install.
 
 ## Page 3: scan, wire, why
 
@@ -108,7 +176,7 @@ It does not judge copy quality, empty zones, status honesty, or whether a non-en
 
 ## How it works
 
-`lib/build.mjs` bundles the canvas with esbuild, swapping `cursor/canvas` for `shim/canvas.tsx` (a `useState`-backed `useCanvasState`, seeded from `--state`). `lib/inspect.js` runs inside the page and measures computed layout and the page 3 DOM. `poster.mjs` drives Playwright and, for page 3, runs the facts/wiring checks in Node first with `lib/wire.mjs` and `lib/hash.mjs`.
+`lib/build.mjs` bundles the canvas with esbuild, swapping `cursor/canvas` for `shim/canvas.tsx` (a `useState`-backed `useCanvasState`, seeded from `--state`). `lib/inspect.js` runs inside the page and measures computed layout and the page 3 DOM. `poster.mjs` drives Playwright (loaded only when a browser is needed) and, for page 3, runs the facts/wiring checks in Node first with `lib/wire.mjs` and `lib/hash.mjs`. `lib/reach.mjs` is the link walker that `wire` and `lib/changes.mjs` share.
 
 ## Self-test
 
@@ -121,4 +189,6 @@ This builds fixtures from `poster-starter.md`, `sell-sheet-starter.md` and `expl
 - Pages 1 and 2: line gap, fifth font size, off-baseline rule, drifting overlay, stray import…
 - Page 3, each with its own copy of the facts file (`test/.out/bug-*-facts.json`, a scan of `test/fixtures/recipe`): a missing or edited `facts.json`, a missing or hand-edited `WIRING`, `PARTS` changed without re-wiring, a `from` that cites nothing, 10 parts, 5 parts in one tier, a part drawing the wrong number of items, bad cables, an off-palette stroke or fill, overlapping or wrapping labels, a drifting leader, a dead slider / arrow keys / hover, and a selection that doesn't ink its cables.
 
-It also type-checks the three starters, and runs the scanner and wire unit tests (`node --test test/scan.test.mjs test/wire.test.mjs`). Run it after editing the starters, the scanner, the wire tool or the checker.
+It also type-checks the three starters, and runs the unit tests for the scanner, wire, reach, changes (with the briefing) and install (`node --test test/scan.test.mjs test/wire.test.mjs test/reach.test.mjs test/changes.test.mjs test/install.test.mjs`). Run it after editing the starters, the scanner, the wire tool, the changes code or the checker.
+
+`node --test test/examples.test.mjs` checks that the sample briefing in `examples.md`, and the excerpt in `briefing.md`, are what the tool prints for the Pantry fixture. After you change the briefing's wording, rewrite the sample with `UPDATE_EXAMPLES=1 node --test test/examples.test.mjs` and re-read it.
