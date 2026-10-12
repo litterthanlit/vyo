@@ -2,7 +2,7 @@
 // explain-app poster tools.
 //
 //   node poster.mjs check  <file.canvas.tsx>... [options]  Enforce the Swiss poster rules
-//   node poster.mjs export <file.canvas.tsx>... [options]  Write PNG + PDF for sharing
+//   node poster.mjs export <file.canvas.tsx>... [options]  Write PNG + PDF (and HTML) for sharing
 //
 // Options:
 //   --state key=value    Seed a useCanvasState key before the poster renders (repeatable; the value is
@@ -12,12 +12,15 @@
 //   --out <dir>          Output directory (default: <first file's dir>/exports)
 //   --paper fit|a4|letter  PDF page size (default: fit — one page sized to the poster)
 //   --no-png / --no-pdf  Skip a format
+//   --html               Also write <stem>.html per poster (+ <set>.html for several): one self-contained file that
+//                        opens offline in any browser, interactive controls kept. With --no-png --no-pdf no browser
+//                        is launched, so HTML export needs only `npm install` (esbuild, react), not Chromium.
 //
 // Page rules are inferred from the filename (*project-story* = page 2, *exploded-view* = page 3).
 // Set POSTER_CHROMIUM to a Chromium binary to skip `npx playwright install chromium`.
 import fs from "node:fs";
 import path from "node:path";
-import { chromium } from "playwright";
+import { fileURLToPath } from "node:url";
 import { buildPage, lintSource } from "./lib/build.mjs";
 import { factsHash, partsHash } from "./lib/hash.mjs";
 import { inspectOverlay, inspectPoster } from "./lib/inspect.js";
@@ -33,11 +36,20 @@ const PAPER_PX = { a4: [794, 1123], letter: [816, 1056] };
 const pageOf = (file) => (/project-story/i.test(path.basename(file)) ? 2 : /exploded-view/i.test(path.basename(file)) ? 3 : 1);
 const stem = (file) => path.basename(file).replace(/\.canvas\.tsx$|\.tsx$/, "");
 
+// Playwright loads only when a browser is needed (check, PNG, PDF); HTML export and the unit tests never import it.
 async function launch() {
+  const toolsDir = path.dirname(fileURLToPath(import.meta.url));
+  let chromium;
+  try {
+    ({ chromium } = await import("playwright"));
+  } catch (e) {
+    if (e.code !== "ERR_MODULE_NOT_FOUND") throw e;
+    throw new Error(`Playwright is not installed. Run \`npm install\` in ${toolsDir}.\n${String(e.message).split("\n")[0]}`);
+  }
   try {
     return await chromium.launch({ executablePath: process.env.POSTER_CHROMIUM || undefined });
   } catch (e) {
-    throw new Error(`Could not start Chromium. Run \`npx playwright install chromium\` in ${path.dirname(new URL(import.meta.url).pathname)}, or set POSTER_CHROMIUM to a Chromium binary.\n${e.message.split("\n")[0]}`);
+    throw new Error(`Could not start Chromium. Run \`npx playwright install chromium\` in ${toolsDir}, or set POSTER_CHROMIUM to a Chromium binary.\n${e.message.split("\n")[0]}`);
   }
 }
 
@@ -347,12 +359,27 @@ function report({ file, page, errors, warnings }) {
   for (const w of warnings) console.log(`  ! ${w}`);
 }
 
-async function exportPosters(files, { out, paper = "fit", png = true, pdf = true, state }) {
+async function exportPosters(files, { out, paper = "fit", png = true, pdf = true, html = false, state }) {
   if (paper !== "fit" && !PAPER_PX[paper]) throw new Error(`Unknown --paper "${paper}" — use fit, a4, or letter`);
   out ??= path.join(path.dirname(path.resolve(files[0])), "exports");
   fs.mkdirSync(out, { recursive: true });
-  const browser = await launch();
   const written = [];
+  // The page as the checker renders it (chrome kept, so the grid toggle and page 3's controls still work), plus a
+  // viewport meta so a phone does not draw it zoomed out. Only esbuild bundles it; no browser is involved.
+  const writeHtml = async () => {
+    const page = async (list) => seedState(await buildPage(list), state).replace('<meta charset="utf-8">', '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">');
+    const pages = [...files.map((f) => [`${stem(f)}.html`, [f]]), ...(files.length > 1 ? [[`${setName(files)}.html`, files]] : [])];
+    for (const [name, list] of pages) {
+      const dest = path.join(out, name);
+      fs.writeFileSync(dest, await page(list));
+      written.push(dest);
+    }
+  };
+  if (!png && !pdf) {
+    if (html) await writeHtml();
+    return written;
+  }
+  const browser = await launch();
   try {
     const p = await open(browser, files, POSTER_WIDTH, 2, state);
     const errs = await p.evaluate(() => [...document.querySelectorAll("[data-poster-error]")].map((e) => e.textContent));
@@ -392,6 +419,7 @@ async function exportPosters(files, { out, paper = "fit", png = true, pdf = true
   } finally {
     await browser.close();
   }
+  if (html) await writeHtml();
   return written;
 }
 
@@ -405,9 +433,12 @@ function setName(files) {
 
 const USAGE = `Usage:
   node poster.mjs check  <file.canvas.tsx>... [--facts <facts.json>] [--state key=value]...
-  node poster.mjs export <file.canvas.tsx>... [--out dir] [--paper fit|a4|letter] [--no-png] [--no-pdf] [--state key=value]...`;
+  node poster.mjs export <file.canvas.tsx>... [--out dir] [--paper fit|a4|letter] [--no-png] [--no-pdf] [--html] [--state key=value]...
+
+export writes PNG + PDF per poster (plus a set PDF for several). --html adds a self-contained <stem>.html per poster
+(plus a set .html for several) that opens offline in any browser; with --no-png --no-pdf it needs no browser.`;
 const VALUE_OPTIONS = ["--out", "--paper", "--facts", "--state"];
-const FLAG_OPTIONS = ["--no-png", "--no-pdf"];
+const FLAG_OPTIONS = ["--no-png", "--no-pdf", "--html"];
 
 // Positional files plus --name value / --name=value options (--state may repeat).
 function parseArgs(args) {
@@ -463,6 +494,7 @@ async function main(argv) {
     paper: opt["--paper"] ?? "fit",
     png: !opt["--no-png"],
     pdf: !opt["--no-pdf"],
+    html: !!opt["--html"],
     state,
   });
   console.log(written.map((w) => `wrote ${w}`).join("\n"));

@@ -1,6 +1,6 @@
 // Self-test: the starters must pass `check`, and each planted bug must fail
-// with the expected message. Also type-checks the starters and runs the scanner
-// and wire unit tests.
+// with the expected message. Also exports the starters to HTML, type-checks them,
+// and runs the scanner, wire and install unit tests.
 //
 //   npm test
 //
@@ -10,7 +10,8 @@ import { execFileSync, spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { chromium } from "playwright";
 import { check, parseState } from "../poster.mjs";
 import { stableStringify } from "../lib/hash.mjs";
 import { readBlocks, wire, writeWiring } from "../lib/wire.mjs";
@@ -192,12 +193,75 @@ try {
   console.log(`FAIL --state values parse\n       ${e.message}`);
 }
 
-// The scanner, the wire tool, the link walker and the change briefing have their own unit tests.
-const unit = spawnSync(process.execPath, ["--test", ...["scan", "wire", "reach", "changes"].map((t) => path.join(TOOLS, "test", `${t}.test.mjs`))], { cwd: TOOLS, encoding: "utf8" });
-if (unit.status === 0) console.log(`ok   scan + wire + reach + changes unit tests (${/^# pass (\d+)/m.exec(unit.stdout)?.[1] ?? "?"} pass)`);
+// export: --html needs no browser, and each file it writes opens offline and renders the poster.
+const exportCli = (args, env = {}) => spawnSync(process.execPath, [path.join(TOOLS, "poster.mjs"), "export", ...args], { encoding: "utf8", env: { ...process.env, ...env } });
+const listing = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir).sort() : []);
+const starters = cases.slice(0, 3).map((c) => c.file);
+const [appStem, storyStem, explodedStem] = starters.map((f) => path.basename(f, ".canvas.tsx"));
+try {
+  // HTML only: a Chromium that cannot start proves no browser is launched.
+  const htmlDir = path.join(OUT, "export-html");
+  const r = exportCli([...starters, "--html", "--no-png", "--no-pdf", "--out", htmlDir], { POSTER_CHROMIUM: path.join(OUT, "no-such-chromium") });
+  assert.equal(r.status, 0, r.stderr);
+  const expected = [`${appStem}.html`, `${explodedStem}.html`, `${storyStem}.html`, "starter-poster-set.html"].sort();
+  assert.deepEqual(listing(htmlDir), expected);
+
+  const browser = await chromium.launch({ executablePath: process.env.POSTER_CHROMIUM || undefined });
+  try {
+    for (const name of expected) {
+      const external = [];
+      const page = await browser.newPage({ viewport: { width: 1028, height: 900 } });
+      await page.route("**/*", (route) => {
+        if (/^(file|data|about):/.test(route.request().url())) return route.continue();
+        external.push(route.request().url());
+        return route.abort();
+      });
+      await page.goto(pathToFileURL(path.join(htmlDir, name)).href);
+      await page.waitForFunction(() => {
+        const posters = [...document.querySelectorAll("section[id^=poster-]")];
+        return posters.length > 0 && posters.every((e) => e.childElementCount);
+      });
+      await page.evaluate(() => document.fonts.ready);
+      const got = await page.evaluate(() => ({
+        posters: document.querySelectorAll("section[id^=poster-]").length,
+        errors: [...document.querySelectorAll("[data-poster-error]")].map((e) => e.textContent),
+        viewport: document.querySelector('meta[name="viewport"]')?.content,
+      }));
+      assert.deepEqual(external, [], `${name} requests ${external.join(", ")}`);
+      assert.deepEqual(got.errors, [], `${name} renders an error`);
+      assert.equal(got.posters, name.endsWith("-set.html") ? 3 : 1, `${name} poster count`);
+      assert.equal(got.viewport, "width=device-width,initial-scale=1", `${name} viewport meta`);
+      assert.ok(await page.getByRole("button", { name: /show grid/i }).first().isVisible(), `${name} keeps its grid toggle`);
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
+
+  // The same poster state reaches the HTML as it does the PNG.
+  const dark = exportCli([starters[2], "--html", "--no-png", "--no-pdf", "--out", path.join(OUT, "export-dark"), "--state", "themeExploded=dark"], { POSTER_CHROMIUM: path.join(OUT, "no-such-chromium") });
+  assert.equal(dark.status, 0, dark.stderr);
+  assert.match(fs.readFileSync(path.join(OUT, "export-dark", `${explodedStem}.html`), "utf8"), /window\.__POSTER_STATE__=\{"themeExploded":"dark"\}/);
+
+  // Without --html nothing changes (PNG + PDF only); with it, HTML joins whatever else was asked for.
+  const plain = exportCli([starters[0], "--out", path.join(OUT, "export-plain")]);
+  assert.equal(plain.status, 0, plain.stderr);
+  assert.deepEqual(listing(path.join(OUT, "export-plain")), [`${appStem}.pdf`, `${appStem}.png`]);
+  const mixed = exportCli([starters[0], starters[1], "--no-pdf", "--html", "--out", path.join(OUT, "export-mixed")]);
+  assert.equal(mixed.status, 0, mixed.stderr);
+  assert.deepEqual(listing(path.join(OUT, "export-mixed")), [`${appStem}.html`, `${appStem}.png`, `${storyStem}.html`, `${storyStem}.png`, "starter-poster-set.html"].sort());
+  console.log("ok   export --html (offline, no browser needed, renders, state seeded)");
+} catch (e) {
+  failed++;
+  console.log(`FAIL export --html\n       ${String(e.message).split("\n").join("\n       ")}`);
+}
+
+// The scanner, the wire tool, the link walker, the change briefing and the installer have their own unit tests.
+const unit = spawnSync(process.execPath, ["--test", ...["scan", "wire", "reach", "changes", "install"].map((t) => path.join(TOOLS, "test", `${t}.test.mjs`))], { cwd: TOOLS, encoding: "utf8" });
+if (unit.status === 0) console.log(`ok   scan + wire + reach + changes + install unit tests (${/^# pass (\d+)/m.exec(unit.stdout)?.[1] ?? "?"} pass)`);
 else {
   failed++;
-  console.log(`FAIL scan + wire + reach + changes unit tests\n${unit.stdout.split("\n").filter((l) => /^\s*not ok|^# (fail|tests)/.test(l)).map((l) => `       ${l.trim()}`).join("\n") || unit.stderr}`);
+  console.log(`FAIL scan + wire + reach + changes + install unit tests\n${unit.stdout.split("\n").filter((l) => /^\s*not ok|^# (fail|tests)/.test(l)).map((l) => `       ${l.trim()}`).join("\n") || unit.stderr}`);
 }
 
 // Type-check the three starters against the cursor/canvas shim.
