@@ -45,7 +45,7 @@ When they need to show the app to someone else (a client, a PM, an investor), th
 | Links in chat | Absolute path to the `.canvas.tsx` | Absolute path to the exported `.html` or PDF |
 
 - **Commands run from the skill folder.** In Claude Code your working directory is usually the app, so `cd "${CLAUDE_SKILL_DIR}"` first, or write `node "${CLAUDE_SKILL_DIR}/tools/scan.mjs" …`.
-- `<repo>` is the app's folder as an absolute path. Everything the tools write goes to `<canvases>`, never inside `<repo>`: they refuse it.
+- `<repo>` is the app's folder as an absolute path. Everything the tools write goes to `<canvases>`, never inside `<repo>`: `scan` and `changes` refuse an output path there.
 
 ## Install
 
@@ -65,13 +65,13 @@ This repo's `.cursor/skills/explain-app/` is the source of truth. Edit it here, 
 Read [briefing.md](briefing.md). In short:
 
 ```bash
-node tools/scan.mjs changes <repo> --since <HEAD | 2026-10-11 | <canvases>/<repo>-bookmark.json | empty>
+node tools/scan.mjs changes <repo> --since <HEAD | 2026-10-11 | <canvases>/<repo>-bookmark.json | empty> --save-facts <canvases>/<repo>-bookmark.json
 ```
 
 1. Turn their words into `--since`: "what did the agent just do" is `HEAD`, "since yesterday" is an ISO date, "catch me up" is their bookmark, "what's in my app" is `empty`.
 2. Relay what it prints, near-verbatim, with at most one sentence of your own. **Never recompute or retype a number.**
 3. Add `--receipts` only when they ask "where?". Offer `--html <file>` when they want something to look at or send.
-4. Leave a bookmark with `--save-facts`, so "catch me up" works next time.
+4. Put `--save-facts <canvases>/<repo>-bookmark.json` on the first run, so the same run leaves a bookmark and "catch me up" works next time. When `--since` is that bookmark, keep a copy first (briefing.md, step 6).
 5. Be honest about the limits. The scan cannot see wording, colour or settings. "No screen seems to lead to it" is not "it is broken".
 6. Say what is worth a look (lost data, new paid services) and offer posters at the end.
 

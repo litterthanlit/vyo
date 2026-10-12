@@ -32,7 +32,7 @@ node poster.mjs check  <canvases>/acme-app-poster.canvas.tsx <canvases>/acme-pro
 node poster.mjs export <canvases>/acme-app-poster.canvas.tsx <canvases>/acme-project-story.canvas.tsx <canvases>/acme-exploded-view.canvas.tsx
 ```
 
-`export` options: `--out <dir>` (default `<canvases>/exports`), `--paper fit|a4|letter` (default `fit`: one page sized to the poster), `--no-png`, `--no-pdf`, `--html`. The grid toggle and page 3's controls (`[data-chrome]`) are hidden in the PNG and PDF.
+`export` options: `--out <dir>` (default: an `exports` folder beside the first poster), `--paper fit|a4|letter` (default `fit`: one page sized to the poster), `--no-png`, `--no-pdf`, `--html`. The grid toggle and page 3's controls (`[data-chrome]`) are hidden in the PNG and PDF.
 
 ### `export --html`
 
@@ -72,30 +72,40 @@ These answer "what changed in my app?" in plain English. The workflow for an age
 
 ```bash
 node tools/scan.mjs diff    <before-facts.json> <after-facts.json> [--out changes.json] [--json] [--canvas <canvas.tsx>] [--html <file>] [--receipts]
-node tools/scan.mjs changes <repo> --since <commit|date|facts.json|empty> [same flags] [--save-facts <file>]
+node tools/scan.mjs changes <repo> --since <empty|facts.json|rev|date> [same flags] [--save-facts <file>]
 ```
 
 `diff` compares two `facts.json` files. `changes` scans `<repo>` as it is now (uncommitted and untracked work included, so `--since HEAD` means "what did the agent just change?") and compares it with `--since`:
 
-| `--since` | The older side is |
-|---|---|
-| `empty` (or `none`) | Nothing: the briefing says where the app stands now |
-| a file that exists | That `facts.json`, e.g. a bookmark saved earlier |
-| a commit, tag or branch | That commit, read out of git into a temp folder |
-| a date (`2026-10-11`) | The last commit before it. A bare date means 00:00. If there is none, the empty baseline and a note |
+| `--since` | The older side is | Its label in the briefing |
+|---|---|---|
+| `empty` (or `none`) | Nothing: the briefing says where the app stands now | an empty project |
+| a file that exists | That `facts.json`, e.g. a bookmark saved earlier. No git needed | your earlier scan (`name.json`) |
+| a commit, tag, branch or other git version (`HEAD`, `HEAD~3`) | That commit, read out of git into a temp folder | your last saved version (`a1b2c3d`, 2026-10-07) when it is the commit `HEAD` points at, else your saved version (…) |
+| a date | The last commit before it. If there is none, the empty baseline and a note | as for a commit |
 
-Reading a commit never writes in the repo or its `.git`. Rev and date need git history and the repo's top-level folder; a shallow clone or a sub-folder stops with a message. <!-- verify: error cases against lib/changes-cli.mjs -->
+A date is an ISO date (`2026-10-11`, taken as 00:00 that day), an ISO date and time (`2026-10-11T09:30`), `3 days ago` (a number, then second, minute, hour, day, week, month or year, then `ago`), or one of `now`, `today`, `yesterday` (24 hours ago), `midnight` (the start of today) and `noon`. Any other text is refused with exit 1: git would read it as "now". The newer side is always "your files right now". The file is looked up as given, so a bare name is relative to where you run the command.
+
+Reading a commit never writes in the repo or its `.git`. `empty` and a facts file work on any folder. A commit or a date needs git history, and stops with a message (exit 1) when:
+
+- the folder is not in a git project;
+- the folder is inside a git project but is not its top level (the message prints the folder to use);
+- the project has no commits yet (use `--since empty`);
+- the text is neither a version git knows nor a date, such as `HEAD~50` past the first commit or `last week`;
+- the clone is shallow and the value is a date (run `git fetch --unshallow`, or use `HEAD` or a facts file). In a shallow clone `HEAD` and any commit it holds still work.
 
 | Flag | What it does |
 |---|---|
-| `--receipts` | Adds the files behind each line (the default text has no paths) |
-| `--html <file>` | Also writes the briefing as one offline web page |
+| `--receipts` | Adds the files behind each line (the default text has no paths). In `--html`, each line gets a "Show me where" fold |
+| `--html <file>` | Also writes the briefing as one offline web page. The text still prints |
 | `--json` | Prints the raw Changes instead of text |
-| `--out <file>` | Saves the raw Changes |
+| `--out <file>` | Also saves the raw Changes |
 | `--canvas <canvas.tsx>` | Reads its `PARTS` and adds poster lines: out of date, can't be redrawn, new things not on it |
-| `--save-facts <file>` | (`changes`) Saves the scan of the repo now, as the next `--since <file>` |
+| `--save-facts <file>` | (`changes` only) Saves the scan of the repo as it is now, as the next `--since <file>`. With `--since <file>` on the same path it compares with the old file, then replaces it |
 
-Exit codes: 0 ok (changes or not), 1 error, 2 usage. An output path inside the repo is refused. <!-- verify: flags and exit codes against lib/changes-cli.mjs -->
+Flags take `--name value` or `--name=value`. Progress (`Reading …`), warnings (`! …`) and `→ <file>` lines go to stderr; stdout holds only the briefing (or the Changes, with `--json`). Exit codes: 0 ok (changes or not), 1 an error with the input (`✗ …` on stderr), 2 usage (a missing `<repo>` or `--since`, an unknown flag, a flag without its value, a `--since` that starts with `-`); `-h` prints the usage and exits 0.
+
+`changes` refuses an `--out`, `--html` or `--save-facts` path inside `<repo>` (exit 1, nothing written). `diff` has no repo, so it has no such guard and writes where it is told; keep its outputs in `<canvases>`. `diff` takes the same output flags, but not `--since` or `--save-facts`.
 
 The wording comes from `lib/briefing.mjs` and the comparison from `lib/changes.mjs`; `lib/briefing-html.mjs` draws the page from the same document, so text and page cannot drift apart.
 

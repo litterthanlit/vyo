@@ -48,7 +48,7 @@
 
 ## Sample Briefing (Pantry)
 
-Pantry is the recipe test fixture (`tools/test/fixtures/recipe`). After these six edits, `node tools/scan.mjs changes <pantry> --since HEAD` prints the text below. The saved version in its first line (commit and date) is fixed in the test; yours will show your own. <!-- verify: label wording for --since HEAD -->
+Pantry is the recipe test fixture (`tools/test/fixtures/recipe`). After these six edits, `node tools/scan.mjs changes <pantry> --since HEAD` prints the text below on stdout. The saved version in the line under the title (the short commit id and the day it was saved) is fixed in the test; yours will show your own. Other `--since` forms word that line differently: [briefing.md](briefing.md) lists them.
 
 - the Plan page starts importing the AI helper
 - a new Billing page
