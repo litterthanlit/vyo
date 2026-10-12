@@ -1,6 +1,6 @@
 // The `diff` and `changes` commands (CONTRACTS.md §1 and §7): two scans in, a plain-English briefing out.
 //
-//   node tools/scan.mjs diff    <before.json> <after.json> [--out changes.json] [--json] [--canvas <canvas.tsx>] [--receipts]
+//   node tools/scan.mjs diff    <before.json> <after.json> [--out changes.json] [--json] [--canvas <canvas.tsx>] [--html <file>] [--receipts]
 //   node tools/scan.mjs changes <repo> --since <empty|facts.json|rev|date> [same flags] [--save-facts <file>]
 //
 // `changes` scans the repo as it is on disk now (uncommitted and untracked work included) and compares it with
@@ -12,17 +12,18 @@ import fs from "node:fs";
 import path from "node:path";
 import { stableStringify } from "./hash.mjs";
 import { THRESHOLDS, diffFacts } from "./changes.mjs";
-import { buildBriefing, renderText } from "./briefing.mjs";
+import { buildBriefing, plainName, renderText } from "./briefing.mjs";
 import { readBlocks } from "./wire.mjs";
 import { outputInsideRepo, readFacts } from "./scan/io.mjs";
 import { scanRepoDetailed } from "./scan/index.mjs";
+import { sentenceCase } from "./scan/names.mjs";
 import { emptyTree, materialiseRev, resolveSince } from "./gitrev.mjs";
 
 const DIFF_USAGE =
-  "usage: node tools/scan.mjs diff <before.json> <after.json> [--out changes.json] [--json] [--canvas <canvas.tsx>] [--receipts]";
+  "usage: node tools/scan.mjs diff <before.json> <after.json> [--out changes.json] [--json] [--canvas <canvas.tsx>] [--html <file>] [--receipts]";
 
 const CHANGES_USAGE =
-  "usage: node tools/scan.mjs changes <repo> --since <empty|facts.json|rev|date> [--out changes.json] [--json] [--canvas <canvas.tsx>] [--receipts] [--save-facts <file>]";
+  "usage: node tools/scan.mjs changes <repo> --since <empty|facts.json|rev|date> [--out changes.json] [--json] [--canvas <canvas.tsx>] [--html <file>] [--receipts] [--save-facts <file>]";
 
 const defaultIo = () => ({
   out: (s) => process.stdout.write(`${s}\n`),
@@ -99,7 +100,7 @@ function warnCapped(io, which, facts) {
  * Two facts files in, one briefing out: Changes → text (or JSON) on stdout, plus the files `flags` ask for.
  * `labels`/`notes` are what the caller knows about the two sides (see diffFacts).
  */
-function deliver(before, after, { flags, io, labels, notes, canvas }) {
+async function deliver(before, after, { flags, io, labels, notes, canvas }) {
   let changes;
   try {
     changes = diffFacts(before, after, { labels, notes, parts: canvas?.parts, wiringFactsHash: canvas?.wiringFactsHash });
@@ -108,15 +109,25 @@ function deliver(before, after, { flags, io, labels, notes, canvas }) {
     return 1;
   }
   const json = stableStringify(changes, 1);
+  const receipts = Boolean(flags.receipts);
+  const doc = buildBriefing(changes, { receipts });
   if (flags.out) {
     if (!writeFile(flags.out, json, io)) return 1;
     io.err(`→ ${flags.out}`);
   }
-  io.write(flags.json ? `${json}\n` : renderText(buildBriefing(changes, { receipts: Boolean(flags.receipts) })));
+  if (flags.html) {
+    // Loaded on demand: the text and JSON outputs need nothing from the page renderer.
+    const { renderHtml } = await import("./briefing-html.mjs");
+    const app = changes.after.repo ? plainName(sentenceCase(changes.after.repo)) : undefined;
+    const page = renderHtml(doc, { receipts, app, hashes: { before: changes.before.hash, after: changes.after.hash } });
+    if (!writeFile(flags.html, page, io)) return 1;
+    io.err(`→ ${flags.html}`);
+  }
+  io.write(flags.json ? `${json}\n` : renderText(doc));
   return 0;
 }
 
-const VALUE_FLAGS = ["out", "canvas"];
+const VALUE_FLAGS = ["out", "canvas", "html"];
 const SWITCHES = ["json", "receipts"];
 
 /** `diff <before.json> <after.json> [flags]`: what changed between two scans. Exit 0 ok, 1 error, 2 usage. */
@@ -223,7 +234,7 @@ export async function changesMain(argv, io = defaultIo()) {
     return 1;
   }
   // Nothing is written inside the repo being read.
-  for (const [flag, file] of [["--out", flags.out], ["--save-facts", flags["save-facts"]]]) {
+  for (const [flag, file] of [["--out", flags.out], ["--html", flags.html], ["--save-facts", flags["save-facts"]]]) {
     const inside = file && outputInsideRepo(file, dir, { flag, shown });
     if (inside) {
       io.err(`✗ ${inside}`);

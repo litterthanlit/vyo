@@ -256,6 +256,56 @@ try {
   console.log(`FAIL export --html\n       ${String(e.message).split("\n").join("\n       ")}`);
 }
 
+// changes --html: the briefing is one offline file that fits a phone in both colour schemes and opens a receipt on demand.
+try {
+  const root = path.join(OUT, "briefing");
+  const [oldDir, newDir] = ["before", "after"].map((side) => path.join(root, side, "pantry"));
+  for (const dir of [oldDir, newDir]) fs.cpSync(path.join(TOOLS, "test", "fixtures", "recipe"), dir, { recursive: true });
+  fs.mkdirSync(path.join(newDir, "app", "(app)", "billing"), { recursive: true });
+  fs.writeFileSync(path.join(newDir, "app", "(app)", "billing", "page.tsx"), "export default function Billing() {\n  return <section>Billing</section>;\n}\n");
+  const scan = (dir, file) => execFileSync(process.execPath, [path.join(TOOLS, "scan.mjs"), "scan", dir, "--out", file], { stdio: "pipe" });
+  scan(oldDir, path.join(root, "before.json"));
+  scan(newDir, path.join(root, "after.json"));
+  const html = path.join(root, "briefing.html");
+  const d = spawnSync(process.execPath, [path.join(TOOLS, "scan.mjs"), "diff", path.join(root, "before.json"), path.join(root, "after.json"), "--html", html, "--receipts"], { encoding: "utf8" });
+  assert.equal(d.status, 0, d.stderr);
+
+  const browser = await chromium.launch({ executablePath: process.env.POSTER_CHROMIUM || undefined });
+  try {
+    for (const colorScheme of ["light", "dark"]) {
+      const external = [];
+      const page = await browser.newPage({ viewport: { width: 375, height: 812 }, colorScheme });
+      await page.route("**/*", (route) => {
+        if (/^(file|data|about):/.test(route.request().url())) return route.continue();
+        external.push(route.request().url());
+        return route.abort();
+      });
+      await page.goto(pathToFileURL(html).href);
+      const got = await page.evaluate(() => ({
+        h1: document.querySelector("h1")?.textContent,
+        wide: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        paper: getComputedStyle(document.body).backgroundColor,
+        stop: getComputedStyle(document.querySelector(".stop")).color,
+      }));
+      assert.deepEqual(external, [], `${colorScheme}: external requests`);
+      assert.equal(got.h1, "What changed.");
+      assert.equal(got.wide, 0, `${colorScheme}: sideways scroll at 375px`);
+      assert.equal(got.paper, colorScheme === "dark" ? "rgb(10, 10, 10)" : "rgb(255, 255, 255)");
+      assert.equal(got.stop, "rgb(228, 0, 43)", "the full stop keeps the accent in both schemes");
+      const summary = page.getByText("Show me where").first();
+      await summary.click();
+      assert.ok(await page.locator("details[open] .where").first().isVisible(), `${colorScheme}: a receipt opens`);
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
+  console.log("ok   changes --html (offline, fits 375px, light + dark, receipts open)");
+} catch (e) {
+  failed++;
+  console.log(`FAIL changes --html\n       ${String(e.message).split("\n").join("\n       ")}`);
+}
+
 // The scanner, the wire tool, the link walker, the change briefing, its commands and the installer have their own unit tests.
 const unit = spawnSync(process.execPath, ["--test", ...["scan", "wire", "reach", "changes", "changes-cli", "install"].map((t) => path.join(TOOLS, "test", `${t}.test.mjs`))], { cwd: TOOLS, encoding: "utf8" });
 if (unit.status === 0) console.log(`ok   scan + wire + reach + changes + changes-cli + install unit tests (${/^# pass (\d+)/m.exec(unit.stdout)?.[1] ?? "?"} pass)`);

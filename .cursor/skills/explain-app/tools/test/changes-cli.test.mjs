@@ -9,6 +9,9 @@ import path from "node:path";
 import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { changesMain, diffMain } from "../lib/changes-cli.mjs";
+import { buildBriefing } from "../lib/briefing.mjs";
+import { renderHtml } from "../lib/briefing-html.mjs";
+import { diffFacts } from "../lib/changes.mjs";
 import { factsHash, stableStringify } from "../lib/hash.mjs";
 import { TEMP_PREFIX, materialiseRev, resolveSince } from "../lib/gitrev.mjs";
 import { scanRepo } from "../scan.mjs";
@@ -31,6 +34,29 @@ const read = (file) => fs.readFileSync(file, "utf8");
 
 /* ───────────── diff ───────────── */
 
+// Two facts files from copies of the recipe fixture (named "pantry"): the "after" copy has a new screen, an orphan
+// Twilio file, an AI import in the Plan screen and one saved record fewer.
+async function pantryFacts(tmp) {
+  const dirs = ["before", "after"].map((side) => {
+    const dir = path.join(tmp, side, "pantry");
+    fs.cpSync(path.join(FIX, "recipe"), dir, { recursive: true });
+    return dir;
+  });
+  const put = (rel, text) => {
+    fs.mkdirSync(path.dirname(path.join(dirs[1], rel)), { recursive: true });
+    fs.writeFileSync(path.join(dirs[1], rel), text);
+  };
+  put("app/(app)/billing/page.tsx", "export default function Billing() {\n  return <section>Billing</section>;\n}\n");
+  put("lib/notify.ts", 'import twilio from "twilio";\n\nexport const sms = twilio("sid", "token");\n');
+  put("app/(app)/plan/page.tsx", `import { suggestRecipes } from "@/lib/ai/suggest";\n${read(path.join(dirs[1], "app/(app)/plan/page.tsx"))}`);
+  put("prisma/schema.prisma", read(path.join(dirs[1], "prisma/schema.prisma")).replace(/model Ingredient \{[^}]*\}\n\n/, ""));
+  const beforeFile = path.join(tmp, "before.json");
+  const afterFile = path.join(tmp, "after.json");
+  fs.writeFileSync(beforeFile, stableStringify(await scanRepo(dirs[0], { useGit: false }), 1));
+  fs.writeFileSync(afterFile, stableStringify(await scanRepo(dirs[1], { useGit: false }), 1));
+  return { beforeFile, afterFile };
+}
+
 describe("diff", () => {
   let tmp;
   let beforeFile;
@@ -38,24 +64,7 @@ describe("diff", () => {
 
   before(async () => {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), "changes-cli-"));
-    const dirs = ["before", "after"].map((side) => {
-      const dir = path.join(tmp, side, "pantry");
-      fs.cpSync(path.join(FIX, "recipe"), dir, { recursive: true });
-      return dir;
-    });
-    // the "after" copy: a new screen, an orphan Twilio file, an AI import in the Plan screen, one saved record gone
-    const put = (rel, text) => {
-      fs.mkdirSync(path.dirname(path.join(dirs[1], rel)), { recursive: true });
-      fs.writeFileSync(path.join(dirs[1], rel), text);
-    };
-    put("app/(app)/billing/page.tsx", "export default function Billing() {\n  return <section>Billing</section>;\n}\n");
-    put("lib/notify.ts", 'import twilio from "twilio";\n\nexport const sms = twilio("sid", "token");\n');
-    put("app/(app)/plan/page.tsx", `import { suggestRecipes } from "@/lib/ai/suggest";\n${read(path.join(dirs[1], "app/(app)/plan/page.tsx"))}`);
-    put("prisma/schema.prisma", read(path.join(dirs[1], "prisma/schema.prisma")).replace(/model Ingredient \{[^}]*\}\n\n/, ""));
-    beforeFile = path.join(tmp, "before.json");
-    afterFile = path.join(tmp, "after.json");
-    fs.writeFileSync(beforeFile, stableStringify(await scanRepo(dirs[0], { useGit: false }), 1));
-    fs.writeFileSync(afterFile, stableStringify(await scanRepo(dirs[1], { useGit: false }), 1));
+    ({ beforeFile, afterFile } = await pantryFacts(tmp));
   });
   after(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
@@ -206,6 +215,182 @@ describe("diff", () => {
     assert.match(spawnSync("node", [CLI, "help"], { encoding: "utf8" }).stdout, /diff {4}<before\.json> <after\.json>/);
   });
 });
+
+/* ───────────── --html ───────────── */
+
+describe("html", () => {
+  let tmp;
+  let beforeFile;
+  let afterFile;
+  let oldFacts;
+  let newFacts;
+  before(async () => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "changes-html-"));
+    ({ beforeFile, afterFile } = await pantryFacts(tmp));
+    oldFacts = JSON.parse(read(beforeFile));
+    newFacts = JSON.parse(read(afterFile));
+  });
+  after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+
+  const page = (b, a, { receipts = false, ...opts } = {}) =>
+    renderHtml(buildBriefing(diffFacts(b, a), { receipts }), { receipts, app: "Pantry", hashes: { before: b.hash, after: a.hash }, ...opts });
+  // Nothing may reach out: no scripts, links, imports, url()s or absolute addresses.
+  const SELF_CONTAINED = [/https?:\/\//i, /<script/i, /<link/i, /url\(/i, /@import/i, /<iframe/i, /<img/i, /\bsrc=/i, /\bhref=/i];
+
+  test("a complete page: language, viewport, colour schemes, landmarks, a short title", () => {
+    const html = page(oldFacts, newFacts);
+    assert.match(html, /^<!doctype html>\n<html lang="en">/);
+    assert.match(html, /<meta charset="utf-8">/);
+    assert.match(html, /<meta name="viewport" content="width=device-width, initial-scale=1">/);
+    assert.match(html, /<meta name="color-scheme" content="light dark">/);
+    assert.match(html, /<title>What changed in Pantry<\/title>/);
+    assert.match(html, /@media \(prefers-color-scheme:dark\)/);
+    assert.match(html, /:root\[data-theme="dark"\]/);
+    assert.match(html, /:root\[data-theme="light"\]/);
+    assert.match(html, /@media \(prefers-reduced-motion:reduce\)/);
+    assert.match(html, /@media print/);
+    assert.match(html, /:focus-visible/);
+    for (const tag of ["<header>", "<main>", "<footer", "<dl", "<ul", "<h1>What changed<span class=\"stop\">.</span></h1>"]) assert.ok(html.includes(tag), tag);
+    // the poster tokens
+    for (const token of ["--paper:#FFFFFF", "--ink:#0A0A0A", "--ink-soft:#5B6066", "--hairline:rgba(10,10,10,.12)", "--accent:#E4002B", "--paper:#0A0A0A", "--ink:#F2F2F2", "--ink-soft:#9AA0A6"]) assert.ok(html.includes(token), token);
+    assert.match(html, /body\{margin:0;background:var\(--paper\)/, "body has an explicit background");
+    // the red is for the full stop and the flag, nothing else
+    assert.equal(html.split("var(--accent)").length - 1, 2);
+    assert.equal(html.split("#E4002B").length - 1, 1);
+    // the title is two to four words, on a first look too
+    const first = renderHtml(buildBriefing(diffFacts(JSON.parse(read(beforeFile)).facts && emptyLike(oldFacts), newFacts)), { app: "Pantry" });
+    assert.match(first, /<title>Where Pantry stands<\/title>/);
+    assert.match(first, /<h1 class="long">Where your app stands now<span class="stop">\.<\/span><\/h1>/);
+  });
+
+  test("self-contained: no script, link, url(), @import or address", () => {
+    for (const receipts of [false, true]) {
+      const html = page(oldFacts, newFacts, { receipts });
+      for (const re of SELF_CONTAINED) assert.doesNotMatch(html, re, `${re} (receipts: ${receipts})`);
+    }
+  });
+
+  test("every section is labelled by a heading that exists; numbers are a <dl>, lines a <ul>", () => {
+    const html = page(oldFacts, newFacts);
+    const labelled = [...html.matchAll(/aria-labelledby="([^"]+)"/g)].map((m) => m[1]);
+    assert.ok(labelled.length >= 6);
+    for (const id of labelled) assert.ok(html.includes(`<h2 id="${id}">`), id);
+    assert.equal(new Set(labelled).size, labelled.length, "ids are unique");
+    assert.equal((html.match(/<dt>/g) ?? []).length, 6);
+    // the figure is the "after" value; the small line is the change
+    assert.match(html, /<dt>Screens<\/dt><dd><span class="big">7<\/span><span class="delta">6 → 7 \(\+1\)<\/span><\/dd>/);
+    assert.match(html, /<dt>AI<\/dt><dd><span class="big">1<\/span><span class="delta">no change<\/span><\/dd>/);
+    assert.match(html, /<section class="row" aria-labelledby="h-look"><h2 id="h-look">Worth a look<\/h2>/);
+    assert.equal((html.match(/class="flag"/g) ?? []).length, 2, "a flag on each Worth a look line, nowhere else");
+    // it says what the text says
+    for (const line of ["The Billing screen is new.", "The saved record Ingredient is gone.", "OpenAI is now used from the Plan screen."]) assert.ok(html.includes(line), line);
+  });
+
+  test("receipts are in <details> only when asked for", () => {
+    const plain = page(oldFacts, newFacts);
+    assert.doesNotMatch(plain, /<details/);
+    assert.doesNotMatch(plain, /Show me where/);
+    assert.doesNotMatch(plain, /app\/\(app\)\/billing\/page\.tsx/);
+    const rec = page(oldFacts, newFacts, { receipts: true });
+    assert.match(rec, /<details><summary>Show me where<\/summary><p class="where">app\/\(app\)\/billing\/page\.tsx<\/p><\/details>/);
+    assert.match(rec, /app\/\(app\)\/plan\/page\.tsx → lib\/ai\/suggest\.ts ─uses→ ai:openai/);
+    // a doc built with receipts but rendered without them shows none
+    const doc = buildBriefing(diffFacts(oldFacts, newFacts), { receipts: true });
+    assert.doesNotMatch(renderHtml(doc, { receipts: false }), /<details/);
+  });
+
+  test("size bars are CSS widths with a text alternative", () => {
+    const grown = JSON.parse(JSON.stringify(newFacts));
+    grown.files["lib/payments/charge.ts"] = { area: "area:lib/payments", loc: 120 };
+    grown.files["lib/recipes/query.ts"].loc += 90;
+    grown.facts.push({ id: "area:lib/payments", kind: "area", name: "Payments", files: [], meta: { leaf: true } });
+    grown.hash = factsHash(grown);
+    const html = page(oldFacts, grown);
+    assert.match(html, /<p class="caption">Lines of code, by part\. Grey was there before, solid is new, outlined is gone\.<\/p>/);
+    const bars = [...html.matchAll(/<li class="bar">.*?<\/li>/g)].map((m) => m[0]);
+    assert.ok(bars.length >= 1, "at least one part moved enough to show");
+    for (const b of bars) {
+      assert.match(b, /<span class="track" role="img" aria-label="[^"]+: [\d,]+ lines, (up|down) [\d,]+ from [\d,]+">/);
+      for (const w of b.matchAll(/style="width:([\d.]+)%"/g)) assert.ok(Number(w[1]) > 0 && Number(w[1]) <= 100, w[0]);
+    }
+    // a first look has nothing to compare with: no legend, no "+N"
+    const first = renderHtml(buildBriefing(diffFacts(emptyLike(oldFacts), newFacts)));
+    assert.match(first, /<p class="caption">Lines of code, by part\.<\/p>/);
+    assert.doesNotMatch(first, /<span class="bar-delta">/);
+    assert.match(first, /aria-label="[^"]+: [\d,]+ lines"/);
+  });
+
+  test("everything that comes from a scan is escaped", () => {
+    const evilName = "<img src=x onerror=alert(1)>";
+    const evilFile = 'app/evil/"><svg onload=alert(1)>/page.tsx';
+    const evil = JSON.parse(JSON.stringify(newFacts));
+    evil.facts.push({ id: "screen:/evil", kind: "screen", name: evilName, files: [evilFile] });
+    evil.files[evilFile] = { area: "area:app", loc: 3, defines: ["screen:/evil"] };
+    evil.hash = factsHash(evil);
+    const doc = buildBriefing(diffFacts(oldFacts, evil), { receipts: true });
+    assert.ok(doc.sections.flatMap((x) => x.items).some((i) => i.text.includes(evilName)), "premise: the name reaches the doc");
+    const html = renderHtml(doc, { receipts: true, app: '<b onclick="x">Pantry & \'Co\'</b>', hashes: { before: "<s>", after: '"x"' } });
+    assert.ok(html.includes("&lt;img src=x onerror=alert(1)&gt;"), "escaped");
+    assert.doesNotMatch(html, /<img/i);
+    assert.doesNotMatch(html, /<svg onload/i);
+    assert.ok(html.includes("&quot;&gt;&lt;svg onload=alert(1)&gt;"), "the receipt path is escaped too");
+    assert.ok(html.includes("<title>What changed in &lt;b onclick=&quot;x&quot;&gt;Pantry &amp; &#39;Co&#39;&lt;/b&gt;</title>"));
+    assert.ok(html.includes("<code>&lt;s&gt;</code>") && html.includes("<code>&quot;x&quot;</code>"));
+    // and hostile text anywhere in a hand-made doc
+    const hand = renderHtml({ title: "<i>T</i>", lede: "<b>l</b>", short: "&amp;", numbers: [{ label: "<n>", kind: "screen", before: 1, after: 2, delta: 1, value: "<v>", text: "" }], sections: [{ id: 'x" onload="y', title: "<script>", items: [{ text: "'; alert(1)//", flag: true }], bars: [{ label: '"><u>', before: 1, after: 5, delta: 4 }] }], footer: "<f>" });
+    for (const re of [/<i>/, /<b>/, /<n>/, /<v>/, /<script/, /<u>/, /<f>/, /onload=/]) assert.doesNotMatch(hand, re, String(re));
+    assert.match(hand, /&amp;amp;/);
+  });
+
+  test("nothing changed, a change that is not structural, and a first look all read well", () => {
+    const same = renderHtml(buildBriefing(diffFacts(oldFacts, oldFacts)), { app: "Pantry" });
+    assert.match(same, /<p class="lead">Nothing changed\.<\/p>/);
+    assert.doesNotMatch(same, /<dl|<ul/);
+    for (const re of SELF_CONTAINED) assert.doesNotMatch(same, re);
+    const quiet = JSON.parse(JSON.stringify(oldFacts));
+    quiet.files["lib/utils.ts"].loc += 3;
+    quiet.hash = factsHash(quiet);
+    const notStructural = page(oldFacts, quiet);
+    assert.match(notStructural, /Nothing structural changed/);
+    assert.doesNotMatch(notStructural, /What I can’t see/, "that line already carries the caveat");
+    const first = renderHtml(buildBriefing(diffFacts(emptyLike(oldFacts), newFacts)), { app: "Pantry" });
+    assert.match(first, /<dt>Screens<\/dt><dd><span class="big">7<\/span><\/dd>/, "no arrow on a first look");
+  });
+
+  test("deterministic: the same input gives the same bytes", () => {
+    assert.equal(page(oldFacts, newFacts, { receipts: true }), page(oldFacts, newFacts, { receipts: true }));
+  });
+
+  test("--html writes the page; stdout is still the briefing; the folder is created; a re-run is byte-identical", async () => {
+    const a = path.join(tmp, "html", "a", "briefing.html");
+    const b = path.join(tmp, "html", "b", "briefing.html");
+    const r = await run(diffMain, [beforeFile, afterFile, "--html", a]);
+    assert.equal(r.code, 0, r.errText);
+    assert.match(r.stdout, /^What changed\n/);
+    assert.deepEqual(r.err, [`→ ${a}`]);
+    assert.equal((await run(diffMain, [beforeFile, afterFile, "--html", b])).code, 0);
+    assert.equal(read(a), read(b));
+    const html = read(a);
+    assert.match(html, /<title>What changed in Pantry<\/title>/, "the app's name comes from the scan");
+    assert.ok(html.includes(`<code>${oldFacts.hash}</code> → <code>${newFacts.hash}</code>`), "the compared hashes are at the foot");
+    assert.doesNotMatch(html, /<details/);
+    const rec = path.join(tmp, "html", "receipts.html");
+    assert.equal((await run(diffMain, [beforeFile, afterFile, "--html", rec, "--receipts"])).code, 0);
+    assert.match(read(rec), /<details><summary>Show me where<\/summary>/);
+    // --html together with --json: the file is the page, stdout the JSON
+    const both = await run(diffMain, [beforeFile, afterFile, "--html", a, "--json"]);
+    assert.equal(JSON.parse(both.stdout).kind, "changes");
+    assert.equal((await run(diffMain, [beforeFile, afterFile, "--html", path.join(tmp, "html")])).code, 1, "a folder is not a file");
+    assert.equal((await run(diffMain, [beforeFile, afterFile, "--html"])).code, 2);
+  });
+});
+
+// A facts file for the same app with nothing in it (what `--since empty` compares with).
+function emptyLike(facts) {
+  const empty = { version: 1, hash: "", empty: true, repo: facts.repo, facts: [], files: {}, imports: [], uses: [], unresolved: {} };
+  empty.hash = factsHash(empty);
+  return empty;
+}
 
 /* ───────────── git helpers ───────────── */
 
@@ -494,7 +679,7 @@ describe("changes (git)", { skip: SKIP }, () => {
 
     // output inside the repo: refused before anything is read or written
     const before = git(repo, ["status", "--porcelain"]);
-    for (const flag of ["--out", "--save-facts"]) {
+    for (const flag of ["--out", "--html", "--save-facts"]) {
       const inside = path.join(repo, "docs", "x.json");
       const r = cli([repo, "--since", "HEAD", flag, inside]);
       assert.equal(r.status, 1, flag);
