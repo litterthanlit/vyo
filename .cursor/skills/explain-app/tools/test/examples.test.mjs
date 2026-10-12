@@ -21,7 +21,7 @@ const RECIPE = path.join(HERE, "fixtures", "recipe");
 const EXAMPLES = path.join(SKILL, "examples.md");
 const BRIEFING = path.join(SKILL, "briefing.md");
 
-// Fixed labels, as the `changes` command words them for `--since HEAD` (see lib/briefing.mjs, ledeOf).
+// Fixed labels, as the `changes` command words them for `--since HEAD` (versionLabel in lib/changes-cli.mjs; lib/briefing.mjs, ledeOf, builds the line from them).
 const LABELS = { before: "your last saved version (a1b2c3d, 2026-10-07)", after: "your files right now" };
 
 const SAMPLE = { begin: "<!-- briefing-sample:BEGIN -->", end: "<!-- briefing-sample:END -->" };

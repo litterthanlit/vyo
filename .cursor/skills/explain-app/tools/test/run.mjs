@@ -1,6 +1,6 @@
 // Self-test: the starters must pass `check`, and each planted bug must fail
 // with the expected message. Also exports the starters to HTML, type-checks them,
-// and runs the scanner, wire and install unit tests.
+// and runs the unit tests (scanner, wire, reach, changes, changes-cli, install, examples).
 //
 //   npm test
 //
@@ -306,12 +306,12 @@ try {
   console.log(`FAIL changes --html\n       ${String(e.message).split("\n").join("\n       ")}`);
 }
 
-// The scanner, the wire tool, the link walker, the change briefing, its commands and the installer have their own unit tests.
-const unit = spawnSync(process.execPath, ["--test", ...["scan", "wire", "reach", "changes", "changes-cli", "install"].map((t) => path.join(TOOLS, "test", `${t}.test.mjs`))], { cwd: TOOLS, encoding: "utf8" });
-if (unit.status === 0) console.log(`ok   scan + wire + reach + changes + changes-cli + install unit tests (${/^# pass (\d+)/m.exec(unit.stdout)?.[1] ?? "?"} pass)`);
+// The scanner, the wire tool, the link walker, the change briefing, its commands, the installer and the sample briefing in the docs have their own unit tests.
+const unit = spawnSync(process.execPath, ["--test", ...["scan", "wire", "reach", "changes", "changes-cli", "install", "examples"].map((t) => path.join(TOOLS, "test", `${t}.test.mjs`))], { cwd: TOOLS, encoding: "utf8" });
+if (unit.status === 0) console.log(`ok   scan + wire + reach + changes + changes-cli + install + examples unit tests (${/^# pass (\d+)/m.exec(unit.stdout)?.[1] ?? "?"} pass)`);
 else {
   failed++;
-  console.log(`FAIL scan + wire + reach + changes + changes-cli + install unit tests\n${unit.stdout.split("\n").filter((l) => /^\s*not ok|^# (fail|tests)/.test(l)).map((l) => `       ${l.trim()}`).join("\n") || unit.stderr}`);
+  console.log(`FAIL scan + wire + reach + changes + changes-cli + install + examples unit tests\n${unit.stdout.split("\n").filter((l) => /^\s*not ok|^# (fail|tests)/.test(l)).map((l) => `       ${l.trim()}`).join("\n") || unit.stderr}`);
 }
 
 // Type-check the three starters against the cursor/canvas shim.

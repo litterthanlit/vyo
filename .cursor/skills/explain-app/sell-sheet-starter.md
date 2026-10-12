@@ -110,7 +110,8 @@ export default function ProjectStory() {
           <div style={{ gridColumn: "1 / -1", borderTop: `1px solid ${HAIRLINE}`, paddingTop: BL - 1 }}>
             <div style={subgrid}>
               <div style={{ gridColumn: "1 / 6", ...meta }}>{/* coming soon items */}</div>
-              <div style={{ gridColumn: "6 / 10", ...meta }}>Pair with the App Guide — page 01</div>
+              {/* "Pair with the App Guide — page 01" only when page 1 is made in the same set; otherwise the product name, or nothing */}
+              <div style={{ gridColumn: "6 / 10", ...meta }}>{/* pairing note */}</div>
               <div style={{ gridColumn: "10 / 13" }}>
                 {/* Block-level so the cell is exactly one 16px line — an inline button inherits the default line height */}
                 <button

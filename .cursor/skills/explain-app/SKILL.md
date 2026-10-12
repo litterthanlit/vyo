@@ -214,7 +214,7 @@ Apply [plain-language-rules.md](plain-language-rules.md):
 
 ### Phase 5 — Connection & sales synthesis (page 2)
 
-Build this map from the same recon — do not re-read the entire repo. Pull from README, marketing copy, playbooks, and the page 1 feature map.
+Build this map from the same recon — do not re-read the entire repo. Pull from README, marketing copy, playbooks, and the Phase 2 feature map.
 
 | Element | What to capture |
 |---------|-----------------|
@@ -222,7 +222,7 @@ Build this map from the same recon — do not re-read the entire repo. Pull from
 | In one breath | 20-second script the owner can say aloud |
 | Who it's for | Ideal person, their situation, the moment they need this — 2–4 short lines, not a paragraph |
 | Talking points | 3 verbatim lines in quotation marks. **Do not restate the tagline.** |
-| What's real today | Honest capabilities only — same status labels as page 1 |
+| What's real today | Honest capabilities only — the status labels from Edge Cases (and the same ones as page 1, if it is made) |
 | Differentiation | 2–3 contrasts vs generic alternatives or named competitors if obvious from docs |
 | The vision | 2–3 sentences in ownership language — why *they* built this |
 
@@ -232,10 +232,10 @@ Apply page 2 voice rules in [plain-language-rules.md](plain-language-rules.md#pa
 
 ### Phase 6 — Project Story poster (page 2)
 
-1. Same output folder as page 1
+1. Same output folder, `<canvases>`
 2. Filename: `<repo-name>-project-story.canvas.tsx`
 3. Follow [sell-sheet-layout.md](sell-sheet-layout.md) and [sell-sheet-starter.md](sell-sheet-starter.md) — same Swiss canon as page 1
-4. Footer center: "Pair with the App Guide — page 01"
+4. Footer center: "Pair with the App Guide — page 01" only when page 1 is made in the same set. Otherwise the product name, or nothing (leave the cell empty)
 5. Same quality gates as page 1 — no jargon, no file paths, no hype
 
 ### Phase 6b — Exploded View (page 3)
@@ -333,7 +333,7 @@ For posters, before finishing, verify **every page you made**:
 
 **Page 2 — Project Story**
 - [ ] Owner can read "in one breath" and talking points aloud without stumbling
-- [ ] "What's real today" matches page 1 status honesty — no overselling
+- [ ] "What's real today" matches the Phase 2 status map (and page 1, if made) — no overselling
 - [ ] Vision copy uses ownership language ("you", "your product")
 - [ ] Differentiation is concrete, not generic hype
 

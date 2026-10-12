@@ -41,13 +41,13 @@ Reuse the same `.wrap` container, `GridOverlay`, style tokens (`folio`, `meta`, 
 |----------|----------|------------|
 | PROJECT STORY — 02 (10px, uppercase) | Owner audience (ink-soft) | Product name (ink-soft, right-aligned) |
 
-Directly below: **2px ink rule**, full width — same treatment as page 1 so the pair reads as a set.
+Directly below: **2px ink rule**, full width — same treatment as page 1 so the pages read as a set.
 
 Owner audience examples: "For founders", "For solo builders", "For operators" — whoever owns or sells the product.
 
 ### Row 2 — Masthead: the tagline IS the hero
 
-Page 2 is the marketing sheet, so the message leads, not the logo. The product name already owned page 1.
+Page 2 is the marketing sheet, so the message leads, not the logo. The product name lives in the folio.
 
 - **Tagline set at display size** — 64, 72, or 80px (multiples of 8), weight 700, letter-spacing −0.03em, lineHeight = fontSize, cols 1–11, breaking over 2–3 lines
 - Close with the **red full stop** — the set's single accent mark, same as page 1
@@ -99,8 +99,8 @@ Vision copy should make the owner feel like the product is *theirs*, not a black
 
 1px hairline above. Three zones, 10px/16px, ink-soft:
 
-- cols 1–5: Honest gaps or "coming soon" (comma-separated) — **same items as page 1 footer**
-- cols 6–9: "Pair with the App Guide — page 01"
+- cols 1–5: Honest gaps or "coming soon" (comma-separated) — **same items as the footer of any other page made in the set**
+- cols 6–9: "Pair with the App Guide — page 01" **only when page 1 is made in the same set**. Otherwise the product name, or leave the zone empty. Never point at a page that was not made
 - cols 10–12: grid toggle button, right-aligned (same as page 1)
 
 ## Copy voice (page 2 only)
@@ -126,4 +126,4 @@ Same as poster-layout.md — no document-style canvas components as primary layo
 
 ## Empty state
 
-If page 1 cannot be produced (no app detected), do not produce page 2 either.
+If no application is detected and there are no product docs to work from (see SKILL.md, Edge Cases), do not produce page 2 either.
