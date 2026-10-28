@@ -1,0 +1,4 @@
+* { box-sizing: border-box; margin: 0; padding: 0 }
+html, body { background: #888 }
+.sheet { position: relative; width: 840px; height: 1190px; overflow: hidden; font-family: "JetBrains Mono", monospace; font-feature-settings: "calt" 0, "liga" 0 }
+pre { font-family: "JetBrains Mono", monospace; font-feature-settings: "calt" 0, "liga" 0; white-space: pre; margin: 0 }

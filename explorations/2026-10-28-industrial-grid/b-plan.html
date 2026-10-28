@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8"><style>/*CSS*/
+:root { --paper:#E9E7DF; --t1:#DEDCD2; --t2:#D2D0C4; --t3:#C6C4B6; --hi:#F5F4EF; --ink:#23241F; --soft:#6C6B60; --line:rgba(35,36,31,.12); --accent:#C8481C }
+.sheet { background: var(--paper); color: var(--ink) }
+</style></head><body><div class="sheet"></div><script>/*COMMON*/</script><script>
+const D = /*DATA*/;
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+mosaic({ seed: 31, tones: [css("--t1"), css("--hi"), css("--t1")], density: 0.45, mask: (x, y) => (y < 330 || y > 1080 ? 1 : 0) });
+grid(css("--line"));
+
+// ---- the plan: rooms sized by lines of code, laid out on 35px squares ----
+const X0 = 70, Y0 = 350, Q = 35, NC = 15, NR = 20, N = NC * NR;
+const rects = [];
+(function lay(items, x, y, w, h) {
+  if (items.length === 1) return rects[items[0].i] = { x, y, w, h };
+  const tot = items.reduce((a, b) => a + b.s, 0); let acc = 0, cut = 1, bestd = 1e9;
+  for (let j = 1; j < items.length; j++) { acc += items[j - 1].s; const d = Math.abs(acc - tot / 2); if (d < bestd) bestd = d, cut = j; }
+  const A = items.slice(0, cut), B = items.slice(cut), sa = A.reduce((a, b) => a + b.s, 0) / tot;
+  if (w >= h) { const wa = Math.min(w - 1, Math.max(1, Math.round(w * sa))); lay(A, x, y, wa, h); lay(B, x + wa, y, w - wa, h); }
+  else { const ha = Math.min(h - 1, Math.max(1, Math.round(h * sa))); lay(A, x, y, w, ha); lay(B, x, y + ha, w, h - ha); }
+})(D.parts.map((p, i) => ({ i, s: p.share })).sort((a, b) => b.s - a.s), 0, 0, NC, NR);
+const HATCH = ["/ / /", "x x x", "· · ·", "+ + +", "- - -", "| | |", "o o o", ": : :"];
+const TONES = [css("--t2"), css("--hi"), css("--t1"), css("--t3"), css("--hi"), css("--t1"), css("--t2"), css("--hi")];
+const plan = el("div", { position: "absolute", left: X0 + "px", top: Y0 + "px", width: NC * Q + "px", height: NR * Q + "px" });
+rects.forEach((R, o) => {
+  const room = el("div", { position: "absolute", left: R.x * Q + "px", top: R.y * Q + "px", width: R.w * Q + "px", height: R.h * Q + "px", background: TONES[o], border: "2px solid " + css("--ink"), marginLeft: R.x ? "-1px" : 0, marginTop: R.y ? "-1px" : 0, overflow: "hidden" }, null, plan);
+  const rows = Math.ceil(R.h * Q / 12), cols = Math.ceil(R.w * Q / 12);
+  el("pre", { position: "absolute", inset: "4px", fontSize: "9px", lineHeight: "12px", color: "rgba(35,36,31,.42)", overflow: "hidden" }, Array.from({ length: rows }, (_, r) => (r % 2 ? " " : "") + HATCH[o].split(" ")[0].concat(" ").repeat(cols)).join("\n"), room);
+  el("div", { position: "absolute", left: "5px", top: "5px", fontSize: "10px", fontWeight: 700, background: css("--ink"), color: css("--paper"), padding: "1px 3px", letterSpacing: ".04em" }, String(o + 1).padStart(2, "0"), room);
+  if (R.w * Q >= 100 && R.h * Q >= 70) {
+    const lab = el("div", { position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", background: TONES[o], padding: "4px 6px", fontSize: "11px", lineHeight: "15px", letterSpacing: ".04em", textAlign: "center", whiteSpace: "nowrap" }, null, room);
+    lab.innerHTML = `<b>${D.parts[o].name}</b><br><span style="color:${css("--soft")}">${D.parts[o].lines.toLocaleString("en-US")} LINES</span>`;
+  }
+});
+// doors: a gap in the shared wall and a swing arc, wherever two rooms call each other
+const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+Object.assign(svg.style, { position: "absolute", left: X0 + "px", top: Y0 + "px", overflow: "visible" }); svg.setAttribute("width", NC * Q); svg.setAttribute("height", NR * Q);
+document.querySelector(".sheet").appendChild(svg);
+const path = (d, attrs) => { const e = document.createElementNS(svg.namespaceURI, "path"); e.setAttribute("d", d); for (const k in attrs) e.setAttribute(k, attrs[k]); svg.appendChild(e); };
+let doorCount = 0;
+for (const L of D.links.filter(l => l.n >= 3)) {
+  const a = rects[L.a], b = rects[L.b], G = 24;
+  let door = null;
+  for (const [p, q] of [[a, b], [b, a]]) {
+    if (p.x + p.w === q.x) { const lo = Math.max(p.y, q.y), hi = Math.min(p.y + p.h, q.y + q.h); if (hi > lo) door = { v: true, x: q.x * Q, y: ((lo + hi) / 2) * Q }; }
+    if (p.y + p.h === q.y) { const lo = Math.max(p.x, q.x), hi = Math.min(p.x + p.w, q.x + q.w); if (hi > lo) door = { v: false, x: ((lo + hi) / 2) * Q, y: q.y * Q }; }
+  }
+  if (!door) continue; doorCount++;
+  const { x, y } = door, ink = css("--accent"), pap = css("--paper");
+  if (door.v) { path(`M${x} ${y - G / 2}V${y + G / 2}`, { stroke: pap, "stroke-width": 5 }); path(`M${x} ${y - G / 2}h${G}`, { stroke: ink, "stroke-width": 1.5 }); path(`M${x + G} ${y - G / 2}A${G} ${G} 0 0 1 ${x} ${y + G / 2}`, { stroke: ink, fill: "none", "stroke-width": 1, "stroke-dasharray": "2 2" }); }
+  else { path(`M${x - G / 2} ${y}H${x + G / 2}`, { stroke: pap, "stroke-width": 5 }); path(`M${x - G / 2} ${y}v${G}`, { stroke: ink, "stroke-width": 1.5 }); path(`M${x - G / 2} ${y + G}A${G} ${G} 0 0 0 ${x + G / 2} ${y}`, { stroke: ink, fill: "none", "stroke-width": 1, "stroke-dasharray": "2 2" }); }
+}
+bracketList(D.parts.map(p => `${p.name} · ${Math.round(p.share * 100)}%\n${p.role}`), { x: 660, y: 350, w: 140, gap: 22, color: css("--ink"), size: 10, lh: 14 });
+// type
+el("div", { position: "absolute", left: "84px", top: "112px", fontSize: "44px", lineHeight: "50px", fontWeight: 500, letterSpacing: "-.01em" }).innerHTML = "HYPHER,<br>TAKEN APART";
+el("div", { position: "absolute", left: "86px", top: "238px", width: "420px", fontSize: "11px", lineHeight: "16px", letterSpacing: ".03em", color: css("--soft"), textTransform: "uppercase" }, "A floor plan of the code. Rooms are its parts, sized by how much code they hold. A door means two rooms talk to each other.");
+el("div", { position: "absolute", left: "560px", top: "112px", width: "240px", fontSize: "11px", lineHeight: "16px", letterSpacing: ".03em", textTransform: "uppercase" }).innerHTML = `SHEET 02 / PLAN<br><span style="color:${css("--soft")}">${D.files} FILES<br>${D.total.toLocaleString("en-US")} LINES<br>${doorCount} DOORS</span>`;
+// scale bar + north arrow
+const sb = el("div", { position: "absolute", left: X0 + "px", top: Y0 + NR * Q + 24 + "px", fontSize: "10px", letterSpacing: ".04em" });
+for (let i = 0; i < 4; i++) el("div", { position: "absolute", left: i * Q + "px", top: 0, width: Q + "px", height: "6px", background: i % 2 ? css("--paper") : css("--ink"), border: "1px solid " + css("--ink") }, null, sb);
+el("div", { position: "absolute", left: 4 * Q + 10 + "px", top: "-3px", whiteSpace: "nowrap" }, `1 SQUARE ≈ ${Math.round(D.total / N)} LINES OF CODE`, sb);
+el("div", { position: "absolute", left: "600px", top: Y0 + NR * Q + 10 + "px", fontSize: "12px", fontWeight: 700, textAlign: "center", width: "24px" }).innerHTML = "▲<br>N";
+el("div", { position: "absolute", left: "46px", bottom: "40px", fontSize: "12px", letterSpacing: ".08em", fontWeight: 600, background: css("--paper"), padding: "2px 4px" }, "HYPHER");
+el("div", { position: "absolute", right: "46px", bottom: "40px", fontSize: "12px", letterSpacing: ".08em", fontWeight: 600, background: css("--paper"), padding: "2px 4px" }, "FLOOR PLAN");
+el("div", { position: "absolute", left: 0, right: 0, bottom: 0, height: "16px", background: css("--ink") });
+</script></body></html>
