@@ -1,0 +1,38 @@
+<!doctype html><html><head><meta charset="utf-8"><style>/*FONTS*/
+* { box-sizing: border-box; margin: 0; padding: 0 }
+:root { --paper:#F2F1ED; --ink:#141414; --soft:#8A8880; --cold:#A9B8C8; --cool:#5F7389; --hot:#FF4F12 }
+.sheet { position: relative; width: 840px; height: 1190px; overflow: hidden; background: var(--paper); color: var(--ink); font-family: "Commit", monospace }
+.t { position: absolute; font-size: 12px; line-height: 18px }
+.serif { font-family: "Newsreader", serif }
+</style></head><body><div class="sheet"></div><script>
+window.draw = () => {
+const S = document.querySelector(".sheet");
+const el = (css, html, cls) => { const e = document.createElement("div"); if (cls) e.className = cls; Object.assign(e.style, css); e.innerHTML = html; S.appendChild(e); return e; };
+const G = {
+  Y: ["10001","10001","01010","00100","00100","00100","00100"], O: ["01110","10001","10001","10001","10001","10001","01110"],
+  U: ["10001","10001","10001","10001","10001","10001","01110"], R: ["11110","10001","10001","11110","10100","10010","10001"],
+  N: ["10001","11001","10101","10011","10001","10001","10001"], E: ["11111","10000","10000","11110","10000","10000","11111"],
+  X: ["10001","10001","01010","00100","01010","10001","10001"], T: ["11111","00100","00100","00100","00100","00100","00100"],
+  A: ["01110","10001","10001","11111","10001","10001","10001"], G: ["01110","10001","10000","10111","10001","10001","01111"],
+  K: ["10001","10010","10100","11000","10100","10010","10001"], W: ["10001","10001","10001","10101","10101","10101","01010"],
+  S: ["01111","10000","10000","01110","00001","00001","11110"] };
+// the tagline in a grid of squares; it warms up line by line, cold start to warm start
+const lines = ["YOUR", "NEXT", "AGENT", "KNOWS"], tones = ["var(--cold)", "var(--cool)", "var(--ink)", "var(--hot)"];
+const C = 24, X0 = 72, Y0 = 64;
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+lines.forEach((word, li) => {
+  for (let ci = 0; ci < 29; ci++) for (let ri = 0; ri < 7; ri++) {
+    const letter = word[Math.floor(ci / 6)], col = ci % 6, on = letter && col < 5 && G[letter][ri][col] === "1";
+    const x = X0 + ci * C, y = Y0 + (li * 9 + ri) * C;
+    if (on) { const s = 14 + Math.round(rnd() * 8); el({ position: "absolute", left: x + (C - s) / 2 + "px", top: y + (C - s) / 2 + "px", width: s + "px", height: s + "px", background: tones[li] }, ""); }
+    else el({ position: "absolute", left: x + C / 2 - 1.5 + "px", top: y + C / 2 - 1.5 + "px", width: "3px", height: "3px", background: "rgba(20,20,20,.16)" }, "");
+  }
+});
+el({ left: "72px", top: "912px", width: "696px", height: "1px", background: "var(--ink)", position: "absolute" }, "");
+el({ left: "72px", top: "936px", width: "380px", fontSize: "34px", lineHeight: "40px" }, `Every new session starts cold. Hypher makes it start warm<span style="color:var(--hot)">.</span>`, "t serif");
+el({ left: "496px", top: "940px", width: "272px" }, "<b>How</b><br>Paste the mess into one field. Hypher keeps one short note: the goal, the decisions and why, the next step. The next agent reads it first.", "t");
+el({ left: "496px", top: "1048px", width: "272px" }, "<b>Works with</b><br>Claude Code and Codex, one command each. Cursor loads the note when a session starts.", "t");
+el({ left: "72px", top: "1144px", color: "var(--soft)", fontSize: "11px" }, "Hypher at 04186f4, 28 October 2026", "t");
+el({ left: "768px", top: "1144px", color: "var(--soft)", fontSize: "11px", transform: "translateX(-100%)", whiteSpace: "nowrap" }, 'Drawn by Vyo<span style="color:var(--hot)">.</span>', "t");
+};
+</script></body></html>

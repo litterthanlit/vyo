@@ -1,0 +1,35 @@
+<!doctype html><html><head><meta charset="utf-8"><style>/*FONTS*/
+* { box-sizing: border-box; margin: 0; padding: 0 }
+:root { --paper:#100E22; --ink:#F1F0F7; --soft:#7D7A99; --vio:#9284FF }
+.sheet { position: relative; width: 840px; height: 1190px; overflow: hidden; background: var(--paper); color: var(--ink); font-family: "Commit", monospace }
+.row { position: absolute; white-space: nowrap; font-size: 11px; line-height: 14px; height: 14px; overflow: visible; text-transform: uppercase; color: var(--vio) }
+.g { position: absolute; font-family: "Inter Display", Inter, sans-serif; font-weight: 700; letter-spacing: -.025em }
+.t { position: absolute; font-size: 12px; line-height: 18px }
+</style></head><body><div class="sheet"></div><script>
+window.draw = () => {
+const S = document.querySelector(".sheet");
+const el = (css, html, cls) => { const e = document.createElement("div"); if (cls) e.className = cls; Object.assign(e.style, css); e.innerHTML = html; S.appendChild(e); return e; };
+const meas = document.createElement("canvas").getContext("2d"); meas.font = '400 11px "Commit"';
+// the ribbon: what travels from one agent to the next, twisting from top left to bottom right
+const travels = ["the goal", "the rules", "decisions and why", "what's done", "what's only claimed", "the next step"];
+const Y0 = 210, Y1 = 960, LH = 14, rows = Math.floor((Y1 - Y0) / LH);
+for (let r = 0; r < rows; r++) {
+  const u = r / (rows - 1), y = Y0 + r * LH;
+  const cx = 430 + Math.sin((u - 0.5) * Math.PI) * 200 + Math.sin(u * Math.PI * 2) * 30;
+  const twist = Math.cos(u * Math.PI * 2.5);
+  const w = 70 + 300 * Math.abs(twist);
+  const word = travels[Math.floor(r / 3) % travels.length].toUpperCase();
+  let k = Math.max(1, Math.round(w / (meas.measureText(word).width * 1.6))), plain, natural;
+  do { plain = Array(k).fill(word).join("  "); natural = meas.measureText(plain).width; } while (natural > w && --k > 1);
+  if (natural > w) { plain = word; natural = meas.measureText(word).width; }
+  const ww = Math.max(w, natural), ls = (ww - natural) / Math.max(1, plain.length - 1);
+  el({ left: cx - ww / 2 + "px", top: y + "px", letterSpacing: ls + "px", opacity: twist < 0 ? .5 : 1, fontWeight: word.startsWith("DECISIONS") ? 700 : 400 }, plain.replace(/ /g, "&nbsp;"), "row");
+}
+el({ left: "56px", top: "56px", fontSize: "56px", lineHeight: "56px" }, "Save in<br>Claude Code.", "g");
+el({ left: "784px", top: "1010px", fontSize: "56px", lineHeight: "56px", textAlign: "right", transform: "translateX(-100%)", whiteSpace: "nowrap" }, "Resume<br>in Codex.", "g");
+el({ left: "560px", top: "64px", width: "224px" }, "<b>What travels</b><br>The goal. The rules. The decisions and why. What's done, and what's only claimed. The next step.", "t");
+el({ left: "56px", top: "966px", width: "300px" }, `<b style="font-size:48px;line-height:54px;letter-spacing:-.035em;display:block;margin-bottom:10px;font-family:'Helvetica Neue', Helvetica, 'Inter Display', Arial, sans-serif">Hypher<span style="color:var(--vio)">.</span></b>Your next agent already knows. Hypher keeps one short note per project, so a new session starts warm. It never keeps your code.`, "t");
+el({ left: "56px", top: "1144px", color: "var(--soft)", fontSize: "11px" }, "Recorded 8 October 2026: Codex to Claude Code and back. Hypher at 04186f4.", "t");
+el({ left: "784px", top: "1144px", color: "var(--soft)", fontSize: "11px", transform: "translateX(-100%)", whiteSpace: "nowrap" }, 'Drawn by Vyo<span style="color:var(--vio)">.</span>', "t");
+};
+</script></body></html>

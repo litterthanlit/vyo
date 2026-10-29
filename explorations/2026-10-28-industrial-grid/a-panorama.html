@@ -1,0 +1,66 @@
+<!doctype html><html><head><meta charset="utf-8"><style>/*CSS*/
+:root { --paper:#E7E8E1; --t1:#DDDFD6; --t2:#D2D5CA; --hi:#F3F4EF; --ink:#2A2E21; --soft:#6A6F5D; --line:rgba(42,46,33,.13); --olive:#4E5A28 }
+.sheet { background: var(--paper); color: var(--ink) }
+</style></head><body><div class="sheet"></div><script>/*COMMON*/</script><script>
+const D = /*DATA*/;
+const S = document.querySelector(".sheet");
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+// light "spotlight" blocks behind the headline, then the tonal mosaic in the sky
+mosaic({ seed: 11, tones: [css("--hi")], density: 0.62, mask: (x, y) => (x < 470 && y > 140 && y < 600 ? 1.5 : 0) });
+mosaic({ seed: 4, tones: [css("--t1"), css("--t2"), css("--t1")], density: 0.5, mask: (x, y) => (y < 820 && !(x < 470 && y > 140 && y < 600) ? 1 : 0) });
+grid(css("--line"));
+
+// ---- the range: each part of the code is a peak, height = lines of code ----
+const COLS = 140, ROWS = 58, CW = 6, LH = 10, TOP = H - ROWS * LH + 40;
+const order = [5, 2, 0, 1, 6, 3, 4, 7];              // left → right
+const xs = [0.05, 0.19, 0.38, 0.6, 0.72, 0.81, 0.9, 0.975];
+const maxS = Math.max(...D.parts.map(p => p.share));
+const peaks = order.map((pi, k) => { const s = D.parts[pi].share / maxS; return { pi, c: Math.round(xs[k] * COLS), h: 6 + 36 * Math.sqrt(s), w: 7 + 24 * Math.sqrt(s) }; });
+const nz = noise2(3), nz2 = noise2(9);
+const ridgeA = c => { let m = 0; for (const p of peaks) { const u = Math.abs(c - p.c) / p.w; if (u < 1.6) m = Math.max(m, p.h * (0.55 * Math.max(0, 1 - u / 1.6) ** 1.5 + 0.45 * Math.exp(-u * u))); } return 6 + m + (nz(c / 4, 1) - 0.5) * 5 + (nz(c / 1.5, 4) - 0.5) * 2; };
+const ridgeB = c => 3 + nz2(c / 9, 2) * 9 + (nz2(c / 2.5, 6) - 0.5) * 2;
+const g = Array.from({ length: ROWS }, () => Array(COLS).fill(" "));
+const r = rng(21);
+const pick = a => a[Math.floor(r() * a.length)];
+function draw(ridge, dense) {
+  const top = c => ROWS - Math.round(ridge(c));
+  for (let c = 0; c < COLS; c++) {
+    const t = top(c), tl = top(c - 1), tr = top(c + 1);
+    for (let y = t; y < ROWS; y++) g[y][c] = " ";
+    const slope = tl - tr;                       // >0 rising to the right
+    // ridge line
+    g[t][c] = t < tl && t < tr ? "^" : t < tl ? "/" : t < tr ? "\\" : t === tl && t === tr ? "_" : slope > 0 ? "/" : "\\";
+    for (let y = t + 1; y < Math.max(tl, tr) && y < ROWS; y++) g[y][c] = tl > tr ? "/" : "\\";
+    // shading: dense near the ridge, thinning with depth
+    for (let y = Math.max(tl, tr, t + 1); y < ROWS; y++) {
+      const d = y - t, p = dense * Math.exp(-d / 11) + 0.12;
+      if (r() > p) continue;
+      g[y][c] = slope > 0 ? pick(["/", "X", "x", "/", "|"]) : slope < 0 ? pick(["\\", "X", "x", "\\", "|"]) : pick(["x", "-", "X", "|", "-"]);
+    }
+  }
+  return top;
+}
+const topA = draw(ridgeA, 0.9);
+const topB = draw(ridgeB, 0.55);
+el("pre", { position: "absolute", left: "0px", top: TOP + "px", fontSize: "10px", lineHeight: LH + "px", letterSpacing: "0px", color: css("--ink"), opacity: .78 }, g.map(row => row.join("")).join("\n"));
+
+// peak labels, panorama style
+peaks.forEach((p, k) => {
+  const part = D.parts[p.pi];
+  const peakRow = Math.min(...[-1, 0, 1].map(d => topA(p.c + d)));
+  const px = p.c * CW + 3, py = TOP + peakRow * LH - 6;
+  const ly = py - 70 - (k % 3) * 34;
+  el("div", { position: "absolute", left: px + "px", top: ly + 26 + "px", width: "1px", height: Math.max(0, py - ly - 26) + "px", background: css("--soft") });
+  const lab = el("div", { position: "absolute", left: px - 2 + "px", top: ly + "px", fontSize: "10px", lineHeight: "12px", letterSpacing: ".04em", whiteSpace: "nowrap", color: css("--ink") });
+  lab.innerHTML = `<b style="font-weight:700">${String(p.pi + 1).padStart(2, "0")} ${part.name}</b><br><span style="color:${css("--soft")}">${part.lines.toLocaleString("en-US")} LINES</span>`;
+  if (px > 720) lab.style.transform = "translateX(calc(-100% + 4px))", lab.style.textAlign = "right";
+});
+
+// type
+el("div", { position: "absolute", left: "84px", top: "224px", fontSize: "44px", lineHeight: "50px", fontWeight: 500, letterSpacing: "-.01em", color: css("--ink") }, "").innerHTML = "YOUR NEXT<br>AGENT ALREADY<br>KNOWS";
+el("div", { position: "absolute", left: "86px", top: "400px", width: "330px", fontSize: "11px", lineHeight: "16px", letterSpacing: ".03em", color: css("--soft"), textTransform: "uppercase" }, "The range below is Hypher's own code. Each peak is one part. The taller it stands, the more code it holds.");
+bracketList(["Dump the mess into one field.", "Hypher keeps one note: the goal, the decisions, the next step.", "Switch agents. The next one reads it and starts warm."], { x: 460, y: 44, w: 300, color: css("--ink") });
+el("div", { position: "absolute", left: 0, right: 0, bottom: 0, height: "16px", background: css("--olive") });
+el("div", { position: "absolute", left: "46px", bottom: "40px", fontSize: "12px", letterSpacing: ".08em", fontWeight: 600, color: css("--ink"), background: css("--paper"), padding: "2px 4px" }, "HYPHER");
+el("div", { position: "absolute", right: "46px", bottom: "40px", fontSize: "12px", letterSpacing: ".08em", fontWeight: 600, color: css("--ink"), background: css("--paper"), padding: "2px 4px" }, `PANORAMA · ${D.total.toLocaleString("en-US")} LINES`);
+</script></body></html>

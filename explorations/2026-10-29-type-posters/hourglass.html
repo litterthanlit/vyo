@@ -1,0 +1,49 @@
+<!doctype html><html><head><meta charset="utf-8"><style>/*FONTS*/
+* { box-sizing: border-box; margin: 0; padding: 0 }
+:root { --paper:#EAE8E2; --ink:#161616; --soft:#8E8C84; --mid:#55534D; --hot:#FF4F12 }
+.sheet { position: relative; width: 840px; height: 1190px; overflow: hidden; background: var(--paper); color: var(--ink); font-family: "Commit", monospace }
+.row { position: absolute; white-space: nowrap; font-size: 12px; line-height: 16px; height: 16px; overflow: hidden; text-transform: uppercase }
+.serif { font-family: "Newsreader", serif }
+.t { position: absolute; font-size: 12px; line-height: 18px }
+</style></head><body><div class="sheet"></div><script>
+window.draw = () => {
+const S = document.querySelector(".sheet");
+const el = (css, html, cls) => { const e = document.createElement("div"); if (cls) e.className = cls; Object.assign(e.style, css); e.innerHTML = html; S.appendChild(e); return e; };
+// header
+el({ left: "50px", top: "36px", fontSize: "84px", lineHeight: "88px", fontWeight: 700, letterSpacing: "-.035em", fontFamily: '"Helvetica Neue", Helvetica, "Inter Display", Arial, sans-serif' }, 'Hypher<span style="color:var(--hot)">.</span>', "t");
+el({ left: "560px", top: "64px", width: "224px", fontSize: "22px", lineHeight: "28px", letterSpacing: "-.005em", color: "var(--mid)" }, "Switch agents without starting over.", "t serif");
+// the hourglass: rows of real words, wide mess on top, one note at the waist, the next agents below
+const TOP = 176, ROWS = 46, LH = 16, WAIST = 22, CX = 420;
+const mess = ["rants", "screenshots", "chat exports", "decisions", "half a thought", "todos", "links", "why we chose it", "decisions", "another rant"];
+const out = ["claude code", "codex", "cursor", "the next agent", "starts warm"];
+const meas = document.createElement("canvas").getContext("2d"); meas.font = '400 12px "Commit"';
+let wi = 0, wo = 0;
+for (let r = 0; r < ROWS; r++) {
+  const t = (r - WAIST) / (r < WAIST ? WAIST : ROWS - 1 - WAIST);           // -1 top, 0 waist, 1 bottom
+  const w = 70 + 660 * Math.pow(Math.abs(t), 1.15);
+  if (r === WAIST) {
+    el({ left: CX - 200 + "px", top: TOP + r * LH - 8 + "px", width: "400px", textAlign: "center", fontSize: "26px", lineHeight: "32px", fontWeight: 700, color: "var(--hot)", letterSpacing: ".18em" }, "ONE NOTE", "t");
+    continue;
+  }
+  if (Math.abs(r - WAIST) === 1) continue;
+  const word = (r < WAIST ? mess[wi++ % mess.length] : out[wo++ % out.length]).toUpperCase();
+  let k = Math.max(1, Math.round(w / (meas.measureText(word).width * 1.9))), plain, natural;
+  do { plain = Array(k).fill(word).join("   "); natural = meas.measureText(plain).width; } while (natural > w && --k > 1);
+  if (natural > w) { plain = word; natural = meas.measureText(plain).width; }
+  const ls = (w - natural) / Math.max(1, plain.length - 1);
+  const hot = word === "DECISIONS", color = hot ? "var(--hot)" : r < WAIST ? (Math.abs(t) > .5 ? "var(--soft)" : "var(--mid)") : "var(--ink)";
+  el({ left: CX - w / 2 + "px", top: TOP + r * LH + "px", width: w + 20 + "px", letterSpacing: ls + "px", color, fontWeight: hot ? 700 : 400 }, plain.replace(/ /g, "&nbsp;"), "row");
+}
+// side notes, plain sentences
+el({ left: "56px", top: "520px", width: "190px", color: "var(--mid)" }, "What you paste in. Rants, screenshots, chat exports, half-finished thoughts.", "t");
+el({ left: "594px", top: "526px", width: "190px" }, "<b>One short note per project:</b> the goal, the decisions and why, what's done, what's next.", "t");
+el({ left: "56px", top: "640px", width: "190px", color: "var(--mid)" }, "What the next agent reads before it touches your code.", "t");
+// bottom band
+el({ position: "absolute", left: "56px", top: "960px", width: "728px", height: "1px", background: "var(--ink)" }, "");
+el({ left: "56px", top: "980px", width: "228px" }, "<b>How it works</b><br>Paste the mess into one field. Connect Claude Code or Codex with one command. Save in one agent, resume in the next.", "t");
+el({ left: "306px", top: "980px", width: "228px" }, "<b>Proof</b><br>Recorded on 8 October 2026: a save in Codex, resumed in Claude Code, then back in Codex. Each reply restated the handoff.", "t");
+el({ left: "556px", top: "980px", width: "228px" }, "<b>Your code stays put</b><br>Hypher keeps the note, never your code, your diffs or your chat transcripts.", "t");
+el({ left: "56px", top: "1136px", color: "var(--mid)", fontSize: "11px" }, "Hypher at 04186f4, 28 October 2026", "t");
+el({ left: "784px", top: "1136px", color: "var(--mid)", fontSize: "11px", transform: "translateX(-100%)", whiteSpace: "nowrap" }, 'Drawn by Vyo<span style="color:var(--hot)">.</span>', "t");
+};
+</script></body></html>
