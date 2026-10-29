@@ -1,0 +1,512 @@
+{
+  "title": "Vyo \u2014 launch film",
+  "logline": "For designers who build with agents: Vyo reads a repo and draws a poster that says, in plain words, what the product is for.",
+  "format": {
+    "aspect": "16:9",
+    "fps": 30
+  },
+  "theme": "litt-dark",
+  "type": "litt",
+  "register": "calm",
+  "scenes": [
+    {
+      "id": "hook",
+      "duration": 3.4,
+      "intent": "The problem in one breath: code explains how, never what for.",
+      "beats": [
+        {
+          "id": "b1",
+          "at": 0.15,
+          "note": "line 1 rises word by word; file paths start cascading on the right"
+        },
+        {
+          "id": "b2",
+          "at": 1.1,
+          "note": "line 1 steps back to the grey; line 2 rises (the moment)"
+        },
+        {
+          "id": "b3",
+          "at": 2.3,
+          "note": "line 2 dims except 'what it's for'"
+        }
+      ],
+      "text": {
+        "l1": "Code says how.",
+        "l2": "Not what it's for."
+      },
+      "elements": [
+        {
+          "id": "l1",
+          "role": "headline",
+          "anchor": "A3:D3",
+          "note": "first line of one Headline, left safe edge"
+        },
+        {
+          "id": "l2",
+          "role": "headline",
+          "anchor": "A4:D4",
+          "note": "second line; holds the 'what' span"
+        },
+        {
+          "id": "what",
+          "role": "headline",
+          "anchor": "B4",
+          "note": "span pinned to fg: the ink emphasis"
+        },
+        {
+          "id": "files",
+          "role": "ui",
+          "anchor": "E2:F5",
+          "note": "a column of real file paths, Geist Mono, the grey"
+        },
+        {
+          "id": "f0",
+          "role": "ui",
+          "anchor": "E2:F5"
+        },
+        {
+          "id": "f1",
+          "role": "ui",
+          "anchor": "E2:F5"
+        },
+        {
+          "id": "f2",
+          "role": "ui",
+          "anchor": "E2:F5"
+        },
+        {
+          "id": "f3",
+          "role": "ui",
+          "anchor": "E2:F5"
+        },
+        {
+          "id": "f4",
+          "role": "ui",
+          "anchor": "E2:F5"
+        },
+        {
+          "id": "f5",
+          "role": "ui",
+          "anchor": "E2:F5"
+        },
+        {
+          "id": "f6",
+          "role": "ui",
+          "anchor": "E2:F5"
+        },
+        {
+          "id": "f7",
+          "role": "ui",
+          "anchor": "E2:F5"
+        }
+      ],
+      "motion": "Solid canvas. b1: l1 maskUp by words; file rows rise 40ms apart from b1+0.1, quiet. b2: l1 dim, l2 maskUp by words on the expressive spring. b3: l2 dim; 'what it's for' keeps fg. Camera 1\u21921.03 anchored on the left edge. Hard cut."
+    },
+    {
+      "id": "scan",
+      "duration": 4.6,
+      "intent": "Vyo reads every file first.",
+      "beats": [
+        {
+          "id": "b1",
+          "at": 0.15,
+          "note": "label and title rise into the light"
+        },
+        {
+          "id": "b2",
+          "at": 0.55,
+          "note": "the terminal is placed (the moment)"
+        },
+        {
+          "id": "b3",
+          "at": 1.0,
+          "note": "the prompt types"
+        },
+        {
+          "id": "b4",
+          "at": 2.2,
+          "note": "the scan results cascade, row by row"
+        }
+      ],
+      "text": {
+        "label": "Vyo",
+        "title": "It reads every file first."
+      },
+      "elements": [
+        {
+          "id": "label",
+          "role": "label",
+          "anchor": "A3"
+        },
+        {
+          "id": "title",
+          "role": "headline",
+          "anchor": "A3:C4"
+        },
+        {
+          "id": "term",
+          "role": "ui",
+          "anchor": "D2:F5",
+          "note": "Terminal: a prompt line that types, then five result lines l1\u2026l5"
+        }
+      ],
+      "motion": "The light, once. b1: label fade, title maskUp by lines. b2: terminal settle (expressive). b3: prompt types at 24cps with a caret. b4: results rise 120ms apart. Hold. Hard cut.",
+      "register": "calm"
+    },
+    {
+      "id": "translate",
+      "duration": 5.6,
+      "intent": "It turns code into plain words.",
+      "beats": [
+        {
+          "id": "b1",
+          "at": 0.0,
+          "note": "the headline lands (the moment)"
+        },
+        {
+          "id": "b2",
+          "at": 0.4,
+          "note": "four rows (hairline + file path) rise in the left column"
+        },
+        {
+          "id": "b3",
+          "at": 1.0,
+          "note": "each path's plain sentence rises beside it, one by one"
+        },
+        {
+          "id": "b4",
+          "at": 3.2,
+          "note": "every sentence but 'Plan your week' steps back to the grey"
+        }
+      ],
+      "text": {
+        "headline": "In plain words.",
+        "c0": "app/api/recipes/route.ts",
+        "c1": "app/(app)/plan/page.tsx",
+        "c2": "components/plan/shopping-list.tsx",
+        "c3": "app/api/suggest/route.ts",
+        "p0": "Save a recipe",
+        "p1": "Plan your week",
+        "p2": "Get a shopping list",
+        "p3": "Ideas from what you have"
+      },
+      "elements": [
+        {
+          "id": "headline",
+          "role": "headline",
+          "anchor": "A1:D2"
+        },
+        {
+          "id": "p0",
+          "role": "title",
+          "anchor": "D3:F3",
+          "note": "plain words: Geist 500, fg, the same row as its code"
+        },
+        {
+          "id": "p1",
+          "role": "title",
+          "anchor": "D4:F4"
+        },
+        {
+          "id": "p2",
+          "role": "title",
+          "anchor": "D5:F5"
+        },
+        {
+          "id": "p3",
+          "role": "title",
+          "anchor": "D6:F6"
+        },
+        {
+          "id": "r0",
+          "role": "caption",
+          "anchor": "A3:C3",
+          "note": "a row: hairline + its file path (mono, the grey)"
+        },
+        {
+          "id": "r1",
+          "role": "caption",
+          "anchor": "A4:C4",
+          "note": "a row: hairline + its file path (mono, the grey)"
+        },
+        {
+          "id": "r2",
+          "role": "caption",
+          "anchor": "A5:C5",
+          "note": "a row: hairline + its file path (mono, the grey)"
+        },
+        {
+          "id": "r3",
+          "role": "caption",
+          "anchor": "A6:C6",
+          "note": "a row: hairline + its file path (mono, the grey)"
+        },
+        {
+          "id": "c0",
+          "role": "caption",
+          "anchor": "A3:C3"
+        },
+        {
+          "id": "c1",
+          "role": "caption",
+          "anchor": "A4:C4"
+        },
+        {
+          "id": "c2",
+          "role": "caption",
+          "anchor": "A5:C5"
+        },
+        {
+          "id": "c3",
+          "role": "caption",
+          "anchor": "A6:C6"
+        }
+      ],
+      "motion": "Solid canvas. b1: headline maskUp by words, expressive. b2: rows (hairline + path) rise 40ms apart. b3: plain sentences rise 0.28s apart, each after its row. b4: p0, p2, p3 dim; p1 keeps fg. Camera 1\u21921.03 on the left edge. Hard cut into the drawing."
+    },
+    {
+      "id": "draw",
+      "duration": 5.0,
+      "intent": "The poster draws itself: plain words land inside a cone of light, the code stays outside.",
+      "beats": [
+        {
+          "id": "b1",
+          "at": 0.1,
+          "note": "the code fills the frame, quiet"
+        },
+        {
+          "id": "b2",
+          "at": 0.45,
+          "note": "plain words land inside the cone, top to bottom (the moment)"
+        },
+        {
+          "id": "b3",
+          "at": 2.7,
+          "note": "every line but 'Plan your week' steps back to the grey"
+        }
+      ],
+      "text": {
+        "label": "The recipe planner, drawn by Vyo"
+      },
+      "elements": [
+        {
+          "id": "label",
+          "role": "label",
+          "anchor": "A6",
+          "note": "bottom-left, the grey, sentence case"
+        },
+        {
+          "id": "code",
+          "role": "ui",
+          "anchor": "A1:F6",
+          "note": "rows of real file paths either side of the cone, Geist Mono, the grey"
+        },
+        {
+          "id": "w0",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        },
+        {
+          "id": "w1",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        },
+        {
+          "id": "w2",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        },
+        {
+          "id": "w3",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        },
+        {
+          "id": "w4",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        },
+        {
+          "id": "w5",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        },
+        {
+          "id": "w6",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        },
+        {
+          "id": "w7",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        },
+        {
+          "id": "w8",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        },
+        {
+          "id": "w9",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        },
+        {
+          "id": "w10",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        },
+        {
+          "id": "w11",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        },
+        {
+          "id": "w12",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        },
+        {
+          "id": "w13",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        },
+        {
+          "id": "w14",
+          "role": "ui",
+          "anchor": "C1:D6",
+          "note": "a row of plain words inside the cone"
+        }
+      ],
+      "motion": "Solid canvas. b1: the code fades in as one layer. b2: the cone's rows rise 60ms apart from the apex down (expressive on the group). b3: rows that aren't 'Plan your week' dim, instant. Camera 1\u21921.03 from the centre. Push left into the posters.",
+      "transition": {
+        "type": "push",
+        "dir": "left",
+        "blur": true
+      }
+    },
+    {
+      "id": "shape",
+      "duration": 5.0,
+      "intent": "Then it draws a poster, in a shape that fits the product.",
+      "beats": [
+        {
+          "id": "b1",
+          "at": 0.5,
+          "note": "headline lands after the push"
+        },
+        {
+          "id": "b2",
+          "at": 0.9,
+          "note": "the first poster is placed (the moment)"
+        },
+        {
+          "id": "b3",
+          "at": 1.25,
+          "note": "the second poster rises"
+        },
+        {
+          "id": "b4",
+          "at": 1.9,
+          "note": "captions name each project"
+        }
+      ],
+      "text": {
+        "headline": "A shape that fits.",
+        "body": "Every word comes from the repo.",
+        "cap0": "Recipe planner",
+        "cap1": "Hypher"
+      },
+      "elements": [
+        {
+          "id": "headline",
+          "role": "headline",
+          "anchor": "A2:C3"
+        },
+        {
+          "id": "body",
+          "role": "body",
+          "anchor": "A4:C4"
+        },
+        {
+          "id": "poster0",
+          "role": "media",
+          "anchor": "D1:E6"
+        },
+        {
+          "id": "poster1",
+          "role": "media",
+          "anchor": "E1:F6"
+        },
+        {
+          "id": "cap0",
+          "role": "caption",
+          "anchor": "D6"
+        },
+        {
+          "id": "cap1",
+          "role": "caption",
+          "anchor": "E6"
+        }
+      ],
+      "motion": "Solid canvas. b1: headline maskUp by lines; body rises after it. b2: poster0 settle (expressive). b3: poster1 rise. b4: captions fade. Camera 1\u21921.03. Dip into the end card.",
+      "transition": {
+        "type": "dip"
+      }
+    },
+    {
+      "id": "end",
+      "duration": 3.8,
+      "intent": "The name and the promise.",
+      "beats": [
+        {
+          "id": "b1",
+          "at": 0.55,
+          "note": "the wordmark is placed"
+        },
+        {
+          "id": "b2",
+          "at": 1.15,
+          "note": "the tagline rises"
+        }
+      ],
+      "text": {
+        "wordmark": "Vyo",
+        "tagline": "Point it at a repo. Get the poster."
+      },
+      "elements": [
+        {
+          "id": "wordmark",
+          "role": "logo",
+          "anchor": "C3:D3"
+        },
+        {
+          "id": "dot",
+          "role": "decor",
+          "anchor": "D3",
+          "note": "the wordmark's full stop: a filled accent circle, the film's one accent fill"
+        },
+        {
+          "id": "tagline",
+          "role": "body",
+          "anchor": "B4:E4"
+        }
+      ],
+      "motion": "The light, again. b1: wordmark settle (expressive), dot fades with it. b2: tagline rises. Camera push eases out."
+    }
+  ]
+}
