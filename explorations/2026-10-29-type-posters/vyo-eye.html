@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset="utf-8"><style>/*FONTS*/
+* { box-sizing: border-box; margin: 0; padding: 0 }
+:root { --paper:#EEEBE4; --ink:#151515; --soft:#9A968C; --mid:#5C5952; --hot:#FF5A1F }
+.sheet { position: relative; width: 840px; height: 1190px; overflow: hidden; background: var(--paper); color: var(--ink); font-family: "Commit", monospace }
+.row { position: absolute; white-space: nowrap; font-size: 11px; line-height: 14px; height: 14px; text-transform: uppercase }
+.t { position: absolute; font-size: 12px; line-height: 18px }
+.serif { font-family: "Newsreader", serif }
+</style></head><body><div class="sheet"></div><script>
+window.draw = () => {
+const S = document.querySelector(".sheet");
+const el = (css, html, cls) => { const e = document.createElement("div"); if (cls) e.className = cls; Object.assign(e.style, css); e.innerHTML = html; S.appendChild(e); return e; };
+const meas = document.createElement("canvas").getContext("2d"); meas.font = '400 11px "Commit"';
+// fill a run of width w with a word repeated and letter-spaced to fit exactly
+const run = (x, y, w, word, css) => { if (w < 24) return;
+  let k = Math.max(1, Math.round(w / (meas.measureText(word).width * 1.7))), plain, nat;
+  do { plain = Array(k).fill(word).join("  "); nat = meas.measureText(plain).width; } while (nat > w && --k > 1);
+  if (nat > w) { if (meas.measureText(word).width > w) return; plain = word; nat = meas.measureText(word).width; }
+  el(Object.assign({ left: x + "px", top: y + "px", letterSpacing: (w - nat) / Math.max(1, plain.length - 1) + "px" }, css), plain.replace(/ /g, "&nbsp;"), "row"); };
+// the eye: Vyo reads everything in a repo (the lids) and sees what the product is for (the iris)
+const CX = 420, CY = 620, HW = 372, HH = 300, LH = 14, IR = 168, PR = 66;
+const reads = ["files", "screens", "routes", "tables", "services", "readme", "docs", "background jobs", "ai calls", "commits"];
+const sees = ["what it does", "who it's for", "what's real today"];
+let a = 0, b = 0;
+for (let y = CY - HH; y <= CY + HH; y += LH) {
+  const t = (y + LH / 2 - CY) / HH, half = HW * (1 - t * t);                 // lens outline
+  const dy = Math.abs(y + LH / 2 - CY), ih = dy < IR ? Math.sqrt(IR * IR - dy * dy) : 0, ph = dy < PR ? Math.sqrt(PR * PR - dy * dy) : 0;
+  const lid = reads[a++ % reads.length].toUpperCase(), lidCss = { color: Math.abs(t) > .55 ? "var(--soft)" : "var(--mid)" };
+  if (!ih) { run(CX - half, y, 2 * half, lid, lidCss); continue; }
+  const ir = Math.min(ih, half), word = sees[b++ % sees.length].toUpperCase(), irCss = { color: "var(--hot)", fontWeight: 700 };
+  run(CX - half, y, half - ir - 18, lid, lidCss); run(CX + ir + 18, y, half - ir - 18, lid, lidCss);
+  if (ph) { run(CX - ir, y, ir - ph - 6, word, irCss); run(CX + ph + 6, y, ir - ph - 6, word, irCss); }
+  else run(CX - ir, y, 2 * ir, word, irCss);
+}
+el({ left: CX - 80 + "px", top: CY - 40 + "px", width: "160px", textAlign: "center", fontSize: "72px", lineHeight: "76px", fontWeight: 700, letterSpacing: "-.035em", fontFamily: '"Helvetica Neue", Helvetica, "Inter Display", Arial, sans-serif' }, 'Vyo<span style="color:var(--hot)">.</span>', "t");
+// type
+el({ left: "56px", top: "52px", width: "520px", fontSize: "40px", lineHeight: "46px", letterSpacing: "-.01em" }, "It reads your whole repo, then draws what the product is for.", "t serif");
+el({ left: "600px", top: "60px", width: "184px", color: "var(--mid)" }, "Point it at a project. It picks a shape that fits, and sets it in the product's own words.", "t");
+el({ left: "56px", top: "960px", width: "728px", height: "1px", background: "var(--ink)", position: "absolute" }, "");
+el({ left: "56px", top: "980px", width: "228px" }, "<b>What it reads</b><br>Screens, routes, saved data, outside services, AI calls and background jobs, straight from the code. Then the readme and docs.", "t");
+el({ left: "306px", top: "980px", width: "228px" }, "<b>What it draws</b><br>One poster per project. The shape comes from what the product does, and every word on it comes from the repo.", "t");
+el({ left: "556px", top: "980px", width: "228px" }, "<b>Where it runs</b><br>On your machine, as an agent skill. Nothing in your repo is uploaded.", "t");
+el({ left: "56px", top: "1136px", color: "var(--mid)", fontSize: "11px" }, "Vyo at 334f2cd, 29 October 2026", "t");
+el({ left: "784px", top: "1136px", color: "var(--mid)", fontSize: "11px", transform: "translateX(-100%)", whiteSpace: "nowrap" }, 'Drawn by Vyo<span style="color:var(--hot)">.</span>', "t");
+};
+</script></body></html>
