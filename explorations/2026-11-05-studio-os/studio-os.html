@@ -1,0 +1,83 @@
+<!doctype html><html><head><meta charset="utf-8"><style>/*FONTS*/
+* { box-sizing: border-box; margin: 0; padding: 0 }
+:root { --paper:#EAE8E2; --ink:#161616; --soft:#A3A099; --mid:#55534D; --hot:#FF4F12 }
+.sheet { position: relative; width: 840px; height: 1190px; overflow: hidden; background: var(--paper); color: var(--ink); font-family: "Commit", monospace }
+.serif { font-family: "Newsreader", serif }
+.t { position: absolute; font-size: 12px; line-height: 18px }
+canvas { position: absolute; left: 0; top: 0 }
+</style></head><body><div class="sheet"></div><script>
+window.draw = () => {
+const S = document.querySelector(".sheet");
+const el = (css, html, cls) => { const e = document.createElement("div"); if (cls) e.className = cls; Object.assign(e.style, css); e.innerHTML = html; S.appendChild(e); return e; };
+const C = getComputedStyle(document.documentElement), col = n => C.getPropertyValue(n).trim();
+
+// header
+el({ left: "50px", top: "36px", fontSize: "84px", lineHeight: "88px", fontWeight: 700, letterSpacing: "-.035em", fontFamily: '"Helvetica Neue", Helvetica, "Inter Display", Arial, sans-serif', whiteSpace: "nowrap" }, 'Studio OS<span style="color:var(--hot)">.</span>', "t");
+el({ left: "560px", top: "64px", width: "230px", fontSize: "22px", lineHeight: "28px", letterSpacing: "-.005em", color: "var(--mid)" }, "The whole studio, run from one place.", "t serif");
+
+// the vortex: rings of real words. Outside, the scattered tools a studio juggles, broken and drifting.
+// Inside, the same work in order, tight and calm. "the work" is the word that matters.
+const W = 840, H = 1190, dpr = 2, cv = document.createElement("canvas");
+cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + "px"; cv.style.height = H + "px"; S.appendChild(cv);
+const g = cv.getContext("2d"); g.scale(dpr, dpr); g.textAlign = "center"; g.textBaseline = "middle";
+const CX = 420, CY = 548, R0 = 96, R1 = 352, STEP = 19;
+const outside = ["client emails", "slack threads", "figma links", "timesheets", "invoices", "moodboards", "contracts", "feedback round 4", "final_final_v3", "who has the brief"];
+const inside = ["brief", "concept", "design", "review", "approve", "ship", "invoice"];
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const rings = Math.floor((R1 - R0) / STEP) + 1;
+let wi = 0, wo = 0;
+for (let i = 0; i < rings; i++) {
+  const r = R1 - i * STEP, t = i / (rings - 1);              // t: 0 outer, 1 inner
+  const calm = t > .5, last = i === rings - 1, size = 11, words = last ? ["the work"] : calm ? inside : outside;
+  g.font = `400 ${size}px "Commit"`;
+  // outer rings break into arcs that drift; inner rings close
+  const cover = calm ? 1 : .42 + .58 * (t / .5);
+  const pieces = calm ? 1 : 2 + Math.floor(rnd() * 3);
+  const rot = calm ? -Math.PI / 2 : rnd() * Math.PI * 2;
+  for (let p = 0; p < pieces; p++) {
+    const span = (Math.PI * 2 / pieces) * cover, a0 = rot + p * Math.PI * 2 / pieces + (calm ? 0 : rnd() * .3);
+    const arcLen = span * r;
+    let text = "", list = [];
+    while (true) {
+      const w = (last ? words[0] : calm ? words[wi++ % words.length] : words[wo++ % words.length]).toUpperCase();
+      const next = text + (text ? "   " : "") + w;
+      if (g.measureText(next).width * 1.35 > arcLen && text) break;
+      text = next; list.push(w);
+    }
+    if (calm) { text += "   "; if (!last) wi = 0; }   // closed rings: same seam gap, every ring starts at "brief" at the top
+    // place each character evenly along the arc, words keep their identity for colouring
+    const chars = [...text], step = span / chars.length;
+    let pos = 0, idx = 0;
+    const hotMask = new Array(chars.length).fill(false);
+    list.forEach((w, k) => { if (w === "THE WORK") for (let c = 0; c < w.length; c++) hotMask[pos + c] = true; pos += w.length + 3; });
+    chars.forEach((ch, c) => {
+      if (ch === " ") return;
+      const a = a0 + (c + .5) * step;
+      g.save(); g.translate(CX + Math.cos(a) * r, CY + Math.sin(a) * r); g.rotate(a + Math.PI / 2);
+      const hot = hotMask[c];
+      g.fillStyle = hot ? col("--hot") : t < .25 ? col("--soft") : t < .5 ? col("--mid") : col("--ink");
+      g.font = `${hot ? 700 : 400} ${size}px "Commit"`;
+      g.fillText(ch, 0, 0); g.restore();
+    });
+  }
+}
+// the still centre
+g.fillStyle = col("--hot"); g.font = '700 22px "Commit"'; g.letterSpacing = "4px";
+g.fillText("ONE PLACE", CX + 2, CY - 2);
+g.letterSpacing = "0px"; g.fillStyle = col("--mid"); g.font = '400 11px "Commit"';
+g.fillText("FOR THE WHOLE STUDIO", CX, CY + 22);
+
+// corner notes, plain sentences
+el({ left: "56px", top: "212px", width: "170px", color: "var(--mid)" }, "Outside: every tab a studio keeps open, and the brief nobody can find.", "t");
+el({ left: "614px", top: "212px", width: "170px", color: "var(--mid)", textAlign: "right" }, "Each ring in is a little more in order.", "t");
+el({ left: "56px", top: "868px", width: "170px" }, "<b>Inside:</b> brief, design, review, ship, invoice. One loop, in one window.", "t");
+
+// bottom band
+el({ position: "absolute", left: "56px", top: "960px", width: "728px", height: "1px", background: "var(--ink)" }, "");
+el({ left: "56px", top: "980px", width: "228px" }, "<b>What comes in</b><br>Briefs, client notes, files and feedback land in the project they belong to, not in five inboxes.", "t");
+el({ left: "306px", top: "980px", width: "228px" }, "<b>What it keeps</b><br>Every project's brief, decisions, versions and hours, side by side, so anyone can pick it up.", "t");
+el({ left: "556px", top: "980px", width: "228px" }, "<b>What goes out</b><br>Approved work, sent with the hours behind it and the invoice that follows.", "t");
+el({ left: "56px", top: "1136px", color: "var(--mid)", fontSize: "11px" }, "Studio OS, 5 November 2026", "t");
+el({ left: "784px", top: "1136px", color: "var(--mid)", fontSize: "11px", transform: "translateX(-100%)", whiteSpace: "nowrap" }, 'Drawn by Vyo<span style="color:var(--hot)">.</span>', "t");
+};
+</script></body></html>
