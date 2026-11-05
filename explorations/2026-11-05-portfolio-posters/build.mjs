@@ -7,7 +7,7 @@ const b64 = (f) => fs.readFileSync("fonts/" + f).toString("base64");
 const fonts = [400, 700].map((w) => `@font-face{font-family:"Commit";font-weight:${w};font-display:block;src:url(data:font/otf;base64,${b64(`commit-${w}.otf`)}) format("opentype")}`).join("\n");
 fs.mkdirSync("dist", { recursive: true });
 fs.mkdirSync("png", { recursive: true });
-fs.writeFileSync("dist/posters.html", fs.readFileSync("posters.src.html", "utf8").replace("/*FONTS*/", fonts));
+fs.writeFileSync("dist/posters.html", fs.readFileSync("posters.src.html", "utf8").replace("/*FONTS*/", fonts).replace('/*CODE*/""', JSON.stringify(fs.readFileSync("../../.cursor/skills/explain-app/tools/scan.mjs", "utf8").replace(/\s+/g, " "))));
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1632, height: 1100 }, deviceScaleFactor: 2 });
 page.on("pageerror", (e) => console.error("pageerror", e.message));
