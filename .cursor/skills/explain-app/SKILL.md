@@ -25,6 +25,7 @@ Turn a codebase into a plain-English app guide for people who will never read co
 | **1 — App Guide** | `<repo>-app-poster.canvas.tsx` | How the app **and the code behind it** work, for a non-technical reader — journeys, an "Under the hood" band, screens, connected services |
 | **2 — Project Story** | `<repo>-project-story.canvas.tsx` | The summary / marketing sheet — tagline as hero, talking points, who it's for, what's real, the vision |
 | **3 — Exploded View** | `<repo>-exploded-view.canvas.tsx` | The app's real parts and wiring as an isometric exploded view, built from a scan of the code — a shape per part, cables for real connections, a slider that opens it, one plain sentence per part |
+| **4 — Type Poster** (optional) | `<repo>-type-poster.canvas.tsx` | One picture made of the product's own words: the mess it replaces spirals in to its loop. With `LIVE = true` it moves, and the mess straightens out wherever the reader points. Only on request — see [type-poster-layout.md](type-poster-layout.md) |
 
 ## When to Use
 
@@ -74,6 +75,7 @@ Explain App Progress:
 - [ ] Phase 5: Connection & sales synthesis (page 2)
 - [ ] Phase 6: Project Story poster (page 2)
 - [ ] Phase 6b: Exploded View (page 3: PARTS → wire)
+- [ ] Phase 6c: Type Poster (page 4, only if asked; live or still)
 - [ ] Phase 7: Check + export (PNG/PDF)
 - [ ] Chat summary with the three canvas links and the shareable PDF
 ```
@@ -196,6 +198,16 @@ Apply page 2 voice rules in [plain-language-rules.md](plain-language-rules.md#pa
 7. **Never hand-edit `WIRING`; never type a count.** Changing `name` or `line` needs no re-wire. Changing `from` or `role` does (the canvas throws `PARTS changed — re-run wire`). After a re-scan, re-run `wire`
 8. Footer: the same not-built list as pages 1 and 2, plus any important fact you left undrawn on purpose
 
+### Phase 6c — Type Poster (page 4, optional)
+
+Only when the user asks for a type poster, a vortex, or a poster that moves or reacts to the mouse.
+
+1. Same canvases path. Filename: `<repo-name>-type-poster.canvas.tsx`
+2. Copy [type-poster-starter.md](type-poster-starter.md). Edit only `POSTER` and `LIVE`. Choose the words with [type-poster-layout.md](type-poster-layout.md)
+3. `LIVE = true` when the user wants it to come to life or answer the mouse; `false` for print
+4. `inside` comes from the page 1 journeys. Never add a step the app doesn't have
+5. Add it to the `check` and `export` commands below. Its rules are its own: it must render, carry an `aria-label`, move when live, answer the pointer, and hold still for reduced motion
+
 ### Phase 7 — Check and export
 
 The rules above are enforced by a checker in [tools/](tools/README.md). Run it from this skill's directory (first time only: `npm install --prefix tools && npx --prefix tools playwright install chromium`):
@@ -206,7 +218,7 @@ node tools/poster.mjs export <canvases>/<repo>-app-poster.canvas.tsx <canvases>/
 ```
 
 1. `check` must print **PASS** for all three posters. Page 3 needs `<repo>-facts.json` beside the canvas: `check` re-runs `wire` against it and fails if `WIRING` or the hashes are stale, then drives the drawing (the slider, arrow keys, pointing at a part, the theme button). Every ✗ is a rule break — fix the canvas and re-run. Treat ! warnings (jargon, height, narrow panel) as copy edits unless there's a reason to keep them.
-2. `export` writes `<canvases>/exports/`: a PNG and a PDF per poster, plus `<repo>-poster-set.pdf` with all pages. Page 3 exports in its default state (light, 80% open); the controls are hidden. Add `--paper a4` or `--paper letter` when the user wants to print.
+2. `export` writes `<canvases>/exports/`: a PNG and a PDF per poster, plus `<repo>-poster-set.pdf` with all pages. Page 3 exports in its default state (light, 80% open); the controls are hidden. Page 4 exports its still frame, with no button. Add `--paper a4` or `--paper letter` when the user wants to print.
 3. If the tools can't install (no network), say so in chat and deliver the canvases only — never skip `check` silently.
 
 ### Chat response

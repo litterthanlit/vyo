@@ -26,7 +26,7 @@ node poster.mjs export <canvases>/acme-app-poster.canvas.tsx <canvases>/acme-pro
 
 `export` options: `--out <dir>` (default `<canvases>/exports`), `--paper fit|a4|letter` (default `fit`: one page sized to the poster), `--no-png`, `--no-pdf`. The grid toggle and page 3's controls (`[data-chrome]`) are hidden in exports.
 
-Page 2 rules apply when the filename contains `project-story`, and page 3 rules when it contains `exploded-view`. Everything else is checked as page 1.
+Page 2 rules apply when the filename contains `project-story`, page 3 rules when it contains `exploded-view`, and page 4 rules when it contains `type-poster`. Everything else is checked as page 1.
 
 ### `--facts` and `--state`
 
@@ -101,6 +101,12 @@ Errors (✗) fail the run. Warnings (!) are copy edits to consider.
 | Selecting a part inks its cables (`rgb(10, 10, 10)`) and leaves at least one other cable soft | ✗ |
 | Pointing at a part that is not selected tints its top face | ✗ |
 | The theme button flips paper ↔ ink | ✗ |
+| **Page 4, the type poster** (Swiss grid rules don't apply) | |
+| Renders; exactly one `canvas[data-vortex]` with an `aria-label` that says what it shows | ✗ |
+| A "Hold still" / "Bring to life" button; "Bring to life" makes it live and "Hold still" stops it | ✗ |
+| Live, the canvas changes between frames | ✗ |
+| With reduced motion, it holds still, and pointing at it still changes the drawing | ✗ |
+| No sideways scroll at 1440px and 1028px; at 720px it's a warning | ✗ / ! |
 | Jargon from plain-language-rules.md (page 2 adds marketing words; SVG title/desc text included) | ! |
 | Taller than 1300px; sideways scroll in a 720px panel | ! |
 
@@ -116,9 +122,11 @@ It does not judge copy quality, empty zones, status honesty, or whether a non-en
 npm test
 ```
 
-This builds fixtures from `poster-starter.md`, `sell-sheet-starter.md` and `exploded-view-starter.md`. The starters must pass, and each fixture with a planted bug must fail with its expected message:
+This builds fixtures from `poster-starter.md`, `sell-sheet-starter.md`, `exploded-view-starter.md` and `type-poster-starter.md`. The starters must pass, and each fixture with a planted bug must fail with its expected message:
 
 - Pages 1 and 2: line gap, fifth font size, off-baseline rule, drifting overlay, stray import…
 - Page 3, each with its own copy of the facts file (`test/.out/bug-*-facts.json`, a scan of `test/fixtures/recipe`): a missing or edited `facts.json`, a missing or hand-edited `WIRING`, `PARTS` changed without re-wiring, a `from` that cites nothing, 10 parts, 5 parts in one tier, a part drawing the wrong number of items, bad cables, an off-palette stroke or fill, overlapping or wrapping labels, a drifting leader, a dead slider / arrow keys / hover, and a selection that doesn't ink its cables.
 
-It also type-checks the three starters, and runs the scanner and wire unit tests (`node --test test/scan.test.mjs test/wire.test.mjs`). Run it after editing the starters, the scanner, the wire tool or the checker.
+- Page 4: a frozen live poster, one deaf to the pointer, one that ignores reduced motion, and one with no `aria-label`.
+
+It also type-checks the four starters, and runs the scanner and wire unit tests (`node --test test/scan.test.mjs test/wire.test.mjs`). Run it after editing the starters, the scanner, the wire tool or the checker.

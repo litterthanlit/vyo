@@ -13,7 +13,7 @@
 //   --paper fit|a4|letter  PDF page size (default: fit — one page sized to the poster)
 //   --no-png / --no-pdf  Skip a format
 //
-// Page rules are inferred from the filename (*project-story* = page 2, *exploded-view* = page 3).
+// Page rules are inferred from the filename (*project-story* = page 2, *exploded-view* = page 3, *type-poster* = page 4).
 // Set POSTER_CHROMIUM to a Chromium binary to skip `npx playwright install chromium`.
 import fs from "node:fs";
 import path from "node:path";
@@ -30,7 +30,8 @@ const NARROW_WIDTH = 720; // a canvas panel beside the chat
 const MAX_HEIGHT = 1300;
 const PAPER_PX = { a4: [794, 1123], letter: [816, 1056] };
 
-const pageOf = (file) => (/project-story/i.test(path.basename(file)) ? 2 : /exploded-view/i.test(path.basename(file)) ? 3 : 1);
+const PAGES = [[/project-story/i, 2], [/exploded-view/i, 3], [/type-poster/i, 4]];
+const pageOf = (file) => PAGES.find(([re]) => re.test(path.basename(file)))?.[1] ?? 1;
 const stem = (file) => path.basename(file).replace(/\.canvas\.tsx$|\.tsx$/, "");
 
 async function launch() {
@@ -64,8 +65,8 @@ const seedState = (html, state) => {
   return html.includes("<head>") ? html.replace("<head>", `<head>${script}`) : script + html;
 };
 
-async function open(browser, files, width, scale = 1, state) {
-  const page = await browser.newPage({ viewport: { width, height: 900 }, deviceScaleFactor: scale });
+async function open(browser, files, width, scale = 1, state, reducedMotion = "no-preference") {
+  const page = await browser.newPage({ viewport: { width, height: 900 }, deviceScaleFactor: scale, reducedMotion });
   await page.setContent(seedState(await buildPage(files), state));
   await page.waitForFunction((n) => [...Array(n).keys()].every((i) => document.getElementById(`poster-${i}`)?.childElementCount), files.length);
   await page.evaluate(() => document.fonts.ready);
@@ -168,7 +169,11 @@ export async function check(files, { browser, quiet = false, state, facts } = {}
         warnings.push(...wired.warnings);
         expect = wired.expect;
       }
-      try {
+      if (page === 4) {
+        const r = await checkTypePoster(browser, file, state).catch((e) => ({ errors: [e.message], warnings: [] }));
+        errors.push(...r.errors);
+        warnings.push(...r.warnings);
+      } else try {
         for (const width of CHECK_WIDTHS) {
           const p = await open(browser, [file], width, 1, state);
           const r = await p.evaluate(inspectPoster, { index: 0, page, palette: PALETTE, caps: CAPS, expect });
@@ -340,6 +345,71 @@ async function interact(p) {
   return { errors, warnings };
 }
 
+// Page 4 is a picture made of words on a <canvas>, so the Swiss grid rules don't apply. What must hold: it renders,
+// the drawing has a text equivalent, it fits a narrow panel, and its LIVE option does what it says. Live means it
+// moves on its own, answers the pointer, and holds still for readers who ask for reduced motion.
+async function checkTypePoster(browser, file, state) {
+  const errors = [];
+  const warnings = [];
+  const frame = (p) => p.evaluate(() => document.querySelector("#poster-0 canvas[data-vortex]").toDataURL());
+  const settle = (p) => p.waitForTimeout(400);
+  const mode = (p) => p.evaluate(() => document.querySelector("#poster-0 canvas[data-vortex]")?.dataset.vortex);
+
+  const p = await open(browser, [file], POSTER_WIDTH, 1, state);
+  try {
+    const failed = await p.evaluate(() => document.querySelector("[data-poster-error]")?.textContent);
+    if (failed) return { errors: [`Render error: ${failed}`], warnings };
+    const canvases = await p.evaluate(() => [...document.querySelectorAll("#poster-0 canvas[data-vortex]")].map((c) => c.getAttribute("aria-label") || ""));
+    if (canvases.length !== 1) return { errors: [`Expected one canvas[data-vortex], found ${canvases.length} — start from type-poster-starter.md`], warnings };
+    if (canvases[0].trim().length < 20) errors.push("The vortex canvas needs an aria-label that says what the picture shows");
+
+    const toggle = p.getByRole("button", { name: /hold still|bring to life/i });
+    if (!(await toggle.count())) errors.push('No "Hold still" / "Bring to life" button');
+    if ((await mode(p)) === "still" && (await toggle.count())) {
+      await toggle.first().click();
+      await settle(p);
+    }
+    if ((await mode(p)) !== "live") errors.push('"Bring to life" does not make the vortex live');
+    else {
+      const a = await frame(p);
+      await settle(p);
+      if (a === (await frame(p))) errors.push("The vortex is live but does not move");
+      if (await toggle.count()) {
+        await toggle.first().click();
+        await settle(p);
+        const b = await frame(p);
+        await settle(p);
+        if ((await mode(p)) !== "still" || b !== (await frame(p))) errors.push('"Hold still" does not stop the vortex');
+      }
+    }
+  } finally {
+    await p.close();
+  }
+
+  // Reduced motion: no drift, but pointing still brings order.
+  const q = await open(browser, [file], POSTER_WIDTH, 1, { ...state, liveType: true }, "reduce");
+  try {
+    if ((await mode(q)) === "live") {
+      const a = await frame(q);
+      await settle(q);
+      if (a !== (await frame(q))) errors.push("The vortex still moves when the reader asks for reduced motion");
+      const box = await q.locator("#poster-0 canvas[data-vortex]").boundingBox();
+      await q.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.5);
+      await settle(q);
+      if (a === (await frame(q))) errors.push("The vortex does not answer the pointer");
+    }
+  } finally {
+    await q.close();
+  }
+
+  for (const [width, level] of [[1440, errors], [POSTER_WIDTH, errors], [NARROW_WIDTH, warnings]]) {
+    const n = await open(browser, [file], width, 1, state);
+    if (await n.evaluate(() => document.documentElement.scrollWidth > innerWidth)) level.push(`Scrolls sideways at ${width}px`);
+    await n.close();
+  }
+  return { errors, warnings };
+}
+
 function report({ file, page, errors, warnings }) {
   const status = errors.length ? "FAIL" : "PASS";
   console.log(`\n${status}  ${path.basename(file)}  (page ${page})`);
@@ -354,7 +424,8 @@ async function exportPosters(files, { out, paper = "fit", png = true, pdf = true
   const browser = await launch();
   const written = [];
   try {
-    const p = await open(browser, files, POSTER_WIDTH, 2, state);
+    // Reduced motion makes a live type poster draw its still frame, so a shared file never catches it mid-drift.
+    const p = await open(browser, files, POSTER_WIDTH, 2, state, "reduce");
     const errs = await p.evaluate(() => [...document.querySelectorAll("[data-poster-error]")].map((e) => e.textContent));
     if (errs.length) throw new Error(`Render error: ${errs.join("; ")} — run check first`);
     // Interactive chrome (grid toggle, page 3 controls) has no place on a shared file; keep its space.

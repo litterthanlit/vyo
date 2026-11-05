@@ -28,6 +28,7 @@ const app = code("poster-starter.md");
 const shared = app.split("export default function AppPoster")[0];
 const story = shared + code("sell-sheet-starter.md").replace(/^import .*\n/, "");
 const exploded = shared + code("exploded-view-starter.md").replace(/^import .*\n/, "");
+const typePoster = code("type-poster-starter.md");
 
 const write = (name, src) => {
   const f = path.join(OUT, `${name}.canvas.tsx`);
@@ -78,6 +79,12 @@ const cases = [
   { file: write("starter-app-poster", app), expect: null },
   { file: write("starter-project-story", story), expect: null },
   { file: write3("starter", exploded), expect: null, clean: true },
+  { file: write("starter-type-poster", typePoster), expect: null },
+  { file: write("still-type-poster", plant(typePoster, "const LIVE = true;", "const LIVE = false;")), expect: null }, // "Bring to life" from a still start
+  { file: write("bug-frozen-type-poster", plant(typePoster, "const t = still ? 0 : (now - start) / 1000;", "const t = 0;")), expect: /live but does not move/ },
+  { file: write("bug-deaf-type-poster", plant(typePoster, 'cv.addEventListener("pointermove", move);', "")), expect: /does not answer the pointer/ },
+  { file: write("bug-restless-type-poster", plant(typePoster, 'matchMedia("(prefers-reduced-motion: reduce)").matches', "false")), expect: /still moves when the reader asks for reduced motion/ },
+  { file: write("bug-unlabelled-type-poster", plant(typePoster, "aria-label={summary}", "")), expect: /needs an aria-label/ },
   {
     file: write("bug-five-stations-app-poster", plant(app, '{ label: "Back out", sub: "what you receive" },', '{ label: "Back out", sub: "what you receive" },\n    { label: "Fifth", sub: "x" },')),
     expect: /5 won't land on the 12-column grid/,
@@ -200,14 +207,14 @@ else {
   console.log(`FAIL scan + wire unit tests\n${unit.stdout.split("\n").filter((l) => /^\s*not ok|^# (fail|tests)/.test(l)).map((l) => `       ${l.trim()}`).join("\n") || unit.stderr}`);
 }
 
-// Type-check the three starters against the cursor/canvas shim.
+// Type-check the four starters against the cursor/canvas shim.
 fs.writeFileSync(path.join(OUT, "tsconfig.json"), JSON.stringify({
   compilerOptions: {
     jsx: "react-jsx", strict: true, noEmit: true, target: "es2020", module: "esnext", moduleResolution: "bundler", skipLibCheck: true,
     typeRoots: [path.join(TOOLS, "node_modules", "@types")],
     paths: { "cursor/canvas": [path.join(TOOLS, "shim", "canvas.tsx")], "react": [path.join(TOOLS, "node_modules", "@types", "react")], "react/jsx-runtime": [path.join(TOOLS, "node_modules", "@types", "react", "jsx-runtime")] },
   },
-  files: [cases[0].file, cases[1].file, cases[2].file],
+  files: [cases[0].file, cases[1].file, cases[2].file, cases[3].file],
 }));
 try {
   execFileSync(process.execPath, [path.join(TOOLS, "node_modules", "typescript", "bin", "tsc"), "-p", OUT], { stdio: "pipe" });
