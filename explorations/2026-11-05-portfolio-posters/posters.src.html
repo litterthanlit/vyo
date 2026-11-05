@@ -1,0 +1,379 @@
+<meta charset="utf-8">
+<title>litt.design Work Posters</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400&family=Schibsted+Grotesk:wght@600;800&display=swap">
+<style>
+/*FONTS*/
+/* Layout: a gallery wall. Five 16:10 sheets, one per project, stacked with room to breathe; each sheet keeps its own paper. */
+:root {
+  --wall: #E6E6E3; --wall-ink: #1A1A19; --wall-soft: #6E6E69;
+  --display: "Schibsted Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --serif: Newsreader, "Iowan Old Style", Georgia, serif;
+  --mono: "Commit", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --wall: #121212; --wall-ink: #ECECE8; --wall-soft: #8B8B86; color-scheme: dark } }
+:root[data-theme="dark"] { --wall: #121212; --wall-ink: #ECECE8; --wall-soft: #8B8B86; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--wall); color: var(--wall-ink); font-family: var(--mono); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 48px 72px }
+.wall { max-width: 1600px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px }
+.intro { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px 32px }
+.intro h1 { margin: 0; font: 800 clamp(28px, 4vw, 44px)/1 var(--display); letter-spacing: -0.03em }
+.intro p { margin: 0; max-width: 46ch; font-size: 13px; line-height: 20px; color: var(--wall-soft) }
+.frame { width: 100%; max-width: 100%; aspect-ratio: 16 / 10; position: relative; overflow: hidden; container-type: inline-size }
+.sheet { position: absolute; left: 0; top: 0; width: 1600px; height: 1000px; transform-origin: 0 0; transform: scale(calc(100cqw / 1600px)); overflow: hidden; background: var(--p); color: var(--i) }
+.sheet canvas { position: absolute; left: 0; top: 196px; width: 1600px; height: 560px; touch-action: pan-y }
+.name { position: absolute; left: 64px; top: 44px; margin: 0; font: 800 112px/1 var(--display); letter-spacing: -0.045em; white-space: nowrap }
+.name i { font-style: normal; color: var(--a) }
+.meta { position: absolute; left: 70px; top: 166px; font-size: 13px; letter-spacing: .04em; color: var(--s) }
+.tag { position: absolute; right: 64px; top: 64px; width: 440px; margin: 0; font: 400 34px/42px var(--serif); letter-spacing: -0.01em; color: var(--s2, var(--s)) }
+.band { position: absolute; left: 64px; right: 64px; top: 786px; border-top: 1px solid var(--rule); padding-top: 18px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px }
+.band p { margin: 0; font-size: 13px; line-height: 20px; color: var(--s) }
+.band b { display: block; color: var(--i); font-weight: 700 }
+.band span { display: block; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 6px; color: var(--s) }
+.foot { position: absolute; left: 64px; right: 64px; bottom: 34px; display: flex; justify-content: space-between; font-size: 12px; color: var(--s) }
+.foot em { font-style: normal; color: var(--i) }
+.toggle { font: 12px var(--mono); color: var(--wall-ink); background: transparent; border: 1px solid var(--wall-ink); border-radius: 999px; padding: 6px 14px; cursor: pointer }
+.toggle:focus-visible { outline: 2px solid var(--wall-ink); outline-offset: 2px }
+figcaption { margin-top: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--wall-soft) }
+figure { margin: 0 }
+</style>
+
+<main class="wall">
+  <header class="intro">
+    <h1>litt.design, the work.</h1>
+    <p>Five projects, five posters. Each picture is made from the project's own words and acts out what it does. Point at a picture to play with it.</p>
+    <button class="toggle" id="motion" aria-pressed="true">Hold still</button>
+  </header>
+  <div id="posters"></div>
+</main>
+
+<script>
+const P = [
+  { id: "hypher", name: "Hypher", tag: "Switch coding agents without starting over.", meta: "PRODUCT · 2026 · IN PROGRESS", url: "hypher.app", stack: "Next.js · Convex · TypeScript · MCP",
+    theme: { p: "#EAE8E2", i: "#161616", s: "#6B6962", a: "#FF4F12", rule: "#161616" },
+    cols: [["Challenge", "Every new agent starts cold", "The code lives in the repo. The decisions don't."], ["Approach", "Dump, one note, writeback", "Messy input becomes one bounded note per project."], ["Execution", "Handoff that checks itself", "Checkpoints are verified against the working tree on resume."], ["Result", "The next session starts warm", "Open another agent and it already knows the next action."]] },
+  { id: "wavr", name: "Wavr", tag: "Shader code, turned into motion you can export.", meta: "CREATIVE TOOL · 2026", url: "wavr-v1.vercel.app", stack: "Next.js · WebGL 2 · GLSL · Zustand",
+    theme: { p: "#0A0D18", i: "#F2EFE8", s: "#8D93A6", a: "#FF7A45", rule: "#3A4058" },
+    cols: [["Challenge", "Gradient tools are static", "Designers want living gradients without writing shaders."], ["Approach", "Visual controls over raw GLSL", "Every uniform gets a slider. The interface hides the math."], ["Execution", "Single-shader architecture", "One fragment shader. Switching modes only swaps uniforms."], ["Result", "Export-ready motion", "CSS, PNG or WebM in seconds. The mouse moves it, here too."]] },
+  { id: "studio", name: "Studio OS", tag: "A design tool built around taste. References in, shipped UI out.", meta: "DESIGN TOOL · 2025–2026", url: "studio-os.io", stack: "Next.js · TypeScript · Tailwind · AI agents",
+    theme: { p: "#EDEEF2", i: "#14151A", s: "#6A6D78", a: "#3D4BE0", rule: "#14151A" },
+    cols: [["Challenge", "AI output has no taste", "The references that shape your eye never reach the prompt."], ["Approach", "References in, directives out", "A moodboard compiles into type, spacing and colour rules."], ["Execution", "A canvas that respects structure", "Real, editable layout. Copy clean HTML or publish."], ["Result", "Taste you can reuse", "Every screen looks like one designer with one point of view."]] },
+  { id: "vyo", name: "Vyo", tag: "Turns a codebase into posters that explain the app to anyone.", meta: "AGENT SKILL · 2026 · IN PROGRESS", url: "github.com/litterthanlit/vyo", stack: "Cursor Skills · React · Playwright · esbuild",
+    theme: { p: "#FFFFFF", i: "#0A0A0A", s: "#5B6066", a: "#E4002B", rule: "#0A0A0A" },
+    cols: [["Challenge", "Code explains itself only to coders", "Clients and founders live with an app they can't read."], ["Approach", "A poster, not a document", "The scan lays the repo out on a real 12-column grid."], ["Execution", "Rules a machine can check", "Off-grid lines and low contrast fail before anything ships."], ["Result", "A shared picture of the app", "One sheet a non-engineer reads in a minute."]] },
+  { id: "littmd", name: "litt.md", tag: "A design language an agent can install, follow and be checked against.", meta: "DESIGN SYSTEM · 2026", url: "littmd.vercel.app", stack: "Claude Code · React · Tailwind CSS · shadcn",
+    theme: { p: "#0E0E0E", i: "#F1F0EC", s: "#8A8984", a: "#FFD21F", rule: "#3A3A38" },
+    cols: [["Challenge", "Agents build in everyone's voice", "Purple gradients, three icon cards, a bounce on everything."], ["Approach", "Taste, written down as rules", "Nine rules, one token file, one taste journal."], ["Execution", "Components it can't get wrong", "Lints fail on a stray hex value or an off-scale radius."], ["Result", "One voice across every project", "Any app gets a score out of 100, with every fix listed."]] },
+];
+
+const W = 1600, H = 560, MONO = '"Commit", ui-monospace, Menlo, monospace', DISPLAY = '"Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif', SERIF = 'Newsreader, Georgia, serif';
+const rnd = (seed) => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, k) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(",")})`;
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+
+// ───────────── Hypher: a sideways hourglass. The mess pours in from the left, one note at the waist, the agents on the right.
+function hypher(g, t, ptr, th) {
+  const mess = ["rants", "screenshots", "chat exports", "decisions", "half a thought", "todos", "don't do x", "why we chose it", "decisions", "usage limit hit"];
+  const out = ["claude code", "codex", "cursor", "the next agent", "starts warm", "knows the goal"];
+  const ROWS = 27, LH = 19, top = (H - ROWS * LH) / 2, cx = W / 2, soft = hex(th.s), ink = hex(th.i);
+  g.textBaseline = "middle";
+  for (let r = 0; r < ROWS; r++) {
+    const d = (r - (ROWS - 1) / 2) / ((ROWS - 1) / 2), y = top + r * LH + LH / 2;
+    const gap = 130 + 560 * Math.pow(Math.abs(d), 1.25);
+    const near = ptr.on ? clamp(1 - Math.abs(ptr.y - y) / 70) : 0;
+    for (const side of [-1, 1]) {
+      const x0 = side < 0 ? 64 : cx + gap, x1 = side < 0 ? cx - gap : W - 64;
+      if (x1 - x0 < 30) continue;
+      const words = side < 0 ? mess : out, w0 = (r * 3 + (side > 0 ? 1 : 0)) % words.length;
+      g.save(); g.beginPath(); g.rect(x0, y - LH / 2, x1 - x0, LH); g.clip();
+      g.font = `400 12px ${MONO}`;
+      const adv = g.measureText("M").width + 3.2;
+      // The tape flows left to right through the waist; pointing at a row speeds it up.
+      const speed = 26 + near * 90, shift = ((t * speed + r * 53) % 4000);
+      let x = (side < 0 ? x0 - 4000 + shift : x0 - 2000 + shift), k = w0;
+      while (x < x1) {
+        const word = words[k++ % words.length].toUpperCase(), hot = word === "DECISIONS";
+        g.font = `${hot ? 700 : 400} 12px ${MONO}`;
+        const fade = side < 0 ? clamp(0.25 + 0.75 * (1 - Math.abs(d))) : 1;
+        g.fillStyle = hot ? th.a : side < 0 ? mix(soft, ink, clamp(near * 0.8 + (1 - fade) * 0)) : mix(soft, ink, clamp(0.55 + near));
+        if (side < 0) g.globalAlpha = 0.45 + 0.55 * fade;
+        for (const ch of word) { if (x > x0 - 20 && x < x1 + 20) g.fillText(ch, x, y); x += adv; }
+        g.globalAlpha = 1;
+        x += adv * 3;
+      }
+      g.restore();
+    }
+  }
+  g.textAlign = "center";
+  g.fillStyle = th.a; g.font = `700 30px ${MONO}`;
+  g.fillText("ONE NOTE", cx, H / 2 - 6);
+  g.fillStyle = th.s; g.font = `400 11px ${MONO}`;
+  g.fillText("GOAL · DECISIONS · NEXT", cx, H / 2 + 22);
+  g.textAlign = "left";
+  g.fillStyle = th.s; g.font = `400 12px ${MONO}`;
+  g.fillText("What you dump in", 64, 8);
+  g.textAlign = "right"; g.fillStyle = th.i;
+  g.fillText("What the next agent reads", W - 64, 8);
+  g.textAlign = "left";
+}
+
+// ───────────── Wavr: a living mesh gradient drawn in type. Each glyph is a uniform name; the pointer bends the field.
+const WAVR_TEXT = "speed complexity distortion bloom noise grain particles warp hue ";
+const WAVR_STOPS = ["#0A0D18", "#22306B", "#3F7CFF", "#2FD6C3", "#FFC65A", "#FF7A45", "#FF3D6E"].map(hex);
+const wavrColor = (v) => { v = clamp(v) * (WAVR_STOPS.length - 1); const i = Math.min(WAVR_STOPS.length - 2, Math.floor(v)); return mix(WAVR_STOPS[i], WAVR_STOPS[i + 1], v - i); };
+function wavr(g, t, ptr, th) {
+  const CW = 10, CH = 15, cols = Math.floor((W - 128) / CW), rows = Math.floor((H - 44) / CH);
+  g.font = `400 12px ${MONO}`; g.textBaseline = "top";
+  let k = 0;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++, k++) {
+      let x = c / cols, y = r / rows;
+      const px = 64 + c * CW, py = r * CH;
+      if (ptr.on) {
+        const dx = px - ptr.x, dy = py - ptr.y, dist = Math.hypot(dx, dy), f = Math.exp(-(dist * dist) / 18000);
+        x += f * 0.06 * Math.sin(t * 2 + dist * 0.03); y += f * 0.06 * Math.cos(t * 2 + dist * 0.03);
+      }
+      const wx = x + 0.18 * Math.sin(y * 4.1 + t * 0.35), wy = y + 0.22 * Math.sin(x * 3.3 - t * 0.28);
+      const v = 0.5 + 0.22 * Math.sin(wx * 5.2 + t * 0.5) + 0.2 * Math.sin(wy * 6.7 - t * 0.42) + 0.16 * Math.sin((wx + wy) * 7.5 + t * 0.6);
+      const edge = Math.min(1, x * 8, (1 - x) * 8, y * 6 + 0.2, (1 - y) * 6 + 0.2);
+      const b = clamp((v - 0.12) / 0.78) * clamp(edge);
+      if (b < 0.1) continue;
+      g.globalAlpha = clamp(0.35 + b);
+      g.fillStyle = wavrColor(b);
+      g.fillText(WAVR_TEXT[k % WAVR_TEXT.length], px, py);
+    }
+  }
+  g.globalAlpha = 1;
+  g.fillStyle = th.i; g.font = `400 12px ${MONO}`; g.textBaseline = "middle";
+  g.fillText("uniform float uSpeed = 0.35;   uniform float uComplexity = 5.2;   uniform float uDistortion = 0.22;", 64, H - 14);
+  g.textAlign = "right"; g.fillStyle = th.s;
+  g.fillText("EXPORT  CSS · PNG · WEBM", W - 64, H - 14);
+  g.textAlign = "left";
+}
+
+// ───────────── Studio OS: references scattered on the left, compiled into directives, shipped as a structured screen.
+const STUDIO_REFS = ["MOODBOARD.PNG", "Swiss grid, 12 col", "Editorial serif", "type specimen", "screenshot_0412", "8 / 16 / 32", "#14151A", "tight rhythm", "no neon"];
+const studioCards = (() => { const r = rnd(41); return STUDIO_REFS.map((label, i) => ({ label, x: 70 + (i % 3) * 150 + r() * 30, y: 60 + Math.floor(i / 3) * 140 + r() * 40, a: (r() - 0.5) * 0.32, ph: r() * 6, k: 0 })); })();
+function studio(g, t, ptr, th) {
+  const ink = hex(th.i), soft = hex(th.s), acc = th.a;
+  g.textBaseline = "middle";
+  const panel = { x: 640, y: 96, w: 330, h: 330 };
+  // cards
+  for (const c of studioCards) {
+    const fx = c.x + Math.sin(t * 0.6 + c.ph) * 4, fy = c.y + Math.cos(t * 0.5 + c.ph) * 4;
+    const over = ptr.on && Math.hypot(ptr.x - fx - 64, ptr.y - fy - 30) < 90;
+    c.k += ((over ? 1 : 0) - c.k) * (t === 0 ? 1 : 0.12);
+    // a hairline from each reference into the compiler
+    g.strokeStyle = mix(soft, hex(th.p), 0.55); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(fx + 128, fy + 30); g.bezierCurveTo(560, fy + 30, 580, panel.y + panel.h / 2, panel.x, panel.y + panel.h / 2); g.stroke();
+    g.save(); g.translate(fx + 64, fy + 30); g.rotate(c.a * (1 - c.k));
+    g.fillStyle = "#FFFFFF"; g.fillRect(-64, -30, 128, 60);
+    g.strokeStyle = mix(soft, ink, c.k); g.strokeRect(-63.5, -29.5, 127, 59);
+    g.fillStyle = mix(soft, ink, 0.4 + c.k * 0.6); g.font = `400 11px ${MONO}`; g.textAlign = "center";
+    g.fillText(c.label, 0, 0);
+    g.restore();
+  }
+  g.textAlign = "left";
+  // the compiler
+  g.fillStyle = "#111318"; g.beginPath(); g.roundRect(panel.x, panel.y, panel.w, panel.h, 12); g.fill();
+  g.fillStyle = "#1B1E26"; g.beginPath(); g.roundRect(panel.x + 16, panel.y + 16, panel.w - 32, 64, 6); g.fill();
+  g.fillStyle = "#8B90A0"; g.font = `400 11px ${MONO}`;
+  g.fillText("› Keep editorial type, tight vertical", panel.x + 30, panel.y + 38);
+  g.fillText("  rhythm, no neon accents" + (Math.floor(t * 2) % 2 && t ? "▌" : ""), panel.x + 30, panel.y + 58);
+  const rows = [["PROTECT", "Serif display · 8/16/32", "#6E7BFF"], ["SEND", "Density · line length", "#8B90A0"], ["PROTECT", "12 columns · 24 gutter", "#6E7BFF"], ["AVOID", "Gradients · shadows", "#FF5A4E"]];
+  const scan = t ? Math.floor(t * 0.8) % rows.length : -1;
+  rows.forEach(([k, v, col], i) => {
+    const y = panel.y + 100 + i * 54;
+    g.strokeStyle = i === scan ? col : "#2A2E39"; g.lineWidth = 1;
+    g.beginPath(); g.roundRect(panel.x + 16, y, panel.w - 32, 42, 6); g.stroke();
+    g.fillStyle = col; g.font = `700 10px ${MONO}`; g.fillText(k, panel.x + 30, y + 21);
+    g.fillStyle = k === "AVOID" ? "#8B90A0" : "#E8E9EE"; g.font = `400 12px ${MONO}`;
+    g.fillText(v, panel.x + 100, y + 21);
+    if (k === "AVOID") { g.strokeStyle = "#8B90A0"; g.beginPath(); g.moveTo(panel.x + 100, y + 21); g.lineTo(panel.x + 100 + g.measureText(v).width, y + 21); g.stroke(); }
+  });
+  // arrows
+  g.strokeStyle = th.i; g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(panel.x + panel.w + 20, panel.y + panel.h / 2); g.lineTo(1030, panel.y + panel.h / 2); g.stroke();
+  g.beginPath(); g.moveTo(1022, panel.y + panel.h / 2 - 6); g.lineTo(1030, panel.y + panel.h / 2); g.lineTo(1022, panel.y + panel.h / 2 + 6); g.stroke();
+  // the shipped screen, on a grid it respects
+  const s = { x: 1050, y: 40, w: 486, h: 440 };
+  g.fillStyle = "#FFFFFF"; g.fillRect(s.x, s.y, s.w, s.h);
+  g.strokeStyle = th.i; g.lineWidth = 1; g.strokeRect(s.x + 0.5, s.y + 0.5, s.w - 1, s.h - 1);
+  const gx = s.x + 32, gw = s.w - 64, colW = (gw - 11 * 12) / 12;
+  const showGrid = ptr.on && ptr.x > s.x && ptr.x < s.x + s.w && ptr.y > s.y && ptr.y < s.y + s.h;
+  if (showGrid) { g.fillStyle = "rgba(61,75,224,0.08)"; for (let i = 0; i < 12; i++) g.fillRect(gx + i * (colW + 12), s.y, colW, s.h); }
+  g.fillStyle = th.i; g.font = `700 11px ${DISPLAY}`; g.fillText("Studio OS", gx, s.y + 28);
+  g.fillStyle = "#9A9DA8"; g.font = `400 10px ${MONO}`; g.fillText("Work   Taste   Pricing", gx + gw - 230, s.y + 28);
+  g.fillStyle = acc; g.fillRect(gx + gw - 44, s.y + 18, 44, 20);
+  g.fillStyle = th.i; g.font = `400 46px ${SERIF}`; g.textBaseline = "alphabetic";
+  g.fillText("The Design OS,", gx, s.y + 112); g.fillText("Integrated.", gx, s.y + 160);
+  g.textBaseline = "middle";
+  [0, 1, 2].forEach((i) => { g.fillStyle = "#C9CBD3"; g.fillRect(gx, s.y + 188 + i * 16, [6, 5, 3][i] * (colW + 12) - 12, 6); });
+  g.fillStyle = acc; g.fillRect(gx, s.y + 248, 2 * (colW + 12) + colW * 0, 28);
+  g.fillStyle = "#fff"; g.font = `700 10px ${MONO}`; g.fillText("PUBLISH", gx + 12, s.y + 262);
+  for (let i = 0; i < 3; i++) {
+    const x = gx + i * 4 * (colW + 12), w = 4 * (colW + 12) - 12;
+    g.fillStyle = "#EDEEF2"; g.fillRect(x, s.y + 300, w, 92);
+    g.fillStyle = "#C9CBD3"; g.fillRect(x, s.y + 404, w * 0.8, 6);
+  }
+  // captions
+  g.fillStyle = th.s; g.font = `400 12px ${MONO}`;
+  g.fillText("REFERENCES IN", 70, 14); g.fillText("TASTE DIRECTIVES", panel.x, 14); g.fillText("SHIPPED UI OUT", s.x, 14);
+  g.fillText(showGrid ? "12 columns, 12 gutter. The layout keeps to it." : "Point at the screen to see its grid.", s.x, s.y + s.h + 24);
+}
+
+// ───────────── Vyo: the files of a real repo stream in, three stations, out comes a poster on a 12-column grid.
+const VYO_FILES = "app/(app)/page.tsx app/(app)/plan/page.tsx app/(app)/recipes/[id]/page.tsx app/(app)/recipes/new/page.tsx app/(app)/recipes/page.tsx app/(app)/settings/page.tsx app/api/cron/weekly-plan/route.ts app/api/recipes/[id]/route.ts app/api/recipes/route.ts app/api/suggest/route.ts components/plan/plan-grid.tsx components/plan/shopping-list.tsx components/recipes/recipe-card.tsx components/recipes/recipe-form.tsx lib/ai/suggest.ts lib/auth.ts lib/billing.ts lib/db.ts lib/email.ts lib/plan/build.ts lib/plan/shopping.ts lib/recipes/query.ts prisma/schema.prisma vercel.json".split(" ");
+const vyoKind = (f) => /page\.tsx$/.test(f) ? "screen" : /cron/.test(f) ? "runs on its own" : /route\.ts$/.test(f) ? "answers requests" : /prisma|db\.ts/.test(f) ? "saved data" : /billing|email|auth/.test(f) ? "outside service" : /ai\//.test(f) ? "AI" : "";
+function vyo(g, t, ptr, th) {
+  const ink = hex(th.i), soft = hex(th.s), LH = 20, n = VYO_FILES.length, scroll = (t * 14) % (n * LH);
+  g.textBaseline = "middle";
+  g.save(); g.beginPath(); g.rect(64, 30, 560, H - 60); g.clip();
+  for (let i = -1; i < n * 2; i++) {
+    const y = 40 + i * LH - scroll;
+    if (y < 10 || y > H) continue;
+    const f = VYO_FILES[((i % n) + n) % n], kind = vyoKind(f), near = ptr.on ? clamp(1 - Math.abs(ptr.y - y) / 30) * (ptr.x < 640 ? 1 : 0) : 0;
+    const fade = clamp(Math.min((y - 30) / 60, (H - 30 - y) / 60));
+    g.globalAlpha = fade;
+    g.fillStyle = mix(soft, ink, near); g.font = `400 12px ${MONO}`;
+    g.fillText(f, 64, y);
+    if (kind) { g.fillStyle = near ? th.a : th.i; g.font = `700 10px ${MONO}`; g.fillText("→ " + kind.toUpperCase(), 380, y); }
+  }
+  g.restore(); g.globalAlpha = 1;
+  // three stations on a transit line
+  const ly = H / 2, xs = [690, 830, 970];
+  g.fillStyle = th.i; g.fillRect(xs[0], ly - 1, xs[2] - xs[0], 2);
+  const dot = t ? xs[0] + ((t * 60) % (xs[2] - xs[0])) : -99;
+  xs.forEach((x, i) => {
+    g.beginPath(); g.arc(x, ly, 7, 0, Math.PI * 2); g.fillStyle = th.i; g.fill();
+    g.font = `700 11px ${DISPLAY}`; g.fillText(["SCAN", "WIRE", "CHECK"][i], x - 14, ly - 26);
+    g.font = `400 11px ${MONO}`; g.fillStyle = th.s; g.fillText(["facts.json", "real links", "Swiss rules"][i], x - 14, ly + 26); g.fillStyle = th.i;
+  });
+  if (dot > 0) { g.beginPath(); g.arc(dot, ly, 4, 0, Math.PI * 2); g.fillStyle = th.a; g.fill(); }
+  // the poster it makes
+  const s = { x: 1080, y: 20, w: 370, h: 500 }, gx = s.x + 24, gw = s.w - 48, cw = (gw - 11 * 8) / 12;
+  g.fillStyle = "#fff"; g.fillRect(s.x, s.y, s.w, s.h); g.strokeStyle = th.i; g.lineWidth = 1; g.strokeRect(s.x + 0.5, s.y + 0.5, s.w - 1, s.h - 1);
+  const grid = !ptr.on || (ptr.x > s.x - 20);
+  if (grid) { g.fillStyle = "rgba(228,0,43,0.07)"; for (let i = 0; i < 12; i++) g.fillRect(gx + i * (cw + 8), s.y + 24, cw, s.h - 48); }
+  g.fillStyle = th.i; g.font = `700 9px ${DISPLAY}`; g.fillText("APP GUIDE — 01", gx, s.y + 36);
+  g.fillRect(gx, s.y + 46, gw, 2);
+  g.font = `800 64px ${DISPLAY}`; g.textBaseline = "alphabetic"; g.fillText("Recipe", gx - 2, s.y + 116);
+  g.fillStyle = th.a; g.fillText(".", gx - 2 + g.measureText("Recipe").width, s.y + 116);
+  g.textBaseline = "middle"; g.fillStyle = th.i;
+  [0, 1].forEach((i) => g.fillRect(gx, s.y + 140 + i * 12, 7 * (cw + 8) - 8 - i * 60, 5));
+  ["1", "2", "3"].forEach((num, i) => {
+    const x = gx + i * 4 * (cw + 8);
+    g.font = `800 34px ${DISPLAY}`; g.fillText(num, x, s.y + 200);
+    g.fillStyle = "#B7BABF"; [0, 1, 2].forEach((j) => g.fillRect(x, s.y + 228 + j * 10, 3 * (cw + 8) - 16 - j * 14, 4)); g.fillStyle = th.i;
+  });
+  g.fillRect(gx, s.y + 286, gw, 1);
+  g.font = `700 8px ${DISPLAY}`; g.fillText("UNDER THE HOOD", gx, s.y + 300);
+  const sy = s.y + 340; g.fillRect(gx + cw / 2, sy - 1, gw - cw, 2);
+  [0, 1, 2, 3].forEach((i) => { g.beginPath(); g.arc(gx + cw / 2 + i * (gw - cw) / 3, sy, 5, 0, Math.PI * 2); g.fill(); });
+  // a small exploded stack, page 3
+  [0, 1, 2].forEach((i) => {
+    const cx = gx + gw / 2, cy = s.y + 420 + i * 18 - (t ? Math.sin(t) * 4 * (1 - i) : 0);
+    g.beginPath(); g.moveTo(cx, cy - 16); g.lineTo(cx + 56, cy); g.lineTo(cx, cy + 16); g.lineTo(cx - 56, cy); g.closePath();
+    g.fillStyle = i === 0 ? "#FCE1E6" : "#fff"; g.fill(); g.strokeStyle = th.i; g.stroke();
+  });
+  g.fillStyle = th.s; g.font = `400 12px ${MONO}`;
+  g.fillText("A REAL REPO, READ", 64, 14); g.fillText("THE POSTER IT MAKES", s.x, 14);
+}
+
+// ───────────── litt.md: the average of the internet, struck out, against a score of 100 written in tokens.
+const CLICHES = ["purple gradient", "three icon cards", "bounce on everything", "glassmorphism", "rounded-3xl", "emoji bullets", "hero blob", "shadow-2xl", "#7C3AED", "gradient text", "lorem ipsum", "Inter, again", "centered everything", "neon glow"];
+const clicheBits = (() => { const r = rnd(97); return CLICHES.map((w, i) => ({ w, x: 70 + r() * 470, y: 50 + i * 33 + r() * 6, s: 13 + Math.floor(r() * 3) * 4, a: (r() - 0.5) * 0.18, ph: r() * 6, dx: 0, dy: 0 })); })();
+const TOKENS = "--ink --paper --space-1 --space-2 --space-4 --space-8 --radius-2 --type-14 --type-16 --type-24 --type-48 --rule --accent --grid-12 --measure-65 ";
+let hundredMask = null;
+function littmd(g, t, ptr, th) {
+  const soft = hex(th.s), ink = hex(th.i), acc = hex(th.a);
+  g.textBaseline = "middle";
+  for (const b of clicheBits) {
+    const bx = b.x + Math.sin(t * 0.7 + b.ph) * 6, by = b.y + Math.cos(t * 0.6 + b.ph) * 3;
+    if (ptr.on) { const dx = bx + 60 - ptr.x, dy = by - ptr.y, d = Math.hypot(dx, dy); if (d < 120) { b.dx += (dx / d) * (120 - d) * 0.04; b.dy += (dy / d) * (120 - d) * 0.04; } }
+    b.dx *= 0.94; b.dy *= 0.94;
+    g.save(); g.translate(bx + b.dx, by + b.dy); g.rotate(b.a);
+    g.font = `400 ${b.s}px ${MONO}`; g.fillStyle = mix(soft, ink, 0.1);
+    g.fillText(b.w, 0, 0);
+    const w = g.measureText(b.w).width;
+    g.strokeStyle = th.a; g.lineWidth = 2; g.beginPath(); g.moveTo(-4, 1); g.lineTo(w + 4, 1); g.stroke();
+    g.restore();
+  }
+  // "100" set in tokens: render the numeral once as a mask, then fill its cells with token text.
+  if (!hundredMask) {
+    const m = document.createElement("canvas"); m.width = 820; m.height = 460;
+    const mg = m.getContext("2d"); mg.font = `800 440px ${DISPLAY}`; mg.textBaseline = "middle"; mg.textAlign = "center";
+    mg.fillText("100", 410, 236);
+    const d = mg.getImageData(0, 0, 820, 460).data; hundredMask = { w: 820, h: 460, on: (x, y) => d[(Math.floor(y) * 820 + Math.floor(x)) * 4 + 3] > 128 };
+  }
+  const ox = 690, oy = 40, CW = 7.2, CH = 11, shift = Math.floor(t * 9);
+  g.font = `700 10px ${MONO}`;
+  let k = 0;
+  for (let y = 0; y < hundredMask.h; y += CH) {
+    for (let x = 0; x < hundredMask.w; x += CW) {
+      if (!hundredMask.on(x, y + CH / 2)) continue;
+      k++;
+      const px = ox + x, py = oy + y, near = ptr.on ? clamp(1 - Math.hypot(px - ptr.x, py - ptr.y) / 140) : 0;
+      g.fillStyle = mix(acc, ink, near * 0.8);
+      g.fillText(TOKENS[(k + shift) % TOKENS.length], px, py + CH / 2);
+    }
+  }
+  g.fillStyle = th.s; g.font = `400 12px ${MONO}`;
+  g.fillText("THE AVERAGE OF THE INTERNET", 70, 14);
+  g.fillText("ONE VOICE, SCORED OUT OF 100", ox, 14);
+  g.fillStyle = th.i; g.fillText("9 rules · 1 token file · 1 taste journal · every fix listed", ox, H - 14);
+}
+
+const DRAW = { hypher, wavr, studio, vyo, littmd };
+
+// ───────────── the gallery
+const host = document.getElementById("posters");
+const live = { on: !matchMedia("(prefers-reduced-motion: reduce)").matches };
+const sheets = P.map((p, n) => {
+  const fig = document.createElement("figure");
+  const style = Object.entries(p.theme).map(([k, v]) => `--${k}:${v}`).join(";");
+  const dot = p.name.endsWith(".md") ? "" : "<i>.</i>";
+  fig.innerHTML = `<div class="frame"><section class="sheet" style="${style}" aria-labelledby="t-${p.id}">
+    <h2 class="name" id="t-${p.id}">${p.name}${dot}</h2>
+    <div class="meta">${p.meta}</div>
+    <p class="tag">${p.tag}</p>
+    <canvas width="${W}" height="${H}" role="img" aria-label="${p.name} poster picture"></canvas>
+    <div class="band">${p.cols.map(([l, h, s]) => `<p><span>${l}</span><b>${h}</b>${s}</p>`).join("")}</div>
+    <div class="foot"><span>litt.design &nbsp;/&nbsp; Work ${String(n + 1).padStart(2, "0")} of ${String(P.length).padStart(2, "0")}</span><span>${p.stack}</span><em>${p.url}</em></div>
+  </section></div><figcaption><span>${p.name}</span><span>${["Point at a row to speed the handoff", "Point at the field to bend it", "Point at a reference to straighten it, or at the screen to see its grid", "Point at a file to see what the scan calls it", "Point at the clichés to push them away"][n]}</span></figcaption>`;
+  host.appendChild(fig);
+  if (n < P.length - 1) host.appendChild(Object.assign(document.createElement("div"), { style: "height:56px" }));
+  const cv = fig.querySelector("canvas"), g = cv.getContext("2d"), dpr = Math.min(2, devicePixelRatio || 1);
+  const s = { p, cv, g, ptr: { x: 0, y: 0, on: false }, visible: true, dirty: true };
+  const fit = () => { const w = Math.max(1, Math.round(cv.getBoundingClientRect().width * dpr)); if (cv.width !== w) { cv.width = w; cv.height = Math.round(w * H / W); } s.dirty = true; };
+  fit(); addEventListener("resize", fit);
+  cv.addEventListener("pointermove", (e) => { const b = cv.getBoundingClientRect(); s.ptr.x = (e.clientX - b.left) / b.width * W; s.ptr.y = (e.clientY - b.top) / b.height * H; s.ptr.on = true; s.dirty = true; });
+  cv.addEventListener("pointerleave", () => { s.ptr.on = false; s.dirty = true; });
+  new IntersectionObserver(([e]) => { s.visible = e.isIntersecting; }).observe(cv);
+  return s;
+});
+
+const t0 = performance.now();
+let frozenAt = 0;
+function frame(now) {
+  const t = live.on ? (now - t0) / 1000 : frozenAt;
+  for (const s of sheets) {
+    if (!s.visible || (!live.on && !s.dirty)) continue;
+    const k = s.cv.width / W;
+    s.g.setTransform(k, 0, 0, k, 0, 0);
+    s.g.fillStyle = s.p.theme.p; s.g.fillRect(0, 0, W, H);
+    try { DRAW[s.p.id](s.g, t, s.ptr, s.p.theme); } catch (e) { console.error(s.p.id, e); }
+    s.dirty = false;
+  }
+  requestAnimationFrame(frame);
+}
+const btn = document.getElementById("motion");
+const label = () => { btn.textContent = live.on ? "Hold still" : "Bring to life"; btn.setAttribute("aria-pressed", String(live.on)); };
+btn.addEventListener("click", () => { if (live.on) frozenAt = (performance.now() - t0) / 1000; live.on = !live.on; sheets.forEach((s) => (s.dirty = true)); label(); });
+label();
+window.__still = () => { live.on = false; frozenAt = 0; sheets.forEach((s) => (s.dirty = true)); };
+document.fonts.ready.then(() => Promise.all([`400 12px ${MONO}`, `700 12px ${MONO}`, `800 40px ${DISPLAY}`, `400 40px ${SERIF}`].map((f) => document.fonts.load(f)))).finally(() => { hundredMask = null; sheets.forEach((s) => (s.dirty = true)); requestAnimationFrame(frame); });
+</script>
