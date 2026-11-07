@@ -1,0 +1,196 @@
+{
+  "version": 3,
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "date": "2026-11-07"
+  },
+  "theme": "light",
+  "headline": "It knows what you cook, then suggests what to cook next.",
+  "hot": "new ideas",
+  "figure": {
+    "fits": "An eye: the lids are everything Pantry reads about your kitchen, the iris is the few ideas it sees, and the name sits in the pupil.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "lids",
+        "profile": [
+          [
+            320,
+            420,
+            0
+          ],
+          [
+            360,
+            420,
+            98.7
+          ],
+          [
+            400,
+            420,
+            182.2
+          ],
+          [
+            440,
+            420,
+            250.5
+          ],
+          [
+            480,
+            420,
+            303.7
+          ],
+          [
+            520,
+            420,
+            341.6
+          ],
+          [
+            560,
+            420,
+            364.4
+          ],
+          [
+            600,
+            420,
+            372
+          ],
+          [
+            640,
+            420,
+            364.4
+          ],
+          [
+            680,
+            420,
+            341.6
+          ],
+          [
+            720,
+            420,
+            303.7
+          ],
+          [
+            760,
+            420,
+            250.5
+          ],
+          [
+            800,
+            420,
+            182.2
+          ],
+          [
+            840,
+            420,
+            98.7
+          ],
+          [
+            880,
+            420,
+            0
+          ]
+        ],
+        "holes": [
+          {
+            "ellipse": {
+              "cx": 420,
+              "cy": 600,
+              "rx": 222,
+              "ry": 222
+            }
+          }
+        ],
+        "words": [
+          "your recipes",
+          "last week",
+          "leftovers",
+          "allergies",
+          "the season",
+          "busy nights",
+          "the budget",
+          "favourites"
+        ],
+        "tone": [
+          "soft",
+          "mid",
+          "soft"
+        ],
+        "size": 11
+      },
+      {
+        "kind": "fill",
+        "id": "iris",
+        "ellipse": {
+          "cx": 420,
+          "cy": 600,
+          "rx": 204,
+          "ry": 204
+        },
+        "holes": [
+          {
+            "ellipse": {
+              "cx": 420,
+              "cy": 600,
+              "rx": 114,
+              "ry": 114
+            }
+          }
+        ],
+        "words": [
+          "tonight's dinner",
+          "new ideas",
+          "the list"
+        ],
+        "tone": "ink",
+        "size": 11,
+        "hot": true
+      }
+    ],
+    "texts": [
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 56,
+        "y": 52,
+        "w": 520,
+        "size": 40
+      },
+      {
+        "role": "aside",
+        "id": "blurb",
+        "text": "Pantry looks at what you cook, what's left and who's eating, then suggests the few new recipes worth trying this week.",
+        "x": 600,
+        "y": 60,
+        "w": 184
+      },
+      {
+        "role": "masthead",
+        "id": "masthead",
+        "x": 290,
+        "y": 562,
+        "w": 260,
+        "size": 72,
+        "align": "center"
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "What it reads",
+      "text": "Your saved recipes and their ingredients, last week's plan, and what you told it about allergies and busy nights."
+    },
+    {
+      "title": "What it suggests",
+      "text": "A few new recipes that fit the week, from an AI model. You choose which ones to keep."
+    },
+    {
+      "title": "What it sends",
+      "text": "The week's plan by email every Monday at 8, and a shopping list built from the plan."
+    }
+  ],
+  "notBuilt": [
+    "paid plans"
+  ]
+}

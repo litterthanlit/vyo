@@ -1,0 +1,75 @@
+{
+  "version": 3,
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "date": "2026-11-07"
+  },
+  "theme": "light",
+  "headline": "Every week starts with a question. Pantry answers it on Monday.",
+  "hot": "well",
+  "figure": {
+    "fits": "Four words drawn in squares that warm up line by line, cold blue to the accent, the way a blank week fills up by Monday.",
+    "regions": [
+      {
+        "kind": "dots",
+        "id": "words",
+        "lines": [
+          "PLAN",
+          "ONCE",
+          "EAT",
+          "WELL"
+        ],
+        "x": 130,
+        "y": 56,
+        "cell": 20,
+        "tones": [
+          "cold",
+          "cool",
+          "ink",
+          "ink"
+        ]
+      }
+    ],
+    "texts": [
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 56,
+        "y": 772,
+        "w": 400,
+        "size": 34
+      },
+      {
+        "role": "masthead",
+        "id": "masthead",
+        "x": 496,
+        "y": 766,
+        "w": 288,
+        "size": 48
+      },
+      {
+        "role": "aside",
+        "id": "monday",
+        "text": "**Monday at 8:** the week's plan lands in your inbox, so the first dinner is already decided.",
+        "x": 496,
+        "y": 830,
+        "w": 288
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "How",
+      "text": "Save the recipes you already cook. Pantry fills the week from them, uses up the leftovers first, and builds the shopping list."
+    },
+    {
+      "title": "New ideas",
+      "text": "Ask for a suggestion and Pantry offers a few recipes that fit your week. Keep the ones you like and they join your recipes."
+    }
+  ],
+  "notBuilt": [
+    "paid plans"
+  ]
+}
