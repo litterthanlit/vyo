@@ -15,7 +15,7 @@ import { SHAPE_KEYS, GRID, ADVANCE } from "./lib/geometry.mjs";
 import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, LINE_HEIGHT } from "./lib/render.mjs";
 import { runChecks } from "./lib/check.mjs";
 import { FIELDS } from "./lib/fields/index.mjs";
-import { partsFromFacts, accentIds, unplainName, PART_DEFAULTS } from "./lib/parts.mjs";
+import { partsFromFacts, accentIds, unplainName, sameNames, PART_DEFAULTS } from "./lib/parts.mjs";
 
 const USAGE = `Usage:
   vyo scan    <repo-dir> --out <dir>/<repo>-facts.json
@@ -129,11 +129,13 @@ function cmdParts(argv) {
   const lines = parts.reduce((s, p) => s + p.loc, 0);
   const files = parts.reduce((s, p) => s + p.files, 0);
   const width = Math.max(2, ...parts.map((p) => p.id.length));
+  const twin = new Map(sameNames(parts).flatMap((g) => g.map((p) => [p.id, g.filter((q) => q !== p).map((q) => q.id).join(", ")])));
+  const flag = (p) => (unplainName(p.name) ? "  ! looks like a vendor or code name" : twin.has(p.id) ? `  ! same name as ${twin.get(p.id)}` : "");
   const out = [
     `${facts.repo.name}: ${parts.length} parts, ${lines} lines in ${files} files (parts under ${pct(PART_DEFAULTS.minShare)} of the lines merge into their parent; at most ${PART_DEFAULTS.maxParts})`,
     `${"id".padEnd(width)}  share  lines  files  name`,
     ...parts.map((p) =>
-      `${p.id.padEnd(width)}  ${pct(lines ? p.loc / lines : 0).padStart(5)}  ${String(p.loc).padStart(5)}  ${String(p.files).padStart(5)}  ${p.name}${unplainName(p.name) ? "  ! looks like a vendor or code name" : ""}`,
+      `${p.id.padEnd(width)}  ${pct(lines ? p.loc / lines : 0).padStart(5)}  ${String(p.loc).padStart(5)}  ${String(p.files).padStart(5)}  ${p.name}${flag(p)}`,
     ),
     "Set a field's accent to one id. Give each flagged part a plain name in the field's names, keyed by its id.",
   ];
@@ -240,7 +242,9 @@ function cmdCompose(argv) {
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
   const parts = partsFromFacts(facts);
   if (opt.accent !== undefined && !accentIds(parts, opt.accent).size) throw new Usage(`--accent ${opt.accent} names no part; vyo parts ${pos[0]} lists the part ids`);
-  const unplain = parts.filter((p) => unplainName(p.name));
+  if (field && !parts.length) throw new Failure(`no parts to draw; the scan found no code. Compose a fill poster instead: vyo compose ${pos[0]} --from <preset> (vyo presets lists them)`);
+  const twins = new Set(sameNames(parts).flat());
+  const unplain = parts.filter((p) => unplainName(p.name) || twins.has(p));
   const notes = preset ? preset.notes.length : 3;
   fs.writeFileSync(out, JSON.stringify(scaffoldSpec(facts, { theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, unplain }), null, 2) + "\n");
   const from = preset ? `the ${opt.from} preset's geometry and its words taken out` : `a ${field} field of ${parts.length} parts${opt.accent ? ` with ${opt.accent} in the accent` : ""}`;

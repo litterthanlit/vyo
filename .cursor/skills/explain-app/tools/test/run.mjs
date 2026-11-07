@@ -135,6 +135,10 @@ for (const id of PRESETS.filter((p) => preset(p).figure.regions.some((r) => r.ki
 const emptyFacts = path.join(OUT, "empty-facts.json");
 vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
 {
+  const r = vyo("compose", emptyFacts, "--out", path.join(OUT, "empty-field.json"));
+  result(r.status === 1 && /^✗ no parts to draw; the scan found no code\. Compose a fill poster instead: vyo compose .+ --from <preset>/m.test(r.stderr) && !fs.existsSync(path.join(OUT, "empty-field.json")), "compose refuses a field when the scan found no code", `exit ${r.status}\n${r.stderr}`);
+}
+{
   const spec = { ...preset("hourglass"), facts: JSON.parse(fs.readFileSync(emptyFacts, "utf8")).hash };
   const file = path.join(OUT, "empty.json");
   fs.writeFileSync(file, JSON.stringify(spec, null, 2));
