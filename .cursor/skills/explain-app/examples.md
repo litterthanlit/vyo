@@ -1,197 +1,537 @@
 # Examples
 
-## Sample Prompts
+## Sample prompts
 
 **Client handoff**
-> Explain this app to my client as a Swiss Style poster — they need to understand what we built without any code.
+> Explain this app to my client as a poster. They need to understand what we built without any code.
 
 **PM overview**
-> Walk me through how this product works for a PM. Poster format, focus on flows and what's actually live.
+> Walk me through how this product works for a PM. One page, and be honest about what's live.
 
-**General**
-> Explain what this app does. Visualize the repo as a poster.
+**Selling**
+> Help me talk about my product. Make me a poster I can send to people.
 
-**Exploded view (page 3 emphasis)**
-> Draw my app as an exploded isometric diagram, so my investors can see what it's made of and how the parts connect.
+**A picture in mind**
+> Draw my codebase as an hourglass: everything my users throw at it, squeezed into one plan.
 
-**Selling / connection (page 2 emphasis)**
-> Explain this codebase so I can talk about my product confidently — I need the second page with talking points.
+## From the main moment to the picture
 
-## Sample Chat Response
+Write the main moment as one sentence. Find its verb. The verb gives the shape.
 
-```markdown
-This app is a team task board where members sign in, create projects, and track work on a shared dashboard.
+| App | Main moment | Verb | Picture |
+|---|---|---|---|
+| Pantry, a meal planner | Turns your recipes, leftovers and cravings into one week of dinners | squeezes | An hourglass. What you juggle pours through one week's plan into a shopping list |
+| Relay, a handoff board for shift teams | The night shift's notes are waiting when the day shift arrives | carries | A ribbon made of what travels, from one shift to the other |
+| Tally, a review inbox for small shops | Reads every review and flags the one to answer today | reads, then focuses | An eye. The lids are every review, the iris is the one that matters |
+| A habit app | A streak that warms up day by day | warms up | Dot letters that go from cold blue-grey to the accent |
 
-**Page 1 — how it works:** [taskflow-app-poster](/Users/<you>/.cursor/projects/<workspace>/canvases/taskflow-app-poster.canvas.tsx)
+## The presets, as full specs for Pantry
 
-**Page 2 — your story:** talking points, who it's for, and what's real today — [taskflow-project-story](/Users/<you>/.cursor/projects/<workspace>/canvases/taskflow-project-story.canvas.tsx)
+Pantry is the `recipe` test fixture. It has 6 screens (recipes, a recipe, a new recipe, the weekly plan, settings, home), recipes with ingredients, a weekly plan, a shopping list, AI suggestions, and a weekly email every Monday at 8. It has payment code but no checkout screen, so every spec puts "paid plans" in `notBuilt`.
 
-**Page 3 — taken apart:** the app taken apart into its real parts — drag to open; lines are real connections in the code — [taskflow-exploded-view](/Users/<you>/.cursor/projects/<workspace>/canvases/taskflow-exploded-view.canvas.tsx)
+`node tools/vyo.mjs presets` lists these four. `compose --from <id>` copies one with its words replaced by placeholders. A poster that keeps a preset's geometry unchanged gets the `preset-copy` warning, so use them to learn from or to bend, not to ship as they are.
 
-**Share it:** [taskflow-poster-set.pdf](/Users/<you>/.cursor/projects/<workspace>/canvases/exports/taskflow-poster-set.pdf) — all three pages, opens anywhere.
+Each block below is the preset file in `tools/presets/`, with the same words and geometry. Only the layout of the number lists is tighter. The `facts` value is a placeholder: yours is the hash from your own scan, and `compose` writes it. The fixture is not a git repo, so `product` has no `commit`.
 
-Note: billing is not in the app yet — marked in all three footers. Do not list Stripe under Connected or draw it on page 3.
+Render writes the counts line from the scan. Never type it:
+
+```
+6 screens, 3 kinds of request, 4 kinds of saved record, 3 outside services (email, payments, sign-in), 1 AI model, runs 1 job on its own
 ```
 
-## Sample Poster Copy (Hypher)
+### hourglass
 
-### Folio
-- APP GUIDE — 01 · How Hypher works, in plain English · Web app · Solo builders
-
-### Masthead (one line, red full stop)
-```
-Hypher.
-```
-Purpose (cols 1–7, ink; right columns empty): A spatial project brain for solo builders — capture thoughts anywhere, watch them cluster on a canvas, and get an AI-written daily digest.
-
-### Journeys (giant numerals, 4 × 3 cols)
-1. Capture a note or file — pick a project
-2. Organize it on the spatial canvas
-3. Read the daily AI digest
-4. Share a read-only canvas link
-
-### Under the hood (transit line)
-
-Stations (4, on the 12-col grid): You capture → Saved live (stored in your database) → On the canvas (organize, connect) → Digest out (daily email). Branch off "On the canvas": Share (read-only link).
-
-"When you…" lines: *When you save a note,* it is written to your database and appears in every open tab within a second. *When the day ends,* a short digest of what changed is written and sent to your inbox. *When you share,* the app publishes a read-only copy at a link.
-
-### Body columns
-
-**The problem** — Builders split ideas across notes, tabs, and repos…
-
-**The screens** — Landing · Capture home · Spatial canvas · Dashboard · Settings
-
-**Connected** — Sign-in · live database · daily digest · GitHub activity
-
-### Footer
-Not built: in-app billing, GitHub OAuth, voice capture, npm package
-
-## Sample Page 2 Copy (Hypher)
-
-### Folio
-- PROJECT STORY — 02 · For the owner — say it out loud · Hypher
-
-### Masthead (tagline as hero, 72px, red full stop)
-```
-Your ideas,
-finally in
-one place.
-```
-
-**In one breath:** "Hypher is a workspace for solo builders who are tired of losing ideas across tabs. You capture a thought in seconds, see it organized on a canvas, and get a daily digest that keeps you moving — without becoming a project manager."
-
-### Body columns
-
-**Who it's for**
-- Solo builders, indie hackers, consultants
-- Juggling several projects at once
-- The moment: a great idea in the shower, gone by afternoon
-
-**What to say**
-1. "Most builders lose ideas across ten tabs — you get them back before they vanish."
-2. "You capture a thought in seconds; the app organizes it on a canvas."
-3. "Share a read-only link when you want feedback, not repo access."
-
-### What's real today
-- Sign in and land on a personal dashboard
-- Capture notes and files into projects
-- Organize work on a canvas
-- Daily digest of recent activity
-- Share a read-only canvas link
-- Billing is not in the app yet
-
-### Differentiation + vision
-
-**How you're different** — Not another notes app with folders. Not a team project manager. A spatial brain for one person who ships alone.
-
-**The vision** — You built this because scattered thinking was costing you momentum. What you have now is a single place to capture, see patterns, and share — on your terms.
-
-## Sample Page 3 PARTS (Pantry)
-
-Pantry is the recipe test fixture (`tools/test/fixtures/recipe`). `scan` finds 6 screens, 3 endpoints, 1 weekly cron job, 4 tables, 3 outside services (payments, email, sign-in) and 1 AI provider with 2 tools. Group those facts into parts. Only the `PARTS` array is written by hand; `wire` and the starter do the rest.
+Two profile regions meet at a narrow waist, 30px each side of x 420 where `inputs` ends at y 512 and `outputs` starts at y 576. The top holds what you juggle and steps from soft to mid. The bottom holds what comes out, in ink. The hot label sits in the gap, `align: "center"` in a wide box, and at size 26 by default.
 
 ```json
-[
-  {"name": "What you see", "role": "screens", "line": "When you open Pantry, you move between your recipes, the weekly plan and your settings.", "from": ["screen:**"]},
-  {"name": "Recipe box", "role": "feature", "line": "When you save a recipe, Pantry keeps it in your box so you can find it, change it and cook it again.", "from": ["area:lib/recipes", "area:components/recipes"]},
-  {"name": "Meal planner", "role": "feature", "line": "When you plan your week, Pantry puts your recipes on the days you choose.", "from": ["area:lib/plan", "area:components/plan"]},
-  {"name": "Recipe ideas", "role": "ai", "line": "When you ask for ideas, an AI model suggests recipes for you to try.", "from": ["ai:*", "area:lib/ai"]},
-  {"name": "Weekly email", "role": "jobs", "line": "Once a week, on its own, Pantry prepares your meal plan and emails it to you.", "from": ["job:**"]},
-  {"name": "Saved recipes", "role": "data", "line": "When you save a recipe, a plan or your details, it is kept here, so it is waiting next time you come back.", "from": ["table:*"]},
-  {"name": "Outside services", "role": "service", "line": "When Pantry takes payment, sends mail or checks who you are, it hands that job to an outside company.", "from": ["service:*"]}
-]
+{
+  "version": 3,
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "date": "2026-11-07" },
+  "theme": "light",
+  "headline": "A week of dinners, planned in one go.",
+  "hot": "leftovers",
+  "figure": {
+    "fits": "An hourglass: everything you juggle pours in at the top, narrows to one week's plan at the waist, and comes out as a list and an email.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "inputs",
+        "profile": [
+          [176, 420, 365],
+          [189, 420, 365],
+          [253, 420, 297],
+          [317, 420, 231.2],
+          [381, 420, 168.3],
+          [445, 420, 109.1],
+          [493, 420, 68.4],
+          [509, 420, 55.9],
+          [512, 420, 30]
+        ],
+        "words": [
+          "recipes",
+          "cravings",
+          "leftovers",
+          "busy nights",
+          "allergies",
+          "what's in season",
+          "the budget",
+          "family picks"
+        ],
+        "tone": ["soft", "mid"]
+      },
+      {
+        "kind": "fill",
+        "id": "outputs",
+        "profile": [
+          [576, 420, 30],
+          [579, 420, 70.2],
+          [595, 420, 84],
+          [659, 420, 143.8],
+          [723, 420, 208.4],
+          [787, 420, 276.4],
+          [867, 420, 365],
+          [880, 420, 365]
+        ],
+        "words": ["shopping list", "tonight's dinner", "Monday's email", "next week"],
+        "tone": "ink"
+      }
+    ],
+    "texts": [
+      { "role": "masthead", "id": "masthead", "x": 50, "y": 36, "w": 490 },
+      { "role": "headline", "id": "headline", "x": 560, "y": 64, "w": 224 },
+      {
+        "role": "label",
+        "id": "waist",
+        "text": "ONE WEEK",
+        "hot": true,
+        "x": 220,
+        "y": 526,
+        "w": 400,
+        "align": "center"
+      },
+      {
+        "role": "aside",
+        "id": "juggle",
+        "text": "What you juggle. Recipes, cravings, leftovers, allergies, busy nights.",
+        "x": 56,
+        "y": 522,
+        "w": 190
+      },
+      {
+        "role": "aside",
+        "id": "plan",
+        "text": "**One plan a week:** seven dinners from your own recipes, with the leftovers used up first.",
+        "x": 594,
+        "y": 528,
+        "w": 190
+      },
+      {
+        "role": "aside",
+        "id": "out",
+        "text": "What comes out. A shopping list, and the plan in your inbox every Monday.",
+        "x": 56,
+        "y": 650,
+        "w": 190
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "How it works",
+      "text": "Save the recipes you already cook. Pantry fills the week from them, suggests a few new ones, and builds the shopping list from what the plan needs."
+    },
+    {
+      "title": "Every Monday",
+      "text": "At 8 in the morning Pantry emails you the week's plan, so the first dinner is decided before the day starts."
+    },
+    {
+      "title": "Yours alone",
+      "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can pick up the week on any device."
+    }
+  ],
+  "notBuilt": ["paid plans"]
+}
 ```
 
-The drawing then reads: "6 screens", "1 AI model · 2 tools", "Runs 1 job on its own", "4 kinds of saved record", "3 outside services", and a share of the code for each feature. None of those numbers is in the `PARTS`. The three endpoints are not cited, so the screens' calls to them are followed into the code behind them and drawn as cables to the parts that own that code. Billing, email and sign-in are folded into one part because each is a small plug.
+### ribbon
 
-### Sample `wire` output
+Three profile regions make one ribbon that runs from top left to bottom right. Each ends on the pinch where the next begins. The middle region is the back face of the twist, set soft so the ribbon reads as turning over. `band: 3` keeps each word for three rows, so the words read as stripes along the ribbon. The two ends are `display` texts, bold sans lines of the poster's own words: "Plan it in the kitchen." at the top and "Shop it in the aisle." at the bottom right, with `align: "right"`.
 
-Illustrative; the wording follows `tools/CONTRACTS.md` §3 and the ids depend on the repo. A first attempt that fails (exit 1):
-
+```json
+{
+  "version": 3,
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "date": "2026-11-07" },
+  "theme": "dark",
+  "accent": "#9284FF",
+  "headline": "The week you plan at home is the list in your hand.",
+  "hot": "shopping list",
+  "figure": {
+    "fits": "A ribbon that twists from the kitchen at the top to the aisle at the bottom, made of what travels between them: dinners, the list, amounts.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "kitchen",
+        "profile": [
+          [196, 228.6, 184.7],
+          [210, 234.1, 183.2],
+          [224, 241.1, 174.6],
+          [238, 249.3, 159.5],
+          [252, 258.5, 138.4],
+          [266, 268.7, 112.4],
+          [280, 279.6, 82.8],
+          [294, 291, 50.9],
+          [308, 302.9, 51.8]
+        ],
+        "words": ["seven dinners", "amounts"],
+        "tone": "mid",
+        "size": 11,
+        "band": 3
+      },
+      {
+        "kind": "fill",
+        "id": "turn",
+        "profile": [
+          [308, 302.9, 51.8],
+          [322, 315.1, 83.7],
+          [336, 327.4, 113.2],
+          [350, 339.9, 139.1],
+          [364, 352.4, 160],
+          [378, 364.9, 175],
+          [392, 377.3, 183.3],
+          [406, 389.7, 184.6],
+          [420, 402, 178.9],
+          [434, 414.3, 166.3],
+          [448, 426.5, 147.5],
+          [462, 438.7, 123.3],
+          [476, 451, 95],
+          [490, 463.2, 63.8],
+          [504, 475.6, 38.7]
+        ],
+        "words": ["shopping list", "what's left over", "who's eating"],
+        "tone": "soft",
+        "size": 11,
+        "band": 3
+      },
+      {
+        "kind": "fill",
+        "id": "aisle",
+        "profile": [
+          [504, 475.6, 38.7],
+          [518.5, 488.5, 72.3],
+          [533.1, 501.4, 104],
+          [547.6, 514.4, 132.1],
+          [562.1, 527.4, 155.3],
+          [576.7, 540.2, 172.4],
+          [591.2, 553, 182.4],
+          [605.7, 565.4, 184.9],
+          [620.3, 577.4, 179.7],
+          [634.8, 588.9, 167.2],
+          [649.3, 599.6, 147.9],
+          [663.9, 609.4, 122.8],
+          [678.4, 618, 93.3],
+          [692.9, 625.4, 60.7],
+          [707.5, 631.2, 43.1],
+          [722, 635.4, 76.5]
+        ],
+        "words": ["swaps", "shopping list", "seven dinners", "amounts"],
+        "tone": "mid",
+        "size": 11,
+        "band": 3
+      }
+    ],
+    "texts": [
+      {
+        "role": "display",
+        "id": "start",
+        "text": "Plan it in the kitchen.",
+        "x": 56,
+        "y": 56,
+        "w": 470
+      },
+      {
+        "role": "aside",
+        "id": "travels",
+        "text": "**What travels.** Seven dinners, the shopping list with amounts, and what's left over from last week.",
+        "x": 560,
+        "y": 64,
+        "w": 224
+      },
+      { "role": "masthead", "id": "masthead", "x": 56, "y": 740, "w": 330, "size": 48 },
+      { "role": "headline", "id": "headline", "x": 56, "y": 804, "w": 330 },
+      {
+        "role": "display",
+        "id": "end",
+        "text": "Shop it in the aisle.",
+        "x": 384,
+        "y": 764,
+        "w": 400,
+        "align": "right"
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "How it works",
+      "text": "Pick your recipes for the week. Pantry adds up the ingredients and turns them into one shopping list you can read in the shop."
+    },
+    {
+      "title": "Every Monday",
+      "text": "At 8 in the morning Pantry emails you the week's plan and the list, so nothing is left on the kitchen table."
+    },
+    {
+      "title": "Yours alone",
+      "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can open them on any device."
+    }
+  ],
+  "notBuilt": ["paid plans"]
+}
 ```
-$ node tools/scan.mjs wire <canvases>/pantry-facts.json --into <canvases>/pantry-exploded-view.canvas.tsx
-✗ Part "Saved recipes": "table:Recipes" matches nothing — did you mean table:Recipe, table:User, table:MealPlan?
-✗ service:sign-in is cited by both "Outside services" and "Sign-in"
+
+### eye
+
+The lids are a profile with a hole, and their tone steps soft, mid, soft down the rows. The iris is an ellipse with its own hole and `hot: true`, so every iris row is in the accent. The masthead is centred at size 72 in the hole, and the fill clears it, which leaves the pupil empty.
+
+```json
+{
+  "version": 3,
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "date": "2026-11-07" },
+  "theme": "light",
+  "headline": "It knows what you cook, then suggests what to cook next.",
+  "hot": "new ideas",
+  "figure": {
+    "fits": "An eye: the lids are everything Pantry reads about your kitchen, the iris is the few ideas it sees, and the name sits in the pupil.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "lids",
+        "profile": [
+          [320, 420, 0],
+          [360, 420, 98.7],
+          [400, 420, 182.2],
+          [440, 420, 250.5],
+          [480, 420, 303.7],
+          [520, 420, 341.6],
+          [560, 420, 364.4],
+          [600, 420, 372],
+          [640, 420, 364.4],
+          [680, 420, 341.6],
+          [720, 420, 303.7],
+          [760, 420, 250.5],
+          [800, 420, 182.2],
+          [840, 420, 98.7],
+          [880, 420, 0]
+        ],
+        "holes": [
+          { "ellipse": { "cx": 420, "cy": 600, "rx": 240, "ry": 240 } }
+        ],
+        "words": [
+          "your recipes",
+          "last week",
+          "leftovers",
+          "allergies",
+          "the season",
+          "busy nights",
+          "the budget",
+          "favourites"
+        ],
+        "tone": ["soft", "mid", "soft"],
+        "size": 11
+      },
+      {
+        "kind": "fill",
+        "id": "iris",
+        "ellipse": { "cx": 420, "cy": 600, "rx": 222, "ry": 222 },
+        "holes": [
+          { "ellipse": { "cx": 420, "cy": 600, "rx": 114, "ry": 114 } }
+        ],
+        "words": ["tonight's dinner", "new ideas", "the list"],
+        "tone": "ink",
+        "size": 11,
+        "hot": true
+      }
+    ],
+    "texts": [
+      { "role": "headline", "id": "headline", "x": 56, "y": 52, "w": 520, "size": 40 },
+      {
+        "role": "aside",
+        "id": "blurb",
+        "text": "Pantry looks at what you cook, what's left and who's eating, then suggests the few new recipes worth trying this week.",
+        "x": 600,
+        "y": 60,
+        "w": 184
+      },
+      {
+        "role": "masthead",
+        "id": "masthead",
+        "x": 290,
+        "y": 562,
+        "w": 260,
+        "size": 72,
+        "align": "center"
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "What it reads",
+      "text": "Your saved recipes and their ingredients, last week's plan, and what you told it about allergies and busy nights."
+    },
+    {
+      "title": "What it suggests",
+      "text": "A few new recipes that fit the week, from an AI model. You choose which ones to keep."
+    },
+    {
+      "title": "What it sends",
+      "text": "The week's plan by email every Monday at 8, and a shopping list built from the plan."
+    }
+  ],
+  "notBuilt": ["paid plans"]
+}
 ```
 
-A later attempt that passes (exit 0) but warns:
+### warm-start
 
+One dots region spells four words in squares. Its `tones` run cold, cool, ink, hot, and the last line also equals the spec's `hot`, so it is set in the accent. There are no fill regions, so `row-variety` and `one-region` are skipped. With 2 notes the footer is shorter and the floor is 920.
+
+```json
+{
+  "version": 3,
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "date": "2026-11-07" },
+  "theme": "light",
+  "headline": "Every week starts with a question. Pantry answers it on Monday.",
+  "hot": "well",
+  "figure": {
+    "fits": "Four words drawn in squares that warm up line by line, cold blue to the accent, the way a blank week fills up by Monday.",
+    "regions": [
+      {
+        "kind": "dots",
+        "id": "words",
+        "lines": ["PLAN", "ONCE", "EAT", "WELL"],
+        "x": 130,
+        "y": 56,
+        "cell": 20,
+        "tones": ["cold", "cool", "ink", "hot"]
+      }
+    ],
+    "texts": [
+      { "role": "headline", "id": "headline", "x": 56, "y": 772, "w": 400, "size": 34 },
+      { "role": "masthead", "id": "masthead", "x": 496, "y": 766, "w": 288, "size": 48 },
+      {
+        "role": "aside",
+        "id": "monday",
+        "text": "**Monday at 8:** the week's plan lands in your inbox, so the first dinner is already decided.",
+        "x": 496,
+        "y": 830,
+        "w": 288
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "How",
+      "text": "Save the recipes you already cook. Pantry fills the week from them, uses up the leftovers first, and builds the shopping list."
+    },
+    {
+      "title": "New ideas",
+      "text": "Ask for a suggestion and Pantry offers a few recipes that fit your week. Keep the ones you like and they join your recipes."
+    }
+  ],
+  "notBuilt": ["paid plans"]
+}
 ```
-! "Weekly email" has no links
-! Not drawn: Payments (service), 2 tables
+
+## Three invented pictures
+
+None of these is a preset. Each starts from a main moment, finds its verb, and builds one silhouette a person would name at thumbnail size. The products are made up. Each block below is the `figure` only. Each passes every check with three notes and a short not-built list, but the numbers are a first draft to sketch from.
+
+### A bridge for a sync tool
+
+Tandem keeps the files on your phone and your laptop the same. Main moment: the photo you take on your phone is on your laptop when you sit down. The verb is "joins", so the picture is one bridge arch, its left foot on the phone's side and its right foot on the laptop's. The whole arch is made of what crosses, soft at the crown and ink at the feet. The opening under it is a hole, so the water stays empty paper inside the shape. Two separate towers with a deck between them would read as two columns, so the arch is one region with one outline.
+
+```json
+{
+  "fits": "One bridge arch from your phone to your laptop, made of what crosses it.",
+  "regions": [
+    { "kind": "fill", "id": "arch", "tone": ["soft", "mid", "ink"],
+      "words": ["photos", "voice notes", "the latest version", "screenshots", "receipts", "drafts"],
+      "profile": [[200, 420, 40], [300, 420, 200], [460, 420, 340], [640, 420, 390], [860, 420, 400]],
+      "holes": [{ "profile": [[500, 420, 30], [580, 420, 180], [700, 420, 260], [860, 420, 290]] }] }
+  ],
+  "texts": [
+    { "role": "masthead", "id": "name", "x": 56, "y": 40, "w": 420 },
+    { "role": "headline", "id": "headline", "x": 560, "y": 64, "w": 224 },
+    { "role": "aside", "id": "left", "text": "From your phone.", "x": 196, "y": 790, "w": 150 },
+    { "role": "aside", "id": "right", "text": "To your laptop.", "x": 494, "y": 790, "w": 150, "align": "right" }
+  ]
+}
 ```
 
-| Line | What it means | What to do |
-|------|---------------|------------|
-| `✗ … matches nothing` | The pattern is a typo or the fact is gone. Citing it would draw something that isn't there | Use a suggested id, or `table:*`. Look it up with `show` |
-| `✗ … cited by both` | One fact claimed by two parts, so counts would double | Remove it from one part, or exclude it: `["service:*", "!service:sign-in"]` |
-| `✗ … counts nothing` | A part with no facts to count | Fix `from`, or remove the part |
-| `Tier with <n> parts — merge parts` | Thrown when the canvas opens: more than four parts in one tier | Merge parts |
-| `! … has no links` | Nothing in the code connects it to another part within three hops, or it reaches code you left uncited | Check `from`. If it really stands alone, leave it: the caption says "Not wired to the other parts". Never invent a link |
-| `! Not drawn: Payments (service)` | The drawing hides a fact | Deliberate when billing isn't in the app yet: keep `"!service:payments"` and add "in-app billing" to the footer. Otherwise cite it |
-| `! Not drawn: … 2 tables` | The data part cites only some tables, so "kinds of saved record" understates the app | Cite them all (`table:*`) |
+`hot` is "latest version". It matches a word in the arch.
 
-Then confirm anything surprising: `node tools/scan.mjs why <canvases>/pantry-facts.json --canvas <canvases>/pantry-exploded-view.canvas.tsx "What you see" "Recipe ideas"` prints the real chain of files behind that cable.
+### A stair for a learning app
 
-## Anti-patterns
+Rungs teaches a language ten minutes a day, and each lesson opens the next. Main moment: every lesson you finish is one step up, and the top step is your first real conversation. The verb is "climbs", so the picture is a stair rising from left to right. One polygon draws the lower steps with the early lessons. Its two tones split it: soft in the upper rows and ink in the lower, because the lessons you have done are near and solid. Above the top step, a speech bubble is its own region with `hot: true`, so the goal is the one bright thing on the page. A plain box on top would read as a column.
 
-**Bad — dark redacted layout with rainbow tabs**
-> Black blocks, yellow/blue/pink journey tabs, dark IDE-colored field.
+```json
+{
+  "fits": "A stair of lessons, one step each, up to your first real conversation at the top.",
+  "regions": [
+    { "kind": "fill", "id": "steps", "tone": ["soft", "ink"],
+      "words": ["greetings", "numbers", "the café", "directions", "small talk"],
+      "polygon": [[80, 860], [80, 760], [200, 760], [200, 660], [320, 660], [320, 560], [440, 560], [440, 460], [760, 460], [760, 860]] },
+    { "kind": "fill", "id": "bubble", "tone": "ink", "hot": true,
+      "words": ["first conversation", "your own words"],
+      "ellipse": { "cx": 640, "cy": 350, "rx": 140, "ry": 80 } }
+  ],
+  "texts": [
+    { "role": "masthead", "id": "name", "x": 56, "y": 40, "w": 420 },
+    { "role": "headline", "id": "headline", "x": 56, "y": 150, "w": 400, "size": 30 },
+    { "role": "aside", "id": "daily", "text": "**Ten minutes a day.** Finish a lesson and the next step opens.", "x": 80, "y": 520, "w": 200 }
+  ]
+}
+```
 
-**Good — Swiss canon**
-> White paper, ink type, one red full stop, giant numerals, 12-column grid.
+`hot` is "first conversation". The steps change width on every step, and the bubble is round, so each region passes `row-variety`.
 
-**Bad — document canvas**
-> Stack of H1, Stat, Card, CollapsibleSection components.
+### A shield for a backup tool
 
-**Good — typographic poster**
-> Raw CSS grid bands, two type roles, flush-left, generous margins.
+Nightly copies a small office's files every night. Main moment: whatever the office made today is safe by morning. The verb is "guards", so the picture is a shield. A profile draws the outline, wide at the top and narrowing to a point. A smaller profile inside it is cut out as a hole and drawn again as its own region in the accent. That gives the shield a rim of what it guards and an emblem of the copy that keeps it.
 
-**Bad — timid document header**
-> 64px stacked masthead, gray body copy everywhere, red on rule + boxes + arrows.
+```json
+{
+  "fits": "A shield made of the office's files, with last night's copy as its emblem.",
+  "regions": [
+    { "kind": "fill", "id": "rim", "tone": ["mid", "ink"],
+      "words": ["invoices", "contracts", "photos", "the client list", "spreadsheets", "email"],
+      "profile": [[200, 420, 250], [240, 420, 272], [420, 420, 262], [600, 420, 210], [740, 420, 120], [856, 420, 12]],
+      "holes": [{ "profile": [[288, 420, 170], [420, 420, 170], [560, 420, 128], [680, 420, 52]] }] },
+    { "kind": "fill", "id": "emblem", "tone": "ink", "hot": true,
+      "words": ["last night", "every file", "today's work"],
+      "profile": [[304, 420, 150], [420, 420, 150], [552, 420, 110], [660, 420, 36]] }
+  ],
+  "texts": [
+    { "role": "masthead", "id": "name", "x": 56, "y": 40, "w": 420 },
+    { "role": "headline", "id": "headline", "x": 560, "y": 64, "w": 224 },
+    { "role": "aside", "id": "when", "text": "**Every night at 2.** Nothing to remember, nothing to plug in.", "x": 594, "y": 720, "w": 190 }
+  ]
+}
+```
 
-**Good — poster scale**
-> 112px masthead on one line with a red full stop, ink body copy, one empty zone beside the purpose.
+`hot` is "last night". The emblem region has `hot: true`, so all its rows are in the accent.
 
-**Bad — boxed flowchart**
-> Dashed/solid bordered rectangles with centered uppercase labels and stubby arrows.
+## Sample chat reply
 
-**Good — transit line**
-> One 2px ink line, solid dots, flush-left station labels, a 90° branch with a hollow ring.
+```markdown
+Pantry plans a week of dinners from the recipes you already cook, then turns the plan into a shopping list and emails it every Monday.
 
-**Bad — architecture diagram dressed as an exploded view**
-> Parts named "Next.js", "tRPC", "Prisma"; "12 endpoints" typed by hand when the scan finds 8; a decorative "Infrastructure" part nothing connects to; arrows drawn because they look right; a blue database, a green frontend; SVG text labels inside the drawing.
+I drew an hourglass: recipes, leftovers, cravings and busy nights pour through one week's plan and come out as a shopping list and a Monday email.
 
-**Good — the app's real parts and wiring**
-> "What you see", "Recipe box", "Saved recipes"; a shape per role; counts and sizes from the scan; a cable only where the code really connects two parts (one checked with `why`); one tinted part; HTML labels in the two gutters; a caption that says what the part does for you.
+- PNG: /Users/<you>/code/pantry/vyo/recipe-poster.png
+- PDF: /Users/<you>/code/pantry/vyo/recipe-poster.pdf
 
-## Verification Notes
-
-**pantry** (`tools/test/fixtures/recipe`) — 7 parts on 3 tiers: screens on top, then features, AI and the weekly job (the AI/jobs tier folds in because 2 + 2 ≤ 4), then data and outside services. No `api` part, so the endpoints are cables, not a box. The page 3 starter ships these `PARTS`, and its `WIRING` equals a fresh `wire` of them.
-
-**hypher** — All three pages at `hypher-app-poster.canvas.tsx`, `hypher-project-story.canvas.tsx` and `hypher-exploded-view.canvas.tsx`. Monorepo; UI in hypher-web. Playbook items marked in footer only (same list on all three pages). Reference build for the poster-scale masthead, giant numerals, 4-station transit line on the 12-col grid, and tagline-led page 2. Page 3 must be rebuilt from a scan (`scan` → `draft` → `wire`); the earlier hand-written page 3 data no longer applies. Delete any leftover `hypher-app-guide.canvas.tsx`.
-
-**learnr** — Single Next.js app, landing → intake → workspace.
-
-**vyo (empty scaffold)** — `scan` reports `empty: true`. No poster. Report no application detected.
+Gaps: the code has payments, but there is no checkout screen, so the poster lists "paid plans" under "Not built yet". The figure started from the hourglass preset, and I reshaped the waist and the bottom so it is Pantry's own. Add `vyo/` to `.gitignore` unless you want to commit the poster.
+```

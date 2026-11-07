@@ -1,311 +1,143 @@
 ---
 name: explain-app
 description: >-
-  Inspects a repository and explains what the app does and how it works in
-  plain English for non-technical stakeholders. Produces three Swiss Style poster
-  Canvases: page 1 (how the app and the code behind it work), page 2
-  (project story — the marketing/summary sheet for selling and sharing) and
-  page 3 (the app's real parts and wiring, drawn as an isometric exploded
-  view, built from a scan of the code). Use
-  when the user asks to explain the app, walk through how it works for a
-  client/PM/stakeholder, create a non-technical overview, demystify the
+  Use when the user asks to explain the app, walk through how it works for a
+  client, PM or stakeholder, create a non-technical overview, demystify the
   codebase for someone who does not code, help someone sell or talk about their
-  product, visualize the repo as a poster, or draw the codebase as an
-  exploded / isometric diagram.
+  product, visualize the repo as a poster, or draw the codebase. Produces one
+  type-led poster (PNG and PDF): a silhouette invented for the product, built
+  from its own words, that acts out what it does.
 ---
 
 # Explain App
 
-Turn a codebase into a plain-English app guide for people who will never read code. The deliverable is **three Swiss Style poster Canvases** (`.canvas.tsx`) on light paper — objective typography, real 12-column grid, one accent color. Not a dark UI mockup, not a scrolling doc.
+You invent one picture that acts out the product's main moment and describe it in a JSON spec as a few regions and texts. The tools fill each region with the product's words, add a footer of counts from the code, and check the result.
 
-**Canvas skill override (read this before the canvas skill).** Swiss posters **must** use the fixed paper/ink/accent hex, display type at **104–128px** (page 1) / **64–80px** (page 2 tagline), and raw CSS grid. Ignore the canvas skill where it forbids hardcoded hex, type above 24px, or requires `useHostTheme()` for color. Those rules are for document canvases. This skill wins on poster files. Still follow the canvas skill for file location (`…/canvases/*.canvas.tsx`), `import` only from `cursor/canvas`, and no `fetch`.
+Run commands from this skill's directory. `<repo>` is the app's directory, `<name>` its folder name.
 
-| Page | File | Purpose |
-|------|------|---------|
-| **1 — App Guide** | `<repo>-app-poster.canvas.tsx` | How the app **and the code behind it** work, for a non-technical reader — journeys, an "Under the hood" band, screens, connected services |
-| **2 — Project Story** | `<repo>-project-story.canvas.tsx` | The summary / marketing sheet — tagline as hero, talking points, who it's for, what's real, the vision |
-| **3 — Exploded View** | `<repo>-exploded-view.canvas.tsx` | The app's real parts and wiring as an isometric exploded view, built from a scan of the code — a shape per part, cables for real connections, a slider that opens it, one plain sentence per part |
-
-## When to Use
-
-- User asks to explain the app to a client, PM, stakeholder, or non-engineer
-- User wants a walkthrough of how the product works without code
-- User asks "what does this app do?" or "demystify this codebase"
-- User needs a visual overview for handoff, sales, or investor context
-- User wants to feel connected to their project or talk about it confidently without technical detail
-- User asks for an exploded view, isometric drawing, or "show me what it's made of"
-
-## When NOT to Use
-
-- Engineer onboarding, CLAUDE.md generation, or convention detection → use `codebase-onboarding`
-- README/API documentation for contributors → use `codebase-documenter`
-- Debugging, PR review, or implementation work
-- User explicitly wants markdown-only output with no Canvas
-
-## Before You Start
-
-1. Read the canvas skill at `~/.cursor/skills-cursor/canvas/SKILL.md` — required for every Canvas deliverable.
-2. Read [swiss-design-principles.md](swiss-design-principles.md) — **mandatory** design discipline (Müller-Brockmann + Vignelli, from [hyperagent-public-skills](https://github.com/alexmcdonnell-airtable/hyperagent-public-skills)).
-3. Read [plain-language-rules.md](plain-language-rules.md) before writing copy.
-4. Read [poster-layout.md](poster-layout.md) for page 1 grid rows and content zones.
-5. Read [sell-sheet-layout.md](sell-sheet-layout.md) for page 2 and [exploded-view-layout.md](exploded-view-layout.md) for page 3 — **always produce all three pages** when an app is detected.
-6. Use [poster-starter.md](poster-starter.md), [sell-sheet-starter.md](sell-sheet-starter.md) and [exploded-view-starter.md](exploded-view-starter.md) as structural starting points.
-7. Skim [canvas-layout.md](canvas-layout.md) only if the user explicitly wants the legacy document-style fallback.
-
-### Canonical copy
-
-This repo's `.cursor/skills/explain-app/` is the source of truth. After any edit, **sync it to** `~/.cursor/skills/explain-app` so other workspaces load the same rules. If both copies exist and disagree, follow **this repo's files**, not the personal copy.
-
-### Project overrides (check in order)
-
-1. `.cursor/skills/explain-app/project-context.md` in the **target app repo** — product name, audience, tone, backend-only features
-2. Any `*playbook*` or audit doc in that repo — use for feature status honesty (UI vs backend-only vs planned)
-
-## Workflow
-
-Copy this checklist and track progress:
-
-```
-Explain App Progress:
-- [ ] Phase 1: Recon (scan first)
-- [ ] Phase 2: User feature map
-- [ ] Phase 3: Plain English synthesis (page 1)
-- [ ] Phase 4: App Guide poster (page 1)
-- [ ] Phase 5: Connection & sales synthesis (page 2)
-- [ ] Phase 6: Project Story poster (page 2)
-- [ ] Phase 6b: Exploded View (page 3: PARTS → wire)
-- [ ] Phase 7: Check + export (PNG/PDF)
-- [ ] Chat summary with the three canvas links and the shareable PDF
-```
-
-### Phase 1 — Recon (read-only, parallel)
-
-**Scan first.** From this skill's directory (Node only, no install):
+## Set up once
 
 ```bash
-node tools/scan.mjs scan <repo> --out <canvases>/<repo>-facts.json
-node tools/scan.mjs show <canvases>/<repo>-facts.json
+npm install --prefix tools
+bash tools/fetch-fonts.sh
 ```
 
-`facts.json` is a deterministic reading of the code: screens, endpoints, saved-data tables, outside services, AI use, background jobs, and how much code each folder holds. It is the input to page 3 and the ground truth for pages 1 and 2:
+For Chromium, run `npx --prefix tools playwright install chromium` or set `VYO_CHROMIUM`.
 
-| Fact | Use |
-|------|-----|
-| Screens | Page 1 journeys and "The screens" must match them. Never invent a screen |
-| Services | Page 1 **Connected**. A service fact proves the code talks to it, not that a user can use it: list it only if a screen exposes it today, else footer |
-| Tables, jobs, AI | Page 1 "Under the hood" stations (what's saved, what runs on its own, what comes back out) and page 2 "what's real today" |
-| Endpoints, jobs or services with no screen | Status **Behind the scenes**, never **Available now** |
+## Make the poster
 
-A fact shows that code exists, not that it is finished. Skim for stubs before calling anything live. Then add what a scan cannot read, in parallel:
+1. Scan: `node tools/vyo.mjs scan <repo> --out <repo>/vyo/<name>-facts.json`.
+2. Summarise: `node tools/vyo.mjs show <repo>/vyo/<name>-facts.json`.
+3. Read `README*`, `docs/` and `.cursor/skills/explain-app/project-context.md` in the target repo. Write down the product's name, audience and main moment: one sentence about what it does for a person. Every claim must point at the scan, the docs or the code.
+4. Invent the picture. Write its `fits` sentence before any numbers.
+5. Write the scaffold:
+   ```bash
+   node tools/vyo.mjs compose <repo>/vyo/<name>-facts.json --repo <repo> --out <repo>/vyo/<name>-poster.json
+   ```
+   `--repo` puts the latest commit in the footer. `--from <preset>` starts from a preset's geometry (`node tools/vyo.mjs presets` lists them). `compose` prints `floor: <y>`, the lowest y the figure may reach, and the line heights and row grid. Without `--from` the figure is a box that fails `row-variety` on purpose.
+6. Write the figure and fields (see "Describe it" and "Fill the spec").
+7. Sketch: `node tools/vyo.mjs sketch <repo>/vyo/<name>-poster.json`. It prints the sheet in letters (A to F regions, `#` dots, `·` hot rows, `=` the floor), the coverage, and each region's width spread and mean width. Act on every `!` line. Sketch again until a stranger would name the silhouette.
+8. Render: `node tools/vyo.mjs render <repo>/vyo/<name>-poster.json`.
+9. Fix every `✗` line. Render exits 1 until none is left. Weigh every `!` line. `preset-copy` means you kept a preset's geometry. Change it, or say in chat why it fits.
+10. Open the PNG, full size and as a thumbnail. The silhouette must read as the main moment, the hot word must stand out, and no word may read as code. If not, go back to step 7.
+11. Reply in chat in the format below.
 
-1. **Product context** — `README*`, `docs/`, marketing copy, playbooks
-2. **Stack fingerprint** — `package.json`, `pyproject.toml`, `go.mod`, etc. (internal mapping only)
-3. **User-facing surface** — confirm the scan's screens are reachable, not stubs:
-   - Next.js: `app/`, `pages/`, `src/app/`
-   - React SPA: router config, `routes/`
-   - API-only: note "no UI in this repo" and what a frontend would call
-4. **Data & accounts** — auth and database patterns → translate to "sign in", "your data is stored"
-5. **Integrations** — Stripe, email, analytics — name the **service**, not the SDK
-6. **Directory snapshot** — top 2 levels; map folders to friendly names ("Billing" not `lib/stripe/`)
+## Invent the picture
 
-**Skip:** lint configs, test structure, branch conventions, dependency injection patterns.
+Start from the verb in the main moment, not the category.
 
-### Phase 2 — User feature map (internal)
+| When the product... | Try |
+|---|---|
+| squeezes many things into one | hourglass |
+| carries something from one place to another | ribbon |
+| reads everything, then focuses on one thing | eye |
+| warms up, or turns unknown into known | dot letters, cold to hot |
+| grows, or takes you up in stages | tree or stair |
+| joins two sides | bridge or knot |
+| guards or keeps safe | shield or wall |
+| repeats on a cycle | ring |
 
-Build this map before writing copy. Do not dump it raw into the Canvas.
+Bend it to the product. A ring can break open where today's item leaves.
 
-| Element | What to capture |
-|---------|-----------------|
-| Actors | Who uses the app (end user, admin, guest) |
-| Jobs | What they come to do (sign up, book, pay, manage settings) |
-| Journeys | 2–4 primary flows as UI steps a human would take |
-| Under the hood | The data pipeline as **3, 4, or 6** stations (never 5 — it cannot land on a 12-column grid): what you do → where it's saved → what processes it → what comes back out |
-| Behind the scenes | One "When you X, the app Y" sentence per journey ("When you pay, the app talks to Stripe") |
-| Parts (page 3) | 2–9 named parts grouped from the scan's facts, each with a role and a "When you…" line — rules in [exploded-view-layout.md](exploded-view-layout.md#from-codebase-to-parts) |
-| Status honesty | Works in UI / backend only / planned — never call backend-only "complete" |
+Make one strong silhouette:
 
-If the user named an audience (client, PM, exec), note it. If not, default to general non-technical.
+- Draw one dominant silhouette, not separate blocks. Two blocks side by side read as two columns, whatever their tops do.
+- Its outline is a continuous curve across the whole band. The profile's half-widths change at most stops, not only at the ends.
+- Negative space goes inside the shape as holes, not as gaps between blocks, like the eye's empty pupil.
+- Aim for about a third of the band covered.
+- A region narrower than about 160px reads as a column. `thin-region` warns under 160px on average. `row-variety` fails a region whose line widths spread less than 0.25 of their mean.
+- A hot region repeats all its words, so give it one to three phrases.
+- The thumbnail test: shrink it in your head to a stamp and name it in one word. That word must describe what the product does.
 
-### Phase 3 — Plain English synthesis
+None of these acts out a moment. Never use:
 
-Apply [plain-language-rules.md](plain-language-rules.md):
+- a heart, for anything about people or care
+- a plain circle, which passes every check, or a box filled edge to edge
+- a blob with no edge a person could name
+- "01, 02, 03" step markers
 
-- Lead with outcomes, not architecture
-- Ban technical terms. Posters have **no glossary and no appendix** — rewrite until the banned list is empty
-- No file paths anywhere on the poster
-- Adapt depth to audience (see rules file)
+The words:
 
-### Phase 4 — App Guide poster (page 1)
+- Every word is a noun the product's user would say: "leftovers", "busy nights", "the shopping list". Never a feature name, a role word or a code name.
+- Each region has one job and its own words: what goes in, what comes out, what travels.
+- One hot word on the whole poster, where the moment happens: the waist, the iris, the last line.
+- Tones give depth. `soft` is far or past, `ink` is near or now. Two or three tones step down a region, each row taking the nearest stop. `cold` and `cool` are blue-greys for a state not yet warm.
 
-1. Determine workspace canvases path: `~/.cursor/projects/<workspace>/canvases/`
-2. Filename: `<repo-name>-app-poster.canvas.tsx` (kebab-case, from git root basename)
-3. Follow [swiss-design-principles.md](swiss-design-principles.md) and [poster-layout.md](poster-layout.md):
-   - Light paper (`#FFFFFF`), ink (`#0A0A0A`), one accent mark — the **red full stop** after the masthead
-   - Masthead at **104–128px on one line**, in a multiple of 8 (112 default); display : body ratio ≥ 7:1 over 14px body
-   - 12-column grid, 8px baseline, 24px leading, 64px margins
-   - Two type roles, four sizes (display + 44px numerals · 14px body + 10px folio); flush-left only
-   - Primary copy in ink; gray reserved for folio, captions, status
-   - Journeys as **giant numerals**; "Under the hood" as a **transit-line diagram** with **3, 4, or 6** stations on the 12-column grid — no boxed flowcharts, colored tabs, or dark blocks
-   - Grid overlay inside the same content box as the poster
-4. Import only from `cursor/canvas`; inline all content; no `fetch`
-5. Omit empty zones — never render placeholder blocks
-6. `useCanvasState("showGridApp", false)` on page 1; `useCanvasState("showGridStory", false)` on page 2 — **never** a shared `"showGrid"` key (it leaks across posters)
-7. If an older `<repo>-app-guide.canvas.tsx` (document-style) exists for the same product, **delete it** so the sidebar is only the three posters
-8. Run Swiss pre-delivery checklist in swiss-design-principles.md. Open both canvases. If the masthead is under 104px or there is no red full stop, the canvas skill override was ignored — fix before finishing.
+## Describe it
 
-### Phase 5 — Connection & sales synthesis (page 2)
+The sheet is 840 by 1190 px and y grows downward. A figure has `fits` (at most 160 characters), 1 to 6 `regions` and 1 to 6 `texts`.
 
-Build this map from the same recon — do not re-read the entire repo. Pull from README, marketing copy, playbooks, and the page 1 feature map.
+A fill region has `kind: "fill"`, `id`, one geometry, `words` (2 to 14, at most 24 characters each) and `tone`. Options: `holes` (shapes to cut out), `band` (1 to 4 rows per word), `size` (11 or 12), `caps`, and `hot` (every row in the accent). Geometry, by preference: `profile`, 3 to 24 stops `[y, cx, halfWidth]` with y increasing, drawn as a smooth outline; `ellipse` `{ cx, cy, rx, ry }`; `polygon`, 3 to 40 `[x, y]` points for hard corners; `path`, an SVG path.
 
-| Element | What to capture |
-|---------|-----------------|
-| Tagline | Emotional outcome in one line — not a feature list |
-| In one breath | 20-second script the owner can say aloud |
-| Who it's for | Ideal person, their situation, the moment they need this — 2–4 short lines, not a paragraph |
-| Talking points | 3 verbatim lines in quotation marks. **Do not restate the tagline.** |
-| What's real today | Honest capabilities only — same status labels as page 1 |
-| Differentiation | 2–3 contrasts vs generic alternatives or named competitors if obvious from docs |
-| The vision | 2–3 sentences in ownership language — why *they* built this |
+A dots region spells 2 to 4 words of at most 5 letters in squares: `kind: "dots"`, `id`, `lines`, `x`, `y`, `cell` (px per square), and `tones`, one per line, which may include `hot`. A dots line is 29 squares wide and 7 tall, with lines 9 squares apart.
 
-Default audience for page 2: **project owner who wants to sell or share the product** — even if page 1 targets a client or PM.
+A text has `role` (`masthead`, `headline`, `display`, `aside` or `label`), `id`, `x`, `y`, `w`, and optional `size`, `align` (`left`, `right` or `center`) and `hot`. Asides, displays and labels need `text`. Exactly one masthead prints the product name and shrinks to fit `w`. At most one headline prints `spec.headline`. A `display` is a bold sans line of at most 40 characters, such as the ribbon's "Plan it in the kitchen." A label with `hot: true` is set in the accent, uppercase and tracked. Default sizes: masthead 84 (48 to 120), headline 22 (18 to 40), display 56 (32 to 64), aside 12 (10 to 14), label 12 (10 to 32), hot label 26. `compose` prints the line heights. No region or text may use the ids `note`, `counts`, `notBuilt`, `provenance` or `credit`.
 
-Apply page 2 voice rules in [plain-language-rules.md](plain-language-rules.md#page-2--project-story-voice).
+Rows are 16px tall, 14px at size 11, on a sheet-wide grid. The tool skips any part of a row within 12px of a text and drops runs under 24px. A fill region needs 4 rows or more.
 
-### Phase 6 — Project Story poster (page 2)
+Six worked profiles for a band from y 180 to 860. Each passed `silhouette` and `row-variety` as one region. Move or stretch them, split one at a stop to give in and out their own words, and keep holes inside the outline.
 
-1. Same canvases path as page 1
-2. Filename: `<repo-name>-project-story.canvas.tsx`
-3. Follow [sell-sheet-layout.md](sell-sheet-layout.md) and [sell-sheet-starter.md](sell-sheet-starter.md) — same Swiss canon as page 1
-4. Footer center: "Pair with the App Guide — page 01"
-5. Same quality gates as page 1 — no jargon, no file paths, no hype
+| Shape | `profile` | Hole |
+|---|---|---|
+| flame | `[[180,450,4],[300,400,80],[440,450,180],[620,410,270],[770,420,260],[860,420,130]]` | |
+| bottle | `[[180,420,50],[300,420,50],[380,420,110],[460,420,260],[800,420,270],[860,420,230]]` | |
+| bridge arch | `[[200,420,40],[300,420,200],[460,420,340],[640,420,390],[860,420,400]]` | profile `[[500,420,30],[580,420,180],[700,420,260],[860,420,290]]` |
+| leaf | `[[180,560,4],[300,500,160],[480,440,260],[660,380,230],[800,330,110],[860,310,6]]` | |
+| key | `[[180,420,150],[240,420,260],[340,420,260],[420,420,140],[470,420,60],[700,420,60],[740,480,120],[860,480,120]]` | ellipse `cx 420, cy 300, rx 110, ry 60` |
+| wave | `[[180,330,90],[260,270,190],[340,330,230],[460,430,250],[640,430,330],[860,420,390]]` | ellipse `cx 230, cy 380, rx 70, ry 60` |
 
-### Phase 6b — Exploded View (page 3)
+A figure with no fill region (dots only) skips `row-variety`, `thin-region` and `one-region`.
 
-1. Same canvases path. Filename: `<repo-name>-exploded-view.canvas.tsx`
-2. Copy [exploded-view-starter.md](exploded-view-starter.md). Edit only its data (`product`, `purpose`, `notBuilt`, `audience`) and the `PARTS` block. The starter derives every coordinate; never hand-place SVG
-3. `node tools/scan.mjs draft <canvases>/<repo>-facts.json` prints a starting `PARTS` array. Paste it between `PARTS:BEGIN` and `PARTS:END`
-4. Rename and merge it into **2–9 plain-English parts** ([choosing parts](exploded-view-layout.md#choosing-parts), [naming](plain-language-rules.md#naming-parts)):
-   - `name` ≤ 18 characters; one "When you…" `line` each
-   - optional `detail`: a noun phrase that replaces the caption's "Made of" list when scanned names (routes, folders) mean nothing to a reader
-   - `from` lists fact ids or globs, and every pattern must match real facts
-   - no fact is cited by two parts; at most 4 parts per tier
-5. `node tools/scan.mjs wire <canvases>/<repo>-facts.json --into <canvas>` writes the `WIRING` block (counts, sizes, links)
-   - Fix every `✗`. These are honesty errors (a pattern that cites nothing, a fact claimed twice), not style
-   - Weigh every `!`. "Not drawn: …" means the drawing hides a service, table, job or screen: cite it, or leave it out on purpose and name it in the footer
-6. To confirm a surprising cable: `node tools/scan.mjs why <facts.json> --canvas <canvas> "A" "B"` prints the real file path behind it. If you can't defend a link in one sentence, change `from`
-7. **Never hand-edit `WIRING`; never type a count.** Changing `name` or `line` needs no re-wire. Changing `from` or `role` does (the canvas throws `PARTS changed — re-run wire`). After a re-scan, re-run `wire`
-8. Footer: the same not-built list as pages 1 and 2, plus any important fact you left undrawn on purpose
+## Fill the spec
 
-### Phase 7 — Check and export
+`compose` fills `version`, `facts`, `product`, `theme` (`light` or `dark`) and a placeholder `figure`, which render rejects.
 
-The rules above are enforced by a checker in [tools/](tools/README.md). Run it from this skill's directory (first time only: `npm install --prefix tools && npx --prefix tools playwright install chromium`):
+| Field | What it is |
+|---|---|
+| `product.name` | The customer-facing name. `product-name` warns while it is the folder name |
+| `accent` | Optional hot colour, a hex |
+| `headline` | One plain sentence about the outcome, at most 72 characters |
+| `hot` | The one word or two-word phrase that matters, drawn in the figure |
+| `notes` | 2 or 3 footer columns. `title` at most 24 characters, `text` at most 220 |
+| `notBuilt` | 0 to 6 plain items the code has but a user cannot use yet |
 
-```bash
-node tools/poster.mjs check  <canvases>/<repo>-app-poster.canvas.tsx <canvases>/<repo>-project-story.canvas.tsx <canvases>/<repo>-exploded-view.canvas.tsx
-node tools/poster.mjs export <canvases>/<repo>-app-poster.canvas.tsx <canvases>/<repo>-project-story.canvas.tsx <canvases>/<repo>-exploded-view.canvas.tsx
-```
+Each note does a job the picture cannot: how it works, what you get, what stays private, what runs on its own, or proof. Never type a count, a commit or a date into the footer; render writes those. A dated proof from the docs may appear in a note. Follow [plain-language-rules.md](plain-language-rules.md). [examples.md](examples.md) has each preset as a full spec and three invented figures.
 
-1. `check` must print **PASS** for all three posters. Page 3 needs `<repo>-facts.json` beside the canvas: `check` re-runs `wire` against it and fails if `WIRING` or the hashes are stale, then drives the drawing (the slider, arrow keys, pointing at a part, the theme button). Every ✗ is a rule break — fix the canvas and re-run. Treat ! warnings (jargon, height, narrow panel) as copy edits unless there's a reason to keep them.
-2. `export` writes `<canvases>/exports/`: a PNG and a PDF per poster, plus `<repo>-poster-set.pdf` with all pages. Page 3 exports in its default state (light, 80% open); the controls are hidden. Add `--paper a4` or `--paper letter` when the user wants to print.
-3. If the tools can't install (no network), say so in chat and deliver the canvases only — never skip `check` silently.
+## Where output goes
 
-### Chat response
+Render writes `<name>-poster.html`, `.png` and `.pdf` beside the spec or into `--out <dir>`. Keep every file in `<repo>/vyo/`, and suggest adding it to `.gitignore`.
 
-Keep chat short. The three poster canvases are the deliverable; the set PDF is what the user sends to people without Cursor.
+## Reply in chat
 
-1. One sentence: what the app does
-2. Link to **page 1** (App Guide) with full absolute path (markdown link)
-3. One sentence on **page 2**: who it's for and that it has talking points + what's real today
-4. Link to **page 2** (Project Story) with full absolute path
-5. One sentence on **page 3**: "the app taken apart into its real parts — drag to open; lines are real connections in the code", with a link to `<repo>-exploded-view.canvas.tsx`
-6. Link to the **poster-set PDF** (`exports/<repo>-poster-set.pdf`) — "send this to your client"
-7. If first canvas in workspace: one sentence on opening them beside the chat
-8. Note any gaps honestly ("billing UI is not built yet; backend exists only")
+1. One sentence on what the app does.
+2. The picture and why it acts out the main moment.
+3. The absolute paths of the PNG and the PDF.
+4. Gaps: what is not built, a preset kept unchanged, and a request for the real name if no doc gave one.
 
-## Edge Cases
+## Edge cases
 
-### Empty or scaffold-only repo
-
-If the scan reports `empty: true` and there are no product docs (README, playbook, `project-context.md`):
-
-- Do **not** produce any Canvas with placeholder content
-- Tell the user honestly: no application detected in this repository
-- Suggest what would help: README, filled `project-context.md`, or a different repo path
-
-If the scan is empty but docs describe a product, write pages 1 and 2 from the docs and skip page 3 (nothing to draw), saying so in chat.
-
-### Monorepo (UI in a subfolder)
-
-When the git root contains multiple packages:
-
-1. Scan the git root; `show` lists the packages. Find the one with user-facing pages (`*/src/app/`, `*/pages/`)
-2. Explain the **product** from that package. Do not mention "monorepo" on the poster.
-3. Example: `hypher-web/` holds the screens; other folders are supporting packages
-
-### API-only repo
-
-If there are no pages or screens:
-
-- Say clearly: "There is no user interface in this repository"
-- Describe what the service **does** in plain terms (e.g. "stores and sends messages")
-- Note where the UI likely lives if mentioned in docs, or that a separate frontend would be needed
-- Page 3 still works: with no screens, its top tier is an `api` part (the requests the service answers)
-
-### Backend-only features
-
-When a playbook or audit distinguishes UI from server work:
-
-- Use status labels: **Available now**, **Behind the scenes**, **Coming soon**
-- Never describe backend-only work as something users can do today
-
-## Output Quality Gates
-
-Before finishing, verify **all three pages**:
-
-**Page 1 — App Guide**
-- [ ] A non-engineer can describe what the app does from the poster alone
-- [ ] "Under the hood" band explains what the code does in plain verbs — no SDK names, no paths
-- [ ] Journeys match real routes/screens when UI exists
-- [ ] Backend-only features in footer only, not as live journeys
-- [ ] **Connected** lists only services the user can use today. A Stripe webhook with no checkout UI belongs in the footer, not Connected. Both footers list the same not-built items.
-
-**Page 2 — Project Story**
-- [ ] Owner can read "in one breath" and talking points aloud without stumbling
-- [ ] "What's real today" matches page 1 status honesty — no overselling
-- [ ] Vision copy uses ownership language ("you", "your product")
-- [ ] Differentiation is concrete, not generic hype
-
-**Page 3 — Exploded View**
-- [ ] Every part traces to facts: each `from` pattern matches real facts and `wire` ran with no ✗
-- [ ] 2–9 real parts, none added to fill space; each is a thing a non-engineer would recognise
-- [ ] Every link is real: `WIRING` came from `wire`, and one surprising cable was confirmed with `why`
-- [ ] Counts and sizes match the scan (`show`). None was typed by hand, and no `line` repeats one
-- [ ] Plain names: no role words (API, table, service) and no library names
-- [ ] Every `!` "Not drawn" fact is either drawn or deliberately left out and named in the footer. Everything drawn works today
-- [ ] A non-engineer can say what each part does from its caption sentence
-- [ ] Only `PARTS` and the data constants were edited. `WIRING` untouched, no hand-placed coordinates, no SVG text, no extra colours
-
-**All pages**
-- [ ] `node tools/poster.mjs check` passes on every file (it enforces most of the list below)
-- [ ] Light paper, ink type, one red accent mark (the full stop) — Swiss canon palette
-- [ ] Display type at poster scale (104–128px page 1 / 64–80px tagline page 2, multiples of 8); numerals at 40–48px
-- [ ] Primary copy in ink; gray only for folio, captions, status
-- [ ] 12-column grid with baseline lock; overlay shares content box
-- [ ] Two type roles; flush-left throughout; at least one deliberately empty zone
-- [ ] Page 1 diagrams are transit lines with **3, 4, or 6** dots on the 12-column grid — no boxed flowchart clip-art. Page 3's drawing is the one SVG exception
-- [ ] No dark fields, rainbow tabs, or document-style canvas components
-- [ ] No unexplained jargon in visible poster copy
-- [ ] No file paths on either poster surface
-
-## Examples
-
-See [examples.md](examples.md) for sample prompts and filled section copy.
-
-## Related Skills
-
-| Skill | Use instead when |
-|-------|------------------|
-| `codebase-onboarding` (if installed) | Developer joining the repo |
-| `codebase-documenter` (if installed) | Contributor docs, README, API reference |
-| `canvas` | Any Canvas authoring rules and SDK reference |
-| `project-handoff` (if installed) | Build status and next-step handoff for agents |
+- **Empty scan.** Render warns `facts-empty`. Work from the docs and say the footer has no counts. With no docs either, make no poster.
+- **No docs.** Keep the folder name, accept the `product-name` warning, and ask for the real name. Never invent one.
+- **Several apps.** Scan the root. Name the product, not a folder.
+- **No screens.** Say "there is no user interface in this repository" and describe what the service does for its callers.
+- **`project-context.md`.** Its name, audience, main moment, hot word, picture and not-built list win over what you inferred.

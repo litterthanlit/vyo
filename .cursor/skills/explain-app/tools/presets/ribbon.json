@@ -1,0 +1,319 @@
+{
+  "version": 3,
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "accent": "#9284FF",
+  "headline": "The week you plan at home is the list in your hand.",
+  "hot": "shopping list",
+  "figure": {
+    "fits": "A ribbon that twists from the kitchen at the top to the aisle at the bottom, made of what travels between them: dinners, the list, amounts.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "kitchen",
+        "profile": [
+          [
+            196,
+            228.6,
+            184.7
+          ],
+          [
+            210,
+            234.1,
+            183.2
+          ],
+          [
+            224,
+            241.1,
+            174.6
+          ],
+          [
+            238,
+            249.3,
+            159.5
+          ],
+          [
+            252,
+            258.5,
+            138.4
+          ],
+          [
+            266,
+            268.7,
+            112.4
+          ],
+          [
+            280,
+            279.6,
+            82.8
+          ],
+          [
+            294,
+            291,
+            50.9
+          ],
+          [
+            308,
+            302.9,
+            51.8
+          ]
+        ],
+        "words": [
+          "seven dinners",
+          "amounts"
+        ],
+        "tone": "mid",
+        "size": 11,
+        "band": 3
+      },
+      {
+        "kind": "fill",
+        "id": "turn",
+        "profile": [
+          [
+            308,
+            302.9,
+            51.8
+          ],
+          [
+            322,
+            315.1,
+            83.7
+          ],
+          [
+            336,
+            327.4,
+            113.2
+          ],
+          [
+            350,
+            339.9,
+            139.1
+          ],
+          [
+            364,
+            352.4,
+            160
+          ],
+          [
+            378,
+            364.9,
+            175
+          ],
+          [
+            392,
+            377.3,
+            183.3
+          ],
+          [
+            406,
+            389.7,
+            184.6
+          ],
+          [
+            420,
+            402,
+            178.9
+          ],
+          [
+            434,
+            414.3,
+            166.3
+          ],
+          [
+            448,
+            426.5,
+            147.5
+          ],
+          [
+            462,
+            438.7,
+            123.3
+          ],
+          [
+            476,
+            451,
+            95
+          ],
+          [
+            490,
+            463.2,
+            63.8
+          ],
+          [
+            504,
+            475.6,
+            38.7
+          ]
+        ],
+        "words": [
+          "shopping list",
+          "what's left over",
+          "who's eating"
+        ],
+        "tone": "soft",
+        "size": 11,
+        "band": 3
+      },
+      {
+        "kind": "fill",
+        "id": "aisle",
+        "profile": [
+          [
+            504,
+            475.6,
+            38.7
+          ],
+          [
+            518.5,
+            488.5,
+            72.3
+          ],
+          [
+            533.1,
+            501.4,
+            104
+          ],
+          [
+            547.6,
+            514.4,
+            132.1
+          ],
+          [
+            562.1,
+            527.4,
+            155.3
+          ],
+          [
+            576.7,
+            540.2,
+            172.4
+          ],
+          [
+            591.2,
+            553,
+            182.4
+          ],
+          [
+            605.7,
+            565.4,
+            184.9
+          ],
+          [
+            620.3,
+            577.4,
+            179.7
+          ],
+          [
+            634.8,
+            588.9,
+            167.2
+          ],
+          [
+            649.3,
+            599.6,
+            147.9
+          ],
+          [
+            663.9,
+            609.4,
+            122.8
+          ],
+          [
+            678.4,
+            618,
+            93.3
+          ],
+          [
+            692.9,
+            625.4,
+            60.7
+          ],
+          [
+            707.5,
+            631.2,
+            43.1
+          ],
+          [
+            722,
+            635.4,
+            76.5
+          ]
+        ],
+        "words": [
+          "swaps",
+          "shopping list",
+          "seven dinners",
+          "amounts"
+        ],
+        "tone": "mid",
+        "size": 11,
+        "band": 3
+      }
+    ],
+    "texts": [
+      {
+        "role": "display",
+        "id": "start",
+        "text": "Plan it in the kitchen.",
+        "x": 56,
+        "y": 56,
+        "w": 470
+      },
+      {
+        "role": "aside",
+        "id": "travels",
+        "text": "**What travels.** Seven dinners, the shopping list with amounts, and what's left over from last week.",
+        "x": 560,
+        "y": 64,
+        "w": 224
+      },
+      {
+        "role": "masthead",
+        "id": "masthead",
+        "x": 56,
+        "y": 740,
+        "w": 330,
+        "size": 48
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 56,
+        "y": 804,
+        "w": 330
+      },
+      {
+        "role": "display",
+        "id": "end",
+        "text": "Shop it in the aisle.",
+        "x": 384,
+        "y": 764,
+        "w": 400,
+        "align": "right"
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "How it works",
+      "text": "Pick your recipes for the week. Pantry adds up the ingredients and turns them into one shopping list you can read in the shop."
+    },
+    {
+      "title": "Every Monday",
+      "text": "At 8 in the morning Pantry emails you the week's plan and the list, so nothing is left on the kitchen table."
+    },
+    {
+      "title": "Yours alone",
+      "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can open them on any device."
+    }
+  ],
+  "notBuilt": [
+    "paid plans"
+  ]
+}

@@ -1,37 +1,54 @@
-# Page 3 contracts: facts, parts, wiring, drawing
+# Poster contracts: facts, spec, geometry, checks
 
-Page 3 draws **this repo's real parts and real wiring**. Four pieces cooperate, and this file is the only agreement between them. If code and this file disagree, fix the code, or change this file first and say so.
+The poster pipeline has five pieces, and this file is the only agreement between them. If code and this file disagree, fix the code, or change this file first and say so.
 
 ```
-repo ──scan──▶ <repo>-facts.json ──agent writes PARTS──▶ wire ──▶ WIRING block ──▶ canvas draws it
+repo ──scan──▶ <repo>-facts.json ──compose (optional preset)──▶ <repo>-poster.json (agent writes the figure) ──sketch──▶ text preview
+                                                                                    └──render──▶ html, png, pdf (+ check)
 ```
 
 | Piece | File(s) | Job |
 |---|---|---|
-| Scanner | `tools/scan.mjs` (dispatcher), `tools/lib/scan/*.mjs` | Repo → `facts.json`. Deterministic, no new dependencies, no LLM |
-| Wiring | `tools/lib/wire.mjs` | facts + `PARTS` → `WIRING` (counts, sizes, links). Also `why` |
-| Drawing | `exploded-view-starter.md` (the TSX starter) | `PARTS` + `WIRING` → isometric drawing, labels, interaction |
-| Checker | `tools/lib/inspect.js`, `tools/poster.mjs` | Verifies hashes, re-runs `wire`, measures the DOM contract |
+| Scanner | `tools/lib/scan/*.mjs` | Repo → `facts.json`. Deterministic, no network, no LLM |
+| Spec | `tools/lib/spec.mjs`, `tools/lib/jargon.mjs` | Scaffold a spec from facts and an optional preset. Validate a filled spec, including path parsing. Pure, no I/O, never measures text |
+| Presets | `tools/presets/<id>.json` | Example figures the agent may start from with `compose --from`. They double as the goldens |
+| Fill | `tools/lib/fill.js` | Runs in the page. Samples each region's outline into rows, fills them with words, draws dots, places the texts |
+| Render and check | `tools/vyo.mjs`, `tools/lib/render.mjs`, `tools/lib/check.mjs`, `tools/lib/inspect.js` | Page shell, fonts, palette, footer, Playwright screenshot and PDF, and the checks |
 
-Shared helpers live in `tools/lib/hash.mjs`: `stableStringify`, `factsHash`, `fnv1a`, `partsHash`. Use them; don't re-implement.
+Shared helpers live in `tools/lib/hash.mjs`: `stableStringify`, `factsHash`, `fnv1a`. Use them. Don't re-implement them.
 
 ---
 
 ## 1. CLI
 
-All commands run from the skill directory.
+One dispatcher, `tools/vyo.mjs` (`package.json` bin `vyo`). All commands run from the skill directory.
 
 ```bash
-node tools/scan.mjs scan  <repo-dir> --out <canvases>/<repo>-facts.json   # writes facts.json, prints a one-line summary
-node tools/scan.mjs show  <facts.json>                                     # human summary for the agent (see §2.6)
-node tools/scan.mjs draft <facts.json>                                     # prints a suggested PARTS array (valid JSON)
-node tools/scan.mjs wire  <facts.json> --into <canvas.tsx>                 # rewrites the WIRING block; errors → exit 1
-node tools/scan.mjs why   <facts.json> --canvas <canvas.tsx> "<part A>" "<part B>"   # prints one witness path for a link
+node tools/vyo.mjs scan    <repo-dir> --out <dir>/<repo>-facts.json
+node tools/vyo.mjs show    <facts.json>
+node tools/vyo.mjs presets [<id>]
+node tools/vyo.mjs compose <facts.json> [--from <preset>] [--repo <dir>] [--theme light|dark] [--out <spec.json>] [--force]
+node tools/vyo.mjs sketch  <spec.json>
+node tools/vyo.mjs render  <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--paper fit|a4|letter]
+node tools/vyo.mjs check   <spec.json> [--facts <facts.json>]
 ```
 
-- `tools/scan.mjs` owns argument parsing for `scan`, `show` and `draft`. It forwards `wire` and `why` to `tools/lib/wire.mjs`, which exports `wireMain(argv: string[]): Promise<number>` and `whyMain(argv: string[]): Promise<number>`; the return value is the exit code.
-- Exit codes: 0 ok (warnings go to stderr, prefixed `! `), 1 rule error (`✗ ` lines on stderr), 2 usage.
-- The scanner never writes inside the scanned repo.
+- `scan` and `show` are the v1 scanner, unchanged. `scan` never writes inside the scanned repo except to `--out`.
+- `presets` prints, for each preset in `tools/presets/`, its id, its `fits` sentence and a one-line summary of its regions and texts. `presets <id>` prints that preset's `figure` as JSON.
+- `compose` writes a scaffold spec (§3). It fills `facts` from the facts file, `product.name` and `product.repo` from `facts.repo.name`, and `theme` from `--theme`. It refuses to overwrite an existing spec, which may hold the agent's words, unless `--force` is given.
+  - Without `--from`: a starter figure with one fill region shaped as a box (a three-stop `profile` of constant half-width 300 from y 176 to the floor minus 8), placeholder words, one masthead, one headline and one aside. The box fails `row-variety` on purpose, so the agent must reshape it.
+  - With `--from <preset>`: the preset's figure with its geometry kept and every word replaced by a placeholder.
+  - Validation rejects placeholders, so a scaffold cannot render.
+  - It prints `floor: <y>`, the footer top for the spec's notes count with a one-line not-built list (§5), and says that each extra not-built line raises the floor by 16px. Then it prints the `masthead`, `headline`, `aside` and `rows` lines of §4.5: line heights, characters per line and the row grid.
+  - With `--repo <dir>`: `product.commit` is `git -C <dir> log -1 --format=%h` and `product.date` is `git -C <dir> log -1 --format=%cs`, so reruns are stable.
+  - Without it: no `commit`, and `date` is today's ISO date. `facts.json` stays free of timestamps.
+- `sketch` validates the spec and prints the sheet as ASCII (§4.4). It needs no browser.
+- `render` validates the spec, builds the HTML, writes a PNG at 2× and a PDF, then runs every check (§6). Default `--facts` is `<repo>-facts.json` beside the spec, where `<repo>` is `product.repo`. Default `--out` is the spec's directory. Outputs: `<repo>-poster.html`, `<repo>-poster.png`, `<repo>-poster.pdf`. The HTML embeds its fonts as base64 data URIs.
+- `check` does what `render` does in a temporary directory and writes nothing to `--out`.
+- `vyo shapes` no longer exists.
+- Exit codes: 0 ok (warnings on stderr, prefixed `! `), 1 rule error (`✗ ` lines on stderr), 2 usage.
+- `VYO_CHROMIUM` names the Chromium binary when Playwright's own is not installed.
+- When `tools/fonts/` is missing, `render` and `check` exit 1 with `run tools/fetch-fonts.sh`.
 
 ---
 
@@ -42,7 +59,7 @@ Written with `stableStringify(obj, 1)`, so two scans of the same tree are byte-i
 ```ts
 type FactsFile = {
   version: 1;
-  hash: string;                  // factsHash(file) — first 12 hex of sha256 over canonical JSON without "hash"
+  hash: string;                  // factsHash(file): first 12 hex of sha256 over canonical JSON without "hash"
   empty: boolean;                // true when there are no screen/endpoint/table/service/ai/job facts
   repo: { name: string; packages: string[] };  // name = repo dir basename; packages = app roots (".", "apps/web", "backend", …), sorted
   facts: Fact[];                 // sorted by id, ids unique
@@ -172,243 +189,275 @@ Show, in this order:
 
 ---
 
-## 3. Canvas blocks (in `<repo>-exploded-view.canvas.tsx`)
+## 3. The spec
 
-Two marked blocks. Code outside them is the starter and is never generated.
-
-```ts
-// PARTS:BEGIN — you write this (valid JSON). Then run: node tools/scan.mjs wire <facts.json> --into <this file>
-const PARTS: PartSpec[] = [
-  {"name": "What you see", "role": "screens", "line": "When you open Pantry, you move between six screens.", "from": ["screen:**"]}
-];
-// PARTS:END
-// WIRING:BEGIN — generated by `node tools/scan.mjs wire`; do not edit
-const WIRING: Wiring = {"facts":"…","parts":"…","n":[…],"links":[…]};
-// WIRING:END
-```
-
-- **Parsing:** the text after `const PARTS: PartSpec[] = ` up to the last `;` before `// PARTS:END` is `JSON.parse`d. `WIRING` is parsed the same way. `wire --into` replaces only the WIRING line(s) and keeps everything else byte-identical.
-- If the WIRING block is missing, `wire --into` inserts it straight after `// PARTS:END`.
+`<repo>-poster.json` is the single contract between `compose`, `sketch` and `render`. The agent edits only this file.
 
 ```ts
-type Role = "screens" | "api" | "feature" | "ai" | "jobs" | "data" | "service";
-type PartSpec = { name: string; role: Role; line: string; from: string[]; detail?: string };
-// detail: optional plain-English replacement for the caption's "Made of: …" list (≤ 120 chars). Use it when the scanned item names (folder or route names) wouldn't mean anything to a reader. Like name and line, it is not part of the parts hash.
-type PartWiring = {
-  count: number;     // true number of items (role table §4)
-  drawn: number;     // min(count, cap)
-  items: number[];   // length === drawn; relative weight 0–1 per drawn item (LOC share where meaningful, else 1). When count > cap the LAST item is the bundle
-  size: number;      // 0–1: owned LOC / total non-gen LOC (feature parts use it for footprint and height)
-  loc: number;       // owned LOC
-  names: string[];   // ≤ 12 friendly item names, in item order, for the caption
-  tools?: number;    // ai only: tool count (drawn as satellites, cap 6)
+type Spec = {
+  version: 3;
+  facts: string;                 // facts.json `hash`. Render refuses a mismatch (a stale spec)
+  product: {
+    name: string;                // customer-facing name. compose copies facts.repo.name, and render warns until it differs
+    repo: string;                // repo dir basename, = facts.repo.name
+    commit?: string;             // short sha, only when compose had --repo
+    date: string;                // ISO date: the commit date with --repo, else the day compose ran
+  };
+  theme: "light" | "dark";
+  accent?: string;               // "#rrggbb". Replaces the theme's hot colour (the ribbon preset uses #9284FF on dark)
+  headline: string;              // one serif sentence about the outcome, ≤ 72 chars
+  hot: string;                   // one word or two-word phrase, set in the accent. See "hot" below
+  figure: Figure;
+  notes: { title: string; text: string }[];   // 2 or 3. title ≤ 24 chars, text ≤ 220
+  notBuilt: string[];            // 0 to 6 plain items of ≤ 32 chars, rendered as "Not built yet: a, b, c". [] renders nothing
+  audience?: string;             // optional, ≤ 40 chars
 };
-type Wiring = {
-  facts: string;                        // facts.json hash
-  parts: string;                        // partsHash(PARTS)
-  n: PartWiring[];                      // index-aligned with PARTS
-  links: [number, number, number][];    // [a, b, weight], a < b, sorted by a then b; no self-links
+
+type Figure = {
+  fits: string;                  // ≤ 160 chars: the picture and why it acts out the main moment. Printed by `presets`. Never drawn
+  regions: Region[];             // 1 to 6
+  texts: Text[];                 // 1 to 6: exactly one "masthead", at most one "headline"
+};
+
+type Outline =                   // exactly one key (§4.1)
+  | { profile: [number, number, number][] }                 // [y, cx, halfWidth], 3 to 24 stops, y strictly increasing
+  | { ellipse: { cx: number; cy: number; rx: number; ry: number } }
+  | { polygon: [number, number][] }                         // 3 to 40 points, closed
+  | { path: string };                                       // SVG path data in sheet px
+
+type Ink = "soft" | "mid" | "ink" | "cold" | "cool";
+type Tone = Ink | [Ink, Ink] | [Ink, Ink, Ink];             // a list steps down the region: each row takes the nearest stop
+
+type Region =
+  | (Outline & {
+      kind: "fill";
+      id: string;
+      words: string[];           // 2 to 14, each ≤ 24 chars, nouns in the user's words
+      tone: Tone;
+      holes?: Outline[];         // cut out with the even-odd rule
+      caps?: boolean;            // default true
+      band?: 1 | 2 | 3 | 4;      // rows per word, default 1 (the ribbon preset uses 3)
+      size?: 11 | 12;            // font size and row grid: 12 → 16px rows, 11 → 14px rows. Default 12
+      hot?: boolean;             // every row in the accent, with data-hot (the eye's iris)
+    })
+  | {
+      kind: "dots";
+      id: string;
+      lines: string[];           // 2 to 4 words, letters A to Z and spaces, ≤ 5 chars each
+      x: number; y: number;      // top-left corner, sheet px
+      cell: number;              // px per square
+      tones: (Ink | "hot")[];    // one per line, never a list. "hot" draws the line in the accent, and so does a line matching the spec's `hot`
+    };
+
+type Text = {
+  role: "masthead" | "headline" | "display" | "aside" | "label";
+  id: string;
+  text?: string;                 // required for display, aside and label. The masthead renders product.name with the accent full stop. The headline renders spec.headline
+  x: number; y: number; w: number;   // sheet px. w is the wrap width. For the masthead it is the fit width, and the name shrinks to fit
+  size?: number;                 // masthead 84 (48 to 120), headline 22 (18 to 40), display 56 (32 to 64), aside 12 (10 to 14), label 12 (10 to 32), hot label 26 (10 to 32)
+  align?: "left" | "right" | "center";   // default left
+  hot?: boolean;                 // label only: set in the accent, uppercase, tracked (the hourglass waist)
 };
 ```
 
-- The canvas checks `fnv1a(JSON.stringify(PARTS.map(p => [p.role, p.from]))) === WIRING.parts` and `WIRING.n.length === PARTS.length`. On a mismatch it throws `PARTS changed — re-run wire`. Names and lines may change freely.
+Validation lives in `lib/spec.mjs`. It is pure and every error names the field.
 
-### 3.1 Part rules (enforced by `wire`, mirrored by the canvas where cheap)
+- Unknown keys are rejected, at every level.
+- Every limit in the table below is enforced. The shared limits are `LIMITS` in `lib/spec.mjs`.
+- Each fill region and each hole has exactly one of `profile`, `ellipse`, `polygon` and `path`.
+- Every geometry number is finite. `rx`, `ry`, `cell` and every half-width are positive. A `path` must parse with the small tokenizer in `lib/spec.mjs`, which accepts M, L, C, Q, A, H, V and Z in absolute and relative forms. The validator checks numbers only. Bounds against the sheet and the footer are the page-stage `path` check (§6).
+- `text` is required on displays, asides and labels. `hot` is allowed only on labels.
+- A `display` is a bold sans line for the poster's own words, such as the ribbon's "Save in Claude Code." Its `text` is at most 40 characters.
+- Region and text ids are lowercase letters, digits and dashes, at most 24, unique across regions and texts. `note`, `counts`, `notBuilt`, `provenance` and `credit` are footer block names and are rejected.
+- `**bold**` markup is allowed only at the start of an aside. It renders as `<b>`.
+- **`hot`** matches case-folded, as a whole word (`hasWord`), against a word of some fill region, a dots line, or the `text` of a label with `hot: true`. It may also stand alone when some region has `hot: true`.
+- Every visible string passes `isJargon` from `lib/jargon.mjs` (exact tokens, whole word, case-folded).
+- No file paths: no `/`-containing token with an extension, no `src/`, no `lib/`, no `.tsx` and the like.
+- No "01/02/03" style markers and no middle-dot meta strings.
+- No placeholder survives from `compose`.
 
-**Limits:**
-- **2–9 parts.** 2 is a warning; 1, or 10+, is an error: `"<n> parts — use 2 to 9"`.
-- `name` is ≤ 18 characters (`"Part name "<name>" is <n> characters — 18 at most"`).
-- `line` is one sentence.
+| Field | Limit |
+|---|---|
+| `product.name` | 24 characters |
+| `headline` | 72 characters |
+| `hot` | 24 characters, one word or two |
+| `notes` | 2 or 3 |
+| `notes[].title` | 24 characters |
+| `notes[].text` | 220 characters |
+| `notBuilt` | 6 items, 32 characters each |
+| `audience` | 40 characters |
+| `figure.fits` | 160 characters |
+| `figure.regions` | 1 to 6 |
+| `figure.texts` | 1 to 6, exactly one masthead, at most one headline |
+| Fill `words` | 2 to 14 items, 24 characters each |
+| `profile` | 3 to 24 stops, y strictly increasing |
+| `polygon` | 3 to 40 points |
+| `band` | 1 to 4 |
+| `size` (fill) | 11 or 12 |
+| Dots `lines` | 2 to 4 items, 5 letters each, letters and spaces only |
+| Dots `tones` | One per line |
+| `size` (masthead) | 48 to 120, default 84 |
+| `size` (headline) | 18 to 40, default 22 |
+| `size` (display) | 32 to 64, default 56 |
+| `size` (aside) | 10 to 14, default 12 |
+| `size` (label) | 10 to 32, default 12; 26 when `hot` |
+| `text` (aside) | 160 characters |
+| `text` (label) | 32 characters |
+| `text` (display) | 40 characters |
 
-**Glob rules for `from`:**
-- A pattern matches a **whole** id. `*` = `[^/]*`, `**` = `.*`, and a leading `!` excludes.
-- Patterns apply in order: positives add matches, `!` patterns remove them.
-- Every positive pattern must match ≥ 1 fact. Otherwise: `"Part "<name>": "<pattern>" matches nothing — did you mean <id>, <id>?"` (the 3 nearest ids by edit distance).
-
-**Kinds per role:**
-- A non-area match must be the role's kind: screens→screen, api→endpoint, data→table, service→service, ai→ai, jobs→job.
-- `feature` parts cite **only** `area:` facts.
-- Any role may additionally cite `area:` facts. These change file ownership, never counts, except for feature.
-- Otherwise: `"Part "<name>": "<pattern>" matches <kind> facts — a <role> part counts only <kind> (plus area: for ownership)"`.
-
-**No double citations:**
-- A non-area fact may be cited by only one part: `"<id> is cited by both "<a>" and "<b>""`.
-- The same area id may not be cited twice. Nested areas are allowed; the deepest one wins.
-
-**Counts:** a non-feature part whose count is 0 is an error: `"<role> part "<name>" counts nothing"`.
-
-### 3.2 File ownership
-
-Decided per file, in this order:
-1. **Defines a cited fact.** The file is in `files` of a cited screen, endpoint, table or job fact, so it belongs to that part. If facts cited by several parts live in one file, the part with the most such facts wins; ties go to the lower index. *service and ai facts never confer ownership*: their `files` are evidence.
-2. **Deepest cited area.** The file is under a cited area's directory; the longest dir wins.
-3. **Data file.** The file has `data: 1` and there is exactly one `data` part.
-4. Otherwise it is **unowned**.
-
-Kit files may be owned, but they are never a link source or target and are never walked through.
-
-### 3.3 Links
-
-For every owned, non-kit file `f` (owner `p`), walk breadth-first:
-- **Edges:** `imports`, plus `http` uses to an endpoint **not cited by any part**, followed into that endpoint's defining files. The walk runs ≤ 3 hops and **stops** at the first owned file on a branch. It never enters kit files.
-- **Targets found from `f` or any unowned file reached:**
-  - an owned file of another part `q` gives `(p,q)` with witness `(f, file)`
-  - each `uses` entry of `f` or of an unowned file reached, whose fact is cited by part `q`, gives `(p,q)` with witness `(f, factId)`. This covers `package`, `orm` and `http` to cited endpoints.
-- **Weight:** the number of distinct **source files** that reach the other part, counted in both directions: |{f ∈ p reaching q}| + |{g ∈ q reaching p}|. It is not the number of witnesses, so one file importing a generated client that lists 15 endpoints counts once, not 15 times. Witnesses are still kept (for `why`). Self-links are dropped.
-- **Warnings:**
-  - a part with no links: `"! "<name>" has no links"`
-  - uncited facts: `"! Not drawn: Payments (service), 2 tables, …"` for uncited service, ai, job, table and screen facts
-
-`why` prints one shortest witness chain per direction, e.g. `app/(app)/recipes/page.tsx → components/recipes/list.tsx → lib/recipes/query.ts` or `lib/billing.ts ─uses→ service:payments`.
-
-### 3.4 Counts per role
-
-The canvas never recounts.
-
-| role | count = | items weight | names | cap |
-|---|---|---|---|---|
-| screens | cited screen facts | 1 each | friendly screen names | 12 |
-| api | cited endpoint facts | 1 each | friendly endpoint names | 16 |
-| feature | 1 cited area → its direct child area facts **plus** one chip for the area's own files outside those children (named after the area, only if they have LOC), skipping children removed by `!area:` patterns; several areas → those areas | LOC share among chips | area names | 6 |
-| ai | cited ai facts | 1 each | provider names (`tools` = Σ meta.tools) | 4 |
-| jobs | cited job facts | 1 each | job names | 4 |
-
-`names` are de-duplicated (first occurrence kept). For example, two chips both called "Recipes", from `lib/recipes` and `components/recipes`, are listed once. Counts are not affected.
-| data | cited table facts | 1 each | table names | 10 |
-| service | cited service facts | 1 each | service names | 6 |
-
-When count > cap: `drawn = cap`. The first cap − 1 items are real, the last is the bundle with weight 1, and `names` still lists up to 12 real names.
+`lib/jargon.mjs` exports `BANNED: string[]` and `isJargon(text): string[]`, which returns the offending tokens. The "Instead of" column of the banned-term table in `plain-language-rules.md` holds the same tokens, and a test parses that table and compares.
 
 ---
 
-## 4. Drawing (the starter)
+## 4. Geometry
 
-### Role → shape
+The sheet is 840×1190 CSS px with y growing downward. Every number in a figure is sheet px. The footer's top is `1190 − footerHeight − 36` (§5), and everything the agent places must sit above it.
 
-Each drawn unit is an element with `data-item`.
+### 4.1 Outlines
 
-| role | shape | units |
+| Primitive | Outline |
+|---|---|
+| `profile` | For each stop `[y, cx, halfWidth]`, the left edge is `cx − halfWidth` and the right edge is `cx + halfWidth`. Between stops, `cx` and `halfWidth` follow a monotone cubic interpolation, so the outline is smooth and never overshoots a stop. The region spans the first stop's y to the last |
+| `ellipse` | Centre `(cx, cy)`, radii `rx` and `ry` |
+| `polygon` | The points in order, closed back to the first |
+| `path` | The SVG path, filled with the even-odd rule |
+
+`holes` are outlines of the same four kinds. They join the region's path, which is filled with the even-odd rule, so a hole cuts the region.
+
+### 4.2 Sampling rows (in the page)
+
+`lib/fill.js` builds each outline as an offscreen `<svg><path>` and uses `getBBox()` and `isPointInFill()`. Geometry is never computed in Node, except by `sketch` (§4.4).
+
+1. Rows snap to one grid for the whole sheet: 16px for size 12, 14px for size 11.
+2. A point x on the row with top y is inside when both `y + 3` and `y + 13` are inside the fill (`y + 2` and `y + 12` at size 11). The sampler tests every 1px across the bounding box and collects the inside runs.
+3. Every text block's measured rect, padded by 12px, is cut out of the runs. A masthead can therefore sit inside a region, as in the eye preset.
+4. Gaps narrower than 24px are merged, unless the gap came from a text block.
+5. Runs narrower than 24px are dropped.
+
+### 4.3 Filling rows
+
+- Font `400 12px "Commit Mono"`, or 11px at size 11, uppercase unless `caps` is false.
+- One word per row, shared by every run on that row, so the eye's two lid runs show the same word. With `band: n`, a word holds for n rows.
+- The next word is the next one in the list that fits the row, cycling, and no word is skipped for more than one full cycle.
+- A run narrower than the word draws the word centred at its natural width. It may overhang the run.
+- A run narrower than twice the word's natural width draws the word once, centred, with no tracking.
+- A wider run repeats the word with three spaces between copies and letter-spaces the result to the run's width. Tracking is never below 0.
+- A tone list steps down the region by row index. Row i of n takes stop `round(i / (n - 1) * (stops - 1))`: a pair gives each row its nearer stop, so the top half is the first and the bottom half the second, and three stops give top, middle and bottom bands. A single row takes the first stop. Each row is one theme token, so `palette` still holds.
+- A row whose word matches `hot` (`hasWord`) is set in the accent at weight 700 and carries `data-hot`. Every row of a region with `hot: true` does the same.
+- Dots regions draw with v2's warm-start glyph table, shipped in full for A to Z and space: 5×7 squares per letter at `(x, y)` with `cell` px per square, a line 29 cells wide and 7 tall, lines 9 cells apart. Each line takes its tone. A line whose tone is `hot`, or whose word matches the spec's `hot`, takes the accent.
+- Texts render as absolutely positioned blocks with `data-block=<id>`. The masthead uses `fitWidth` to shrink into `w`. A `display` is bold sans (Inter Display, then Inter), one line high per size px. A hot label is bold, set in the accent, uppercase and tracked.
+- `window.drawn` is set to `true` when every region and text is laid out.
+
+### 4.4 Sketch
+
+`vyo sketch` runs the sampler of §4.2 in Node on a polygon version of each outline. Profiles and ellipses become exact polygons, and paths are flattened.
+
+- The sheet prints at 20px per character: 42 columns by about 60 lines.
+- `A` to `F` mark the fill rows of the first to the sixth region, `#` marks dots, `=` marks the footer top, and `·` marks hot rows.
+- Text blocks print as boxes labelled with their ids, with heights estimated at 7.2px per character for mono text, 88px per masthead line at size 84, 28px per headline line at a 224px width, and the line heights of §4.5 for displays and labels.
+- Under the sheet it prints, in order: `regions:` (letter, id and row count per region), `texts:` (each box's corners), `floor: <y>`, the coverage, height and width (as `silhouette` measures them, each marked ok or too low), and one `region <id>:` line per fill region with its spread over mean and mean width, as `row-variety` and `thin-region` measure them (or `regions: no fill rows`). Notes that start with `! ` follow: a region under 4 rows, a word that may never be drawn, a region or text below the floor, and the `row-variety` and `thin-region` messages.
+
+### 4.5 Authoring numbers
+
+These are the numbers `compose` prints and SKILL.md teaches.
+
+| What | Number |
+|---|---|
+| Masthead line | 88px tall at size 84 |
+| Headline | 28px per line in a 224px column at size 22 |
+| Aside | 18px per line, 7.2px per character at size 12 |
+| Display | One line, `size` px tall (56 by default) |
+| Label | 1.25 × `size` px tall (12 by default, 26 when hot) |
+| Rows | 16px apart at size 12, 14px at size 11 |
+| Usual figure band | y 170 to the floor |
+| Floor | The footer top for the notes count, with a one-line not-built list: 884 for 3 notes, 920 for 2. Each extra not-built line raises it by 16px |
+
+---
+
+## 5. The footer
+
+The footer is one fragment that render builds and places at `top = 1190 − footerHeight − 36`. `footerHeight` grows with the notes count and with each line the not-built list wraps to. That top is the figure's floor (§4.5). With the current footer constants and a one-line not-built list, it is 884 for 3 notes and 920 for 2. Top to bottom:
+
+1. A hairline rule.
+2. The counts line, in the soft ink colour.
+3. The notes row: 2 or 3 columns, one per item of `spec.notes`. Each column is a bold title over its text.
+4. When `notBuilt` is not empty, `Not built yet: a, b, c` flush left on its own lines, wrapped at spaces to the footer's 728px width. Each extra line raises the floor by 16px.
+5. The bottom line: provenance on the left and `Drawn by Vyo.` on the right. The full stop of `Drawn by Vyo.` carries `data-hot`.
+
+Provenance is `<name> at <commit>, <date long form>`, such as `Hypher at 04186f4, 28 October 2026`. With no commit it is `<name>, <date long form>`. The footer never prints the word "commit".
+
+The counts line uses commas and skips zero counts, in this order:
+
+```
+12 screens, 8 kinds of request, 5 kinds of saved record, 3 outside services (payments, email, sign-in), 1 AI model, runs 2 jobs on its own
+```
+
+| Count | Singular | Plural | Counted from `facts.facts` |
+|---|---|---|---|
+| Screens | `1 screen` | `N screens` | `kind: "screen"`, deduped by id with any `#<package>` suffix stripped |
+| Requests | `1 kind of request` | `N kinds of request` | `kind: "endpoint"`, deduped the same way |
+| Saved records | `1 kind of saved record` | `N kinds of saved record` | `kind: "table"` |
+| Outside services | `1 outside service (payments)` | `N outside services (a, b, c)` | `kind: "service"`, grouped by capability. Names follow the count, lowercased, only when there are 3 or fewer |
+| AI | `1 AI model` | `N AI models` | `kind: "ai"`, except the id `ai:gateway` |
+| Jobs | `runs 1 job on its own` | `runs N jobs on its own` | `kind: "job"` |
+
+One pure function, `bandCounts(facts)`, does the counting. A unit test pins its output for the `recipe` fixture:
+
+```
+6 screens, 3 kinds of request, 4 kinds of saved record, 3 outside services (email, payments, sign-in), 1 AI model, runs 1 job on its own
+```
+
+When `facts.empty` is true, the counts line is empty and render prints `! no application facts`.
+
+The counts line and provenance are exempt from the jargon and file-path checks, because render writes them.
+
+---
+
+## 6. Checks
+
+The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, about, run }` records. `tools/test/docs.test.mjs` fails when this table or the README's drifts from it. A `spec` stage check is pure and runs before render. A `page` stage check judges the measurements `lib/inspect.js` takes in the rendered page through Playwright. `✗` fails the run, `!` is a warning.
+
+| id | Level | What it measures |
 |---|---|---|
-| screens | portrait cards standing in a shallow tray, fanned in a row | one card per drawn item |
-| api | low patch-panel slab with sockets in rows of 4 | one socket per drawn item |
-| feature | block (footprint `0.6 + 0.4·√size` of the slot, height `12 + 32·√size`) with chips on top | one chip per drawn item, packed 3×2 |
-| ai | hexagonal prism; small satellites ring it, one per tool (cap 6) | one facet mark per provider |
-| jobs | meshed flat gears | one gear per drawn item |
-| data | cylinder: a stack of disks | one disk per drawn item |
-| service | plug block with prongs | one prong per drawn item |
-
-### Tiers
-
-| Tier | Roles |
-|---|---|
-| T0 (top) | screens, api |
-| T1 | feature |
-| T2 | ai, jobs |
-| T3 (bottom) | data, service |
-
-- Empty tiers are dropped. T2 merges into T1 when T1 + T2 ≤ 4 parts.
-- A tier with more than 4 parts throws `Tier with <n> parts — merge parts (4 per tier at most)`.
-- **Ordering within a tier:** 4 barycenter sweeps on link weights, then brute-force column assignment minimising Σ weight·|Δcolumn| against tiers already placed. Ties go to the centre.
-
-### Slots and gaps
-
-- **Slots:** K is the largest tier size. Slot pitch is P = 592 / K, and the half-size is a = min(64, (P − 24) / 3.46). Footprint = a × role factor.
-- **Gaps:** the gap between tiers is `8 + (gOpen − 8) · open / 100`, with gOpen = 2a + 8.
-- **Fit:** fitted once at open = 100: s = min(1, 592/w, 640/h). s < 0.6 throws.
-- **Height:** VBH = ⌈(h·s + 64) / 8⌉·8 ≤ 704, so the page never jumps.
-- **Paint order** for each tier from the bottom up:
-  1. same-tier arches
-  2. the tier's parts
-  3. cables from this tier up to the one above, plus skip-tier cables starting here (so they pass behind the middle parts)
-  4. leaders, painted last
-
-### Cables
-
-- **Ends:** from the lower part's top face to the upper part's underside.
-- **Curve:** a screen-space cubic with controls (x₁, y₁ − k) and (x₂, y₂ + k), k = 0.45·Δy.
-- **Ports:** spread along the part's screen-horizontal diagonal, ordered by the far end's x.
-- **Same-tier links:** arches between back corners, rising a + 16.
-- **Strands:** 1 for weight 1–3, 2 for 4–15, 3 for 16+, 3 units apart.
-- **Colour:** INK_SOFT at 0.75. When either end is selected: INK at 1.25. The lower port gets a paper ring, r 2.5.
-
-### Labels
-
-- **Gutters:** cols 1–2 on the left and cols 11–12 on the right. The drawing is in cols 3–10, 592 units.
-- **Side:** a part goes left when its slot centre is left of the drawing centre. A centre slot goes to the side with fewer labels; ties go right.
-- **Per-side y:** sort by desired y. A forward pass sets y = max(desired, prev + 40, PAD). On overflow, shift up and run a backward pass.
-- **Leader path:** horizontal, then an elbow in the gutter, then a stub at the label's near edge.
-- **Text:** line 1 is the number and name in sentence case, `01  Name` (10px, weight 600, tracking ≤ 0.02em, so an 18-character name fits the 130px gutter). Line 2 is a meta count phrase from the table below. **Never wraps.** Below ~880px figure width the labels become a numbered legend under the drawing.
-
-| role | line 2 |
-|---|---|
-| screens | `{n} screen(s)` |
-| api | `{n} kind(s) of request` |
-| feature | `{pct}% of the code` |
-| ai | `{n} AI model(s)` + ` · {t} tools` when tools > 0 |
-| jobs | `Runs {n} job(s) on its own` |
-| data | `{n} kind(s) of saved record` |
-| service | `{n} outside service(s)` |
-
-Role words such as API or endpoint never appear on the page.
-
-### Selection and caption
-
-- **Selection:** the selected part gets the TINT fill and an INK outline at 1.25, and its cables turn INK. Hover or click selects; the listbox handles ↑/↓/Home/End.
-- **Caption (`aria-live`):** `02 / 07 — NAME`, then the part's `line`, then `Made of: a, b and N more`, then `Connected to: X, Y` (or `Not wired to the other parts`).
-
-**Controls:** the slider ("Open layers"), the theme button, and Show grid. All interactive chrome sits in `[data-chrome]` except Show grid, as before.
+| `spec` | ✗ | The spec passes every rule in §3. When it fails, no other check runs |
+| `facts-hash` | ✗ | `spec.facts` equals the facts file's `hash` |
+| `facts-empty` | ! | `facts.empty` is true: the scan found nothing to count, so the footer shows provenance only |
+| `product-name` | ! | `product.name` equals `facts.repo.name`, the folder name |
+| `preset-copy` | ! | Every region's geometry equals a preset region's geometry, numbers compared exactly |
+| `one-region` | ! | The figure is a single fill region with no hot rows and no hot label. A figure with dots, or with more than one region, never trips it |
+| `drawn` | ✗ | The fill script ran to the end: the page raised no error and set `window.drawn` |
+| `fonts` | ✗ | `document.fonts` holds a `FontFace` with status `loaded` for Commit Mono 400, Commit Mono 700 and Newsreader 400 |
+| `masthead-font` | ! | Inter Display or Inter is installed for the product name |
+| `path` | ✗ | Every outline parses and has a non-empty bounding box inside the sheet whose bottom is above the footer top. Message: `region <id> reaches <n>px below the footer; move it up by <n>` |
+| `rows-fit` | ✗ | Every `.row` has `scrollWidth ≤ clientWidth` and sits inside the 840×1190 sheet |
+| `region-size` | ✗ | Every fill region produced at least 4 rows, and every dots region fits above the footer. The message names the region |
+| `regions-apart` | ✗ | Row rects of different regions at the same y do not overlap, with 4px horizontal inflation |
+| `words-drawn` | ✗ | Per region, every word is drawn at least once. Message: `region <id>: "<word>" never drawn; shorten the list or enlarge the path` |
+| `silhouette` | ✗ | Row rects plus dots line rects cover at least 15% of the area above the footer, and the figure spans at least 55% of that area's height and at least 60% of its width |
+| `row-variety` | ✗ | In every fill region, the standard deviation of its line widths divided by their mean is at least 0.25. A line is all the region's runs at one y, merged into their outer span. Skipped when the figure has no fill region. Message: `region <id> is a box; a silhouette changes width along its whole height` |
+| `thin-region` | ! | Every fill region's lines are at least 160px wide on average. Message: `region <id> reads as a column; widen it or make it part of the main silhouette` |
+| `blocks-apart` | ✗ | No two `[data-block]` text blocks, or a text block and a row, come within 8px. Two rows at the same y are compared horizontally only |
+| `blocks-inside` | ✗ | Every `[data-block]` text block sits inside the sheet |
+| `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens: `paper`, `ink`, `soft`, `mid`, `cold`, `cool`, or `hot` (or `accent`) |
+| `hot-tagged` | ✗ | Anything in the hot colour carries `data-hot` |
+| `copy` | ✗ | The visible words hold no banned term, file path, "01/02/03" marker or middle dot. The masthead and the render-owned footer lines are exempt |
+| `notes` | ✗ | The footer shows exactly the notes in `spec.notes` |
+| `band` | ✗ | The footer counts line equals the line built from `bandCounts(facts)` |
+| `headline-lines` | ! | The headline wraps to more than 2 lines |
 
 ---
 
-## 5. DOM contract (checker ↔ drawing)
+## 7. DOM contract
 
-| Selector | Attributes |
-|---|---|
-| `figure` | `data-facts-hash`, `data-parts-hash` |
-| `g[data-part]` | `data-part=i`, `data-role`, `data-count`, `data-drawn`; contains exactly one `[data-face="top"]` path and `drawn` × `[data-item]` |
-| `path[data-link]` | `data-link=k`, `data-from-part=a`, `data-to-part=b`, `data-weight` (one element per link; extra strands carry `data-strand` and no `data-link`) |
-| `polyline[data-leader]` | `data-leader=i`, `data-side="left"\|"right"`; first point on part i's top face, last point at the label's near edge |
-| `[role=option][data-label]` | `data-label=i`, `data-side`; inside one `[role=listbox]`, `id="xv-part-<i>"`, `aria-selected` |
-| caption | `[aria-live="polite"]` |
-| state keys | `openExploded` (80), `partExploded` (0), `themeExploded` ("light"), `showGridExploded` (false) |
+`lib/fill.js` and render produce, and the checks read, these markers:
 
----
-
-## 6. Fixtures
-
-Under `tools/test/fixtures/`:
-
-- **`recipe/`:** "Pantry", a Next.js app router app (package name `pantry`).
-  - **screens:** `/`, `/recipes`, `/recipes/[id]`, `/recipes/new`, `/plan`, `/settings`, inside route group `app/(app)`
-  - **endpoints:** `/api/recipes` (GET, POST), `/api/recipes/[id]` (GET, PATCH, DELETE), `/api/suggest` (POST)
-  - **job:** cron `/api/cron/weekly-plan`, declared in `vercel.json`
-  - **Prisma tables:** User, Recipe, Ingredient, MealPlan
-  - **services:**
-    - Stripe in `lib/billing.ts`
-    - Resend in `lib/email.ts`
-    - Clerk (`@clerk/nextjs`, a hosted sign-in company) in `lib/auth.ts`
-  - **AI:** openai in `lib/ai/suggest.ts`, with 2 `tool({` definitions
-  - **areas:**
-    - `components/recipes`, `components/plan`
-    - `components/ui` (kit: imported by ≥ 4 areas)
-    - `lib/recipes`, `lib/plan`, `lib/ai`, `lib/db.ts` (imports `@prisma/client`)
-  - **http:** the screens call `/api/recipes` and `/api/suggest` through fetch literals
-  - Each named area dir (`components/recipes`, `components/plan`, `components/ui`, `lib/recipes`, `lib/plan`, `lib/ai`) has **≥ 3 source files**, so it survives the §2.2 merge rule. `prisma/` holds only `schema.prisma` and merges into `area:.`, which is fine because tables are owned through rule 1 of §3.2.
-- **`fastapi-svc/`:** a FastAPI + SQLModel + Celery service with a small React (TanStack file routes) frontend in `frontend/`.
-  - **tables:** User, Item
-  - **endpoints:** ~8, using APIRouter prefixes
-  - **jobs:** 1 Celery task
-  - **services:** Email (`emails`), Error alerts (`sentry-sdk`)
-- **`empty/`:** a README only. Scanning it gives `empty: true`.
-
-**Recipe starter `PARTS`:** the page 3 starter ships these 7 parts, and its `WIRING` must equal a fresh `wire(scan(recipe), PARTS)`:
-
-| Part | role | from |
+| Marker | Who sets it | Meaning |
 |---|---|---|
-| What you see | screens | `["screen:**"]` |
-| Recipe box | feature | `["area:lib/recipes", "area:components/recipes"]` |
-| Meal planner | feature | `["area:lib/plan", "area:components/plan"]` |
-| Recipe ideas | ai | `["ai:*", "area:lib/ai"]` |
-| Weekly email | jobs | `["job:**"]` |
-| Saved recipes | data | `["table:*"]` |
-| Outside services | service | `["service:*"]` |
+| `.row` | Fill | One run of words on one row of a fill region. Measured by `rows-fit`, `regions-apart`, `blocks-apart`, `silhouette`, `row-variety` and `thin-region` |
+| `data-region` | Fill | The region `id` on every `.row` and on every dots line. Lets the checks group rows by region |
+| `data-word` | Fill | The source word, as written in the spec, on every `.row`. Read by `words-drawn` |
+| `data-hot` | Render on the two full stops. Fill on hot rows, the hot dots line and a hot label | This element is meant to be in the hot colour. Anything in that colour without it fails `hot-tagged` |
+| `data-block` | Fill for every text, with the text's `id`. Render for the footer blocks | A text block to measure for overlap and bounds, and to cut out of the rows |
+| `window.drawn` | Fill | Set to `true` after the fonts load and every region and text is laid out. Render waits for it before the screenshot, the PDF and the checks |
+
+The sheet is 840×1190 CSS px. The PNG is rendered at a device scale factor of 2.
