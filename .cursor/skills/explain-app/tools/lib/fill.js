@@ -1,5 +1,5 @@
-// Runs in the page after geometry.mjs (render concatenates the two): lays the figure's rows and dots
-// out around the text blocks, then sets window.drawn.
+// Runs in the page after geometry.mjs and the field modules (render concatenates them): lays the figure's
+// rows and dots out around the text blocks, then sets window.drawn.
 
 // 5x7 letters, one string per row, "1" = a square.
 const GLYPHS = {
@@ -33,7 +33,7 @@ const GLYPHS = {
 };
 
 const F = JSON.parse(document.getElementById("figure").textContent);
-const isHot = (w) => window.hasWord(w, F.hot);
+const isHot = (w) => !!F.hot && window.hasWord(w, F.hot);
 
 function el(className, data, style, text) {
   const e = document.createElement("div");
@@ -44,32 +44,48 @@ function el(className, data, style, text) {
   return e;
 }
 
+const ctx = document.createElement("canvas").getContext("2d");
+const measure = (text, size) => {
+  ctx.font = `400 ${size}px "Commit Mono"`;
+  return ctx.measureText(text).width;
+};
+
+/** One row of letters: `r` from fillRows or a field layout. */
+function drawRow(S, r, data, height, weight) {
+  const text = r.text.replace(/ /g, "\u00a0");
+  const e = el(
+    "row",
+    data,
+    {
+      fontSize: r.size + "px", lineHeight: height + "px", height: height + "px",
+      left: r.x + "px", top: r.y + "px", width: Math.ceil(r.width) + 1 + "px", letterSpacing: r.spacing + "px",
+      color: r.hot ? "var(--hot)" : `var(--${r.tone})`, fontWeight: weight,
+    },
+    text.slice(0, -1),
+  );
+  // The last letter carries no tracking, so the letters span the run exactly.
+  const last = document.createElement("span");
+  last.style.letterSpacing = "0";
+  last.textContent = text.slice(-1);
+  e.appendChild(last);
+  S.appendChild(e);
+}
+
 function drawFill(S, region, blocks) {
   const size = region.size || 12;
   const { pitch } = GRID[size];
-  const ctx = document.createElement("canvas").getContext("2d");
-  ctx.font = `400 ${size}px "Commit Mono"`;
   const rows = regionRows(region, blocks);
-  for (const r of fillRows(region, rows, { measure: (t) => ctx.measureText(t).width, isHot })) {
-    const text = r.text.replace(/ /g, " ");
-    const e = el(
-      "row",
-      { word: r.word, region: region.id, hot: r.hot },
-      {
-        fontSize: size + "px", lineHeight: pitch + "px", height: pitch + "px",
-        left: r.x + "px", top: r.y + "px", width: Math.ceil(r.width) + 1 + "px", letterSpacing: r.spacing + "px",
-        color: r.hot ? "var(--hot)" : `var(--${r.tone})`, fontWeight: r.hot ? 700 : 400,
-      },
-      text.slice(0, -1),
-    );
-    // The last letter carries no tracking, so the letters span the run exactly.
-    const last = document.createElement("span");
-    last.style.letterSpacing = "0";
-    last.textContent = text.slice(-1);
-    e.appendChild(last);
-    S.appendChild(e);
+  for (const r of fillRows(region, rows, { measure: (t) => measure(t, size), isHot })) {
+    drawRow(S, { ...r, size }, { word: r.word, region: region.id, hot: r.hot }, pitch, r.hot ? 700 : 400);
   }
   return { id: region.id, kind: "fill", bbox: bbox(shapeRings(region)), rows: rows.length };
+}
+
+function drawField(S, region, blocks) {
+  const items = FIELDS[region.field].layout(region, region.parts, { floor: F.floor, mirror: F.mirror, blocks, measure });
+  for (const r of items) drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, 400);
+  const box = items.length ? bbox([items.flatMap((r) => [[r.x, r.y], [r.x + r.width, r.y + r.height]])]) : { left: 0, top: 0, right: 0, bottom: 0 };
+  return { id: region.id, kind: "field", bbox: box, rows: items.length };
 }
 
 function drawDots(S, region) {
@@ -115,6 +131,7 @@ function drawDots(S, region) {
     const r = range.getBoundingClientRect();
     return { left: r.left - origin.left, top: r.top - origin.top, right: r.right - origin.left, bottom: r.bottom - origin.top };
   });
-  window.figure = { regions: F.regions.map((r) => (r.kind === "fill" ? drawFill(S, r, blocks) : drawDots(S, r))) };
+  const draw = { fill: drawFill, dots: drawDots, field: drawField };
+  window.figure = { regions: F.regions.map((r) => draw[r.kind](S, r, blocks)) };
   window.drawn = true;
 })();

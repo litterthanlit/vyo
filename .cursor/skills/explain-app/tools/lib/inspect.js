@@ -31,6 +31,7 @@
   const rows = [...sheet.querySelectorAll(".row")].map((el) => ({
     word: el.dataset.word,
     region: el.dataset.region,
+    part: el.dataset.part,
     hot: el.dataset.hot !== undefined,
     scrollWidth: el.scrollWidth,
     clientWidth: el.clientWidth,

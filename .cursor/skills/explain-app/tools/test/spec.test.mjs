@@ -143,3 +143,29 @@ test("every term in the plain-language-rules banned table is in BANNED", () => {
   const missing = terms.filter((t) => !BANNED.includes(t));
   assert.deepEqual(missing, [], "terms in the doc's table that lib/jargon.mjs does not ban");
 });
+
+test("a field region: its keys, the options only its kind takes, and copy rules on names and the sentence", () => {
+  const withField = (region) => () => {
+    const s = good();
+    delete s.hot;
+    s.figure.regions = [{ kind: "field", id: "wave", field: "wave", ...region }];
+    return s;
+  };
+  assert.deepEqual(validateSpec(withField({ accent: "area:lib/plan", names: { "area:lib": "kitchen" }, sentence: "plan once", every: 4 })()), []);
+  assert.deepEqual(validateSpec(withField({ field: "terrain" })()), [], "accent and hot are optional");
+  const cases = [
+    [{ field: "river" }, /^figure\.regions\[0\]\.field: "river" is not a field; use wave or terrain$/],
+    [{ field: "terrain", sentence: "plan once" }, /^figure\.regions\[0\]\.sentence: a terrain field has no sentence; only wave takes it$/],
+    [{ accent: "lib/plan" }, /^figure\.regions\[0\]\.accent: an area id like "area:lib\/plan"/],
+    [{ names: { "area:lib": "the API" } }, /^figure\.regions\[0\]\.names\["area:lib"\]: jargon: "api"/],
+    [{ names: { "area:lib": "… a plain name" } }, /still the placeholder/],
+    [{ sentence: "x".repeat(41) }, /^figure\.regions\[0\]\.sentence: 41 characters; at most 40$/],
+    [{ every: 1 }, /^figure\.regions\[0\]\.every: a whole number, 2 to 20$/],
+    [{ maxParts: 40 }, /maxParts: a whole number, 2 to 24/],
+    [{ minShare: 0.5 }, /minShare: 0 to 0\.2/],
+    [{ words: ["a", "b"] }, /^figure\.regions\[0\]\.words: unknown field$/],
+  ];
+  for (const [region, re] of cases) rejects(() => {}, re, withField(region));
+  rejects((s) => s.figure.regions.push({ kind: "field", id: "two", field: "terrain" }), /^figure\.regions: at most 1 field region$/, withField({}));
+  assert.deepEqual(errorsOf((s) => (s.hot = "kitchen"), withField({})), [], "a field's hot word is checked on the page, where its part names exist");
+});

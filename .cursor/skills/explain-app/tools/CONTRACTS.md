@@ -424,6 +424,8 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 | `facts-empty` | ! | `facts.empty` is true: the scan found nothing to count, so the footer shows provenance only |
 | `product-name` | ! | `product.name` equals `facts.repo.name`, the folder name |
 | `preset-copy` | ! | Every region's geometry equals a preset region's geometry, numbers compared exactly |
+| `part-name` | ! | A part a field draws has an unplain name: all caps, a company name the scan knows, or one word ending in a digit. Also a key in `names` that is not a part. Message: `part "<name>" (<id>) looks like a vendor or code name; add a plain name in names` |
+| `accent-part` | ! | A field region has no `accent`. Message: `no accent part in region <id>; set accent to the id of the part the poster is about (vyo parts lists them)` |
 | `one-region` | ! | The figure is a single fill region with no hot rows and no hot label. A figure with dots, or with more than one region, never trips it |
 | `drawn` | ✗ | The fill script ran to the end: the page raised no error and set `window.drawn` |
 | `fonts` | ✗ | `document.fonts` holds a `FontFace` with status `loaded` for Commit Mono 400, Commit Mono 700 and Newsreader 400 |
@@ -434,6 +436,7 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 | `regions-apart` | ✗ | Row rects of different regions at the same y do not overlap, with 4px horizontal inflation |
 | `words-drawn` | ✗ | Per region, every word is drawn at least once. Message: `region <id>: "<word>" never drawn; shorten the list or enlarge the path` |
 | `silhouette` | ✗ | Row rects plus dots line rects cover at least 15% of the area above the footer, and the figure spans at least 55% of that area's height and at least 60% of its width |
+| `field-parts` | ✗ | A field's parts hold every non-generated line of `facts.json`, every part has at least one row (wave) or one run of letters (terrain), and `accent` names a part. Message: `region <id>: part "<name>" (<id>) is never drawn; move the text blocks that cover it` |
 | `row-variety` | ✗ | In every fill region, the standard deviation of its line widths divided by their mean is at least 0.25. A line is all the region's runs at one y, merged into their outer span. Skipped when the figure has no fill region. Message: `region <id> is a box; a silhouette changes width along its whole height` |
 | `thin-region` | ! | Every fill region's lines are at least 160px wide on average. Message: `region <id> reads as a column; widen it or make it part of the main silhouette` |
 | `blocks-apart` | ✗ | No two `[data-block]` text blocks, or a text block and a row, come within 8px. Two rows at the same y are compared horizontally only |

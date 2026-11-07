@@ -2,7 +2,9 @@
 // Commit Mono's fixed advance, so the agent sees rows, coverage, each region's widths and the floor before rendering.
 import { SHEET, GRID, ADVANCE, regionRows, fillRows, dotsLines } from "./geometry.mjs";
 import { hasWord, PLACEHOLDER } from "./spec.mjs";
-import { floorOf, LINE_HEIGHT, textSize } from "./render.mjs";
+import { floorOf, fieldFrame, LINE_HEIGHT, textSize } from "./render.mjs";
+import { FIELDS } from "./fields/index.mjs";
+import { regionParts } from "./parts.mjs";
 import { figureStats, regionStats, SILHOUETTE, REGION, boxMessage, thinMessage } from "./check.mjs";
 
 const CELL = 20;
@@ -45,22 +47,49 @@ export function estimateText(t, spec) {
 
 const placeholder = (list) => !Array.isArray(list) || list.some((w) => typeof w === "string" && w.trim().startsWith(PLACEHOLDER));
 
+/** Commit Mono's fixed advance stands in for the page's measured text. */
+export const fixedMeasure = (text, size) => text.length * ADVANCE * size;
+
+/** A field region's rows as the page lays them out, around the estimated text blocks. */
+export function fieldItems(spec, region, facts, texts = spec.figure.texts.map((t) => estimateText(t, spec))) {
+  return FIELDS[region.field].layout(region, regionParts(region, facts), { ...fieldFrame(spec), blocks: texts, measure: fixedMeasure });
+}
+
 /**
  * The sketch of a spec whose figure geometry is valid; placeholder words count as one 10-letter word.
+ * A figure with a field needs the facts its parts come from.
  * @returns {string}
  */
-export function sketch(spec) {
+export function sketch(spec, facts) {
   const floor = floorOf(spec);
   const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(" "));
   const put = (r, c, ch) => r >= 0 && r < ROWS && c >= 0 && c < COLS && (grid[r][c] = ch);
   const texts = spec.figure.texts.map((t) => estimateText(t, spec));
   const rowRects = [];
   const dotRects = [];
+  const fieldRects = [];
   const legend = [];
   const notes = [];
   let letter = 0;
 
   for (const region of spec.figure.regions) {
+    if (region.kind === "field") {
+      const mark = LETTERS[letter++];
+      const items = fieldItems(spec, region, facts, texts);
+      for (const it of items) {
+        fieldRects.push({ left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + it.height });
+        for (let c = 0; c < COLS; c++) {
+          const cx = c * CELL + CELL / 2;
+          if (cx >= it.x && cx < it.x + it.width) put(Math.floor((it.y + it.height / 2) / CELL), c, it.hot ? "·" : mark);
+        }
+      }
+      const parts = regionParts(region, facts);
+      const drawn = new Set(items.map((i) => i.part));
+      legend.push(`${mark} ${region.id} (${region.field}, ${parts.length} parts, ${new Set(items.map((i) => i.y)).size} rows)`);
+      for (const p of parts.filter((q) => !drawn.has(q.id))) notes.push(`region ${region.id}: part "${p.name}" (${p.id}) is never drawn`);
+      if (region.accent !== undefined && !parts.some((p) => p.hot)) notes.push(`region ${region.id}: accent ${region.accent} names no part`);
+      continue;
+    }
     if (region.kind === "dots") {
       for (const ln of dotsLines(region)) {
         dotRects.push({ left: ln.x, top: ln.y, right: ln.x + ln.width, bottom: ln.y + ln.height });
@@ -73,7 +102,7 @@ export function sketch(spec) {
     const words = placeholder(region.words) ? ["xxxxxxxxxx"] : region.words;
     const size = region.size || 12;
     const rows = regionRows(region, texts);
-    const items = fillRows({ ...region, words }, rows, { measure: (s) => s.length * ADVANCE * size, isHot: (w) => hasWord(w, spec.hot) });
+    const items = fillRows({ ...region, words }, rows, { measure: (s) => fixedMeasure(s, size), isHot: (w) => !!spec.hot && hasWord(w, spec.hot) });
     const pitch = GRID[size].pitch;
     for (const it of items) {
       const rect = { left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + pitch };
@@ -113,7 +142,7 @@ export function sketch(spec) {
   const footRow = Math.floor(floor / CELL);
   for (let c = 0; c < COLS; c++) put(footRow, c, "=");
 
-  const s = figureStats(rowRects, dotRects, floor);
+  const s = figureStats([...rowRects, ...fieldRects], dotRects, floor);
   const perRegion = regionStats(rowRects);
   for (const r of perRegion) {
     if (r.variety < REGION.variety) notes.push(boxMessage(r));
@@ -127,7 +156,7 @@ export function sketch(spec) {
     `texts: ${texts.map((b) => `${b.id} ${Math.round(b.left)},${Math.round(b.top)} to ${Math.round(b.right)},${Math.round(b.bottom)}`).join("; ")}`,
     `floor: ${floor}`,
     `${[s.coverage >= SILHOUETTE.coverage, s.height >= SILHOUETTE.height, s.width >= SILHOUETTE.width].every(Boolean) ? "" : "! "}coverage ${Math.round(s.coverage * 100)}% (needs ${Math.round(SILHOUETTE.coverage * 100)}%, ${ok(s.coverage, SILHOUETTE.coverage)}), height ${Math.round(s.height * 100)}% (needs ${Math.round(SILHOUETTE.height * 100)}%, ${ok(s.height, SILHOUETTE.height)}), width ${Math.round(s.width * 100)}% (needs ${Math.round(SILHOUETTE.width * 100)}%, ${ok(s.width, SILHOUETTE.width)})`,
-    ...(perRegion.length ? perRegion.map((r) => `region ${r.id}: spread/mean ${r.variety.toFixed(2)} (needs ${REGION.variety}), ${Math.round(r.width)}px across on average (needs ${REGION.width})`) : ["regions: no fill rows"]),
+    ...(perRegion.length ? perRegion.map((r) => `region ${r.id}: spread/mean ${r.variety.toFixed(2)} (needs ${REGION.variety}), ${Math.round(r.width)}px across on average (needs ${REGION.width})`) : fieldRects.length ? [] : ["regions: no fill rows"]),
     ...notes.map((n) => `! ${n}`),
   ];
   return out.join("\n") + "\n";

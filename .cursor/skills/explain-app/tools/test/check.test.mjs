@@ -1,6 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { CHECKS, runChecks } from "../lib/check.mjs";
+import { partsFromFacts } from "../lib/parts.mjs";
+import { scanRepo } from "../lib/scan/index.mjs";
 
 const region = (id, words, extra = {}) => ({ kind: "fill", id, polygon: [[0, 0], [10, 0], [10, 10]], words, tone: "mid", ...extra });
 const spec = {
@@ -97,6 +101,48 @@ test("every check has a unique id, a level, a stage and a description", () => {
   for (const c of CHECKS) assert.ok(["fail", "warn"].includes(c.level) && ["spec", "page"].includes(c.stage) && c.about, c.id);
   assert.deepEqual(
     CHECKS.map((c) => c.id).sort(),
-    ["band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "fonts", "headline-lines", "hot-tagged", "masthead-font", "notes", "one-region", "palette", "path", "preset-copy", "product-name", "region-size", "regions-apart", "row-variety", "rows-fit", "silhouette", "spec", "thin-region", "words-drawn"],
+    ["accent-part", "band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "field-parts", "fonts", "headline-lines", "hot-tagged", "masthead-font", "notes", "one-region", "palette", "part-name", "path", "preset-copy", "product-name", "region-size", "regions-apart", "row-variety", "rows-fit", "silhouette", "spec", "thin-region", "words-drawn"],
   );
+});
+
+const recipe = scanRepo(path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures", "recipe"));
+const recipeParts = partsFromFacts(recipe);
+const field = (over = {}) => ({ kind: "field", id: "wave", field: "wave", accent: "area:lib/plan", ...over });
+const fieldSpec = (over) => ({ ...spec, hot: undefined, figure: { ...spec.figure, regions: [field(over)] } });
+// One box-shaped row per part, all the same width: a field that a fill region's rules would call a box.
+const fieldRows = recipeParts.map((p, i) => ({ word: p.name, region: "wave", part: p.id, hot: p.id === "area:lib/plan", scrollWidth: 80, clientWidth: 90, rect: rect(100, 40 + i * 14, 500, 53 + i * 14) }));
+const fieldPage = (over = {}) => page({ rows: fieldRows, regions: [{ id: "wave", kind: "field", bbox: rect(100, 40, 500, 300), rows: fieldRows.length }], figureHot: ["Plan"], ...over });
+const fieldFindings = (p, s) => runChecks("page", { spec: s, facts: recipe, page: p });
+
+test("field-parts passes a field that draws every part, and names each part it never draws", () => {
+  assert.deepEqual(fieldFindings(fieldPage(), fieldSpec()).filter((f) => f.id === "field-parts"), []);
+  const missing = fieldFindings(fieldPage({ rows: fieldRows.filter((r) => r.part !== "area:lib/ai") }), fieldSpec());
+  assert.deepEqual(missing.filter((f) => f.id === "field-parts").map((f) => [f.level, f.message]), [["fail", 'region wave: part "AI features" (area:lib/ai) is never drawn; move the text blocks that cover it']]);
+  const lost = fieldFindings(fieldPage(), fieldSpec({ accent: "area:nowhere" })).filter((f) => f.id === "field-parts");
+  assert.deepEqual(lost.map((f) => f.message), ["region wave: accent area:nowhere names no part; vyo parts lists the part ids"]);
+});
+
+test("a field is exempt from row-variety, region-size, thin-region and the rows-crowding rule, not from blocks-apart", () => {
+  const crowded = fieldRows.map((r) => ({ ...r, rect: { ...r.rect, top: 40, bottom: 53 } }));
+  const ids = fieldFindings(fieldPage({ rows: crowded }), fieldSpec()).map((f) => f.id);
+  for (const id of ["row-variety", "region-size", "thin-region"]) assert.ok(!ids.includes(id), id);
+  assert.ok(!fieldFindings(fieldPage({ rows: crowded }), fieldSpec()).some((f) => f.id === "blocks-apart"));
+  const covered = fieldFindings(fieldPage({ blocks: [...page().blocks, { name: "aside", text: "x", rect: rect(120, 44, 200, 60), lines: 1 }] }), fieldSpec());
+  assert.ok(covered.some((f) => f.id === "blocks-apart" && /aside/.test(f.message)));
+});
+
+test("a field poster without a hot word passes words-drawn; with one, the word must be in the accent", () => {
+  assert.ok(!fieldFindings(fieldPage({ figureHot: [] }), fieldSpec()).some((f) => f.id === "words-drawn"));
+  const withHot = { ...fieldSpec(), hot: "plan" };
+  assert.ok(!fieldFindings(fieldPage(), withHot).some((f) => f.id === "words-drawn"));
+  assert.ok(fieldFindings(fieldPage({ figureHot: [] }), withHot).some((f) => f.id === "words-drawn"));
+});
+
+test("part-name warns for vendor names and stray names; accent-part warns when no accent is set", () => {
+  const hypher = { facts: [{ id: "area:.", kind: "area", name: "Hypher", meta: { leaf: false } }, { id: "area:convex", kind: "area", name: "Convex", meta: { leaf: true } }, { id: "area:web", kind: "area", name: "Web", meta: { leaf: true } }], files: { "convex/a.ts": { area: "area:convex", loc: 50 }, "web/a.ts": { area: "area:web", loc: 50 } } };
+  const run = (region) =>
+    CHECKS.filter((c) => ["part-name", "accent-part"].includes(c.id)).flatMap((c) => c.run({ spec: { figure: { regions: [region] } }, facts: hypher }).map((message) => ({ id: c.id, level: c.level, message })));
+  assert.deepEqual(run(field({ accent: "area:web" })).map((f) => [f.id, f.level, f.message]), [["part-name", "warn", 'part "Convex" (area:convex) looks like a vendor or code name; add a plain name in names']]);
+  assert.deepEqual(run(field({ accent: "area:web", names: { "area:convex": "server", "area:gone": "old" } })).map((f) => f.message), ["names has area:gone, which is not a part of region wave; vyo parts lists the part ids"]);
+  assert.deepEqual(run(field({ accent: undefined, names: { "area:convex": "server" } })).map((f) => [f.id, f.message]), [["accent-part", "no accent part in region wave; set accent to the id of the part the poster is about (vyo parts lists them)"]]);
 });

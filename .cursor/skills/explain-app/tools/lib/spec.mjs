@@ -1,6 +1,8 @@
 // The poster spec: the one file the agent writes. Pure validation, no I/O, no text measuring.
 import { isJargon } from "./jargon.mjs";
 import { SHEET, SHAPE_KEYS, parsePath } from "./geometry.mjs";
+import { FIELDS } from "./fields/index.mjs";
+import { WAVE } from "./fields/wave.mjs";
 
 /**
  * @typedef {"soft" | "mid" | "ink" | "cold" | "cool"} ToneName
@@ -10,6 +12,8 @@ import { SHEET, SHAPE_KEYS, parsePath } from "./geometry.mjs";
  * @typedef {Shape & { kind: "fill", id: string, holes?: Shape[], words: string[], tone: Tone, caps?: boolean,
  *                     band?: 1 | 2 | 3 | 4, size?: 11 | 12, hot?: boolean }} FillRegion
  * @typedef {{ kind: "dots", id: string, lines: string[], x: number, y: number, cell: number, tones: (ToneName | "hot")[] }} DotsRegion
+ * @typedef {{ kind: "field", id: string, field: "wave" | "terrain", accent?: string, names?: Record<string, string>,
+ *             sentence?: string, every?: number, minShare?: number, maxParts?: number }} FieldRegion  drawn from facts.json at render
  * @typedef {{ role: "masthead" | "headline" | "display" | "aside" | "label", id: string, text?: string, x: number, y: number, w: number,
  *             size?: number, align?: "left" | "right" | "center", hot?: boolean }} Text
  * @typedef {{
@@ -19,8 +23,8 @@ import { SHEET, SHAPE_KEYS, parsePath } from "./geometry.mjs";
  *   theme: "light" | "dark",
  *   accent?: string,
  *   headline: string,
- *   hot: string,
- *   figure: { fits: string, regions: (FillRegion | DotsRegion)[], texts: Text[] },
+ *   hot?: string,  required unless the figure has a field
+ *   figure: { fits: string, regions: (FillRegion | DotsRegion | FieldRegion)[], texts: Text[] },
  *   notes: { title: string, text: string }[],
  *   notBuilt: string[],
  *   audience?: string,
@@ -31,7 +35,7 @@ export const PLACEHOLDER = "…";
 export const LIMITS = {
   name: 24, headline: 72, hot: 24, noteTitle: 24, noteText: 220, notBuilt: 6, notBuiltItem: 32, audience: 40,
   fits: 160, regions: 6, texts: 6, words: [2, 14], word: 24, lines: [2, 4], line: 5, aside: 160, label: 32, display: 40,
-  profile: [3, 24], polygon: [3, 40], holes: 4, path: 4000,
+  profile: [3, 24], polygon: [3, 40], holes: 4, path: 4000, fields: 1, partName: 24, sentence: 40, every: [2, 20], minShare: [0, 0.2], maxParts: [2, 24],
 };
 export const TONES = ["soft", "mid", "ink", "cold", "cool"];
 export const DOT_TONES = [...TONES, "hot"];
@@ -42,6 +46,8 @@ export const TEXT_SIZE = { masthead: [84, 48, 120], headline: [22, 18, 40], disp
 // Block names the footer uses; a figure text cannot take one.
 const RESERVED = ["note", "counts", "notBuilt", "provenance", "credit"];
 
+// Keys that only some kinds of field take, like the wave's sentence.
+const FIELD_OPTIONS = [...new Set(Object.values(FIELDS).flatMap((f) => f.options))];
 const KEYS = {
   spec: ["version", "facts", "product", "theme", "accent", "headline", "hot", "figure", "notes", "notBuilt", "audience"],
   product: ["name", "repo", "commit", "date"],
@@ -49,6 +55,7 @@ const KEYS = {
   figure: ["fits", "regions", "texts"],
   fill: ["kind", "id", ...SHAPE_KEYS, "holes", "words", "tone", "caps", "band", "size", "hot"],
   dots: ["kind", "id", "lines", "x", "y", "cell", "tones"],
+  field: ["kind", "id", "field", "accent", "names", "minShare", "maxParts", ...FIELD_OPTIONS],
   text: ["role", "id", "text", "x", "y", "w", "size", "align", "hot"],
   ellipse: ["cx", "cy", "rx", "ry"],
 };
@@ -174,6 +181,37 @@ function checkDots(f, r, err) {
   if (!Number.isInteger(r.cell) || r.cell < 8 || r.cell > 32) err(`${f}.cell: a whole number of px, 8 to 32`);
 }
 
+function checkField(f, r, err, copy) {
+  const kind = FIELDS[r.field];
+  if (!kind) return err(`${f}.field: "${r.field}" is not a field; use ${Object.keys(FIELDS).join(" or ")}`);
+  for (const k of FIELD_OPTIONS) {
+    if (r[k] !== undefined && !kind.options.includes(k)) err(`${f}.${k}: a ${r.field} field has no ${k}; only ${Object.keys(FIELDS).filter((n) => FIELDS[n].options.includes(k)).join(", ")} takes it`);
+  }
+  if (r.accent !== undefined && !(isStr(r.accent) && /^area:\S+$/.test(r.accent))) err(`${f}.accent: an area id like "area:lib/plan", or a glob of them; vyo parts lists the ids`);
+  const plain = (where, v, max, what) => {
+    if (!isStr(v) || !v.trim()) return err(`${where}: missing`);
+    if (isPlaceholder(v)) return err(`${where}: still the placeholder; write ${what}`);
+    if (v.length > max) err(`${where}: ${v.length} characters; at most ${max}`);
+    copy.push([where, v]);
+  };
+  if (r.names !== undefined) {
+    if (!isObj(r.names)) err(`${f}.names: a map from part id to plain name`);
+    else
+      for (const [id, name] of Object.entries(r.names)) {
+        if (!/^area:\S+$/.test(id)) err(`${f}.names: "${id}" is not a part id like "area:lib/plan"`);
+        plain(`${f}.names["${id}"]`, name, LIMITS.partName, "a plain name for the part");
+      }
+  }
+  if (r.sentence !== undefined) plain(`${f}.sentence`, r.sentence, LIMITS.sentence, "one plain sentence, or remove it");
+  const whole = (k) => {
+    const [lo, hi] = LIMITS[k];
+    if (r[k] !== undefined && !(Number.isInteger(r[k]) && inRange(r[k], lo, hi))) err(`${f}.${k}: a whole number, ${lo} to ${hi}`);
+  };
+  whole("every");
+  whole("maxParts");
+  if (r.minShare !== undefined && !inRange(r.minShare, ...LIMITS.minShare)) err(`${f}.minShare: ${LIMITS.minShare[0]} to ${LIMITS.minShare[1]}, a share of the lines`);
+}
+
 function checkText(f, t, err, copy) {
   if (!ROLES.includes(t.role)) return err(`${f}.role: "${t.role}" is not a role; use ${ROLES.join(", ")}`);
   const named = t.role !== "masthead" && t.role !== "headline";
@@ -215,13 +253,16 @@ function checkFigure(fig, err, copy) {
     fig.regions.forEach((r, i) => {
       const f = `figure.regions[${i}]`;
       if (!isObj(r)) return err(`${f}: must be a region`);
-      if (r.kind !== "fill" && r.kind !== "dots") return err(`${f}.kind: "${r.kind}" is not a region kind; use fill or dots`);
+      if (!["fill", "dots", "field"].includes(r.kind)) return err(`${f}.kind: "${r.kind}" is not a region kind; use field, fill or dots`);
       unknownKeys(r, KEYS[r.kind], `${f}.`, err);
       idOk(f, r.id);
       if (r.kind === "fill") checkFill(f, r, err);
-      else checkDots(f, r, err);
+      else if (r.kind === "dots") checkDots(f, r, err);
+      else checkField(f, r, err, copy);
       for (const [k, list] of [["words", r.words], ["lines", r.lines]]) if (Array.isArray(list) && !list.some(isPlaceholder)) list.forEach((w, j) => isStr(w) && copy.push([`${f}.${k}[${j}]`, w]));
     });
+
+  if (Array.isArray(fig.regions) && fig.regions.filter((r) => isObj(r) && r.kind === "field").length > LIMITS.fields) err(`figure.regions: at most ${LIMITS.fields} field region`);
 
   if (!Array.isArray(fig.texts) || fig.texts.length < 1 || fig.texts.length > LIMITS.texts) return err(`figure.texts: 1 to ${LIMITS.texts} texts`);
   fig.texts.forEach((t, i) => {
@@ -235,6 +276,9 @@ function checkFigure(fig, err, copy) {
   if (count("masthead") !== 1) err(`figure.texts: ${count("masthead")} mastheads; use exactly one`);
   if (count("headline") > 1) err(`figure.texts: ${count("headline")} headlines; use at most one`);
 }
+
+/** Does the figure have a field region? */
+export const hasField = (fig) => Array.isArray(fig?.regions) && fig.regions.some((r) => isObj(r) && r.kind === "field");
 
 /** Every word the hot word may come from: fill words, dots lines and hot labels. */
 function hotPool(fig) {
@@ -286,12 +330,16 @@ export function validateSpec(spec) {
   checkFigure(spec.figure, err, copy);
   const figureOk = errors.length === before;
 
-  if (!isStr(spec.hot) || !spec.hot.trim()) err("hot: missing");
-  else if (isPlaceholder(spec.hot)) err("hot: still the placeholder; write it");
-  else if (spec.hot.length > LIMITS.hot || spec.hot.trim().split(/\s+/).length > 2) err(`hot: one word or a two-word phrase, at most ${LIMITS.hot} characters`);
-  else if (figureOk) {
-    const pool = hotPool(spec.figure);
-    if (!pool.hotRegion && !pool.words.some((w) => hasWord(w, spec.hot))) err(`hot: "${spec.hot}" must be in a fill region's words, a dots line or a hot label, or a region must be hot`);
+  // A field's part names come from facts.json, so its hot word, if any, is checked on the page.
+  const withField = hasField(spec.figure);
+  if (spec.hot !== undefined || !withField) {
+    if (!isStr(spec.hot) || !spec.hot.trim()) err("hot: missing");
+    else if (isPlaceholder(spec.hot)) err("hot: still the placeholder; write it");
+    else if (spec.hot.length > LIMITS.hot || spec.hot.trim().split(/\s+/).length > 2) err(`hot: one word or a two-word phrase, at most ${LIMITS.hot} characters`);
+    else if (figureOk && !withField) {
+      const pool = hotPool(spec.figure);
+      if (!pool.hotRegion && !pool.words.some((w) => hasWord(w, spec.hot))) err(`hot: "${spec.hot}" must be in a fill region's words, a dots line or a hot label, or a region must be hot`);
+    }
   }
 
   if (!Array.isArray(spec.notes)) err("notes: must be a list");

@@ -244,12 +244,16 @@ export function regionRows(region, blocks) {
   const box = bbox(rings);
   const rows = [];
   for (let y = Math.floor(box.top / pitch) * pitch; y < box.bottom; y += pitch) {
-    let runs = mergeGaps(intersect(spans(rings, y + probes[0]), spans(rings, y + probes[1])), MIN_RUN);
-    for (const b of blocks) if (b.top - TEXT_PAD < y + pitch && b.bottom + TEXT_PAD > y) runs = cut(runs, [b.left - TEXT_PAD, b.right + TEXT_PAD]);
-    runs = runs.map(([l, r]) => [Math.ceil(l), Math.floor(r)]).filter(([l, r]) => r - l >= MIN_RUN);
+    const runs = clearOf(mergeGaps(intersect(spans(rings, y + probes[0]), spans(rings, y + probes[1])), MIN_RUN), y, pitch, blocks);
     if (runs.length) rows.push({ y, runs });
   }
   return rows;
+}
+
+/** Runs of a row at y, `height` tall, with the text blocks (padded 12px) cut out: whole pixels, at least 24px wide. */
+export function clearOf(runs, y, height, blocks) {
+  for (const b of blocks) if (b.top - TEXT_PAD < y + height && b.bottom + TEXT_PAD > y) runs = cut(runs, [b.left - TEXT_PAD, b.right + TEXT_PAD]);
+  return runs.map(([l, r]) => [Math.ceil(l), Math.floor(r)]).filter(([l, r]) => r - l >= MIN_RUN);
 }
 
 const stopsOf = (tone) => (Array.isArray(tone) ? tone : [tone]);

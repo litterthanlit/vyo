@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { hasWord, TEXT_SIZE } from "./spec.mjs";
 import { SHEET } from "./geometry.mjs";
 import { bandCounts, bandLine, provenance } from "./band.mjs";
+import { regionParts } from "./parts.mjs";
 
 const TOOLS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const FONT_DIR = path.join(TOOLS, "fonts");
@@ -137,10 +138,27 @@ window.fitWidth = (el, max) => {
   }
 };`;
 
-// The page lays out the figure with the same geometry module `vyo sketch` runs in Node.
+// The page lays out the figure with the same geometry and field modules `vyo sketch` runs in Node,
+// concatenated into one script: their imports are each other, so they are dropped.
 const LIB = path.join(TOOLS, "lib");
+const PAGE_MODULES = ["geometry.mjs", "fields/wave.mjs", "fields/terrain.mjs", "fields/index.mjs"];
 const figureScript = () =>
-  [fs.readFileSync(path.join(LIB, "geometry.mjs"), "utf8").replace(/^export /gm, ""), fs.readFileSync(path.join(LIB, "fill.js"), "utf8")].join("\n").replace(/<\/script/gi, "<\\/script");
+  [...PAGE_MODULES.map((f) => fs.readFileSync(path.join(LIB, f), "utf8").replace(/^import .*\n/gm, "").replace(/^export /gm, "")), fs.readFileSync(path.join(LIB, "fill.js"), "utf8")]
+    .join("\n")
+    .replace(/<\/script/gi, "<\\/script");
+
+/** What a field's layout needs from the rest of the poster: the floor, and whether the masthead sits on the right. */
+export function fieldFrame(spec) {
+  const m = spec.figure.texts.find((t) => t.role === "masthead");
+  return { floor: floorOf(spec), mirror: !!m && m.x + m.w / 2 > SHEET.width / 2 };
+}
+
+/** The figure as the page reads it: field regions carry their parts, computed from facts.json. */
+const figureData = (spec, facts) => ({
+  regions: spec.figure.regions.map((r) => (r.kind === "field" ? { ...r, parts: regionParts(r, facts) } : r)),
+  hot: spec.hot ?? null,
+  ...fieldFrame(spec),
+});
 
 /** The poster as one HTML string. Throws when the fonts are missing. */
 export function buildPage(spec, facts) {
@@ -157,7 +175,7 @@ html, body { background: var(--paper) }
 </style><script>${PRELUDE}</script></head><body><div class="sheet">
 ${spec.figure.texts.map((t) => textBlock(spec, t)).join("\n")}
 ${footer(spec, facts)}
-</div><script type="application/json" id="figure">${json({ regions: spec.figure.regions, hot: spec.hot })}</script><script type="module">${figureScript()}</script></body></html>`;
+</div><script type="application/json" id="figure">${json(figureData(spec, facts))}</script><script type="module">${figureScript()}</script></body></html>`;
 }
 
 const PAPER = {

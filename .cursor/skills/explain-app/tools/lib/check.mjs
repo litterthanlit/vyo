@@ -3,6 +3,7 @@
 import { validateSpec, textProblems, hasWord, geometryKey } from "./spec.mjs";
 import { bandCounts, bandLine } from "./band.mjs";
 import { FONT_FACES, tokensOf } from "./render.mjs";
+import { partsFromFacts, regionParts, unplainName } from "./parts.mjs";
 
 const rgb = (hex) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(", ")})`;
 const overlap = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
@@ -14,6 +15,13 @@ const inside = (r, s) => r.left >= s.left - 0.5 && r.top >= s.top - 0.5 && r.rig
 const round = (n) => Math.round(n);
 const pct = (n) => `${Math.round(n * 100)}%`;
 const fillIds = (spec) => spec.figure.regions.filter((r) => r.kind === "fill").map((r) => r.id);
+const fieldsOf = (spec) => spec.figure.regions.filter((r) => r.kind === "field");
+// Fields lay their own rows out from the scan, so the rules for hand-drawn shapes judge fill rows only.
+const fillRowsOf = (page) => {
+  const fills = new Set(page.regions.filter((r) => r.kind === "fill").map((r) => r.id));
+  return page.rows.filter((r) => fills.has(r.region));
+};
+const linesOf = (facts) => Object.values(facts.files).reduce((s, f) => s + (f.gen ? 0 : f.loc), 0);
 const union = (rects) => rects.reduce((u, r) => ({ left: Math.min(u.left, r.left), top: Math.min(u.top, r.top), right: Math.max(u.right, r.right), bottom: Math.max(u.bottom, r.bottom) }), { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
 
 const spreadOf = (widths) => {
@@ -60,7 +68,7 @@ export function regionStats(rows) {
 export const REGION = { variety: 0.25, width: 160 };
 export const boxMessage = (s) => `region ${s.id} is a box; a silhouette changes width along its whole height (spread/mean ${s.variety.toFixed(2)}, needs ${REGION.variety})`;
 export const thinMessage = (s) => `region ${s.id} reads as a column; widen it or make it part of the main silhouette (${Math.round(s.width)}px across on average, under ${REGION.width}px)`;
-const pageRegionStats = (page) => regionStats(page.rows.map((r) => ({ region: r.region, ...r.rect })));
+const pageRegionStats = (page) => regionStats(fillRowsOf(page).map((r) => ({ region: r.region, ...r.rect })));
 
 /**
  * @typedef {{ spec: any, facts: any, presets: Record<string, any>, page?: any }} CheckInput
@@ -86,13 +94,29 @@ export const CHECKS = [
   {
     id: "preset-copy", level: "warn", stage: "spec", about: "the figure's geometry is not a preset's, unchanged",
     run: ({ spec, presets }) => {
-      const mine = spec.figure.regions.map(geometryKey);
+      const mine = spec.figure.regions.filter((r) => r.kind !== "field").map(geometryKey);
+      if (!mine.length) return [];
       const same = Object.entries(presets).find(([, p]) => {
-        const theirs = new Set(p.figure.regions.map(geometryKey));
+        const theirs = new Set(p.figure.regions.filter((r) => r.kind !== "field").map(geometryKey));
         return mine.every((k) => theirs.has(k));
       });
       return same ? [`the figure's geometry is the ${same[0]} preset's, unchanged; shape it for this product`] : [];
     },
+  },
+  {
+    id: "part-name", level: "warn", stage: "spec", about: "every part a field draws has a plain name, and every name in names belongs to a part",
+    run: ({ spec, facts }) =>
+      fieldsOf(spec).flatMap((r) => {
+        const parts = partsFromFacts(facts, r);
+        return [
+          ...parts.filter((p) => unplainName(p.name)).map((p) => `part "${p.name}" (${p.id}) looks like a vendor or code name; add a plain name in names`),
+          ...Object.keys(r.names ?? {}).filter((id) => !parts.some((p) => p.id === id)).map((id) => `names has ${id}, which is not a part of region ${r.id}; vyo parts lists the part ids`),
+        ];
+      }),
+  },
+  {
+    id: "accent-part", level: "warn", stage: "spec", about: "every field sets an accent part",
+    run: ({ spec }) => fieldsOf(spec).filter((r) => r.accent === undefined).map((r) => `no accent part in region ${r.id}; set accent to the id of the part the poster is about (vyo parts lists them)`),
   },
   {
     id: "drawn", level: "fail", stage: "page", about: "the figure script ran to the end",
@@ -128,6 +152,7 @@ export const CHECKS = [
     id: "region-size", level: "fail", stage: "page", about: "every fill region has at least 4 rows and every dots region fits above the footer",
     run: ({ page }) =>
       page.regions.flatMap((r) => {
+        if (r.kind === "field") return [];
         if (r.kind === "fill") return r.rows >= 4 ? [] : [`region ${r.id} has ${r.rows} rows; it needs at least 4, so make it taller or wider`];
         const ok = inside(r.bbox, page.sheet) && r.bbox.bottom <= page.footerTop + 0.5;
         return ok ? [] : [`region ${r.id} does not fit: its letters end at ${round(r.bbox.bottom)}px and ${round(r.bbox.right)}px, the footer starts at ${round(page.footerTop)}px; use a smaller cell or move it`];
@@ -151,7 +176,7 @@ export const CHECKS = [
         for (const w of r.words) if (!drawn.has(w.toLowerCase())) out.push(`region ${r.id}: "${w}" never drawn; shorten the list or enlarge the path`);
       }
       const hotRegion = spec.figure.regions.some((r) => r.hot) && page.rows.some((r) => r.hot);
-      if (!hotRegion && !page.figureHot.some((t) => hasWord(t, spec.hot))) out.push(`the hot word "${spec.hot}" is not drawn in the accent colour`);
+      if (spec.hot !== undefined && !hotRegion && !page.figureHot.some((t) => hasWord(t, spec.hot))) out.push(`the hot word "${spec.hot}" is not drawn in the accent colour`);
       return out;
     },
   },
@@ -179,7 +204,8 @@ export const CHECKS = [
       const say = (a, b) => out.push(`${a.name} overlaps ${b.name} or sits within 8px of it; shorten one of them`);
       blocks.forEach((a, i) => blocks.slice(i + 1).forEach((b) => crowd(a.rect, b.rect) && say(a, b)));
       for (const a of blocks) for (const m of marks) if (crowd(a.rect, m.rect)) say(a, m);
-      page.rows.forEach((a, i) => page.rows.slice(i + 1).forEach((b) => a.region === b.region && crowd(a.rect, b.rect) && say({ name: `the row "${a.word}"` }, { name: `the row "${b.word}"` })));
+      const fills = fillRowsOf(page);
+      fills.forEach((a, i) => fills.slice(i + 1).forEach((b) => a.region === b.region && crowd(a.rect, b.rect) && say({ name: `the row "${a.word}"` }, { name: `the row "${b.word}"` })));
       return [...new Set(out)];
     },
   },
@@ -197,6 +223,21 @@ export const CHECKS = [
       if (s.width < SILHOUETTE.width) out.push(`the figure spans ${pct(s.width)} of the sheet's width; it needs ${pct(SILHOUETTE.width)}`);
       return out;
     },
+  },
+  {
+    id: "field-parts", level: "fail", stage: "page", about: "a field's parts hold every line of the scan, each part is drawn, and its accent names a part",
+    run: ({ spec, facts, page }) =>
+      fieldsOf(spec).flatMap((r) => {
+        const parts = regionParts(r, facts);
+        const total = linesOf(facts);
+        const held = parts.reduce((s, p) => s + p.loc, 0);
+        const drawn = new Set(page.rows.filter((row) => row.region === r.id).map((row) => row.part));
+        return [
+          ...(held === total ? [] : [`region ${r.id}: the parts hold ${held} lines but facts.json has ${total}`]),
+          ...parts.filter((p) => !drawn.has(p.id)).map((p) => `region ${r.id}: part "${p.name}" (${p.id}) is never drawn; move the text blocks that cover it`),
+          ...(r.accent !== undefined && !parts.some((p) => p.hot) ? [`region ${r.id}: accent ${r.accent} names no part; vyo parts lists the part ids`] : []),
+        ];
+      }),
   },
   {
     id: "row-variety", level: "fail", stage: "page", about: `every fill region changes width: its lines' spread over their mean is at least ${REGION.variety}`,

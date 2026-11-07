@@ -65,3 +65,17 @@ test("a region too short or below the floor is flagged before render", () => {
   assert.match(out, /^! region outputs reaches \d+px below the floor$/m);
   assert.match(out, /^! region sliver has [0-3] rows; it needs at least 4$/m);
 });
+
+test("a field sketches from the facts: its parts, its rows, and the parts a text block hides", async () => {
+  const { scanRepo } = await import("../lib/scan/index.mjs");
+  const facts = scanRepo(path.join(HERE, "fixtures", "recipe"));
+  const spec = preset("hourglass");
+  spec.figure.regions = [{ kind: "field", id: "wave", field: "wave", accent: "area:lib/plan" }];
+  const out = sketch(spec, facts);
+  assert.match(out, /^regions: A wave \(wave, 12 parts, \d\d rows\); · marks hot rows$/m);
+  assert.match(out, /·{5}/, "the accent part's rows are hot");
+  assert.doesNotMatch(out, /^! /m);
+  const lines = (n, chars) => Array(n).fill("x".repeat(chars)).join(" ");
+  spec.figure.texts.push({ role: "aside", id: "cover", text: lines(8, 74), x: 300, y: 0, w: 540 }, { role: "aside", id: "cover2", text: lines(8, 41), x: 0, y: 0, w: 300 });
+  assert.match(sketch(spec, facts), /^! region wave: part "Recipe" \(area:\.\) is never drawn$/m);
+});

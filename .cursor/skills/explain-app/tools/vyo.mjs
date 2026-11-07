@@ -20,7 +20,7 @@ const USAGE = `Usage:
   vyo show    <facts.json>
   vyo presets [<id>]
   vyo compose <facts.json> [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
-  vyo sketch  <spec.json>
+  vyo sketch  <spec.json> [--facts <facts.json>]
   vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--paper ${PAPERS.join("|")}]
   vyo check   <spec.json> [--facts <facts.json>]
 
@@ -212,8 +212,16 @@ function cmdCompose(argv) {
   return 0;
 }
 
+/** The facts file a spec was written for: --facts, or <repo>-facts.json beside the spec. */
+function factsFor(specFile, spec, opt) {
+  const repo = spec && spec.product && typeof spec.product.repo === "string" ? spec.product.repo : null;
+  const file = opt.facts ?? (repo ? path.join(path.dirname(specFile), `${repo}-facts.json`) : null);
+  if (!file) throw new Failure("product.repo is missing, so the facts file cannot be found; pass --facts");
+  return readFacts(file);
+}
+
 function cmdSketch(argv) {
-  const { pos } = args(argv, {}, 1);
+  const { pos, opt } = args(argv, { facts: { type: "string" } }, 1);
   const spec = readJson(pos[0], "poster spec");
   // Placeholder words and copy rules wait for render; the sketch needs the geometry, the texts and the notes count.
   const blocking = validateSpec(spec).filter((e) => /^(figure\.(regions|texts)|figure:|notes:|version|product)/.test(e) && !/still the placeholder|: (jargon|a file path|a "01|a middle dot)/.test(e));
@@ -221,7 +229,8 @@ function cmdSketch(argv) {
     for (const e of blocking) fail(`spec: ${e}`);
     return 1;
   }
-  process.stdout.write(sketch(spec));
+  const fields = spec.figure.regions.some((r) => r.kind === "field");
+  process.stdout.write(sketch(spec, fields ? factsFor(pos[0], spec, opt) : undefined));
   return 0;
 }
 
@@ -232,10 +241,8 @@ function report(found) {
 
 async function poster(specFile, opt, outDir, files) {
   const spec = readJson(specFile, "poster spec");
-  const repo = spec && spec.product && typeof spec.product.repo === "string" ? spec.product.repo : null;
-  const factsFile = opt.facts ?? (repo ? path.join(path.dirname(specFile), `${repo}-facts.json`) : null);
-  if (!factsFile) throw new Failure("product.repo is missing, so the facts file cannot be found; pass --facts");
-  const facts = readFacts(factsFile);
+  const facts = factsFor(specFile, spec, opt);
+  const repo = spec.product.repo;
   const input = { spec, facts, presets: loadPresets() };
   if (report(runChecks("spec", input))) return 1;
   const base = path.join(outDir, `${repo}-poster`);
