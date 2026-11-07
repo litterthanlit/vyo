@@ -82,10 +82,10 @@ const PLANTED = [
   ],
   ["a region below the footer", "hourglass", (s) => (s.figure.regions[1].profile.at(-1)[0] = 950), /^✗ path: region outputs reaches 66px below the footer; move it up by 66$/m],
   [
-    "a text block over a field's first part",
-    "wave",
-    (s) => s.figure.texts.push({ role: "aside", id: "lid", text: "Plan once. ".repeat(14).trim(), x: 400, y: 0, w: 440 }),
-    /^✗ field-parts: region wave: part "saved recipes" \(area:\.\) is never drawn; move the text blocks that cover it$/m,
+    "a text block over a field's foothill",
+    "terrain",
+    (s) => s.figure.texts.push({ role: "aside", id: "lid", text: "Plan once. Plan once. Plan once.", x: 40, y: 820, w: 100 }),
+    /^✗ field-parts: region terrain: part "page frame" \(area:app\) is never drawn; move the text blocks that cover it$/m,
   ],
   ["an accent that names no part", "terrain", (s) => (s.figure.regions[0].accent = "area:nowhere"), /^✗ field-parts: region terrain: accent area:nowhere names no part/m],
 ];

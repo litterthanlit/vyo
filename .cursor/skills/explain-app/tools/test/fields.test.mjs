@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { FIELDS } from "../lib/fields/index.mjs";
-import { waveRows } from "../lib/fields/wave.mjs";
+import { waveRows, rowsPerPart, WAVE } from "../lib/fields/wave.mjs";
 import { terrainRows, TERRAIN } from "../lib/fields/terrain.mjs";
 import { regionParts } from "../lib/parts.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
@@ -25,11 +25,13 @@ test("the registry names each field once, with its layout and the options only i
 });
 
 for (const [name, facts] of [["recipe", recipe], ["hypher", hypher]]) {
-  test(`wave on ${name}: 60 to 72 rows from the top edge to the floor, every part drawn, clear of the text blocks`, () => {
+  test(`wave on ${name}: 7.9px rows from the top edge to the floor, every part on a row the text blocks leave clear`, () => {
     const parts = regionParts({ accent: "area:hypher-web/shared" }, facts);
     const items = waveRows({ sentence: "plan once", every: 5 }, parts, frame());
     const ys = [...new Set(items.map((i) => i.y))];
-    assert.ok(ys.length >= 58 && ys.length <= 72, `${ys.length} rows drawn`);
+    assert.ok(ys.length >= 80 && ys.length <= Math.floor(900 / WAVE.pitch), `${ys.length} rows drawn`);
+    for (const y of ys) assert.ok(Math.abs(y / WAVE.pitch - Math.round(y / WAVE.pitch)) < 0.02, `row at ${y} sits on the 7.9px grid`);
+    assert.ok(items.every((i) => i.size === 6.9 && i.height === WAVE.pitch));
     assert.equal(Math.min(...ys), 0, "the band starts at the top edge");
     assert.ok(Math.max(...items.map((i) => i.y + i.height)) <= 900, "and stays above the floor");
     assert.ok(Math.max(...items.map((i) => i.y)) > 860, "down to the floor");
@@ -41,17 +43,25 @@ for (const [name, facts] of [["recipe", recipe], ["hypher", hypher]]) {
   });
 }
 
-test("wave: every fifth row carries the sentence, the accent part is hot, the masthead side flips the band", () => {
+test("wave: rows go to parts by lines, at least one each, all of them used", () => {
+  const counts = rowsPerPart([{ loc: 900 }, { loc: 90 }, { loc: 10 }, { loc: 0 }], 20);
+  assert.deepEqual(counts, [15, 3, 1, 1]);
+  assert.equal(rowsPerPart([{ loc: 5 }, { loc: 5 }, { loc: 5 }], 7).reduce((s, n) => s + n, 0), 7);
+});
+
+test("wave: every fifth row carries the sentence, the accent part is hot, the band enters behind the masthead", () => {
   const parts = regionParts({ accent: "area:hypher-web/shared" }, hypher);
   const items = waveRows({ sentence: "switch agents without starting over" }, parts, frame({ blocks: [] }));
   const ys = [...new Set(items.map((i) => i.y))];
   const said = ys.filter((y) => items.find((i) => i.y === y).word === "switch agents without starting over");
   assert.deepEqual(said, ys.filter((_, i) => i % 5 === 4));
   assert.ok(items.filter((i) => i.part === "area:hypher-web/shared").every((i) => i.hot && i.tone === "hot"));
-  assert.ok(items.filter((i) => i.part !== "area:hypher-web/shared").every((i) => !i.hot && ["mid", "soft"].includes(i.tone)));
+  assert.ok(items.filter((i) => i.part !== "area:hypher-web/shared").every((i) => !i.hot && ["ink", "mid"].includes(i.tone)), "ink and mid on paper");
+  const dark = waveRows({}, parts, frame({ blocks: [], theme: "dark" }));
+  assert.ok(dark.filter((i) => !i.hot).every((i) => ["mid", "soft"].includes(i.tone)), "mid and soft on navy");
   const flipped = waveRows({}, parts, frame({ blocks: [], mirror: true }));
   const first = (list) => list.find((i) => i.y === 0);
-  assert.ok(first(items).x > 420 && first(flipped).x + first(flipped).width < 420, "the band enters on the side away from the masthead");
+  assert.ok(first(items).x + first(items).width < 420 && first(flipped).x > 420, "the band enters on the masthead's side, behind it");
 });
 
 test("terrain: every part shows, small parts as foothills, valleys keep a foot, rows clear the text blocks", () => {
@@ -69,7 +79,7 @@ test("terrain: every part shows, small parts as foothills, valleys keep a foot, 
   const tallest = Math.min(...items.filter((i) => i.part === "area:hypher-web/shared").map((i) => i.y));
   const small = Math.min(...items.filter((i) => i.part === "area:packages").map((i) => i.y));
   assert.ok(tallest < 330, `the biggest part reaches high (${tallest})`);
-  assert.ok(small > 900 - (TERRAIN.below + 6 * 14), `the smallest part stays a foothill (${small})`);
+  assert.ok(small > 900 - (TERRAIN.below + 12 * TERRAIN.pitch), `the smallest part stays a foothill (${small})`);
   assert.ok(items.filter((i) => i.part === "area:hypher-web/shared").every((i) => i.hot));
 });
 
@@ -79,4 +89,29 @@ test("terrain: letters spread on steep slopes and sit tight on flats", () => {
   const spacings = items.map((i) => i.spacing);
   assert.ok(Math.min(...spacings) < 0, "tighter than the font's own advance on the flats");
   assert.ok(Math.max(...spacings) > 2, "wider on the slopes");
+});
+
+test("terrain: a name starts whole at each run and never breaks where the next part's slope begins", () => {
+  const parts = regionParts({ accent: "area:hypher-web/shared" }, hypher);
+  const items = terrainRows({}, parts, frame({ blocks: [] }));
+  const cw = fixedMeasure("M", TERRAIN.size);
+  const name = (id) => parts.find((p) => p.id === id).name.toLowerCase();
+  const runs = [];
+  for (const it of [...items].sort((a, b) => a.y - b.y || a.x - b.x)) {
+    const last = runs.at(-1);
+    const step = cw + it.spacing;
+    if (last && last.y === it.y && last.part === it.part && Math.abs(it.x - last.end) < 2 * cw) last.text += " ".repeat(Math.max(0, Math.round((it.x - last.end) / step))) + it.text;
+    else runs.push({ ...it });
+    runs.at(-1).end = it.x + it.text.length * step;
+  }
+  for (const r of runs) r.text = r.text.replace(/ {1,2}(?=\S)/g, " ").replace(/^ /, "");
+  for (const r of runs) assert.ok(name(r.part).startsWith(r.text.slice(0, name(r.part).length).trimEnd()), `run at ${r.x},${r.y} starts "${r.text.slice(0, 12)}"`);
+  const broken = runs.filter((r, i) => {
+    const next = runs[i + 1];
+    if (!next || next.y !== r.y || next.part === r.part || next.x - r.end > 3 * cw) return false;
+    const words = name(r.part).split(" ");
+    const tail = r.text.split(/\s+/).at(-1);
+    return r.text.trim().length >= Math.min(...words.map((w) => w.length)) && !words.includes(tail);
+  });
+  assert.deepEqual(broken.map((r) => `${r.text.slice(-12)} | ${runs[runs.indexOf(r) + 1].text.slice(0, 8)}`), []);
 });

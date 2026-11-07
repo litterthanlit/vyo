@@ -147,10 +147,10 @@ const figureScript = () =>
     .join("\n")
     .replace(/<\/script/gi, "<\\/script");
 
-/** What a field's layout needs from the rest of the poster: the floor, and whether the masthead sits on the right. */
+/** What a field's layout needs from the rest of the poster: the floor, whether the masthead sits on the right, and the theme. */
 export function fieldFrame(spec) {
   const m = spec.figure.texts.find((t) => t.role === "masthead");
-  return { floor: floorOf(spec), mirror: !!m && m.x + m.w / 2 > SHEET.width / 2 };
+  return { floor: floorOf(spec), mirror: !!m && m.x + m.w / 2 > SHEET.width / 2, theme: spec.theme };
 }
 
 /** The figure as the page reads it: field regions carry their parts, computed from facts.json. */

@@ -79,6 +79,7 @@ test("a field sketches from the facts: its parts, its rows, and the parts a text
   assert.match(out, /·{5}/, "the accent part's rows are hot");
   assert.doesNotMatch(out, /^! /m);
   const lines = (n, chars) => Array(n).fill("x".repeat(chars)).join(" ");
-  spec.figure.texts.push({ role: "aside", id: "cover", text: lines(8, 74), x: 300, y: 0, w: 540 }, { role: "aside", id: "cover2", text: lines(8, 41), x: 0, y: 0, w: 300 });
-  assert.match(sketch(spec, facts), /^! region wave: part "Recipe" \(area:\.\) is never drawn$/m);
+  // The band skips rows the text covers, so a part goes undrawn only when fewer clear rows remain than parts.
+  spec.figure.texts.push({ role: "aside", id: "cover", text: lines(46, 120), x: 0, y: 0, w: 840 });
+  assert.match(sketch(spec, facts), /^! region wave: part "Recipes" \(area:lib\/recipes\) is never drawn$/m);
 });

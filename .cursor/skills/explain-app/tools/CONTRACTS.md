@@ -414,28 +414,29 @@ The parts hold every non-generated line and file exactly once. `unplainName(name
 
 ### Fields
 
-`FIELDS` in `lib/fields/index.mjs` is `{ [kind]: { about, options, layout, texts } }`. `layout(region, parts, { floor, mirror, blocks, measure })` returns row items `{ x, y, width, height, size, text, spacing, part, word, hot, tone }`. `floor` is the footer top, `mirror` is true when the masthead's centre is right of the sheet's middle, `blocks` are the text blocks' rects and `measure(text, size)` the text width. The page uses canvas measurements and its laid-out blocks; `sketch` uses 0.6 × size per letter and estimated blocks. The advance is rounded to 0.01px, so both place every row within 2px given the same blocks (`test/run.mjs` checks this on the field presets).
+`FIELDS` in `lib/fields/index.mjs` is `{ [kind]: { about, options, layout, texts } }`. `layout(region, parts, { floor, mirror, theme, blocks, measure })` returns row items `{ x, y, width, height, size, text, spacing, part, word, hot, tone, alpha? }`. `floor` is the footer top, `mirror` is true when the masthead's centre is right of the sheet's middle, `theme` is the spec's, `blocks` are the text blocks' rects and `measure(text, size)` the text width. The page uses canvas measurements and its laid-out blocks; `sketch` uses 0.6 × size per letter and estimated blocks. The advance is rounded to 0.05px, so both place every row within 2px given the same blocks (`test/run.mjs` checks this on the field presets).
 
-Both fields set text at 11px in Commit Mono 400, cut every row around the text blocks padded by 12px (`clearOf` in `lib/geometry.mjs`), and keep inside x 0 to 839 and above the floor.
+Both fields set text in Commit Mono 400 at the mockups' 6.9px, cut every row around the text blocks padded by 12px (`clearOf` in `lib/geometry.mjs`), and keep inside x 0 to 838 and above the floor. The advance is rounded to 0.05px, since the page measures 4.134px at 6.9px and the sketch assumes 4.14.
 
-**`wave`** (`lib/fields/wave.mjs`, after the mockups in `explorations/2026-11-07-abstract-fields/a-wave/` and `f-wave-paper/`):
+**`wave`** (`lib/fields/wave.mjs`, after `explorations/2026-11-07-abstract-fields/f-wave-paper/`, tinted as `a-wave/` on dark):
 
-- `unit` lines per row starts at `ceil(total / 66)` and moves until the band has 60 to 72 rows. Each part gets `max(1, round(loc / unit))` rows, in tree order, top to bottom.
-- Rows are `floor / rows` apart from y 0, `floor(pitch)` px tall, so the band spans the top edge to the floor.
-- Row i of n, with `t = i / (n − 1)`: centre `760 − 400·sin(π·t^0.75) − 230·t`, mirrored across the sheet when `mirror`; half-width `120 + 95·s²·(1 − 0.5·t)` with `s = cos(π·t^0.75)`; letter spacing `(0.6 + (half − 120) / 9) × 11 / 6.9`. The band enters top right, swings deep left and leaves through the floor.
+- Row slots sit 7.9px apart from y 0 to the floor, 7.9px tall: about 113 above a 900px floor. A slot whose clear width is under 0.8 × the band's full width (the text blocks cover it) carries no part, so the band runs on behind the masthead and every part lands on a row that shows.
+- The clear slots go to the parts by lines, largest remainder first, at least one each, in tree order, top to bottom. With fewer clear slots than parts, the last parts go undrawn.
+- At row top y, with `u = (y + 14) / 1190`: centre `130 + 560·(0.6·smoothstep(u) + 0.4·u) + 95·sin(6.4u + 0.4)·(1 − 0.5u)`, mirrored across the sheet when `mirror`; half-width `150 + 40·|cos(6.4u + 0.4)|`; letter spacing `0.5 + (half − 150) / 12`. The band enters at the top behind the masthead, swings right, back left across the middle and leaves through the floor.
 - A row's text is its part's name in lower case and three spaces, repeated letter by letter from the run's left edge while letters fit. Every `every`th row (`i % every == every − 1`) carries `sentence` instead, when given.
-- Tone: `hot` for accent parts, else `mid` for parts at most two segments deep (and `area:.`), `soft` deeper.
+- Tone: `hot` for accent parts; else, for parts at most two segments deep (and `area:.`), `ink` on light and `mid` on dark; deeper parts `mid` on light and `soft` on dark.
 
 **`terrain`** (`lib/fields/terrain.mjs`, after `e-terrain/`):
 
 - Peaks sit left to right across x 0 to 840 in tree order. A peak's width is its share of files; a part under 40px gets 40px and the others share the rest. Its height is `loc × scale`, where `scale` puts the tallest at `0.32 × floor`, and is at least 2 rows above the foot.
 - The base is 70px under the floor. The ridge is the p-norm (p = 4) of each peak's bump `height × exp(−1.1 × (|x − centre| / (1.25 × width + 30))^1.5)`, and never lower than the foot, 2 rows above the floor, so no valley cuts the range.
-- Rows sit on the 14px grid, bottom to top. At each letter position the ridge must reach the row's level. The letter belongs to the part with the tallest bump there, except within 20px of a peak's centre and below that peak's own bump, where it belongs to that peak: a small part stays a foothill under a big neighbour. Two letters of gap open where the part changes.
-- The advance is `cw × (0.94 + 0.36 × min(|slope|, 1.6))`, rounded to 0.5px. Tone: `hot` for accent parts; `ink` within 1.2 rows of the ridge; `mid` where the slope faces left; `soft` elsewhere. A run of letters with one part, tone and advance is one item.
+- Rows are 7.6px apart, bottom to top from the floor. At each letter position the ridge must reach the row's level. The letter belongs to the part with the tallest bump there, except inside a foothill: under the peak whose centre is nearest, within half its width, up to a height that falls from its own bump to the foot at its edges. A small part under a big neighbour shows as a pointed hill. Two letters of gap open where the part changes.
+- A run starts its part's name from the first letter. A word in progress runs on over a border into the next part's slope; at a foothill's border the run instead ends on its last whole word and the foothill's name starts where the cut word began. A name breaks only where the ridge drops below the row.
+- The advance is `0.94·cw + 1.5·min(|slope|, 1.6)`, rounded to 0.25px. Tone: `hot` for accent parts; `ink` within 9px of the ridge; `mid` elsewhere. Opacity, in steps of 0.1 from 0.22 to 1: `0.42 + 0.5·lit − min(0.2, depth / 1600)`, plus 0.35 at the rim and 0.3 for the accent, where `lit = clamp(0.5 + slope / 2)` so slopes facing left catch the light. A run of letters with one part, tone, opacity and advance is one item, with `alpha` set.
 
 ### In the page
 
-Render computes each field region's parts and embeds them, with `floor` and `mirror`, in the figure JSON. It concatenates `geometry.mjs`, `fields/wave.mjs`, `fields/terrain.mjs` and `fields/index.mjs` (imports dropped, exports unwrapped) before `fill.js`. Each item becomes a `.row` with `data-region`, `data-part`, `data-word` (the part's name or the sentence) and, for accent parts, `data-hot`, at weight 400.
+Render computes each field region's parts and embeds them, with `floor` and `mirror`, in the figure JSON. It concatenates `geometry.mjs`, `fields/wave.mjs`, `fields/terrain.mjs` and `fields/index.mjs` (imports dropped, exports unwrapped) before `fill.js`. Each item becomes a `.row` with `data-region`, `data-part`, `data-word` (the part's name or the sentence) and, for accent parts, `data-hot`, at weight 400 and at the item's `alpha` as opacity.
 
 ---
 
