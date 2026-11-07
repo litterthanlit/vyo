@@ -55,7 +55,7 @@ const PLANTED = [
     /^✗ rows-fit: the row "[^"]+" needs \d+px but has \d+px; use shorter words/m,
   ],
   ["a note that runs into the bottom line", "hourglass", (s) => (s.notes[1].text = "Plain words that keep going. ".repeat(8).slice(0, 220).replace(/ /g, "")), /^✗ blocks-(apart|inside): /m],
-  ["a stale facts hash", "hourglass", (s) => (s.facts = "000000000000"), /^✗ facts-hash: spec\.facts is 000000000000 but facts\.json is /m],
+  ["a stale facts hash", "warm-start", (s) => (s.facts = "000000000000"), /^✗ facts-hash: spec\.facts is 000000000000 but facts\.json is /m],
 ];
 
 for (const [name, id, mutate, expect] of PLANTED) {
