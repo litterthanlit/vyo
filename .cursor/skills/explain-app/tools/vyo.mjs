@@ -168,7 +168,7 @@ function authoringNotes(notes) {
     `  The usual figure band is y 170 to ${floor}.`,
     `masthead: ${LINE_HEIGHT.masthead(84)}px per line at size 84; it shrinks to fit w.`,
     `headline: ${LINE_HEIGHT.headline(22)}px per line at size 22; a 224px column wraps it to 2 or 3 lines.`,
-    `aside: ${LINE_HEIGHT.aside(aside)}px per line, ${ADVANCE * aside}px per character at size ${aside}.`,
+    `aside: ${LINE_HEIGHT.aside(aside)}px per line, ${Math.round(ADVANCE * aside * 10) / 10}px per character at size ${aside}.`,
     `rows: ${GRID[12].pitch}px apart at size 12, ${GRID[11].pitch}px at size 11, on a grid from the top of the sheet.`,
     "Pick a silhouette a person would name at thumbnail size and that acts out the main moment; hearts, circles and plain boxes are the defaults to avoid.",
   ];
@@ -203,7 +203,7 @@ function cmdCompose(argv) {
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
   const notes = preset ? preset.notes.length : 3;
   fs.writeFileSync(out, JSON.stringify(scaffoldSpec(facts, { theme, commit, date, floor: floorFor(notes, 1), preset }), null, 2) + "\n");
-  const from = preset ? `the ${opt.from} preset's figure with its words taken out` : "one box-shaped region to reshape";
+  const from = preset ? `the ${opt.from} preset's geometry and its words taken out` : "one box-shaped region to reshape";
   const lines = [
     `Wrote ${out}: a scaffold with ${from}. Replace every "…" value, then run vyo sketch ${out}, adjust, sketch again, then vyo render ${out}`,
     ...authoringNotes(notes),
