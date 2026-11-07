@@ -41,7 +41,6 @@ Render rejects any word in the first column, in any visible text. Use the second
 | commits | Leave it out |
 | pr | Leave it out |
 | mvp | "what's live now" |
-| beta | "what's live now", or put the feature in `notBuilt` |
 | leverage | "use" |
 | utilize | "use" |
 | platform | "app", or the product name |

@@ -111,7 +111,7 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 
 ## Sketch output
 
-`vyo sketch` draws the sheet at 20px per character, 42 columns by about 60 lines, without a browser. It runs the same sampler as the page on a polygon version of each outline. Profiles and ellipses become exact polygons, and paths are flattened.
+`vyo sketch` draws the sheet at 20px per character, 42 columns by about 60 lines, without a browser. It runs the same row sampler as the page on a polygon version of each outline. Profiles and ellipses become exact polygons, and paths are flattened. Text widths are a Node estimate from per-character advances, not the browser's measurements, so a text box or a word near a run's edge can land a few pixels off.
 
 | Mark | Meaning |
 |---|---|
