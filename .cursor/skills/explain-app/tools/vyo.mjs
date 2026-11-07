@@ -9,7 +9,8 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 import { stableStringify, factsHash } from "./lib/hash.mjs";
 import { scanRepoDetailed } from "./lib/scan/index.mjs";
 import { showFacts } from "./lib/scan/show.mjs";
-import { scaffoldSpec, THEMES } from "./lib/spec.mjs";
+import { scaffoldSpec, validateSpec, THEMES } from "./lib/spec.mjs";
+import { sketch } from "./lib/sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE } from "./lib/geometry.mjs";
 import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, LINE_HEIGHT } from "./lib/render.mjs";
 import { runChecks } from "./lib/check.mjs";
@@ -19,6 +20,7 @@ const USAGE = `Usage:
   vyo show    <facts.json>
   vyo presets [<id>]
   vyo compose <facts.json> [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
+  vyo sketch  <spec.json>
   vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--paper ${PAPERS.join("|")}]
   vyo check   <spec.json> [--facts <facts.json>]
 
@@ -210,6 +212,19 @@ function cmdCompose(argv) {
   return 0;
 }
 
+function cmdSketch(argv) {
+  const { pos } = args(argv, {}, 1);
+  const spec = readJson(pos[0], "poster spec");
+  // Placeholder words and copy rules wait for render; the sketch needs the geometry, the texts and the notes count.
+  const blocking = validateSpec(spec).filter((e) => /^(figure\.(regions|texts)|figure:|notes:|version|product)/.test(e) && !/still the placeholder|: (jargon|a file path|a "01|a middle dot)/.test(e));
+  if (blocking.length) {
+    for (const e of blocking) fail(`spec: ${e}`);
+    return 1;
+  }
+  process.stdout.write(sketch(spec));
+  return 0;
+}
+
 function report(found) {
   for (const f of found) (f.level === "fail" ? fail : warn)(`${f.id}: ${f.message}`);
   return found.some((f) => f.level === "fail");
@@ -263,7 +278,7 @@ async function cmdCheck(argv) {
   }
 }
 
-const COMMANDS = { scan: cmdScan, show: cmdShow, presets: cmdPresets, compose: cmdCompose, render: cmdRender, check: cmdCheck };
+const COMMANDS = { scan: cmdScan, show: cmdShow, presets: cmdPresets, compose: cmdCompose, sketch: cmdSketch, render: cmdRender, check: cmdCheck };
 
 export async function main(argv) {
   const [cmd, ...rest] = argv;
