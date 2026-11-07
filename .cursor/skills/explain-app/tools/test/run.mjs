@@ -1,17 +1,17 @@
-// npm test: the pure tests, then every golden poster rendered and checked, then the planted bugs.
-// Posters land in test/.out/<shape>/ for a human to look at.
+// npm test: the pure tests, then every preset rendered and checked, then the planted bugs.
+// Posters land in test/.out/<preset>/ for a human to look at.
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { SHAPES } from "../lib/shapes/index.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TOOLS = path.join(HERE, "..");
 const OUT = path.join(HERE, ".out");
 const VYO = path.join(TOOLS, "vyo.mjs");
+const PRESETS = fs.readdirSync(path.join(TOOLS, "presets")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
 
-const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "band", "shapes", "check", "docs"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
+const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "band", "check", "docs"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
@@ -23,7 +23,7 @@ if (scan.status !== 0) {
   process.exit(1);
 }
 const hash = JSON.parse(fs.readFileSync(factsFile, "utf8")).hash;
-const golden = (id) => ({ ...JSON.parse(fs.readFileSync(path.join(HERE, "golden", `${id}.json`), "utf8")), facts: hash });
+const preset = (id) => ({ ...JSON.parse(fs.readFileSync(path.join(TOOLS, "presets", `${id}.json`), "utf8")), facts: hash });
 
 let failed = 0;
 const result = (ok, name, detail) => {
@@ -34,38 +34,49 @@ const result = (ok, name, detail) => {
   }
 };
 
-for (const id of Object.keys(SHAPES)) {
+for (const id of PRESETS) {
   const dir = path.join(OUT, id);
   fs.mkdirSync(dir, { recursive: true });
   const specFile = path.join(dir, "recipe-poster.json");
-  fs.writeFileSync(specFile, JSON.stringify(golden(id), null, 2));
+  fs.writeFileSync(specFile, JSON.stringify(preset(id), null, 2));
   const r = vyo("render", specFile, "--facts", factsFile);
-  result(r.status === 0 && /^PASS$/m.test(r.stdout) && !/^✗/m.test(r.stderr), `golden ${id} renders and passes every check`, r.stdout + r.stderr);
+  result(r.status === 0 && /^PASS$/m.test(r.stdout) && !/^✗/m.test(r.stderr), `preset ${id} renders and passes every check`, r.stdout + r.stderr);
 }
 
+const fill = (id, shape, words, extra = {}) => ({ kind: "fill", id, ...shape, words, tone: "mid", ...extra });
 const PLANTED = [
   ["a file path", "hourglass", (s) => (s.notes[0].text = "Saved by lib/plan/save.ts each week."), /^✗ spec: notes\[0\]\.text: a file path/m],
   ["jargon", "eye", (s) => (s.headline = "Your recipes behind one API."), /^✗ spec: headline: jargon: "api"/m],
-  ["a hot word not in the slots", "ribbon", (s) => (s.hot = "breakfast"), /^✗ spec: hot: "breakfast" must be/m],
-  ["a fourth note", "hourglass", (s) => s.notes.push({ title: "More", text: "One more note." }), /^✗ spec: notes: 4 notes; hourglass takes exactly 3/m],
-  [
-    "words too long for the waist",
-    "hourglass",
-    (s) => (s.slots.top = ["weeknight dinner", "saved favourites", "pantry leftovers", "seasonal produce", "kitchen cupboard", "allergies listed"]),
-    /^✗ rows-fit: the row "[^"]+" needs \d+px but has \d+px; use shorter words/m,
-  ],
-  ["a note that runs into the bottom line", "eye", (s) => (s.notes[1].text = "Plain words that keep going. ".repeat(8).slice(0, 220).replace(/ /g, "")), /^✗ blocks-(apart|inside): /m],
+  ["a hot word not in the figure", "ribbon", (s) => (s.hot = "breakfast"), /^✗ spec: hot: "breakfast" must be in a fill region's words/m],
+  ["a fourth note", "hourglass", (s) => s.notes.push({ title: "More", text: "One more note." }), /^✗ spec: notes: 4 notes; use 2 or 3/m],
   ["a stale facts hash", "warm-start", (s) => (s.facts = "000000000000"), /^✗ facts-hash: spec\.facts is 000000000000 but facts\.json is /m],
+  ["a note that runs into the bottom line", "eye", (s) => (s.notes[1].text = "Plain words that keep going. ".repeat(8).slice(0, 220).replace(/ /g, "")), /^✗ blocks-(apart|inside): /m],
+  ["an accent equal to the ink, so ink reads as hot without data-hot", "hourglass", (s) => (s.accent = "#161616"), /^✗ hot-tagged: .+ is in the accent colour without data-hot/m],
   [
-    "an aside that ends 2px short of the waist",
+    "two overlapping paths",
     "hourglass",
-    (s) => ((s.slots.waist = "ONE LIST"), (s.hot = "ONE LIST"), (s.slots.asideLeft = "What you give it. Everythingyoukeepwantandcannotforgetall")),
-    /^✗ blocks-apart: waist overlaps asideLeft or sits within 8px of it/m,
+    (s) => s.figure.regions.push(fill("pile", { path: "M 300 200 H 540 V 400 H 300 Z" }, ["recipes", "cravings"])),
+    /^✗ regions-apart: regions inputs and pile touch at y \d+/m,
   ],
+  ["a 30px path", "hourglass", (s) => s.figure.regions.push(fill("sliver", { path: "M 600 760 H 780 V 790 H 600 Z" }, ["recipes", "cravings"])), /^✗ region-size: region sliver has \d rows; it needs at least 4/m],
+  [
+    "one tiny region",
+    "hourglass",
+    (s) => (s.figure.regions = [fill("dot", { ellipse: { cx: 420, cy: 620, rx: 90, ry: 60 } }, ["recipes", "cravings", "leftovers"])]),
+    /^✗ silhouette: the figure covers \d+% of the sheet above the footer; it needs 15%/m,
+  ],
+  [
+    "14 long words in a small path",
+    "hourglass",
+    (s) => (s.figure.regions[1] = fill("outputs", { ellipse: { cx: 420, cy: 760, rx: 200, ry: 70 } }, Array.from({ length: 14 }, (_, i) => `weeknight dinner ${"abcdefghijklmn"[i]}`))),
+    /^✗ words-drawn: region outputs: "weeknight dinner [a-n]" never drawn; shorten the list or enlarge the path/m,
+  ],
+  ["an aside placed on a dots line", "warm-start", (s) => s.figure.texts.push({ role: "aside", id: "stray", text: "Plan once.", x: 200, y: 120, w: 160 }), /^✗ blocks-apart: (stray overlaps the dots line "PLAN"|the dots line "PLAN" overlaps stray)/m],
+  ["a region below the footer", "hourglass", (s) => (s.figure.regions[1].profile.at(-1)[0] = 950), /^✗ path: region outputs reaches 66px below the footer; move it up by 66$/m],
 ];
 
 for (const [name, id, mutate, expect] of PLANTED) {
-  const spec = golden(id);
+  const spec = preset(id);
   mutate(spec);
   const file = path.join(OUT, "planted.json");
   fs.writeFileSync(file, JSON.stringify(spec, null, 2));
@@ -74,7 +85,7 @@ for (const [name, id, mutate, expect] of PLANTED) {
 }
 
 {
-  const spec = golden("hourglass");
+  const spec = preset("warm-start");
   spec.notBuilt = ["a", "b", "c", "d", "e", "f"].map((c) => `${c} weekly summary email to people`);
   const file = path.join(OUT, "long-not-built.json");
   fs.writeFileSync(file, JSON.stringify(spec, null, 2));
@@ -85,7 +96,7 @@ for (const [name, id, mutate, expect] of PLANTED) {
 const emptyFacts = path.join(OUT, "empty-facts.json");
 vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
 {
-  const spec = { ...golden("hourglass"), facts: JSON.parse(fs.readFileSync(emptyFacts, "utf8")).hash };
+  const spec = { ...preset("hourglass"), facts: JSON.parse(fs.readFileSync(emptyFacts, "utf8")).hash };
   const file = path.join(OUT, "empty.json");
   fs.writeFileSync(file, JSON.stringify(spec, null, 2));
   const r = vyo("check", file, "--facts", emptyFacts);
@@ -93,5 +104,5 @@ vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
 }
 
 if (pure.status !== 0) console.log("✗ the pure tests failed (see above)");
-console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${Object.keys(SHAPES).length} golden posters in ${OUT}, ${PLANTED.length} planted bugs caught`);
+console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length} planted bugs caught`);
 process.exit(failed || pure.status !== 0 ? 1 : 0);

@@ -62,7 +62,7 @@ test("words and dots lines have limits", () => {
   const warm = () => preset("warm-start");
   rejects((s) => (s.figure.regions[0].lines[1] = "BREADS"), /^figure\.regions\[0\]\.lines\[1\]: "BREADS" is 6 characters; at most 5/, warm);
   rejects((s) => (s.figure.regions[0].lines[1] = "ONCE!"), /^figure\.regions\[0\]\.lines\[1\]: "ONCE!" must be letters A to Z and spaces/, warm);
-  rejects((s) => s.figure.regions[0].tones.pop(), /^figure\.regions\[0\]\.tones: one of soft, mid, ink, cold, cool per line \(4\)/, warm);
+  rejects((s) => s.figure.regions[0].tones.pop(), /^figure\.regions\[0\]\.tones: one of soft, mid, ink, cold, cool, hot per line \(4\)/, warm);
   rejects((s) => (s.figure.regions[0].cell = 40), /^figure\.regions\[0\]\.cell: a whole number of px, 8 to 32/, warm);
 });
 

@@ -9,8 +9,8 @@ import { SHEET, SHAPE_KEYS, parsePath } from "./geometry.mjs";
  *         | { polygon: [number, number][] } | { path: string }} Shape
  * @typedef {Shape & { kind: "fill", id: string, holes?: Shape[], words: string[], tone: Tone, caps?: boolean,
  *                     band?: 1 | 2 | 3 | 4, size?: 11 | 12, hot?: boolean }} FillRegion
- * @typedef {{ kind: "dots", id: string, lines: string[], x: number, y: number, cell: number, tones: ToneName[] }} DotsRegion
- * @typedef {{ role: "masthead" | "headline" | "aside" | "label", id: string, text?: string, x: number, y: number, w: number,
+ * @typedef {{ kind: "dots", id: string, lines: string[], x: number, y: number, cell: number, tones: (ToneName | "hot")[] }} DotsRegion
+ * @typedef {{ role: "masthead" | "headline" | "display" | "aside" | "label", id: string, text?: string, x: number, y: number, w: number,
  *             size?: number, align?: "left" | "right" | "center", hot?: boolean }} Text
  * @typedef {{
  *   version: 3,
@@ -30,13 +30,15 @@ import { SHEET, SHAPE_KEYS, parsePath } from "./geometry.mjs";
 export const PLACEHOLDER = "…";
 export const LIMITS = {
   name: 24, headline: 72, hot: 24, noteTitle: 24, noteText: 220, notBuilt: 6, notBuiltItem: 32, audience: 40,
-  fits: 160, regions: 6, texts: 6, words: [2, 14], word: 24, lines: [2, 4], line: 5, aside: 160, label: 32,
+  fits: 160, regions: 6, texts: 6, words: [2, 14], word: 24, lines: [2, 4], line: 5, aside: 160, label: 32, display: 40,
   profile: [3, 24], polygon: [3, 40], holes: 4, path: 4000,
 };
 export const TONES = ["soft", "mid", "ink", "cold", "cool"];
+export const DOT_TONES = [...TONES, "hot"];
+export const ROLES = ["masthead", "headline", "display", "aside", "label"];
 export const THEMES = ["light", "dark"];
 // size: [default, min, max] per text role. A hot label is the accent word set large, like the hourglass waist.
-export const TEXT_SIZE = { masthead: [84, 48, 120], headline: [22, 18, 40], aside: [12, 10, 14], label: [12, 10, 14], hotLabel: [26, 12, 40] };
+export const TEXT_SIZE = { masthead: [84, 48, 120], headline: [22, 18, 40], display: [56, 32, 64], aside: [12, 10, 14], label: [12, 10, 32], hotLabel: [26, 10, 32] };
 // Block names the footer uses; a figure text cannot take one.
 const RESERVED = ["note", "counts", "notBuilt", "provenance", "credit"];
 
@@ -164,8 +166,8 @@ function checkDots(f, r, err) {
       if (!/^[A-Za-z ]+$/.test(w) || !w.trim()) err(`${f}.lines[${i}]: "${w}" must be letters A to Z and spaces`);
       if (w.length > LIMITS.line) err(`${f}.lines[${i}]: "${w}" is ${w.length} characters; at most ${LIMITS.line}`);
     });
-    if (!Array.isArray(r.tones) || r.tones.length !== r.lines.length || !r.tones.every((t) => TONES.includes(t))) {
-      err(`${f}.tones: one of ${TONES.join(", ")} per line (${r.lines.length})`);
+    if (!Array.isArray(r.tones) || r.tones.length !== r.lines.length || !r.tones.every((t) => DOT_TONES.includes(t))) {
+      err(`${f}.tones: one of ${DOT_TONES.join(", ")} per line (${r.lines.length})`);
     }
   }
   if (!inRange(r.x, 0, SHEET.width) || !inRange(r.y, 0, SHEET.height)) err(`${f}: x must be 0 to ${SHEET.width} and y 0 to ${SHEET.height}`);
@@ -173,8 +175,8 @@ function checkDots(f, r, err) {
 }
 
 function checkText(f, t, err, copy) {
-  if (!["masthead", "headline", "aside", "label"].includes(t.role)) return err(`${f}.role: "${t.role}" is not a role; use masthead, headline, aside or label`);
-  const named = t.role === "aside" || t.role === "label";
+  if (!ROLES.includes(t.role)) return err(`${f}.role: "${t.role}" is not a role; use ${ROLES.join(", ")}`);
+  const named = t.role !== "masthead" && t.role !== "headline";
   if (named) {
     const max = LIMITS[t.role];
     if (!isStr(t.text) || !t.text.trim()) err(`${f}.text: missing`);

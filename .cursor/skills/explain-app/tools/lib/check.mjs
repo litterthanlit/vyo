@@ -1,28 +1,46 @@
 // Every rule a poster must pass, as one table. "spec" checks run before render; "page" checks
 // judge the measurements lib/inspect.js takes in the rendered page.
-import { validateSpec, textProblems, hasWord, figureWords, slotsAtMax } from "./spec.mjs";
+import { validateSpec, textProblems, hasWord, geometryKey } from "./spec.mjs";
 import { bandCounts, bandLine } from "./band.mjs";
-import { FONT_FACES } from "./render.mjs";
+import { FONT_FACES, tokensOf } from "./render.mjs";
 
 const rgb = (hex) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(", ")})`;
-const tokensOf = (shape, spec) => shape.themes[spec.theme];
 const overlap = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
-// Blocks side by side need 8px between them: rects that share a horizontal band are inflated by 4px each.
-const CLEAR = 4;
-const sameBand = (a, b) => a.top < b.bottom && b.top < a.bottom;
-const grow = (r) => ({ left: r.left - CLEAR, right: r.right + CLEAR, top: r.top - CLEAR, bottom: r.bottom + CLEAR });
-const crowd = (a, b) => (sameBand(a, b) ? overlap(grow(a), grow(b)) : overlap(a, b));
+const sameBand = (a, b) => a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
+const grow = (r, x, y) => ({ left: r.left - x, right: r.right + x, top: r.top - y, bottom: r.bottom + y });
+// Side by side, two things need 8px between them: rects that share a horizontal band are inflated by 4px each.
+const crowd = (a, b) => (sameBand(a, b) ? overlap(grow(a, 4, 4), grow(b, 4, 4)) : overlap(a, b));
 const inside = (r, s) => r.left >= s.left - 0.5 && r.top >= s.top - 0.5 && r.right <= s.right + 0.5 && r.bottom <= s.bottom + 0.5;
 const round = (n) => Math.round(n);
+const pct = (n) => `${Math.round(n * 100)}%`;
+const fillIds = (spec) => spec.figure.regions.filter((r) => r.kind === "fill").map((r) => r.id);
+const union = (rects) => rects.reduce((u, r) => ({ left: Math.min(u.left, r.left), top: Math.min(u.top, r.top), right: Math.max(u.right, r.right), bottom: Math.max(u.bottom, r.bottom) }), { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
+
+/** The coverage numbers `silhouette` and `row-variety` judge; `vyo sketch` prints the same from its estimate. */
+export function figureStats(rowRects, dotRects, floor) {
+  const all = [...rowRects, ...dotRects];
+  const area = all.reduce((s, r) => s + (r.right - r.left) * (r.bottom - r.top), 0);
+  const u = union(all);
+  const widths = rowRects.map((r) => r.right - r.left);
+  const mean = widths.reduce((s, w) => s + w, 0) / (widths.length || 1);
+  const sd = Math.sqrt(widths.reduce((s, w) => s + (w - mean) ** 2, 0) / (widths.length || 1));
+  return {
+    coverage: area / (840 * floor),
+    height: all.length ? (u.bottom - u.top) / floor : 0,
+    width: all.length ? (u.right - u.left) / 840 : 0,
+    variety: widths.length ? sd / mean : null,
+  };
+}
+export const SILHOUETTE = { coverage: 0.15, height: 0.55, width: 0.6, variety: 0.15 };
 
 /**
- * @typedef {{ spec: any, facts: any, shapes: object, shape: any, page?: any }} CheckInput
+ * @typedef {{ spec: any, facts: any, presets: Record<string, any>, page?: any }} CheckInput
  * @type {{ id: string, level: "fail" | "warn", stage: "spec" | "page", about: string, run: (i: CheckInput) => string[] }[]}
  */
 export const CHECKS = [
   {
     id: "spec", level: "fail", stage: "spec", about: "the spec passes every rule in lib/spec.mjs",
-    run: ({ spec, shapes }) => validateSpec(spec, shapes),
+    run: ({ spec }) => validateSpec(spec),
   },
   {
     id: "facts-hash", level: "fail", stage: "spec", about: "the spec was written for this facts.json",
@@ -37,12 +55,19 @@ export const CHECKS = [
     run: ({ spec, facts }) => (spec.product.name === facts.repo.name ? [`product name equals the folder name "${facts.repo.name}"; use the name customers see`] : []),
   },
   {
-    id: "slot-at-max", level: "warn", stage: "spec", about: "no slot is filled to its limit",
-    run: ({ spec, shape }) => slotsAtMax(spec, shape).map((k) => `slots.${k} is at its maximum; check the poster for crowding`),
+    id: "preset-copy", level: "warn", stage: "spec", about: "the figure's geometry is not a preset's, unchanged",
+    run: ({ spec, presets }) => {
+      const mine = spec.figure.regions.map(geometryKey);
+      const same = Object.entries(presets).find(([, p]) => {
+        const theirs = new Set(p.figure.regions.map(geometryKey));
+        return mine.every((k) => theirs.has(k));
+      });
+      return same ? [`the figure's geometry is the ${same[0]} preset's, unchanged; shape it for this product`] : [];
+    },
   },
   {
-    id: "drawn", level: "fail", stage: "page", about: "the shape's script ran to the end",
-    run: ({ page }) => [...page.errors.map((e) => `page error: ${e}`), ...(page.drawn ? [] : ["the shape never set window.drawn"])],
+    id: "drawn", level: "fail", stage: "page", about: "the figure script ran to the end",
+    run: ({ page }) => [...page.errors.map((e) => `page error: ${e}`), ...(page.drawn ? [] : ["the figure never set window.drawn"])],
   },
   {
     id: "fonts", level: "fail", stage: "page", about: "Commit Mono 400 and 700 and Newsreader 400 loaded",
@@ -56,30 +81,77 @@ export const CHECKS = [
     run: ({ page }) => (page.inter ? [] : ["neither Inter Display nor Inter is installed; the product name falls back to Helvetica or Arial"]),
   },
   {
+    id: "path", level: "fail", stage: "page", about: "every fill region's outline is on the sheet and above the footer",
+    run: ({ page }) =>
+      page.regions
+        .filter((r) => r.kind === "fill")
+        .flatMap((r) => {
+          const b = r.bbox;
+          if (!(b.right - b.left >= 1 && b.bottom - b.top >= 1)) return [`region ${r.id} has an empty outline`];
+          const out = [];
+          if (!inside(b, page.sheet)) out.push(`region ${r.id} runs off the sheet (${round(b.left)}, ${round(b.top)} to ${round(b.right)}, ${round(b.bottom)})`);
+          const below = Math.ceil(b.bottom - page.footerTop);
+          if (below > 0) out.push(`region ${r.id} reaches ${below}px below the footer; move it up by ${below}`);
+          return out;
+        }),
+  },
+  {
+    id: "region-size", level: "fail", stage: "page", about: "every fill region has at least 4 rows and every dots region fits above the footer",
+    run: ({ page }) =>
+      page.regions.flatMap((r) => {
+        if (r.kind === "fill") return r.rows >= 4 ? [] : [`region ${r.id} has ${r.rows} rows; it needs at least 4, so make it taller or wider`];
+        const ok = inside(r.bbox, page.sheet) && r.bbox.bottom <= page.footerTop + 0.5;
+        return ok ? [] : [`region ${r.id} does not fit: its letters end at ${round(r.bbox.bottom)}px and ${round(r.bbox.right)}px, the footer starts at ${round(page.footerTop)}px; use a smaller cell or move it`];
+      }),
+  },
+  {
     id: "rows-fit", level: "fail", stage: "page", about: "every row of words fits its planned width, inside the sheet and above the footer",
     run: ({ page }) =>
       page.rows.flatMap((r) => [
         ...(r.scrollWidth > r.clientWidth ? [`the row "${r.word}" needs ${r.scrollWidth}px but has ${r.clientWidth}px; use shorter words`] : []),
-        ...(inside(r.rect, page.sheet) ? [] : [`the row "${r.word}" sits outside the sheet`]),
+        ...(inside(r.rect, page.sheet) ? [] : [`the row "${r.word}" in region ${r.region} sits outside the sheet; a word wider than its run overhangs, so use a shorter word or widen the shape`]),
         ...(r.rect.bottom > page.footerTop + 0.5 ? [`the row "${r.word}" runs into the footer (bottom at ${round(r.rect.bottom)}px, footer at ${round(page.footerTop)}px)`] : []),
       ]),
   },
   {
-    id: "words-drawn", level: "fail", stage: "page", about: "every slot word and the hot word appear in the figure",
-    run: ({ spec, shape, page }) => {
-      const drawn = page.rows.map((r) => r.word);
-      const missing = figureWords(spec, shape).filter((w) => !drawn.some((d) => d.toLowerCase() === w.toLowerCase()));
-      const out = missing.map((w) => `"${w}" is in the slots but never drawn; it may not fit any row, use a shorter word`);
-      if (!page.figureHot.some((t) => hasWord(t, spec.hot))) out.push(`the hot word "${spec.hot}" is not drawn in the accent colour`);
+    id: "words-drawn", level: "fail", stage: "page", about: "every word of every fill region, and the hot word, appear in the figure",
+    run: ({ spec, page }) => {
+      const out = [];
+      for (const r of spec.figure.regions.filter((x) => x.kind === "fill")) {
+        const drawn = new Set(page.rows.filter((row) => row.region === r.id).map((row) => row.word.toLowerCase()));
+        for (const w of r.words) if (!drawn.has(w.toLowerCase())) out.push(`region ${r.id}: "${w}" never drawn; shorten the list or enlarge the path`);
+      }
+      const hotRegion = spec.figure.regions.some((r) => r.hot) && page.rows.some((r) => r.hot);
+      if (!hotRegion && !page.figureHot.some((t) => hasWord(t, spec.hot))) out.push(`the hot word "${spec.hot}" is not drawn in the accent colour`);
       return out;
     },
   },
   {
-    id: "blocks-apart", level: "fail", stage: "page", about: "no two text blocks overlap, and blocks side by side keep 8px apart",
+    id: "regions-apart", level: "fail", stage: "page", about: "rows of different regions keep 4px apart",
     run: ({ page }) => {
+      const items = [...page.rows, ...page.dots];
+      const out = new Set();
+      items.forEach((a, i) =>
+        items.slice(i + 1).forEach((b) => {
+          if (a.region !== b.region && sameBand(a.rect, b.rect) && overlap(grow(a.rect, 2, 0), grow(b.rect, 2, 0))) {
+            out.add(`regions ${a.region} and ${b.region} touch at y ${round(Math.max(a.rect.top, b.rect.top))}; leave 4px between them or cut a hole`);
+          }
+        }),
+      );
+      return [...out];
+    },
+  },
+  {
+    id: "blocks-apart", level: "fail", stage: "page", about: "no two text blocks overlap, rows and dots keep clear of them, and blocks side by side keep 8px apart",
+    run: ({ page }) => {
+      const blocks = page.blocks.map((b) => ({ ...b, kind: "block" }));
+      const marks = [...page.rows.map((r) => ({ ...r, name: `the row "${r.word}"` })), ...page.dots.map((d) => ({ ...d, name: `the dots line "${d.word}"` }))];
       const out = [];
-      page.blocks.forEach((a, i) => page.blocks.slice(i + 1).forEach((b) => crowd(a.rect, b.rect) && out.push(`${a.name} overlaps ${b.name} or sits within 8px of it; shorten one of them`)));
-      return out;
+      const say = (a, b) => out.push(`${a.name} overlaps ${b.name} or sits within 8px of it; shorten one of them`);
+      blocks.forEach((a, i) => blocks.slice(i + 1).forEach((b) => crowd(a.rect, b.rect) && say(a, b)));
+      for (const a of blocks) for (const m of marks) if (crowd(a.rect, m.rect)) say(a, m);
+      page.rows.forEach((a, i) => page.rows.slice(i + 1).forEach((b) => a.region === b.region && crowd(a.rect, b.rect) && say({ name: `the row "${a.word}"` }, { name: `the row "${b.word}"` })));
+      return [...new Set(out)];
     },
   },
   {
@@ -87,17 +159,44 @@ export const CHECKS = [
     run: ({ page }) => page.blocks.filter((b) => !inside(b.rect, page.sheet)).map((b) => `${b.name} runs off the sheet (bottom at ${round(b.rect.bottom)}px of ${page.sheet.bottom}px)`),
   },
   {
+    id: "silhouette", level: "fail", stage: "page", about: "the figure covers 15% of the sheet above the footer and spans 55% of its height and 60% of its width",
+    run: ({ page }) => {
+      const s = figureStats(page.rows.map((r) => r.rect), page.dots.map((d) => d.rect), page.footerTop);
+      const out = [];
+      if (s.coverage < SILHOUETTE.coverage) out.push(`the figure covers ${pct(s.coverage)} of the sheet above the footer; it needs ${pct(SILHOUETTE.coverage)}, so enlarge the shapes`);
+      if (s.height < SILHOUETTE.height) out.push(`the figure spans ${pct(s.height)} of the height above the footer; it needs ${pct(SILHOUETTE.height)}`);
+      if (s.width < SILHOUETTE.width) out.push(`the figure spans ${pct(s.width)} of the sheet's width; it needs ${pct(SILHOUETTE.width)}`);
+      return out;
+    },
+  },
+  {
+    id: "row-variety", level: "fail", stage: "page", about: "the rows change width: their spread over their mean is at least 0.15",
+    run: ({ spec, page }) => {
+      if (!fillIds(spec).length) return [];
+      const { variety } = figureStats(page.rows.map((r) => r.rect), [], page.footerTop);
+      return variety !== null && variety < SILHOUETTE.variety ? ["the figure is a box; a silhouette changes width"] : [];
+    },
+  },
+  {
+    id: "one-region", level: "warn", stage: "page", about: "the figure has more than one fill region, or dots, or an accent",
+    run: ({ spec, page }) => {
+      const regions = spec.figure.regions;
+      const accent = page.rows.some((r) => r.hot) || spec.figure.texts.some((t) => t.hot);
+      return fillIds(spec).length === 1 && regions.length === 1 && !accent ? ["the figure is one region with no accent; add a second region, dots or a hot label"] : [];
+    },
+  },
+  {
     id: "palette", level: "fail", stage: "page", about: "every colour on the sheet is one of the theme's tokens",
-    run: ({ spec, shape, page }) => {
-      const allowed = new Set(Object.values(tokensOf(shape, spec)).map(rgb));
+    run: ({ spec, page }) => {
+      const allowed = new Set(Object.values(tokensOf(spec)).map(rgb));
       const bad = [...page.texts, ...page.boxes].filter((t) => !allowed.has(t.color));
       return [...new Set(bad.map((t) => `${t.where} uses ${t.color}, not a ${spec.theme} token`))];
     },
   },
   {
     id: "hot-tagged", level: "fail", stage: "page", about: "the accent colour is used only where data-hot marks it",
-    run: ({ spec, shape, page }) => {
-      const hot = rgb(tokensOf(shape, spec).hot);
+    run: ({ spec, page }) => {
+      const hot = rgb(tokensOf(spec).hot);
       const bad = [...page.texts, ...page.boxes].filter((t) => t.color === hot && !t.hot);
       return [...new Set(bad.map((t) => `${t.where} is in the accent colour without data-hot`))];
     },
@@ -105,15 +204,19 @@ export const CHECKS = [
   {
     id: "copy", level: "fail", stage: "page", about: "no jargon, file paths or AI tells in the visible words",
     run: ({ page }) => {
-      const texts = [...page.blocks.filter((b) => b.owner !== "render" && b.name !== "masthead").map((b) => [b.name, b.text]), ...page.rows.map((r) => ["a row", r.word])];
+      const texts = [
+        ...page.blocks.filter((b) => b.owner !== "render" && b.role !== "masthead").map((b) => [b.name, b.text]),
+        ...page.rows.map((r) => [`region ${r.region}`, r.word]),
+        ...page.dots.map((d) => [`region ${d.region}`, d.word]),
+      ];
       return [...new Set(texts.flatMap(([name, text]) => textProblems(text).map((p) => `${name}: ${p}`)))];
     },
   },
   {
-    id: "notes", level: "fail", stage: "page", about: "the footer shows the shape's number of notes",
-    run: ({ shape, page }) => {
+    id: "notes", level: "fail", stage: "page", about: "the footer shows the spec's notes",
+    run: ({ spec, page }) => {
       const n = page.blocks.filter((b) => b.name === "note").length;
-      return n === shape.notes ? [] : [`the footer shows ${n} notes; ${shape.id} takes ${shape.notes}`];
+      return n === spec.notes.length ? [] : [`the footer shows ${n} notes; the spec has ${spec.notes.length}`];
     },
   },
   {
@@ -127,7 +230,7 @@ export const CHECKS = [
   {
     id: "headline-lines", level: "warn", stage: "page", about: "the headline fits in two lines",
     run: ({ page }) => {
-      const h = page.blocks.find((b) => b.name === "headline");
+      const h = page.blocks.find((b) => b.role === "headline");
       return h && h.lines > 2 ? [`the headline runs to ${h.lines} lines; two read best`] : [];
     },
   },

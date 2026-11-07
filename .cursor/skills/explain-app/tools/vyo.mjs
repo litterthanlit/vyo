@@ -5,20 +5,20 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { parseArgs } from "node:util";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 import { stableStringify, factsHash } from "./lib/hash.mjs";
 import { scanRepoDetailed } from "./lib/scan/index.mjs";
 import { showFacts } from "./lib/scan/show.mjs";
-import { SHAPES } from "./lib/shapes/index.mjs";
-import { scaffoldSpec, LIMITS } from "./lib/spec.mjs";
-import { buildPage, renderPage, PAPERS } from "./lib/render.mjs";
+import { scaffoldSpec, THEMES } from "./lib/spec.mjs";
+import { SHAPE_KEYS, GRID, ADVANCE } from "./lib/geometry.mjs";
+import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, LINE_HEIGHT } from "./lib/render.mjs";
 import { runChecks } from "./lib/check.mjs";
 
 const USAGE = `Usage:
   vyo scan    <repo-dir> --out <dir>/<repo>-facts.json
   vyo show    <facts.json>
-  vyo shapes
-  vyo compose <facts.json> --shape <id> [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
+  vyo presets [<id>]
+  vyo compose <facts.json> [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
   vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--paper ${PAPERS.join("|")}]
   vyo check   <spec.json> [--facts <facts.json>]
 
@@ -121,22 +121,55 @@ function cmdShow(argv) {
   return 0;
 }
 
-function describeSlot(s) {
-  if (s.kind === "words") return `words, ${s.min} to ${s.max}, each at most ${s.each ?? LIMITS.word} characters${s.letters ? ", letters only" : ""}`;
-  return `${s.kind}, at most ${s.max} characters`;
+const PRESET_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "presets");
+/** @returns {Record<string, import("./lib/spec.mjs").Spec>} */
+function loadPresets() {
+  return Object.fromEntries(
+    fs.readdirSync(PRESET_DIR).filter((f) => f.endsWith(".json")).sort().map((f) => [f.slice(0, -5), JSON.parse(fs.readFileSync(path.join(PRESET_DIR, f), "utf8"))]),
+  );
 }
 
-function cmdShapes(argv) {
-  args(argv, {}, 0);
-  const out = [];
-  for (const shape of Object.values(SHAPES)) {
-    out.push(`${shape.id}`, `  fits: ${shape.fits}`, `  themes: ${Object.keys(shape.themes).join(", ")}`, `  notes: ${shape.notes}`, `  hot: ${shape.hotRule}`, "  slots:");
-    for (const [k, s] of Object.entries(shape.slots)) out.push(`    ${k.padEnd(12)} ${describeSlot(s)}`, `    ${"".padEnd(12)} ${s.prompt}`);
-    out.push("");
+const shapeOf = (r) => (r.kind === "dots" ? `dots, ${r.lines.length} lines` : `${SHAPE_KEYS.find((k) => r[k] !== undefined)}${r.holes ? ` with ${r.holes.length} hole${r.holes.length === 1 ? "" : "s"}` : ""}${r.hot ? ", hot" : ""}`);
+
+function cmdPresets(argv) {
+  const { pos } = args(argv, {}, argv.filter((a) => !a.startsWith("-")).length ? 1 : 0);
+  const presets = loadPresets();
+  if (pos.length) {
+    const p = presets[pos[0]];
+    if (!p) throw new Usage(`${pos[0]} is not a preset; one of ${Object.keys(presets).join(", ")}`);
+    process.stdout.write(JSON.stringify(p.figure, null, 2) + "\n");
+    return 0;
   }
-  out.push(`Every shape also takes headline (at most ${LIMITS.headline} characters), hot, notes (title at most ${LIMITS.noteTitle}, text at most ${LIMITS.noteText}) and notBuilt (0 to ${LIMITS.notBuilt} items).`);
+  const out = [];
+  for (const [id, p] of Object.entries(presets)) {
+    out.push(
+      id,
+      `  fits: ${p.figure.fits}`,
+      `  theme: ${p.theme}${p.accent ? ` with accent ${p.accent}` : ""}, ${p.notes.length} notes`,
+      `  regions: ${p.figure.regions.map((r) => `${r.id} (${shapeOf(r)})`).join(", ")}`,
+      `  texts: ${p.figure.texts.map((t) => `${t.id} (${t.role}${t.hot ? ", hot" : ""})`).join(", ")}`,
+      "",
+    );
+  }
+  out.push("vyo presets <id> prints its figure; vyo compose <facts.json> --from <id> starts a spec from it.");
   process.stdout.write(out.join("\n") + "\n");
   return 0;
+}
+
+/** The numbers an agent places texts and regions by, printed by compose. */
+function authoringNotes(notes) {
+  const floor = floorFor(notes, 1);
+  const aside = 12;
+  return [
+    `floor: ${floor}`,
+    `  the footer's top for ${notes} notes and a one-line not-built list; each extra not-built line raises it ${FLOOR_STEP}px. Keep every region and text above it.`,
+    `  The usual figure band is y 170 to ${floor}.`,
+    `masthead: ${LINE_HEIGHT.masthead(84)}px per line at size 84; it shrinks to fit w.`,
+    `headline: ${LINE_HEIGHT.headline(22)}px per line at size 22; a 224px column wraps it to 2 or 3 lines.`,
+    `aside: ${LINE_HEIGHT.aside(aside)}px per line, ${ADVANCE * aside}px per character at size ${aside}.`,
+    `rows: ${GRID[12].pitch}px apart at size 12, ${GRID[11].pitch}px at size 11, on a grid from the top of the sheet.`,
+    "Pick a silhouette a person would name at thumbnail size and that acts out the main moment; hearts, circles and plain boxes are the defaults to avoid.",
+  ];
 }
 
 function git(dir, format) {
@@ -148,13 +181,12 @@ function git(dir, format) {
 }
 
 function cmdCompose(argv) {
-  const { pos, opt } = args(argv, { shape: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } }, 1);
-  const shape = SHAPES[opt.shape];
-  if (!opt.shape) throw new Usage(`compose needs --shape <id>; one of ${Object.keys(SHAPES).join(", ")}`);
-  if (!shape) throw new Usage(`--shape ${opt.shape} is not a shape; one of ${Object.keys(SHAPES).join(", ")}`);
-  const themes = Object.keys(shape.themes);
-  const theme = opt.theme ?? themes[0];
-  if (!themes.includes(theme)) throw new Usage(`--theme ${theme} is not a theme of ${shape.id}; use ${themes.join(" or ")}`);
+  const { pos, opt } = args(argv, { from: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } }, 1);
+  const presets = loadPresets();
+  const preset = opt.from === undefined ? undefined : presets[opt.from];
+  if (opt.from !== undefined && !preset) throw new Usage(`--from ${opt.from} is not a preset; one of ${Object.keys(presets).join(", ")}`);
+  const theme = opt.theme ?? preset?.theme ?? "light";
+  if (!THEMES.includes(theme)) throw new Usage(`--theme ${theme} is not a theme; use ${THEMES.join(" or ")}`);
   const facts = readFacts(pos[0]);
   let commit;
   let date;
@@ -167,8 +199,14 @@ function cmdCompose(argv) {
   const out = opt.out ?? path.join(path.dirname(pos[0]), `${facts.repo.name}-poster.json`);
   if (fs.existsSync(out) && !opt.force) throw new Failure(`${out} exists; it may hold your words. Pass --force to replace it with a fresh scaffold`);
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-  fs.writeFileSync(out, JSON.stringify(scaffoldSpec(facts, shape, { theme, commit, date }), null, 2) + "\n");
-  process.stdout.write(`Wrote ${out}: the scaffold for the ${shape.id} shape. Replace every "…" value, then run vyo render ${out}\n`);
+  const notes = preset ? preset.notes.length : 3;
+  fs.writeFileSync(out, JSON.stringify(scaffoldSpec(facts, { theme, commit, date, floor: floorFor(notes, 1), preset }), null, 2) + "\n");
+  const from = preset ? `the ${opt.from} preset's figure with its words taken out` : "one box-shaped region to reshape";
+  const lines = [
+    `Wrote ${out}: a scaffold with ${from}. Replace every "…" value, then run vyo sketch ${out}, adjust, sketch again, then vyo render ${out}`,
+    ...authoringNotes(notes),
+  ];
+  process.stdout.write(lines.join("\n") + "\n");
   return 0;
 }
 
@@ -183,12 +221,12 @@ async function poster(specFile, opt, outDir, files) {
   const factsFile = opt.facts ?? (repo ? path.join(path.dirname(specFile), `${repo}-facts.json`) : null);
   if (!factsFile) throw new Failure("product.repo is missing, so the facts file cannot be found; pass --facts");
   const facts = readFacts(factsFile);
-  const input = { spec, facts, shapes: SHAPES, shape: SHAPES[spec.shape] };
+  const input = { spec, facts, presets: loadPresets() };
   if (report(runChecks("spec", input))) return 1;
   const base = path.join(outDir, `${repo}-poster`);
   let html;
   try {
-    html = buildPage(spec, facts, input.shape);
+    html = buildPage(spec, facts);
   } catch (e) {
     throw new Failure(e.message);
   }
@@ -225,7 +263,7 @@ async function cmdCheck(argv) {
   }
 }
 
-const COMMANDS = { scan: cmdScan, show: cmdShow, shapes: cmdShapes, compose: cmdCompose, render: cmdRender, check: cmdCheck };
+const COMMANDS = { scan: cmdScan, show: cmdShow, presets: cmdPresets, compose: cmdCompose, render: cmdRender, check: cmdCheck };
 
 export async function main(argv) {
   const [cmd, ...rest] = argv;
