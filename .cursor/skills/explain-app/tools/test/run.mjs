@@ -11,7 +11,7 @@ const TOOLS = path.join(HERE, "..");
 const OUT = path.join(HERE, ".out");
 const VYO = path.join(TOOLS, "vyo.mjs");
 
-const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "band", "shapes"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
+const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "band", "shapes", "check"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
@@ -65,6 +65,16 @@ for (const [name, id, mutate, expect] of PLANTED) {
   fs.writeFileSync(file, JSON.stringify(spec, null, 2));
   const r = vyo("check", file, "--facts", factsFile);
   result(r.status === 1 && expect.test(r.stderr), `planted bug (${name}) fails with ${expect}`, `exit ${r.status}\n${r.stderr}`);
+}
+
+const emptyFacts = path.join(OUT, "empty-facts.json");
+vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
+{
+  const spec = { ...golden("hourglass"), facts: JSON.parse(fs.readFileSync(emptyFacts, "utf8")).hash };
+  const file = path.join(OUT, "empty.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", emptyFacts);
+  result(r.status === 0 && /^! facts-empty: no application facts/m.test(r.stderr), "an app with no facts still renders, with a warning", `exit ${r.status}\n${r.stderr}`);
 }
 
 if (pure.status !== 0) console.log("✗ the pure tests failed (see above)");
