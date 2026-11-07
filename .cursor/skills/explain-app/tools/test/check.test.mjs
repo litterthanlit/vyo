@@ -131,6 +131,17 @@ test("a field is exempt from row-variety, region-size, thin-region and the rows-
   assert.ok(covered.some((f) => f.id === "blocks-apart" && /aside/.test(f.message)));
 });
 
+test("a wave's rows may pass behind the figure's texts and take the wave's violets; a terrain's may not, nor may a text", () => {
+  const masthead = { name: "masthead", role: "masthead", text: "Pantry.", rect: rect(120, 44, 400, 120), lines: 1 };
+  const behind = (over) => fieldFindings(fieldPage({ blocks: [...page().blocks, masthead] }), fieldSpec(over)).filter((f) => f.id === "blocks-apart");
+  assert.deepEqual(behind(), []);
+  assert.ok(behind({ field: "terrain" }).some((f) => /masthead/.test(f.message)));
+  const violet = "rgb(122, 100, 220)";
+  const palette = (texts) => fieldFindings(fieldPage({ texts }), fieldSpec()).filter((f) => f.id === "palette").map((f) => f.message);
+  assert.deepEqual(palette([{ text: "server", color: violet, hot: false, where: "region wave" }]), []);
+  assert.deepEqual(palette([{ text: "x", color: violet, hot: false, where: "aside" }]), ["aside uses rgb(122, 100, 220), not a light token"]);
+});
+
 test("a field poster without a hot word passes words-drawn; with one, the word must be in the accent", () => {
   assert.ok(!fieldFindings(fieldPage({ figureHot: [] }), fieldSpec()).some((f) => f.id === "words-drawn"));
   const withHot = { ...fieldSpec(), hot: "plan" };

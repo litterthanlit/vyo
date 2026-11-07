@@ -7,6 +7,7 @@ import { hasWord, TEXT_SIZE } from "./spec.mjs";
 import { SHEET } from "./geometry.mjs";
 import { bandCounts, bandLine, provenance } from "./band.mjs";
 import { regionParts } from "./parts.mjs";
+import { FIELDS } from "./fields/index.mjs";
 
 const TOOLS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const FONT_DIR = path.join(TOOLS, "fonts");
@@ -25,6 +26,9 @@ export const THEMES = {
   dark: { paper: "#0E1424", ink: "#ECEEF2", soft: "#4F5A74", mid: "#97A0B6", cold: "#2F3B57", cool: "#5C6C8F", hot: "#FF5A1F" },
 };
 export const tokensOf = (spec) => ({ ...THEMES[spec.theme], ...(spec.accent ? { hot: spec.accent.toUpperCase() } : {}) });
+/** The colour tokens each field region adds for its own rows, by region id. */
+export const fieldTokensOf = (spec) =>
+  Object.fromEntries(spec.figure.regions.filter((r) => r.kind === "field").map((r) => [r.id, FIELDS[r.field].tokens(spec.theme)]));
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const json = (v) => JSON.stringify(v).replace(/</g, "\\u003c");
@@ -162,7 +166,7 @@ const figureData = (spec, facts) => ({
 
 /** The poster as one HTML string. Throws when the fonts are missing. */
 export function buildPage(spec, facts) {
-  const vars = Object.entries(tokensOf(spec)).map(([k, v]) => `--${k}:${v}`).join(";");
+  const vars = Object.entries(Object.assign({}, ...Object.values(fieldTokensOf(spec)), tokensOf(spec))).map(([k, v]) => `--${k}:${v}`).join(";");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(spec.product.name)} poster</title><style>
 ${fontFaces()}
 * { box-sizing: border-box; margin: 0; padding: 0 }
@@ -172,6 +176,8 @@ html, body { background: var(--paper) }
 .row { position: absolute; white-space: nowrap; overflow: hidden }
 .dots { position: absolute }
 .t { position: absolute; font-size: 12px; line-height: 18px }
+/* A field runs on behind the figure's texts: each sits above the rows with a 6px paper outline. */
+[data-role] { z-index: 1; -webkit-text-stroke: 12px var(--paper); paint-order: stroke fill }
 </style><script>${PRELUDE}</script></head><body><div class="sheet">
 ${spec.figure.texts.map((t) => textBlock(spec, t)).join("\n")}
 ${footer(spec, facts)}

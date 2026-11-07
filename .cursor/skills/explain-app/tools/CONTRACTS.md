@@ -416,15 +416,15 @@ The parts hold every non-generated line and file exactly once. `unplainName(name
 
 `FIELDS` in `lib/fields/index.mjs` is `{ [kind]: { about, options, layout, texts } }`. `layout(region, parts, { floor, mirror, theme, blocks, measure })` returns row items `{ x, y, width, height, size, text, spacing, part, word, hot, tone, alpha? }`. `floor` is the footer top, `mirror` is true when the masthead's centre is right of the sheet's middle, `theme` is the spec's, `blocks` are the text blocks' rects and `measure(text, size)` the text width. The page uses canvas measurements and its laid-out blocks; `sketch` uses 0.6 × size per letter and estimated blocks. The advance is rounded to 0.05px, so both place every row within 2px given the same blocks (`test/run.mjs` checks this on the field presets).
 
-Both fields set text in Commit Mono 400 at the mockups' 6.9px, cut every row around the text blocks padded by 12px (`clearOf` in `lib/geometry.mjs`), and keep inside x 0 to 838 and above the floor. The advance is rounded to 0.05px, since the page measures 4.134px at 6.9px and the sketch assumes 4.14.
+Both fields set text in Commit Mono 400 at the mockups' 6.9px and keep inside x 0 to 838 and above the floor. Terrain cuts every row around the text blocks padded by 12px (`clearOf` in `lib/geometry.mjs`); the wave runs on behind them. The advance is rounded to 0.05px, since the page measures 4.134px at 6.9px and the sketch assumes 4.14.
 
 **`wave`** (`lib/fields/wave.mjs`, after `explorations/2026-11-07-abstract-fields/f-wave-paper/`, tinted as `a-wave/` on dark):
 
-- Row slots sit 7.9px apart from y 0 to the floor, 7.9px tall: about 113 above a 900px floor. A slot whose clear width is under 0.8 × the band's full width (the text blocks cover it) carries no part, so the band runs on behind the masthead and every part lands on a row that shows.
-- The clear slots go to the parts by lines, largest remainder first, at least one each, in tree order, top to bottom. With fewer clear slots than parts, the last parts go undrawn.
+- Row slots sit 7.9px apart from y 0 to the floor, 7.9px tall: about 113 above a 900px floor. No slot is cut around the text blocks: the band passes behind the masthead and the other figure texts, which render sets above the rows with a 6px paper outline (`-webkit-text-stroke: 12px var(--paper)` painted under the fill).
+- The slots go to the parts by lines, largest remainder first, at least one each, in tree order, top to bottom. With fewer slots than parts, the last parts go undrawn.
 - At row top y, with `u = (y + 14) / 1190`: centre `130 + 560·(0.6·smoothstep(u) + 0.4·u) + 95·sin(6.4u + 0.4)·(1 − 0.5u)`, mirrored across the sheet when `mirror`; half-width `150 + 40·|cos(6.4u + 0.4)|`; letter spacing `0.5 + (half − 150) / 12`. The band enters at the top behind the masthead, swings right, back left across the middle and leaves through the floor.
 - A row's text is its part's name in lower case and three spaces, repeated letter by letter from the run's left edge while letters fit. Every `every`th row (`i % every == every − 1`) carries `sentence` instead, when given.
-- Tone: `hot` for accent parts; else, for parts at most two segments deep (and `area:.`), `ink` on light and `mid` on dark; deeper parts `mid` on light and `soft` on dark.
+- Tone: accent parts take `ink` on light, as in f-wave-paper, and `hot` on dark. Other parts at most two segments deep (and `area:.`) take `wave` (#7A64DC) on light and `mid` on dark; deeper parts `wave-soft` (#907EDD) on light and `soft` on dark. `wave` and `wave-soft` are the field's own tokens (`tokens` in its registry entry): render declares them, and `palette` allows them in the field's rows only.
 
 **`terrain`** (`lib/fields/terrain.mjs`, after `e-terrain/`):
 
@@ -505,9 +505,9 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 | `field-parts` | ✗ | A field's parts hold every non-generated line of `facts.json`, every part has at least one row (wave) or one run of letters (terrain), and `accent` names a part. Message: `region <id>: part "<name>" (<id>) is never drawn; move the text blocks that cover it` |
 | `row-variety` | ✗ | In every fill region, the standard deviation of its line widths divided by their mean is at least 0.25. A line is all the region's runs at one y, merged into their outer span. Fields are exempt, and the check is skipped when the figure has no fill region. Message: `region <id> is a box; a silhouette changes width along its whole height` |
 | `thin-region` | ! | Every fill region's lines are at least 160px wide on average. Fields are exempt. Message: `region <id> reads as a column; widen it or make it part of the main silhouette` |
-| `blocks-apart` | ✗ | No two `[data-block]` text blocks, or a text block and a row, come within 8px. Two rows of one fill region at the same y are compared horizontally only; a field's rows are not compared with each other |
+| `blocks-apart` | ✗ | No two `[data-block]` text blocks, or a text block and a row, come within 8px. Two rows of one fill region at the same y are compared horizontally only; a field's rows are not compared with each other, and a wave's rows may pass behind the figure's texts (the blocks with a `data-role`) |
 | `blocks-inside` | ✗ | Every `[data-block]` text block sits inside the sheet |
-| `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens: `paper`, `ink`, `soft`, `mid`, `cold`, `cool`, or `hot` (or `accent`) |
+| `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens: `paper`, `ink`, `soft`, `mid`, `cold`, `cool`, or `hot` (or `accent`). A field's rows may also take the field's own tokens |
 | `hot-tagged` | ✗ | Anything in the hot colour carries `data-hot` |
 | `copy` | ✗ | The visible words hold no banned term, file path, "01/02/03" marker or middle dot. The masthead and the render-owned footer lines are exempt |
 | `notes` | ✗ | The footer shows exactly the notes in `spec.notes` |

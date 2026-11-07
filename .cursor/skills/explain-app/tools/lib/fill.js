@@ -50,8 +50,8 @@ const measure = (text, size) => {
   return ctx.measureText(text).width;
 };
 
-/** One row of letters: `r` from fillRows or a field layout. */
-function drawRow(S, r, data, height, weight) {
+/** One row of letters in the colour token `tone`: `r` from fillRows or a field layout. */
+function drawRow(S, r, data, height, weight, tone) {
   const text = r.text.replace(/ /g, "\u00a0");
   const e = el(
     "row",
@@ -59,7 +59,7 @@ function drawRow(S, r, data, height, weight) {
     {
       fontSize: r.size + "px", lineHeight: height + "px", height: height + "px",
       left: r.x + "px", top: r.y + "px", width: Math.ceil(r.width) + 1 + "px", letterSpacing: r.spacing + "px",
-      color: r.hot ? "var(--hot)" : `var(--${r.tone})`, fontWeight: weight, opacity: r.alpha ?? 1,
+      color: `var(--${tone})`, fontWeight: weight, opacity: r.alpha ?? 1,
     },
     text.slice(0, -1),
   );
@@ -76,14 +76,14 @@ function drawFill(S, region, blocks) {
   const { pitch } = GRID[size];
   const rows = regionRows(region, blocks);
   for (const r of fillRows(region, rows, { measure: (t) => measure(t, size), isHot })) {
-    drawRow(S, { ...r, size }, { word: r.word, region: region.id, hot: r.hot }, pitch, r.hot ? 700 : 400);
+    drawRow(S, { ...r, size }, { word: r.word, region: region.id, hot: r.hot }, pitch, r.hot ? 700 : 400, r.hot ? "hot" : r.tone);
   }
   return { id: region.id, kind: "fill", bbox: bbox(shapeRings(region)), rows: rows.length };
 }
 
 function drawField(S, region, blocks) {
   const items = FIELDS[region.field].layout(region, region.parts, { floor: F.floor, mirror: F.mirror, theme: F.theme, blocks, measure });
-  for (const r of items) drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, 400);
+  for (const r of items) drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, 400, r.tone);
   const box = items.length ? bbox([items.flatMap((r) => [[r.x, r.y], [r.x + r.width, r.y + r.height]])]) : { left: 0, top: 0, right: 0, bottom: 0 };
   return { id: region.id, kind: "field", bbox: box, rows: items.length };
 }

@@ -25,7 +25,7 @@ test("the registry names each field once, with its layout and the options only i
 });
 
 for (const [name, facts] of [["recipe", recipe], ["hypher", hypher]]) {
-  test(`wave on ${name}: 7.9px rows from the top edge to the floor, every part on a row the text blocks leave clear`, () => {
+  test(`wave on ${name}: 7.9px rows from the top edge to the floor, every part on a row, the band unbroken behind the text blocks`, () => {
     const parts = regionParts({ accent: "area:hypher-web/shared" }, facts);
     const items = waveRows({ sentence: "plan once", every: 5 }, parts, frame());
     const ys = [...new Set(items.map((i) => i.y))];
@@ -36,7 +36,8 @@ for (const [name, facts] of [["recipe", recipe], ["hypher", hypher]]) {
     assert.ok(Math.max(...items.map((i) => i.y + i.height)) <= 900, "and stays above the floor");
     assert.ok(Math.max(...items.map((i) => i.y)) > 860, "down to the floor");
     for (const p of parts) assert.ok(items.some((i) => i.part === p.id), `${p.id} has a row`);
-    for (const it of items) for (const b of [masthead, aside]) assert.ok(!touches(it, b, 12), `row at ${it.y} clears the block at ${b.top}`);
+    assert.equal(ys.length, Math.floor(900 / WAVE.pitch), "every slot carries a row, those behind the masthead included");
+    assert.ok(items.some((it) => touches(it, masthead, 0)), "the band passes behind the masthead");
     for (const it of items) assert.ok(it.x >= 0 && it.x + it.width <= 839);
     const order = items.map((i) => parts.findIndex((p) => p.id === i.part));
     assert.deepEqual(order, [...order].sort((a, b) => a - b), "parts run top to bottom in tree order");
@@ -47,6 +48,7 @@ test("wave: rows go to parts by lines, at least one each, all of them used", () 
   const counts = rowsPerPart([{ loc: 900 }, { loc: 90 }, { loc: 10 }, { loc: 0 }], 20);
   assert.deepEqual(counts, [15, 3, 1, 1]);
   assert.equal(rowsPerPart([{ loc: 5 }, { loc: 5 }, { loc: 5 }], 7).reduce((s, n) => s + n, 0), 7);
+  assert.equal(rowsPerPart([{ loc: 1470 }, { loc: 713 }, { loc: 7926 }, { loc: 2361 }, { loc: 8637 }, { loc: 370 }], 113).reduce((s, n) => s + n, 0), 113, "with several remainders to hand out");
 });
 
 test("wave: every fifth row carries the sentence, the accent part is hot, the band enters behind the masthead", () => {
@@ -55,9 +57,11 @@ test("wave: every fifth row carries the sentence, the accent part is hot, the ba
   const ys = [...new Set(items.map((i) => i.y))];
   const said = ys.filter((y) => items.find((i) => i.y === y).word === "switch agents without starting over");
   assert.deepEqual(said, ys.filter((_, i) => i % 5 === 4));
-  assert.ok(items.filter((i) => i.part === "area:hypher-web/shared").every((i) => i.hot && i.tone === "hot"));
-  assert.ok(items.filter((i) => i.part !== "area:hypher-web/shared").every((i) => !i.hot && ["ink", "mid"].includes(i.tone)), "ink and mid on paper");
+  assert.ok(items.filter((i) => i.part === "area:hypher-web/shared").every((i) => i.hot && i.tone === "ink"), "the accent part in ink on paper");
+  const tones = new Set(items.filter((i) => !i.hot).map((i) => i.tone));
+  assert.deepEqual([...tones].sort(), ["wave", "wave-soft"], "the other parts in the two violets on paper");
   const dark = waveRows({}, parts, frame({ blocks: [], theme: "dark" }));
+  assert.ok(dark.filter((i) => i.hot).every((i) => i.tone === "hot"), "the accent part in the accent on navy");
   assert.ok(dark.filter((i) => !i.hot).every((i) => ["mid", "soft"].includes(i.tone)), "mid and soft on navy");
   const flipped = waveRows({}, parts, frame({ blocks: [], mirror: true }));
   const first = (list) => list.find((i) => i.y === 0);

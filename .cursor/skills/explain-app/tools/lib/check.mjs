@@ -2,8 +2,9 @@
 // judge the measurements lib/inspect.js takes in the rendered page.
 import { validateSpec, textProblems, hasWord, geometryKey } from "./spec.mjs";
 import { bandCounts, bandLine } from "./band.mjs";
-import { FONT_FACES, tokensOf } from "./render.mjs";
+import { FONT_FACES, tokensOf, fieldTokensOf } from "./render.mjs";
 import { partsFromFacts, regionParts, unplainName, sameNames } from "./parts.mjs";
+import { FIELDS } from "./fields/index.mjs";
 
 const rgb = (hex) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(", ")})`;
 const overlap = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
@@ -197,14 +198,15 @@ export const CHECKS = [
     },
   },
   {
-    id: "blocks-apart", level: "fail", stage: "page", about: "no two text blocks overlap, rows and dots keep clear of them, and blocks side by side keep 8px apart",
-    run: ({ page }) => {
+    id: "blocks-apart", level: "fail", stage: "page", about: "no two text blocks overlap, rows and dots keep clear of them (a wave's rows may pass behind the figure's texts), and blocks side by side keep 8px apart",
+    run: ({ spec, page }) => {
       const blocks = page.blocks.map((b) => ({ ...b, kind: "block" }));
+      const behind = new Set(fieldsOf(spec).filter((r) => FIELDS[r.field].behindTexts).map((r) => r.id));
       const marks = [...page.rows.map((r) => ({ ...r, name: `the row "${r.word}"` })), ...page.dots.map((d) => ({ ...d, name: `the dots line "${d.word}"` }))];
       const out = [];
       const say = (a, b) => out.push(`${a.name} overlaps ${b.name} or sits within 8px of it; shorten one of them`);
       blocks.forEach((a, i) => blocks.slice(i + 1).forEach((b) => crowd(a.rect, b.rect) && say(a, b)));
-      for (const a of blocks) for (const m of marks) if (crowd(a.rect, m.rect)) say(a, m);
+      for (const a of blocks) for (const m of marks) if (!(a.role && behind.has(m.region)) && crowd(a.rect, m.rect)) say(a, m);
       const fills = fillRowsOf(page);
       fills.forEach((a, i) => fills.slice(i + 1).forEach((b) => a.region === b.region && crowd(a.rect, b.rect) && say({ name: `the row "${a.word}"` }, { name: `the row "${b.word}"` })));
       return [...new Set(out)];
@@ -257,10 +259,11 @@ export const CHECKS = [
     },
   },
   {
-    id: "palette", level: "fail", stage: "page", about: "every colour on the sheet is one of the theme's tokens",
+    id: "palette", level: "fail", stage: "page", about: "every colour on the sheet is one of the theme's tokens, or in a field's rows one of the field's own",
     run: ({ spec, page }) => {
       const allowed = new Set(Object.values(tokensOf(spec)).map(rgb));
-      const bad = [...page.texts, ...page.boxes].filter((t) => !allowed.has(t.color));
+      const own = Object.fromEntries(Object.entries(fieldTokensOf(spec)).map(([id, tokens]) => [`region ${id}`, new Set(Object.values(tokens).map(rgb))]));
+      const bad = [...page.texts, ...page.boxes].filter((t) => !allowed.has(t.color) && !own[t.where]?.has(t.color));
       return [...new Set(bad.map((t) => `${t.where} uses ${t.color}, not a ${spec.theme} token`))];
     },
   },

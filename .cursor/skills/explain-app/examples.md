@@ -99,7 +99,7 @@ Pantry's story is a flow: recipes go in, the week's plan forms, the list goes to
         "x": 56,
         "y": 764,
         "w": 240,
-        "text": "Every row is a part of Pantry, as many rows as it has code. The orange rows build the week's plan."
+        "text": "Every row is a part of Pantry, as many rows as it has code. The black rows build the week's plan."
       }
     ]
   },
