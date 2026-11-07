@@ -1,0 +1,108 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Flow in binary</title>
+<style>
+/*FONTS*/
+:root{--bg:#0a0c10;--ink:#e9e5da;--dim:#8d8a82;--acc:#ff6a1f}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000}
+.sheet{position:relative;width:840px;height:1190px;background:var(--bg);overflow:hidden;color:var(--ink)}
+canvas{position:absolute;left:0;top:0;width:840px;height:1190px}
+.name{position:absolute;left:44px;top:40px;font-family:"Inter Display","Inter",sans-serif;font-weight:600;font-size:84px;letter-spacing:-.035em;line-height:1}
+.line{position:absolute;left:46px;top:138px;font-family:"Newsreader",serif;font-size:25px;font-style:normal;color:var(--ink)}
+.para{position:absolute;left:46px;bottom:92px;width:270px;font-family:"Newsreader",serif;font-size:14.5px;line-height:1.42;color:var(--dim)}
+.f{position:absolute;bottom:34px;font-family:"Commit",monospace;font-size:10.5px;color:var(--dim);letter-spacing:.02em}
+.f.l{left:46px}.f.r{right:44px}
+</style></head><body>
+<div class="sheet" data-theme="dark">
+<canvas id="c" width="1680" height="2380"></canvas>
+<div class="name">Hypher</div>
+<div class="line">Switch agents without starting over.</div>
+<div class="para">Every part of the app runs into one note. The next agent, whichever it is, picks up from there.</div>
+<div class="f l">Hypher at 7e1ff3a, 7 November 2026</div><div class="f r">Drawn by Vyo.</div>
+</div>
+<script>
+const DATA=/*DATA*/;
+window.draw=function(){
+const cv=document.getElementById('c'),g=cv.getContext('2d');g.scale(2,2);
+const W=840,H=1190;
+// seeded rng
+function h(a,b){let x=(a*374761393+b*668265263)^0x5bd1e995;x=(x^(x>>>13))*1274126177;x=x^(x>>>16);return (x>>>0)/4294967296}
+const P=DATA.parts,n=P.length,idx={};P.forEach((p,i)=>idx[p.id]=i);
+// affinity from imports
+const A=Array.from({length:n},()=>new Array(n).fill(0));
+for(const [a,b] of DATA.edges){const i=idx[a],j=idx[b];if(i==null||j==null||i==j)continue;A[i][j]++;A[j][i]++}
+// agglomerative, average linkage normalised by size
+let nodes=P.map((p,i)=>({leaf:true,i,loc:p.loc,members:[i]}));
+let act=nodes.slice();const merges=[];
+const aff=(x,y)=>{let s=0;for(const i of x.members)for(const j of y.members)s+=A[i][j];return s/Math.sqrt(x.loc*y.loc)};
+while(act.length>1){let best=-1,bx=0,by=1;
+ for(let x=0;x<act.length;x++)for(let y=x+1;y<act.length;y++){const v=aff(act[x],act[y])+1e-6*Math.random()*0;if(v>best){best=v;bx=x;by=y}}
+ const a=act[bx],b=act[by];
+ // keep the heavier child on the lower side later; order by mean original index (tree order)
+ const ma=a.members.reduce((s,m)=>s+m,0)/a.members.length,mb=b.members.reduce((s,m)=>s+m,0)/b.members.length;
+ const [u,v]=ma<=mb?[a,b]:[b,a];
+ const nd={leaf:false,kids:[u,v],loc:u.loc+v.loc,members:[...u.members,...v.members],rank:merges.length};
+ merges.push(nd);act=act.filter((_,k)=>k!=bx&&k!=by);act.push(nd)}
+const root=act[0];
+// geometry
+const K=DATA.K,MINT=DATA.mint,GAP=DATA.gap,XS=-30,XR=DATA.xr,EXY=DATA.exitY;
+function thick(nd){if(nd.leaf)nd.T=Math.max(MINT,nd.loc/K);else{nd.kids.forEach(thick);nd.T=nd.kids[0].T+nd.kids[1].T}nd.dens=nd.leaf?Math.min(1,(nd.loc/K)/MINT):1;return nd.T}
+thick(root);
+let order=[];(function walk(nd){if(nd.leaf)order.push(nd);else nd.kids.forEach(walk)})(root);
+let y=DATA.top;order.forEach(l=>{l.y0=y+l.T/2;y+=l.T+GAP});
+const maxR=merges.length-1;
+function cy(nd){if(nd.leaf)return nd.y0;nd.kids.forEach(cy);const a=nd.kids[0],b=nd.kids[1];nd.cy=(a.cyv*a.T+b.cyv*b.T)/nd.T;return nd.cy}
+function setc(nd){if(nd.leaf){nd.cyv=nd.y0;return}nd.kids.forEach(setc);const a=nd.kids[0],b=nd.kids[1];nd.cyv=(a.cyv*a.T+b.cyv*b.T)/nd.T}
+setc(root);
+const shiftY=0; // translate root centre to exit
+function ht(nd){nd.h=nd.leaf?0:1+Math.max(ht(nd.kids[0]),ht(nd.kids[1]));return nd.h}ht(root);
+function xm(nd){return XS+(XR-XS)*(DATA.x0+(1-DATA.x0)*Math.pow(nd.h/root.h,DATA.pow))}
+root.xm=XR;merges.forEach(m=>m.xm=m===root?XR:xm(m));
+// ribbons: each node from xa to xb, centre ya->yb
+const rib=[];
+(function place(nd,slotY,xb){ // slotY centre at xb
+  const xa=nd.leaf?XS:nd.xm, ya=nd.leaf?nd.y0:nd.cyv;
+  rib.push({xa,xb,ya,yb:slotY,T:nd.T,d:nd.dens,leaf:nd.leaf,id:nd.leaf?nd.i:-1});
+  if(!nd.leaf){const top=nd.cyv-nd.T/2;let o=top;for(const k of nd.kids){place(k,o+k.T/2,nd.xm);o+=k.T}}
+})(root,root.cyv,W+40);
+// root last: extend horizontally from XR
+const ss=t=>t*t*(3-2*t);
+const ease=t=>{t=Math.min(1,Math.max(0,t));return t*t*t*(t*(6*t-15)+10)};
+function profile(u){return u<DATA.core?1:Math.max(0,1-(u-DATA.core)/(1-DATA.core))}
+const CW=DATA.cw,CH=5;
+const cols=Math.ceil(W/CW)+2,rows=Math.ceil(H/CH)+2;
+const dens=new Float32Array(cols*rows),own=new Int16Array(cols*rows).fill(-2);
+for(const r of rib){
+ const x1=r.xa,x2=r.xb;
+ for(let c=Math.max(0,Math.floor(x1/CW));c<Math.min(cols,Math.ceil(x2/CW));c++){
+  const x=c*CW+CW/2;if(x<x1||x>x2)continue;
+  const t=(x-x1)/(x2-x1);
+  const yc=r.ya+(r.yb-r.ya)*ease(t)+shiftY*(r.leaf?ease((x-XS)/(XR-XS)):1)*0 ;
+  const hT=r.T/2;
+  for(let q=Math.max(0,Math.floor((yc-hT-6)/CH));q<Math.min(rows,Math.ceil((yc+hT+6)/CH));q++){
+   const yy=q*CH+CH/2,u=Math.abs(yy-yc)/hT;if(u>1)continue;
+   const d=profile(u)*r.d;const k=q*cols+c;if(d>dens[k]){dens[k]=d;own[k]=r.id}}}
+}
+// apply shiftY by drawing with translate
+g.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg');
+g.textBaseline='middle';g.textAlign='center';
+g.font='500 '+DATA.fs+'px Commit, monospace';
+const INK=[233,229,218],ACC=[255,106,31];
+const ax=DATA.accX,EY=root.cyv;
+g.save();g.translate(0,shiftY);
+for(let q=0;q<rows;q++)for(let c=0;c<cols;c++){
+ const k=q*cols+c,d=dens[k];if(d<=0)continue;
+ const r=h(c,q);if(r>Math.pow(d,DATA.gam))continue;
+ const bit=h(c+977,q+31)<0.5?'0':'1';
+ const x=c*CW+CW/2,yy=q*CH+CH/2;
+ let a=0.30+0.62*d*(0.55+0.45*h(c+5,q+9));
+ let col=INK;
+ // accent: short run of digits at the merge point
+ const dyr=Math.round((yy-EY)/CH), dxr=(x-ax)/CW;
+ if(Math.abs(dyr)<=DATA.accRows && dxr>=0 && dxr<DATA.accLen){col=ACC;a=1;}
+ g.fillStyle='rgba('+col[0]+','+col[1]+','+col[2]+','+a+')';
+ g.fillText(bit,x,yy);
+}
+g.restore();
+window.__dbg={n,merges:merges.length,shiftY,rootT:root.T,ytop:DATA.top,yend:y};
+};
+</script></body></html>

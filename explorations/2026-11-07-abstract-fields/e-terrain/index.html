@@ -1,0 +1,56 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Hypher terrain</title>
+<style>/*FONTS*/
+:root{--paper:#121320;--ink:#ecebe6;--g:#9a9bb0;--acc:#ff6a1f;--soft:#a3a3b2}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper)}
+.sheet{position:relative;width:840px;height:1190px;overflow:hidden;background:var(--paper);color:var(--ink)}
+canvas{position:absolute;inset:0}
+.name{position:absolute;left:44px;top:40px;font:700 112px/0.9 "Inter Display","Helvetica Neue",sans-serif;letter-spacing:-4px}
+.line{position:absolute;left:48px;top:156px;font:400 25px/1.2 Newsreader,serif}
+.foot{position:absolute;bottom:34px;font:400 10px/1 Commit,monospace;color:var(--soft);letter-spacing:.3px}
+.fl{left:48px}.fr{right:48px}
+</style></head><body><div class="sheet">
+<canvas id="c" width="1680" height="2380" style="width:840px;height:1190px"></canvas>
+<div class="name">Hypher</div>
+<div class="line">Switch agents without starting over.</div>
+<div class="foot fl">Hypher at 7e1ff3a, 7 November 2026</div>
+<div class="foot fr">Drawn by Vyo.</div>
+</div>
+<script>
+const PARTS = /*PARTS*/;
+window.draw = () => {
+  const c = document.getElementById("c"), x = c.getContext("2d"); x.scale(2, 2);
+  const X0 = -90, X1 = 930, BASE = 1260, PX = 0.0885;           // px of height per line of code
+  const tot = PARTS.reduce((s, p) => s + p.files, 0);
+  let acc = X0; const pk = PARTS.map(p => { const w = (p.files / tot) * (X1 - X0); const q = { ...p, c: acc + w / 2, w, H: p.loc * PX, hot: p.name === "handoff note" }; acc += w; return q; });
+  const P = 4;
+  const bump = (q, xx) => { const d = Math.abs(xx - q.c) / (q.w * 1.25 + 30); return q.H * Math.exp(-Math.pow(d, 1.5) * 1.1); };
+  const hAt = xx => { let s = 0; for (const q of pk) s += Math.pow(bump(q, xx), P); return Math.pow(s, 1 / P); };
+  const owner = xx => { let b = -1, bi = 0; pk.forEach((q, i) => { const v = bump(q, xx); if (v > b) { b = v; bi = i; } }); return pk[bi]; };
+  const FS = 6.9, H = 7.6; x.font = `400 ${FS}px Commit`; x.textBaseline = "alphabetic";
+  const cw = x.measureText("M").width;
+  const holes = [[40, 1128, 255, 1160], [680, 1128, 800, 1160]];
+  const inHole = (px, py) => holes.some(h => px > h[0] && px < h[2] && py > h[1] && py < h[3]);
+  const hs = new Map(); for (let xx = X0 - 4; xx <= X1 + 4; xx += 1) hs.set(Math.round(xx), hAt(xx));
+  const H_ = xx => hs.get(Math.round(xx));
+  const ink = [236, 235, 230], grey = [154, 155, 176], acc2 = [255, 106, 31];
+  for (let y = 1200; y > 280; y -= H) {
+    const lvl = BASE - y;                                      // height above base of this row
+    let px = 0, cur = null, k = 0;
+    while (px < 840) {
+      const h = H_(px), hn = H_(px + 4), hp = H_(px - 4);
+      if (h < lvl) { px += cw; cur = null; continue; }
+      const q = owner(px); if (q !== cur) { if (cur) px += cw * 2; cur = q; k = 0; }
+      const m = (hn - hp) / 8;                                  // slope, up-right positive
+      const depth = h - lvl, a = Math.abs(m);
+      const word = q.name + "   ";
+      const lit = Math.max(0, Math.min(1, 0.5 + m * 0.5));       // slopes facing the left catch the light
+      let al = 0.42 + 0.5 * lit - Math.min(0.2, depth / 1600) ; if (depth < 9) al = Math.min(1, al + 0.35);
+      if (q.hot) al = Math.min(1, al + 0.3); al = Math.max(0.22, Math.min(1, al));
+      const col = q.hot ? acc2 : (depth < 9 ? ink : grey);
+      if (!inHole(px, y)) { x.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${al})`; x.fillText(word[k % word.length], px, y); }
+      k++; px += cw * 0.94 + Math.min(a, 1.6) * 1.5;
+    }
+  }
+};
+</script></body></html>

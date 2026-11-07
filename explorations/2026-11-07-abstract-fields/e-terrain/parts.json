@@ -1,0 +1,72 @@
+[
+ {
+  "name": "mac app",
+  "loc": 1470,
+  "files": 33
+ },
+ {
+  "name": "browser add-on",
+  "loc": 921,
+  "files": 8
+ },
+ {
+  "name": "cursor helpers",
+  "loc": 547,
+  "files": 3
+ },
+ {
+  "name": "server",
+  "loc": 10400,
+  "files": 56
+ },
+ {
+  "name": "handoff note",
+  "loc": 8637,
+  "files": 28
+ },
+ {
+  "name": "web requests",
+  "loc": 1513,
+  "files": 18
+ },
+ {
+  "name": "settings pages",
+  "loc": 1378,
+  "files": 19
+ },
+ {
+  "name": "sign-in",
+  "loc": 413,
+  "files": 5
+ },
+ {
+  "name": "screens",
+  "loc": 3200,
+  "files": 23
+ },
+ {
+  "name": "marketing site",
+  "loc": 3833,
+  "files": 20
+ },
+ {
+  "name": "web helpers",
+  "loc": 7025,
+  "files": 34
+ },
+ {
+  "name": "core",
+  "loc": 367,
+  "files": 9
+ },
+ {
+  "name": "command line",
+  "loc": 4246,
+  "files": 37
+ },
+ {
+  "name": "scripts",
+  "loc": 3186,
+  "files": 10
+ }
+]
