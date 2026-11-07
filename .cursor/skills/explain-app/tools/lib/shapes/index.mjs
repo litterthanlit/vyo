@@ -1,5 +1,6 @@
 // The shape library. A shape is data plus one draw(spec, ctx) that returns the whole sheet's HTML.
 import hourglass from "./hourglass.mjs";
+import ribbon from "./ribbon.mjs";
 
 const KINDS = ["words", "phrase", "line"];
 
@@ -23,4 +24,4 @@ function assertShape(shape) {
 }
 
 /** @type {Record<string, import("../spec.mjs").Shape>} */
-export const SHAPES = Object.fromEntries([hourglass].map((s) => [s.id, assertShape(s)]));
+export const SHAPES = Object.fromEntries([hourglass, ribbon].map((s) => [s.id, assertShape(s)]));

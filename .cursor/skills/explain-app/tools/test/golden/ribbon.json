@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "commit": "04186f4", "date": "2026-10-28" },
+  "theme": "dark",
+  "shape": "ribbon",
+  "headline": "Your week's dinners, from the plan to the plate.",
+  "hot": "shopping list",
+  "slots": {
+    "leftLine": "Plan it on Sunday.",
+    "rightLine": "Cook it on Monday.",
+    "travels": ["the recipe", "the ingredients", "the shopping list", "how long it takes", "who it serves", "your notes"],
+    "aside": "**What travels:** the recipe, what to buy, how long it takes, who it serves and your own notes."
+  },
+  "notes": [
+    { "title": "How it works", "text": "Save the recipes you love. Ask for ideas when you are stuck. Every Monday at 8 the app plans the week and writes the shopping list." },
+    { "title": "What you get", "text": "Your recipe box, a page for each recipe, a form for new ones, the week's plan and your settings." },
+    { "title": "Your account", "text": "Sign in with your own account and pay by card. The weekly plan arrives by email." }
+  ],
+  "notBuilt": ["sharing a plan", "nutrition totals"]
+}

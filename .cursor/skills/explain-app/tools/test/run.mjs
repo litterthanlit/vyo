@@ -46,7 +46,7 @@ for (const id of Object.keys(SHAPES)) {
 const PLANTED = [
   ["a file path", "hourglass", (s) => (s.notes[0].text = "Saved by lib/plan/save.ts each week."), /^✗ spec: notes\[0\]\.text: a file path/m],
   ["jargon", "hourglass", (s) => (s.headline = "Your recipes behind one API."), /^✗ spec: headline: jargon: "api"/m],
-  ["a hot word not in the slots", "hourglass", (s) => (s.hot = "breakfast"), /^✗ spec: hot: "breakfast" must be/m],
+  ["a hot word not in the slots", "ribbon", (s) => (s.hot = "breakfast"), /^✗ spec: hot: "breakfast" must be/m],
   ["a fourth note", "hourglass", (s) => s.notes.push({ title: "More", text: "One more note." }), /^✗ spec: notes: 4 notes; hourglass takes exactly 3/m],
   [
     "words too long for the waist",
