@@ -3,7 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { hasWord } from "./spec.mjs";
+import { hasWord, TEXT_SIZE } from "./spec.mjs";
+import { SHEET } from "./geometry.mjs";
 import { bandCounts, bandLine, provenance } from "./band.mjs";
 
 const TOOLS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -15,7 +16,14 @@ const FONTS = [
 ];
 export const FONT_FACES = FONTS.map(([family, weight]) => ({ family, weight }));
 const MAST_FONT = `"Inter Display", Inter, "Helvetica Neue", Helvetica, Arial, sans-serif`;
-export const SHEET = { width: 840, height: 1190 };
+export { SHEET };
+
+// Theme tokens. Rows, dots and texts use only these; `accent` replaces hot.
+export const THEMES = {
+  light: { paper: "#EAE8E2", ink: "#161616", soft: "#8E8C84", mid: "#55534D", cold: "#A9B8C8", cool: "#5F7389", hot: "#FF4F12" },
+  dark: { paper: "#0E1424", ink: "#ECEEF2", soft: "#4F5A74", mid: "#97A0B6", cold: "#2F3B57", cool: "#5C6C8F", hot: "#FF5A1F" },
+};
+export const tokensOf = (spec) => ({ ...THEMES[spec.theme], ...(spec.accent ? { hot: spec.accent.toUpperCase() } : {}) });
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const json = (v) => JSON.stringify(v).replace(/</g, "\\u003c");
@@ -27,8 +35,8 @@ const line = (s) => {
 // The footer, top to bottom in CSS px from the hairline: counts at 14, notes at 60 (9 lines of 18px
 // for three notes, 7 for two), a 16px gap, then 16px meta lines. "Not built yet: …" takes its own
 // meta lines, flush left, wrapped at spaces to the 728px width; the last meta line holds provenance
-// on the left and the credit on the right.
-const FOOT = { counts: 14, notes: 60, noteLine: 18, noteLines: { 2: 7, 3: 9 }, gap: 16, meta: 16, metaSize: 11, width: 728 };
+// on the left and the credit on the right. The hairline sits 36px above the sheet's bottom edge plus the footer.
+const FOOT = { counts: 14, notes: 60, noteLine: 18, noteLines: { 2: 7, 3: 9 }, gap: 16, meta: 16, metaSize: 11, width: 728, below: 36 };
 // Commit Mono advances 0.6em, so a meta line holds a known number of characters.
 const META_CHARS = Math.floor(FOOT.width / (FOOT.metaSize * 0.6));
 
@@ -42,24 +50,67 @@ function wrapMeta(text) {
   return lines;
 }
 
-function footer(spec, facts, shape) {
-  const notBuilt = spec.notBuilt.length ? wrapMeta(`Not built yet: ${spec.notBuilt.join(", ")}`) : [];
-  const height = FOOT.notes + FOOT.noteLines[shape.notes] * FOOT.noteLine + FOOT.gap + (notBuilt.length + 1) * FOOT.meta;
+const notBuiltLines = (notBuilt) => (notBuilt.length ? wrapMeta(`Not built yet: ${notBuilt.join(", ")}`) : []);
+const footerHeight = (notes, notBuilt) => FOOT.notes + FOOT.noteLines[notes] * FOOT.noteLine + FOOT.gap + (notBuilt + 1) * FOOT.meta;
+/** The y of the footer's hairline for a notes count and a number of not-built lines: the figure sits above it. */
+export const floorFor = (notes, notBuilt) => SHEET.height - footerHeight(notes, notBuilt) - FOOT.below;
+export const floorOf = (spec) => floorFor(spec.notes.length, notBuiltLines(spec.notBuilt).length);
+export const FLOOR_STEP = FOOT.meta;
+
+function footer(spec, facts) {
+  const notBuilt = notBuiltLines(spec.notBuilt);
+  const n = spec.notes.length;
+  const height = footerHeight(n, notBuilt.length);
   const lastLine = height - FOOT.meta;
   const gutter = 22;
-  const col = (FOOT.width - gutter * (shape.notes - 1)) / shape.notes;
+  const col = (FOOT.width - gutter * (n - 1)) / n;
   const meta = `position:absolute;font-size:${FOOT.metaSize}px;line-height:${FOOT.meta}px;color:var(--soft);white-space:nowrap`;
   const counts = bandLine(bandCounts(facts));
   const notes = spec.notes
-    .map((n, i) => `<div class="t" data-block="note" data-owner="notes" style="left:${i * (col + gutter)}px;top:${FOOT.notes}px;width:${col}px"><b>${esc(n.title)}</b><br>${esc(n.text)}</div>`)
+    .map((note, i) => `<div class="t" data-block="note" data-owner="notes" style="left:${i * (col + gutter)}px;top:${FOOT.notes}px;width:${col}px"><b>${esc(note.title)}</b><br>${esc(note.text)}</div>`)
     .join("");
-  const html = `<div data-footer style="position:absolute;left:0;top:0;width:${FOOT.width}px;height:1px;background:var(--ink)"></div>
+  return `<div style="position:absolute;left:56px;top:${floorOf(spec)}px;width:${FOOT.width}px;height:${height}px">
+<div data-footer style="position:absolute;left:0;top:0;width:${FOOT.width}px;height:1px;background:var(--ink)"></div>
 ${counts ? `<div class="t" data-block="counts" data-owner="render" style="left:0;top:${FOOT.counts}px;width:${FOOT.width}px;font-size:11px;line-height:16px;color:var(--soft)">${esc(counts)}</div>` : ""}
 ${notes}
 ${notBuilt.length ? `<div data-block="notBuilt" data-owner="notBuilt" style="${meta};left:0;top:${lastLine - notBuilt.length * FOOT.meta}px">${notBuilt.map(esc).join("<br>")}</div>` : ""}
 <div data-block="provenance" data-owner="render" style="${meta};left:0;top:${lastLine}px">${esc(provenance(spec.product))}</div>
-<div data-block="credit" data-owner="render" style="${meta};right:0;top:${lastLine}px">Drawn by Vyo<span data-hot data-owner="render" style="color:var(--hot)">.</span></div>`;
-  return { html, height };
+<div data-block="credit" data-owner="render" style="${meta};right:0;top:${lastLine}px">Drawn by Vyo<span data-hot data-owner="render" style="color:var(--hot)">.</span></div>
+</div>`;
+}
+
+// Line height per text role from its font size: the masthead is 88px at 84, a headline 28px at 22, an aside 18px at 12.
+export const LINE_HEIGHT = {
+  masthead: (s) => Math.round(s * 1.05),
+  headline: (s) => s + 6,
+  display: (s) => s,
+  aside: (s) => Math.round(s * 1.5),
+  label: (s) => Math.round(s * 1.25),
+};
+export const textSize = (t) => t.size ?? TEXT_SIZE[t.role === "label" && t.hot ? "hotLabel" : t.role][0];
+
+const ROLE_STYLE = {
+  masthead: `font-weight:700;letter-spacing:-.035em;white-space:nowrap;font-family:${esc(MAST_FONT)}`,
+  headline: `font-family:${esc(`"Newsreader", serif`)};letter-spacing:-.005em`,
+  display: `font-weight:700;letter-spacing:-.025em;font-family:${esc(MAST_FONT)}`,
+  aside: "",
+  label: "letter-spacing:.12em",
+};
+
+function textBlock(spec, t) {
+  const size = textSize(t);
+  const hot = t.role === "label" && t.hot;
+  const style = `left:${t.x}px;top:${t.y}px;width:${t.w}px;font-size:${size}px;line-height:${LINE_HEIGHT[t.role](size)}px;text-align:${t.align || "left"};${
+    hot ? "font-weight:700;letter-spacing:.18em;color:var(--hot)" : ROLE_STYLE[t.role]
+  }`;
+  const body = {
+    masthead: () => `${esc(spec.product.name)}<span data-hot data-owner="render" style="color:var(--hot)">.</span>`,
+    headline: () => esc(spec.headline),
+    display: () => esc(t.text),
+    aside: () => line(t.text),
+    label: () => esc(t.text.toUpperCase()),
+  }[t.role]();
+  return `<div class="t" data-block="${esc(t.id)}" data-role="${t.role}" data-owner="figure"${hot ? " data-hot" : ""} style="${style}">${body}</div>`;
 }
 
 function fontFaces() {
@@ -86,31 +137,27 @@ window.fitWidth = (el, max) => {
   }
 };`;
 
+// The page lays out the figure with the same geometry module `vyo sketch` runs in Node.
+const LIB = path.join(TOOLS, "lib");
+const figureScript = () =>
+  [fs.readFileSync(path.join(LIB, "geometry.mjs"), "utf8").replace(/^export /gm, ""), fs.readFileSync(path.join(LIB, "fill.js"), "utf8")].join("\n").replace(/<\/script/gi, "<\\/script");
+
 /** The poster as one HTML string. Throws when the fonts are missing. */
-export function buildPage(spec, facts, shape) {
-  const tokens = shape.themes[spec.theme];
-  const foot = footer(spec, facts, shape);
-  const ctx = {
-    masthead: `${esc(spec.product.name)}<span data-hot data-owner="render" style="color:var(--hot)">.</span>`,
-    mastFont: esc(MAST_FONT),
-    headline: esc(spec.headline),
-    footer: foot.html,
-    footerHeight: foot.height,
-    esc,
-    line,
-    json,
-  };
-  const vars = Object.entries(tokens).map(([k, v]) => `--${k}:${v}`).join(";");
+export function buildPage(spec, facts) {
+  const vars = Object.entries(tokensOf(spec)).map(([k, v]) => `--${k}:${v}`).join(";");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(spec.product.name)} poster</title><style>
 ${fontFaces()}
 * { box-sizing: border-box; margin: 0; padding: 0 }
 :root { ${vars} }
 html, body { background: var(--paper) }
 .sheet { position: relative; width: ${SHEET.width}px; height: ${SHEET.height}px; overflow: hidden; background: var(--paper); color: var(--ink); font-family: "Commit Mono", monospace }
-.row { position: absolute; white-space: nowrap; overflow: hidden; text-transform: uppercase }
-.serif { font-family: "Newsreader", serif }
+.row { position: absolute; white-space: nowrap; overflow: hidden }
+.dots { position: absolute }
 .t { position: absolute; font-size: 12px; line-height: 18px }
-</style><script>${PRELUDE}</script></head><body><div class="sheet">${shape.draw(spec, ctx)}</div></body></html>`;
+</style><script>${PRELUDE}</script></head><body><div class="sheet">
+${spec.figure.texts.map((t) => textBlock(spec, t)).join("\n")}
+${footer(spec, facts)}
+</div><script type="application/json" id="figure">${json({ regions: spec.figure.regions, hot: spec.hot })}</script><script type="module">${figureScript()}</script></body></html>`;
 }
 
 const PAPER = {

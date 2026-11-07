@@ -20,25 +20,29 @@
   for (const el of [sheet, ...sheet.querySelectorAll("*")]) {
     if (el.tagName === "SCRIPT" || !visible(el)) continue;
     const cs = getComputedStyle(el);
-    const where = el.closest("[data-block]");
+    const where = el.closest("[data-block], [data-region]");
     const tagged = !!el.closest("[data-hot]");
     const ownText = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join("").trim();
-    if (ownText) texts.push({ text: ownText.slice(0, 60), color: cs.color, hot: tagged, where: where ? where.dataset.block : label(el) });
-    if (cs.backgroundColor !== "rgba(0, 0, 0, 0)") boxes.push({ color: cs.backgroundColor, hot: tagged, where: label(el) });
+    const name = where ? where.dataset.block || `region ${where.dataset.region}` : label(el);
+    if (ownText) texts.push({ text: ownText.slice(0, 60), color: cs.color, hot: tagged, where: name });
+    if (cs.backgroundColor !== "rgba(0, 0, 0, 0)") boxes.push({ color: cs.backgroundColor, hot: tagged, where: name });
   }
 
   const rows = [...sheet.querySelectorAll(".row")].map((el) => ({
-    word: el.dataset.word || el.textContent,
-    text: el.textContent.replace(/ /g, " "),
+    word: el.dataset.word,
+    region: el.dataset.region,
+    hot: el.dataset.hot !== undefined,
     scrollWidth: el.scrollWidth,
     clientWidth: el.clientWidth,
     rect: box(el.getBoundingClientRect()),
   }));
 
+  const dots = [...sheet.querySelectorAll(".dots")].map((el) => ({ word: el.dataset.word, region: el.dataset.region, hot: el.dataset.hot !== undefined, rect: box(el.getBoundingClientRect()) }));
+
   const blocks = [...sheet.querySelectorAll("[data-block]")].map((el) => {
     const cs = getComputedStyle(el);
     const rect = textRect(el);
-    return { name: el.dataset.block, text: el.innerText.replace(/\s+/g, " ").trim(), rect, lines: Math.round(rect.height / parseFloat(cs.lineHeight)), owner: el.dataset.owner || "shape" };
+    return { name: el.dataset.block, role: el.dataset.role, text: el.innerText.replace(/\s+/g, " ").trim(), rect, lines: Math.round(rect.height / parseFloat(cs.lineHeight)), owner: el.dataset.owner || "figure" };
   });
 
   const figureHot = [...sheet.querySelectorAll("[data-hot]")]
@@ -57,6 +61,7 @@
 
   const hairline = sheet.querySelector("[data-footer]");
   const footerTop = hairline ? hairline.getBoundingClientRect().top : sr.bottom;
+  const regions = (window.figure && window.figure.regions) || [];
 
-  return { sheet: sr, footerTop, texts, boxes, rows, blocks, figureHot, faces, inter: probe('"Inter Display"') || probe("Inter"), drawn: window.drawn === true };
+  return { sheet: sr, footerTop, texts, boxes, rows, dots, blocks, regions, figureHot, faces, inter: probe('"Inter Display"') || probe("Inter"), drawn: window.drawn === true };
 }

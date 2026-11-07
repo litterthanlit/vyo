@@ -1,23 +1,26 @@
-// The poster spec: the one file the agent writes. Pure validation, no I/O.
+// The poster spec: the one file the agent writes. Pure validation, no I/O, no text measuring.
 import { isJargon } from "./jargon.mjs";
+import { SHEET, SHAPE_KEYS, parsePath } from "./geometry.mjs";
 
 /**
- * @typedef {"words" | "phrase" | "line"} SlotKind
- * @typedef {{ kind: "words", min: number, max: number, each?: number, letters?: true, prompt: string }
- *         | { kind: "phrase", max: number, prompt: string }
- *         | { kind: "line", max: number, prompt: string }} Slot
- * @typedef {{ id: string, fits: string, themes: Record<string, Record<string, string>>, notes: 2 | 3,
- *             slots: Record<string, Slot>, hotWords: (slots: Record<string, string | string[]>) => string[],
- *             hotRule: string, draw: (spec: Spec, ctx: object) => string }} Shape
+ * @typedef {"soft" | "mid" | "ink" | "cold" | "cool"} ToneName
+ * @typedef {ToneName | ToneName[]} Tone  a name, or 2 or 3 stops from the region's top row to its bottom row
+ * @typedef {{ profile: [number, number, number][] } | { ellipse: { cx: number, cy: number, rx: number, ry: number } }
+ *         | { polygon: [number, number][] } | { path: string }} Shape
+ * @typedef {Shape & { kind: "fill", id: string, holes?: Shape[], words: string[], tone: Tone, caps?: boolean,
+ *                     band?: 1 | 2 | 3 | 4, size?: 11 | 12, hot?: boolean }} FillRegion
+ * @typedef {{ kind: "dots", id: string, lines: string[], x: number, y: number, cell: number, tones: (ToneName | "hot")[] }} DotsRegion
+ * @typedef {{ role: "masthead" | "headline" | "display" | "aside" | "label", id: string, text?: string, x: number, y: number, w: number,
+ *             size?: number, align?: "left" | "right" | "center", hot?: boolean }} Text
  * @typedef {{
- *   version: 2,
+ *   version: 3,
  *   facts: string,
  *   product: { name: string, repo: string, commit?: string, date: string },
- *   theme: string,
- *   shape: string,
+ *   theme: "light" | "dark",
+ *   accent?: string,
  *   headline: string,
  *   hot: string,
- *   slots: Record<string, string | string[]>,
+ *   figure: { fits: string, regions: (FillRegion | DotsRegion)[], texts: Text[] },
  *   notes: { title: string, text: string }[],
  *   notBuilt: string[],
  *   audience?: string,
@@ -25,16 +28,37 @@ import { isJargon } from "./jargon.mjs";
  */
 
 export const PLACEHOLDER = "…";
-export const LIMITS = { name: 24, headline: 72, hot: 24, noteTitle: 24, noteText: 220, notBuilt: 6, notBuiltItem: 32, audience: 40, word: 24 };
+export const LIMITS = {
+  name: 24, headline: 72, hot: 24, noteTitle: 24, noteText: 220, notBuilt: 6, notBuiltItem: 32, audience: 40,
+  fits: 160, regions: 6, texts: 6, words: [2, 14], word: 24, lines: [2, 4], line: 5, aside: 160, label: 32, display: 40,
+  profile: [3, 24], polygon: [3, 40], holes: 4, path: 4000,
+};
+export const TONES = ["soft", "mid", "ink", "cold", "cool"];
+export const DOT_TONES = [...TONES, "hot"];
+export const ROLES = ["masthead", "headline", "display", "aside", "label"];
+export const THEMES = ["light", "dark"];
+// size: [default, min, max] per text role. A hot label is the accent word set large, like the hourglass waist.
+export const TEXT_SIZE = { masthead: [84, 48, 120], headline: [22, 18, 40], display: [56, 32, 64], aside: [12, 10, 14], label: [12, 10, 32], hotLabel: [26, 10, 32] };
+// Block names the footer uses; a figure text cannot take one.
+const RESERVED = ["note", "counts", "notBuilt", "provenance", "credit"];
 
 const KEYS = {
-  spec: ["version", "facts", "product", "theme", "shape", "headline", "hot", "slots", "notes", "notBuilt", "audience"],
+  spec: ["version", "facts", "product", "theme", "accent", "headline", "hot", "figure", "notes", "notBuilt", "audience"],
   product: ["name", "repo", "commit", "date"],
   note: ["title", "text"],
+  figure: ["fits", "regions", "texts"],
+  fill: ["kind", "id", ...SHAPE_KEYS, "holes", "words", "tone", "caps", "band", "size", "hot"],
+  dots: ["kind", "id", "lines", "x", "y", "cell", "tones"],
+  text: ["role", "id", "text", "x", "y", "w", "size", "align", "hot"],
+  ellipse: ["cx", "cy", "rx", "ry"],
 };
 
 const isStr = (v) => typeof v === "string";
+const isNum = (v) => typeof v === "number" && Number.isFinite(v);
+const isObj = (v) => !!v && typeof v === "object" && !Array.isArray(v);
 const isPlaceholder = (v) => isStr(v) && v.trim().startsWith(PLACEHOLDER);
+const inRange = (v, lo, hi) => isNum(v) && v >= lo && v <= hi;
+
 /** Whole-word, case-folded: does `phrase` occur in `text`? Self-contained: render injects its source into the page. */
 export function hasWord(text, phrase) {
   const fold = (x) => String(x).toLowerCase().replace(/\s+/g, " ").trim();
@@ -60,57 +84,184 @@ export function textProblems(text) {
   return out;
 }
 
-/** Every string of a slot value as written. */
-export const slotStrings = (v) => (Array.isArray(v) ? v : [v]);
-
-/** The words-kind slot values of a spec, for checking what the figure must show. */
-export function figureWords(spec, shape) {
-  return Object.entries(shape.slots).filter(([, s]) => s.kind === "words").flatMap(([k]) => spec.slots[k] || []);
-}
-
-const SLOT_RULES = {
-  words(field, v, s, err) {
-    if (!Array.isArray(v) || !v.every(isStr)) return err(`${field}: must be a list of words`);
-    if (v.length < s.min || v.length > s.max) err(`${field}: ${v.length} words; use ${s.min} to ${s.max}`);
-    const each = s.each ?? LIMITS.word;
-    v.forEach((w, i) => {
-      if (!w.trim()) err(`${field}[${i}]: empty`);
-      if (w.length > each) err(`${field}[${i}]: "${w}" is ${w.length} characters; at most ${each}`);
-      if (s.letters && !/^[A-Za-z]+$/.test(w)) err(`${field}[${i}]: "${w}" must be letters A to Z only`);
-    });
-  },
-  phrase(field, v, s, err) {
-    if (!isStr(v) || !v.trim()) return err(`${field}: must be a short phrase`);
-    if (v.length > s.max) err(`${field}: ${v.length} characters; at most ${s.max}`);
-  },
-  line(field, v, s, err) {
-    if (!isStr(v) || !v.trim()) return err(`${field}: must be one sentence`);
-    if (v.length > s.max) err(`${field}: ${v.length} characters; at most ${s.max}`);
-    if (v.replace(/^\*\*[^*]+\*\*/, "").includes("**")) err(`${field}: **bold** is allowed only at the start`);
-  },
-};
-
 function unknownKeys(obj, allowed, where, err) {
   for (const k of Object.keys(obj)) if (!allowed.includes(k)) err(`${where}${k}: unknown field`);
+}
+
+const toneOk = (t) => (isStr(t) ? TONES.includes(t) : Array.isArray(t) && t.length >= 2 && t.length <= 3 && t.every((x) => TONES.includes(x)));
+
+/** Rules for one shape: exactly one of profile, ellipse, polygon or path, its numbers in range. */
+function checkShape(where, s, err) {
+  const given = SHAPE_KEYS.filter((k) => s[k] !== undefined);
+  if (given.length !== 1) return err(`${where}: give exactly one of ${SHAPE_KEYS.join(", ")} (found ${given.length ? given.join(", ") : "none"})`);
+  const [kind] = given;
+  const v = s[kind];
+  const f = `${where}.${kind}`;
+  if (kind === "profile") {
+    const [lo, hi] = LIMITS.profile;
+    if (!Array.isArray(v) || v.length < lo || v.length > hi) return err(`${f}: ${lo} to ${hi} stops of [y, cx, halfWidth]`);
+    v.forEach((stop, i) => {
+      if (!Array.isArray(stop) || stop.length !== 3 || !stop.every(isNum)) return err(`${f}[${i}]: must be [y, cx, halfWidth]`);
+      const [y, cx, hw] = stop;
+      if (!inRange(y, 0, SHEET.height) || !inRange(cx, 0, SHEET.width)) err(`${f}[${i}]: y must be 0 to ${SHEET.height} and cx 0 to ${SHEET.width}`);
+      if (!inRange(hw, 0, SHEET.width / 2)) err(`${f}[${i}]: halfWidth must be 0 to ${SHEET.width / 2}`);
+      if (i > 0 && Array.isArray(v[i - 1]) && isNum(v[i - 1][0]) && !(y > v[i - 1][0])) err(`${f}[${i}]: y must be greater than the stop before`);
+    });
+    if (v.every((st) => Array.isArray(st) && st[2] === 0)) err(`${f}: every halfWidth is 0`);
+  } else if (kind === "ellipse") {
+    if (!isObj(v)) return err(`${f}: must be { cx, cy, rx, ry }`);
+    unknownKeys(v, KEYS.ellipse, `${f}.`, err);
+    if (!inRange(v.cx, 0, SHEET.width) || !inRange(v.cy, 0, SHEET.height)) err(`${f}: cx must be 0 to ${SHEET.width} and cy 0 to ${SHEET.height}`);
+    if (!inRange(v.rx, 1, SHEET.width) || !inRange(v.ry, 1, SHEET.height)) err(`${f}: rx and ry must be 1 to ${SHEET.width}`);
+  } else if (kind === "polygon") {
+    const [lo, hi] = LIMITS.polygon;
+    if (!Array.isArray(v) || v.length < lo || v.length > hi) return err(`${f}: ${lo} to ${hi} points of [x, y]`);
+    v.forEach((p, i) => {
+      if (!Array.isArray(p) || p.length !== 2 || !p.every(isNum)) return err(`${f}[${i}]: must be [x, y]`);
+      if (!inRange(p[0], 0, SHEET.width) || !inRange(p[1], 0, SHEET.height)) err(`${f}[${i}]: must be inside the ${SHEET.width} by ${SHEET.height} sheet`);
+    });
+  } else {
+    if (!isStr(v) || !v.trim()) return err(`${f}: must be an SVG path string`);
+    if (v.length > LIMITS.path) return err(`${f}: ${v.length} characters; at most ${LIMITS.path}`);
+    const parsed = parsePath(v);
+    if (parsed.error) err(`${f}: does not parse: ${parsed.error}`);
+  }
+}
+
+function checkFill(f, r, err) {
+  checkShape(f, r, err);
+  if (r.holes !== undefined) {
+    if (!Array.isArray(r.holes) || r.holes.length > LIMITS.holes) err(`${f}.holes: a list of at most ${LIMITS.holes} shapes`);
+    else
+      r.holes.forEach((h, i) => {
+        if (!isObj(h)) return err(`${f}.holes[${i}]: must be { profile }, { ellipse }, { polygon } or { path }`);
+        unknownKeys(h, SHAPE_KEYS, `${f}.holes[${i}].`, err);
+        checkShape(`${f}.holes[${i}]`, h, err);
+      });
+  }
+  const [lo, hi] = LIMITS.words;
+  if (!Array.isArray(r.words) || !r.words.every(isStr)) err(`${f}.words: must be a list of words`);
+  else if (r.words.some(isPlaceholder)) err(`${f}.words: still the placeholder; write ${lo} to ${hi} nouns in the user's words`);
+  else {
+    if (r.words.length < lo || r.words.length > hi) err(`${f}.words: ${r.words.length} words; use ${lo} to ${hi}`);
+    r.words.forEach((w, i) => {
+      if (!w.trim()) err(`${f}.words[${i}]: empty`);
+      if (w.length > LIMITS.word) err(`${f}.words[${i}]: "${w}" is ${w.length} characters; at most ${LIMITS.word}`);
+    });
+  }
+  if (!toneOk(r.tone)) err(`${f}.tone: one of ${TONES.join(", ")}, or a list of 2 or 3 of them (top row to bottom row)`);
+  if (r.caps !== undefined && typeof r.caps !== "boolean") err(`${f}.caps: true or false`);
+  if (r.hot !== undefined && typeof r.hot !== "boolean") err(`${f}.hot: true or false`);
+  if (r.band !== undefined && ![1, 2, 3, 4].includes(r.band)) err(`${f}.band: 1 to 4 rows per word`);
+  if (r.size !== undefined && ![11, 12].includes(r.size)) err(`${f}.size: 11 or 12`);
+}
+
+function checkDots(f, r, err) {
+  const [lo, hi] = LIMITS.lines;
+  if (!Array.isArray(r.lines) || !r.lines.every(isStr)) err(`${f}.lines: must be a list of words`);
+  else if (r.lines.some(isPlaceholder)) err(`${f}.lines: still the placeholder; write ${lo} to ${hi} words of at most ${LIMITS.line} letters`);
+  else {
+    if (r.lines.length < lo || r.lines.length > hi) err(`${f}.lines: ${r.lines.length} lines; use ${lo} to ${hi}`);
+    r.lines.forEach((w, i) => {
+      if (!/^[A-Za-z ]+$/.test(w) || !w.trim()) err(`${f}.lines[${i}]: "${w}" must be letters A to Z and spaces`);
+      if (w.length > LIMITS.line) err(`${f}.lines[${i}]: "${w}" is ${w.length} characters; at most ${LIMITS.line}`);
+    });
+    if (!Array.isArray(r.tones) || r.tones.length !== r.lines.length || !r.tones.every((t) => DOT_TONES.includes(t))) {
+      err(`${f}.tones: one of ${DOT_TONES.join(", ")} per line (${r.lines.length})`);
+    }
+  }
+  if (!inRange(r.x, 0, SHEET.width) || !inRange(r.y, 0, SHEET.height)) err(`${f}: x must be 0 to ${SHEET.width} and y 0 to ${SHEET.height}`);
+  if (!Number.isInteger(r.cell) || r.cell < 8 || r.cell > 32) err(`${f}.cell: a whole number of px, 8 to 32`);
+}
+
+function checkText(f, t, err, copy) {
+  if (!ROLES.includes(t.role)) return err(`${f}.role: "${t.role}" is not a role; use ${ROLES.join(", ")}`);
+  const named = t.role !== "masthead" && t.role !== "headline";
+  if (named) {
+    const max = LIMITS[t.role];
+    if (!isStr(t.text) || !t.text.trim()) err(`${f}.text: missing`);
+    else if (isPlaceholder(t.text)) err(`${f}.text: still the placeholder; write it`);
+    else {
+      if (t.text.length > max) err(`${f}.text: ${t.text.length} characters; at most ${max}`);
+      if (t.text.replace(/^\*\*[^*]+\*\*/, "").includes("**")) err(`${f}.text: **bold** is allowed only at the start`);
+      copy.push([`${f}.text`, t.text.replace(/\*\*/g, "")]);
+    }
+  } else if (t.text !== undefined) err(`${f}.text: the ${t.role} prints ${t.role === "masthead" ? "product.name" : "the spec's headline"}; leave text out`);
+  if (t.hot !== undefined && (t.role !== "label" || typeof t.hot !== "boolean")) err(`${f}.hot: only a label can be hot`);
+  if (!inRange(t.x, 0, SHEET.width) || !inRange(t.y, 0, SHEET.height)) err(`${f}: x must be 0 to ${SHEET.width} and y 0 to ${SHEET.height}`);
+  if (!inRange(t.w, 16, SHEET.width)) err(`${f}.w: 16 to ${SHEET.width}`);
+  const [, lo, hi] = TEXT_SIZE[t.role === "label" && t.hot ? "hotLabel" : t.role];
+  if (t.size !== undefined && !inRange(t.size, lo, hi)) err(`${f}.size: ${lo} to ${hi}`);
+  if (t.align !== undefined && !["left", "right", "center"].includes(t.align)) err(`${f}.align: left, right or center`);
+}
+
+function checkFigure(fig, err, copy) {
+  if (!isObj(fig)) return err("figure: must be { fits, regions, texts }");
+  unknownKeys(fig, KEYS.figure, "figure.", err);
+  if (!isStr(fig.fits) || !fig.fits.trim()) err("figure.fits: missing");
+  else if (isPlaceholder(fig.fits)) err("figure.fits: still the placeholder; say what the picture is and why it acts out the main moment");
+  else if (fig.fits.length > LIMITS.fits) err(`figure.fits: ${fig.fits.length} characters; at most ${LIMITS.fits}`);
+
+  const ids = new Set();
+  const idOk = (f, id) => {
+    if (!isStr(id) || !/^[a-z][a-z0-9-]{0,23}$/.test(id)) return err(`${f}.id: lowercase letters, digits and dashes, at most 24`);
+    if (RESERVED.includes(id)) return err(`${f}.id: "${id}" is a footer block; pick another`);
+    if (ids.has(id)) err(`${f}.id: "${id}" is used twice`);
+    ids.add(id);
+  };
+
+  if (!Array.isArray(fig.regions) || fig.regions.length < 1 || fig.regions.length > LIMITS.regions) err(`figure.regions: 1 to ${LIMITS.regions} regions`);
+  else
+    fig.regions.forEach((r, i) => {
+      const f = `figure.regions[${i}]`;
+      if (!isObj(r)) return err(`${f}: must be a region`);
+      if (r.kind !== "fill" && r.kind !== "dots") return err(`${f}.kind: "${r.kind}" is not a region kind; use fill or dots`);
+      unknownKeys(r, KEYS[r.kind], `${f}.`, err);
+      idOk(f, r.id);
+      if (r.kind === "fill") checkFill(f, r, err);
+      else checkDots(f, r, err);
+      for (const [k, list] of [["words", r.words], ["lines", r.lines]]) if (Array.isArray(list) && !list.some(isPlaceholder)) list.forEach((w, j) => isStr(w) && copy.push([`${f}.${k}[${j}]`, w]));
+    });
+
+  if (!Array.isArray(fig.texts) || fig.texts.length < 1 || fig.texts.length > LIMITS.texts) return err(`figure.texts: 1 to ${LIMITS.texts} texts`);
+  fig.texts.forEach((t, i) => {
+    const f = `figure.texts[${i}]`;
+    if (!isObj(t)) return err(`${f}: must be a text`);
+    unknownKeys(t, KEYS.text, `${f}.`, err);
+    idOk(f, t.id);
+    checkText(f, t, err, copy);
+  });
+  const count = (role) => fig.texts.filter((t) => isObj(t) && t.role === role).length;
+  if (count("masthead") !== 1) err(`figure.texts: ${count("masthead")} mastheads; use exactly one`);
+  if (count("headline") > 1) err(`figure.texts: ${count("headline")} headlines; use at most one`);
+}
+
+/** Every word the hot word may come from: fill words, dots lines and hot labels. */
+function hotPool(fig) {
+  const regions = Array.isArray(fig?.regions) ? fig.regions.filter(isObj) : [];
+  const texts = Array.isArray(fig?.texts) ? fig.texts.filter(isObj) : [];
+  return {
+    words: [...regions.flatMap((r) => [...(Array.isArray(r.words) ? r.words : []), ...(Array.isArray(r.lines) ? r.lines : [])]), ...texts.filter((t) => t.hot).map((t) => t.text)].filter(isStr),
+    hotRegion: regions.some((r) => r.kind === "fill" && r.hot === true),
+  };
 }
 
 /**
  * Every rule a spec must pass before render. Returns error strings, each naming its field.
  * @param {unknown} spec
- * @param {Record<string, Shape>} shapes
  * @returns {string[]}
  */
-export function validateSpec(spec, shapes) {
+export function validateSpec(spec) {
   const errors = [];
   const err = (m) => errors.push(m);
-  if (!spec || typeof spec !== "object" || Array.isArray(spec)) return ["spec: must be a JSON object"];
+  if (!isObj(spec)) return ["spec: must be a JSON object"];
   unknownKeys(spec, KEYS.spec, "", err);
 
-  if (spec.version !== 2) err("version: must be 2");
+  if (spec.version !== 3) err("version: must be 3");
   if (!isStr(spec.facts) || !/^[0-9a-f]{12}$/.test(spec.facts)) err("facts: must be the 12-character hash from facts.json");
 
   const p = spec.product;
-  if (!p || typeof p !== "object") err("product: missing");
+  if (!isObj(p)) err("product: missing");
   else {
     unknownKeys(p, KEYS.product, "product.", err);
     if (!isStr(p.name) || !p.name.trim() || isPlaceholder(p.name)) err("product.name: missing");
@@ -120,12 +271,8 @@ export function validateSpec(spec, shapes) {
     if (!isStr(p.date) || !/^\d{4}-\d{2}-\d{2}$/.test(p.date)) err("product.date: must be YYYY-MM-DD");
   }
 
-  const shape = shapes[spec.shape];
-  if (!shape) {
-    err(`shape: "${spec.shape}" is not a shape; use one of ${Object.keys(shapes).join(", ")}`);
-    return errors;
-  }
-  if (!Object.hasOwn(shape.themes, spec.theme)) err(`theme: "${spec.theme}" is not a theme of ${shape.id}; use ${Object.keys(shape.themes).join(" or ")}`);
+  if (!THEMES.includes(spec.theme)) err(`theme: "${spec.theme}" is not a theme; use light or dark`);
+  if (spec.accent !== undefined && !(isStr(spec.accent) && /^#[0-9a-f]{6}$/i.test(spec.accent))) err("accent: a hex colour like #9284FF");
 
   const copy = [];
   const field = (name, v, max) => {
@@ -135,40 +282,23 @@ export function validateSpec(spec, shapes) {
     copy.push([name, v]);
   };
   field("headline", spec.headline, LIMITS.headline);
-
-  const slots = spec.slots;
-  if (!slots || typeof slots !== "object" || Array.isArray(slots)) err("slots: missing");
-  else {
-    unknownKeys(slots, Object.keys(shape.slots), "slots.", err);
-    for (const [name, s] of Object.entries(shape.slots)) {
-      const v = slots[name];
-      const f = `slots.${name}`;
-      if (v === undefined) {
-        err(`${f}: missing (${s.prompt})`);
-        continue;
-      }
-      if (slotStrings(v).some(isPlaceholder)) {
-        err(`${f}: still the placeholder; ${s.prompt}`);
-        continue;
-      }
-      SLOT_RULES[s.kind](f, v, s, err);
-      slotStrings(v).forEach((x, i) => isStr(x) && copy.push([Array.isArray(v) ? `${f}[${i}]` : f, x.replace(/\*\*/g, "")]));
-    }
-  }
+  const before = errors.length;
+  checkFigure(spec.figure, err, copy);
+  const figureOk = errors.length === before;
 
   if (!isStr(spec.hot) || !spec.hot.trim()) err("hot: missing");
   else if (isPlaceholder(spec.hot)) err("hot: still the placeholder; write it");
   else if (spec.hot.length > LIMITS.hot || spec.hot.trim().split(/\s+/).length > 2) err(`hot: one word or a two-word phrase, at most ${LIMITS.hot} characters`);
-  else if (errors.every((e) => !e.startsWith("slots"))) {
-    const pool = shape.hotWords(slots);
-    if (!pool.some((w) => hasWord(w, spec.hot))) err(`hot: "${spec.hot}" must be ${shape.hotRule}`);
+  else if (figureOk) {
+    const pool = hotPool(spec.figure);
+    if (!pool.hotRegion && !pool.words.some((w) => hasWord(w, spec.hot))) err(`hot: "${spec.hot}" must be in a fill region's words, a dots line or a hot label, or a region must be hot`);
   }
 
   if (!Array.isArray(spec.notes)) err("notes: must be a list");
   else {
-    if (spec.notes.length !== shape.notes) err(`notes: ${spec.notes.length} notes; ${shape.id} takes exactly ${shape.notes}`);
+    if (spec.notes.length < 2 || spec.notes.length > 3) err(`notes: ${spec.notes.length} notes; use 2 or 3`);
     spec.notes.forEach((n, i) => {
-      if (!n || typeof n !== "object") return err(`notes[${i}]: must be { title, text }`);
+      if (!isObj(n)) return err(`notes[${i}]: must be { title, text }`);
       unknownKeys(n, KEYS.note, `notes[${i}].`, err);
       field(`notes[${i}].title`, n.title, LIMITS.noteTitle);
       field(`notes[${i}].text`, n.text, LIMITS.noteText);
@@ -186,32 +316,67 @@ export function validateSpec(spec, shapes) {
   return errors;
 }
 
-/** Slots filled to their maximum, for the `!` warning. */
-export function slotsAtMax(spec, shape) {
-  return Object.entries(shape.slots)
-    .filter(([k, s]) => spec.slots[k].length === s.max)
-    .map(([k]) => k);
+/** A region's geometry alone, as a string, for comparing a figure against the presets. */
+export function geometryKey(r) {
+  const pick = r.kind === "dots" ? ["x", "y", "cell"] : [...SHAPE_KEYS, "holes"];
+  return JSON.stringify(pick.map((k) => r[k] ?? null));
+}
+
+const hold = (prompt) => `${PLACEHOLDER} ${prompt}`;
+
+/** The figure `compose` writes without a preset: one box-shaped fill region to reshape, and the three usual texts. */
+function starterFigure(floor) {
+  return {
+    fits: hold(`what the picture is and why it acts out the main moment, at most ${LIMITS.fits} characters`),
+    regions: [
+      {
+        kind: "fill",
+        id: "body",
+        profile: [[176, 420, 300], [Math.round((176 + floor - 8) / 2), 420, 300], [floor - 8, 420, 300]],
+        words: [hold(`${LIMITS.words[0]} to ${LIMITS.words[1]} nouns in the user's words, each at most ${LIMITS.word} characters`)],
+        tone: "mid",
+      },
+    ],
+    texts: [
+      { role: "masthead", id: "masthead", x: 50, y: 36, w: 490 },
+      { role: "headline", id: "headline", x: 560, y: 64, w: 224 },
+      { role: "aside", id: "aside", x: 594, y: 176, w: 190, text: hold(`one or two sentences, at most ${LIMITS.aside} characters`) },
+    ],
+  };
+}
+
+/** A preset's figure with every word replaced by a placeholder and its geometry kept. */
+function blankFigure(fig) {
+  return {
+    ...fig,
+    fits: hold(`what the picture is and why it acts out the main moment, at most ${LIMITS.fits} characters`),
+    regions: fig.regions.map((r) =>
+      r.kind === "fill"
+        ? { ...r, words: [hold(`${r.words.length} nouns in the user's words, like ${r.words.slice(0, 2).map((w) => `"${w}"`).join(", ")}`)] }
+        : { ...r, lines: [hold(`${r.lines.length} words of at most ${LIMITS.line} letters, top to bottom`)] },
+    ),
+    texts: fig.texts.map((t) => (t.text === undefined ? t : { ...t, text: hold(`at most ${LIMITS[t.role]} characters, like "${t.text}"`) })),
+  };
 }
 
 /**
- * The spec `compose` writes: everything known filled in, every slot holding its prompt as a placeholder.
+ * The spec `compose` writes: everything known filled in, every word the agent must write a placeholder.
  * @param {{ hash: string, repo: { name: string } }} facts
- * @param {Shape} shape
- * @param {{ theme: string, commit?: string, date: string }} o
+ * @param {{ theme: "light" | "dark", commit?: string, date: string, floor: number, preset?: Spec }} o
  * @returns {Spec}
  */
-export function scaffoldSpec(facts, shape, { theme, commit, date }) {
-  const hold = (prompt) => `${PLACEHOLDER} ${prompt}`;
+export function scaffoldSpec(facts, { theme, commit, date, floor, preset }) {
+  const notes = preset ? preset.notes.length : 3;
   return {
-    version: 2,
+    version: 3,
     facts: facts.hash,
     product: { name: facts.repo.name, repo: facts.repo.name, ...(commit ? { commit } : {}), date },
     theme,
-    shape: shape.id,
+    ...(preset?.accent ? { accent: preset.accent } : {}),
     headline: hold(`one plain sentence about the outcome, at most ${LIMITS.headline} characters`),
-    hot: hold(`the one word set in the accent colour: ${shape.hotRule}`),
-    slots: Object.fromEntries(Object.entries(shape.slots).map(([k, s]) => [k, s.kind === "words" ? [hold(s.prompt)] : hold(s.prompt)])),
-    notes: Array.from({ length: shape.notes }, () => ({ title: hold(`at most ${LIMITS.noteTitle} characters`), text: hold(`at most ${LIMITS.noteText} characters`) })),
+    hot: hold("the one word set in the accent colour: a word of a fill region, a dots line or a hot label"),
+    figure: preset ? blankFigure(preset.figure) : starterFigure(floor),
+    notes: Array.from({ length: notes }, () => ({ title: hold(`at most ${LIMITS.noteTitle} characters`), text: hold(`at most ${LIMITS.noteText} characters`) })),
     notBuilt: [],
   };
 }

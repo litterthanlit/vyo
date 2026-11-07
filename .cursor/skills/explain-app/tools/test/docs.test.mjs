@@ -5,7 +5,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CHECKS } from "../lib/check.mjs";
-import { SHAPES } from "../lib/shapes/index.mjs";
 import { validateSpec } from "../lib/spec.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
 
@@ -28,14 +27,14 @@ function tableIds(md, heading) {
 
 const real = CHECKS.map((c) => c.id).sort();
 
-test("CONTRACTS §6 and README list exactly the real check ids", () => {
+test("CONTRACTS and README list exactly the real check ids", () => {
   assert.deepEqual(tableIds(read("CONTRACTS.md"), /Checks/).sort(), real);
   assert.deepEqual(tableIds(read("README.md"), /What `check` enforces/).sort(), real);
 });
 
-test("every JSON example in examples.md validates against a fresh scan of the recipe fixture", async () => {
-  const facts = await scanRepo(path.join(TOOLS, "test", "fixtures", "recipe"));
-  const blocks = [...read("..", "examples.md").matchAll(/```json\n([\s\S]*?)```/g)].map((m) => JSON.parse(m[1])).filter((s) => s.shape);
-  assert.equal(blocks.length, Object.keys(SHAPES).length, "one example per shape");
-  for (const spec of blocks) assert.deepEqual(validateSpec({ ...spec, facts: facts.hash }, SHAPES), [], spec.shape);
+test("every spec example in examples.md validates against a fresh scan of the recipe fixture", () => {
+  const facts = scanRepo(path.join(TOOLS, "test", "fixtures", "recipe"));
+  const blocks = [...read("..", "examples.md").matchAll(/```json\n([\s\S]*?)```/g)].map((m) => JSON.parse(m[1])).filter((s) => s.figure && s.version);
+  assert.ok(blocks.length >= 1, "at least one full spec example");
+  for (const spec of blocks) assert.deepEqual(validateSpec({ ...spec, facts: facts.hash }), [], spec.figure.fits);
 });
