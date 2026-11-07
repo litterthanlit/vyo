@@ -43,7 +43,8 @@ export function waveRows(region, parts, { floor, mirror, blocks, measure }) {
   const rows = parts.flatMap((p) => Array(Math.max(1, Math.round(p.loc / unit))).fill(p));
   const pitch = floor / rows.length;
   const height = Math.floor(pitch);
-  const cw = measure("M", size);
+  // Rounded so the page's measured advance and the sketch's fixed one place every letter alike.
+  const cw = Math.round(measure("M", size) * 100) / 100;
   const out = [];
   rows.forEach((p, i) => {
     const y = Math.round(i * pitch);

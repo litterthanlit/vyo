@@ -1,0 +1,77 @@
+{
+  "version": 3,
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "fits": "Pantry as a range of peaks, one per part, height by code and width by files, with the parts that plan the week and suggest recipes in orange.",
+    "regions": [
+      {
+        "kind": "field",
+        "id": "terrain",
+        "field": "terrain",
+        "accent": "area:lib/*",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      {
+        "role": "masthead",
+        "id": "masthead",
+        "x": 50,
+        "y": 36,
+        "w": 490
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 56,
+        "y": 150,
+        "w": 490
+      },
+      {
+        "role": "aside",
+        "id": "aside",
+        "x": 594,
+        "y": 64,
+        "w": 190,
+        "text": "Each peak is a part of Pantry: height by its code, width by its files. The orange peaks plan the week and suggest recipes."
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "How it works",
+      "text": "Save the recipes you already cook. Pantry fills the week from them, suggests a few new ones, and builds the shopping list from what the plan needs."
+    },
+    {
+      "title": "Every Monday",
+      "text": "At 8 in the morning Pantry emails you the week's plan, so the first dinner is decided before the day starts."
+    },
+    {
+      "title": "Yours alone",
+      "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can pick up the week on any device."
+    }
+  ],
+  "notBuilt": [
+    "paid plans"
+  ]
+}

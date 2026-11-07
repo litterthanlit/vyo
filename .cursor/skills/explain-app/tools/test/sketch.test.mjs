@@ -41,10 +41,13 @@ test("dots draw as #, and a figure with no fill rows says so", () => {
   assert.match(out, /^floor: 920$/m);
 });
 
-test("the compose starter is a box, and the sketch says so before render", () => {
-  const spec = scaffoldSpec({ hash: "d73b88fe2d4e", repo: { name: "recipe" } }, { theme: "light", date: "2026-11-07", floor: 884 });
-  const id = spec.figure.regions[0].id;
-  assert.match(sketch(spec), new RegExp(`^! region ${id} is a box; a silhouette changes width along its whole height \\(spread/mean 0\\.\\d\\d, needs 0\\.25\\)$`, "m"));
+test("the compose scaffold is a field that sketches from the facts with no warnings", async () => {
+  const { scanRepo } = await import("../lib/scan/index.mjs");
+  const facts = scanRepo(path.join(HERE, "fixtures", "recipe"));
+  const spec = scaffoldSpec(facts, { theme: "light", date: "2026-11-07", floor: 884, accent: "area:lib/plan" });
+  const out = sketch(spec, facts);
+  assert.match(out, /^regions: A wave \(wave, 12 parts, \d\d rows\); · marks hot rows$/m);
+  assert.doesNotMatch(out, /^! /m);
 });
 
 test("a box with a slanted top is a box, and a 90px column reads as a column", () => {

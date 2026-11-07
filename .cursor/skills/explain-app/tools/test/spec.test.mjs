@@ -24,7 +24,7 @@ const rejects = (mutate, re, base) => {
 };
 
 test("every preset is a valid spec", () => {
-  assert.deepEqual(IDS.sort(), ["eye", "hourglass", "ribbon", "warm-start"]);
+  assert.deepEqual(IDS.sort(), ["eye", "hourglass", "ribbon", "terrain", "warm-start", "wave"]);
   for (const id of IDS) assert.deepEqual(validateSpec(preset(id)), [], id);
 });
 
@@ -108,17 +108,22 @@ test("copy is free of jargon, file paths and AI tells, in words, texts and notes
   assert.deepEqual(textProblems("24/7 and either/or"), [], "a slash alone is not a path");
 });
 
-test("a scaffold is rejected until every placeholder is written, with or without a preset", () => {
+test("a scaffold is rejected until every placeholder is written: a field by default, or a fill preset", () => {
   const facts = scanRepo(path.join(HERE, "fixtures", "recipe"));
-  for (const from of [undefined, ...IDS]) {
+  const fillPresets = IDS.filter((id) => !preset(id).figure.regions.some((r) => r.kind === "field"));
+  for (const from of [undefined, ...fillPresets]) {
     const p = from && preset(from);
-    const spec = scaffoldSpec(facts, { theme: p ? p.theme : "light", date: "2026-10-28", floor: 884, preset: p });
+    const spec = scaffoldSpec(facts, { theme: p ? p.theme : "light", date: "2026-10-28", floor: 884, preset: p, unplain: [{ id: "area:lib", name: "Convex" }] });
     const errors = validateSpec(spec);
-    for (const want of [/^headline: still the placeholder/, /^hot: still the placeholder/, /^figure\.fits: still the placeholder/, /^notes\[0\]\.title: still the placeholder/, /still the placeholder; write \d+ to \d+ (nouns|words)/]) {
+    const field = p ? [/^hot: still the placeholder/, /still the placeholder; write \d+ to \d+ (nouns|words)/] : [/^figure\.regions\[0\]\.sentence: still the placeholder/, /^figure\.regions\[0\]\.names\["area:lib"\]: still the placeholder/];
+    for (const want of [/^headline: still the placeholder/, /^figure\.fits: still the placeholder/, /^notes\[0\]\.title: still the placeholder/, ...field]) {
       assert.ok(errors.some((e) => want.test(e)), `${from ?? "no preset"}: expected ${want} in ${JSON.stringify(errors)}`);
     }
     if (p) assert.deepEqual(spec.figure.regions.map((r) => r.profile ?? r.ellipse ?? r.x), p.figure.regions.map((r) => r.profile ?? r.ellipse ?? r.x), "geometry kept");
+    else assert.ok(!errors.some((e) => /^hot/.test(e)), "a field scaffold has no hot word to write");
   }
+  const terrain = scaffoldSpec(facts, { theme: "dark", date: "2026-10-28", floor: 884, field: "terrain", accent: "area:lib/ai" });
+  assert.deepEqual(terrain.figure.regions, [{ kind: "field", id: "terrain", field: "terrain", accent: "area:lib/ai" }]);
 });
 
 test("isJargon is exact, whole-word tokens", () => {

@@ -4,6 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { buildPage, renderPage } from "../lib/render.mjs";
+import { fieldItems } from "../lib/sketch.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TOOLS = path.join(HERE, "..");
@@ -79,6 +81,13 @@ const PLANTED = [
     /^✗ row-variety: region outputs is a box; a silhouette changes width along its whole height/m,
   ],
   ["a region below the footer", "hourglass", (s) => (s.figure.regions[1].profile.at(-1)[0] = 950), /^✗ path: region outputs reaches 66px below the footer; move it up by 66$/m],
+  [
+    "a text block over a field's first part",
+    "wave",
+    (s) => s.figure.texts.push({ role: "aside", id: "lid", text: "Plan once. ".repeat(14).trim(), x: 400, y: 0, w: 440 }),
+    /^✗ field-parts: region wave: part "saved recipes" \(area:\.\) is never drawn; move the text blocks that cover it$/m,
+  ],
+  ["an accent that names no part", "terrain", (s) => (s.figure.regions[0].accent = "area:nowhere"), /^✗ field-parts: region terrain: accent area:nowhere names no part/m],
 ];
 
 for (const [name, id, mutate, expect] of PLANTED) {
@@ -106,6 +115,21 @@ for (const [name, id, mutate, expect] of PLANTED) {
   fs.writeFileSync(file, JSON.stringify(spec, null, 2));
   const r = vyo("check", file, "--facts", factsFile);
   result(/^! thin-region: region post reads as a column; widen it or make it part of the main silhouette/m.test(r.stderr), "a 90px-wide column warns thin-region", `exit ${r.status}\n${r.stderr}`);
+}
+
+// The sketch lays a field out in Node with Commit Mono's fixed advance; the page measures the font. Given the
+// page's own text blocks, both must place every row within 2px.
+const facts = JSON.parse(fs.readFileSync(factsFile, "utf8"));
+for (const id of PRESETS.filter((p) => preset(p).figure.regions.some((r) => r.kind === "field"))) {
+  const spec = preset(id);
+  const page = await renderPage({ html: buildPage(spec, facts), base: path.join(OUT, `${id}-twin`), png: false, pdf: false });
+  const blocks = page.blocks.filter((b) => b.role).map((b) => b.rect);
+  const node = spec.figure.regions.flatMap((r) => fieldItems(spec, r, facts, blocks));
+  const far = node.filter((n, i) => {
+    const r = page.rows[i]?.rect;
+    return !r || Math.abs(r.left - n.x) > 2 || Math.abs(r.top - n.y) > 2 || Math.abs(r.right - (n.x + n.width)) > 2;
+  });
+  result(node.length === page.rows.length && !far.length, `${id}: the sketch and the page place the same ${node.length} rows within 2px`, `node ${node.length} rows, page ${page.rows.length}; first apart: ${JSON.stringify(far[0])} vs ${JSON.stringify(page.rows[node.indexOf(far[0])]?.rect)}`);
 }
 
 const emptyFacts = path.join(OUT, "empty-facts.json");

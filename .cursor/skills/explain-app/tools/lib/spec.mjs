@@ -372,23 +372,31 @@ export function geometryKey(r) {
 
 const hold = (prompt) => `${PLACEHOLDER} ${prompt}`;
 
-/** The figure `compose` writes without a preset: one box-shaped fill region to reshape, and the three usual texts. */
-function starterFigure(floor) {
+/**
+ * The figure `compose` writes by default: one field region and the three usual texts, placed where the field
+ * leaves room. Parts with unplain names get a placeholder in `names`.
+ * @param {keyof typeof FIELDS} field
+ * @param {number} floor
+ * @param {{ accent?: string, unplain: { id: string, name: string }[] }} o
+ */
+function fieldFigure(field, floor, { accent, unplain }) {
+  const at = FIELDS[field].texts(floor);
   return {
     fits: hold(`what the picture is and why it acts out the main moment, at most ${LIMITS.fits} characters`),
     regions: [
       {
-        kind: "fill",
-        id: "body",
-        profile: [[176, 420, 300], [Math.round((176 + floor - 8) / 2), 420, 300], [floor - 8, 420, 300]],
-        words: [hold(`${LIMITS.words[0]} to ${LIMITS.words[1]} nouns in the user's words, each at most ${LIMITS.word} characters`)],
-        tone: "mid",
+        kind: "field",
+        id: field,
+        field,
+        ...(accent ? { accent } : {}),
+        ...(unplain.length ? { names: Object.fromEntries(unplain.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])) } : {}),
+        ...(FIELDS[field].options.includes("sentence") ? { sentence: hold(`a sentence woven in every ${WAVE.every}th row, at most ${LIMITS.sentence} characters, or remove it`) } : {}),
       },
     ],
     texts: [
       { role: "masthead", id: "masthead", x: 50, y: 36, w: 490 },
-      { role: "headline", id: "headline", x: 560, y: 64, w: 224 },
-      { role: "aside", id: "aside", x: 594, y: 176, w: 190, text: hold(`one or two sentences, at most ${LIMITS.aside} characters`) },
+      { role: "headline", id: "headline", ...at.headline },
+      { role: "aside", id: "aside", ...at.aside, text: hold(`one or two sentences on what the field shows, at most ${LIMITS.aside} characters`) },
     ],
   };
 }
@@ -409,11 +417,13 @@ function blankFigure(fig) {
 
 /**
  * The spec `compose` writes: everything known filled in, every word the agent must write a placeholder.
+ * Without a preset, the figure is a field.
  * @param {{ hash: string, repo: { name: string } }} facts
- * @param {{ theme: "light" | "dark", commit?: string, date: string, floor: number, preset?: Spec }} o
+ * @param {{ theme: "light" | "dark", commit?: string, date: string, floor: number, preset?: Spec,
+ *           field?: keyof typeof FIELDS, accent?: string, unplain?: { id: string, name: string }[] }} o
  * @returns {Spec}
  */
-export function scaffoldSpec(facts, { theme, commit, date, floor, preset }) {
+export function scaffoldSpec(facts, { theme, commit, date, floor, preset, field = "wave", accent, unplain = [] }) {
   const notes = preset ? preset.notes.length : 3;
   return {
     version: 3,
@@ -422,8 +432,8 @@ export function scaffoldSpec(facts, { theme, commit, date, floor, preset }) {
     theme,
     ...(preset?.accent ? { accent: preset.accent } : {}),
     headline: hold(`one plain sentence about the outcome, at most ${LIMITS.headline} characters`),
-    hot: hold("the one word set in the accent colour: a word of a fill region, a dots line or a hot label"),
-    figure: preset ? blankFigure(preset.figure) : starterFigure(floor),
+    ...(preset ? { hot: hold("the one word set in the accent colour: a word of a fill region, a dots line or a hot label") } : {}),
+    figure: preset ? blankFigure(preset.figure) : fieldFigure(field, floor, { accent, unplain }),
     notes: Array.from({ length: notes }, () => ({ title: hold(`at most ${LIMITS.noteTitle} characters`), text: hold(`at most ${LIMITS.noteText} characters`) })),
     notBuilt: [],
   };

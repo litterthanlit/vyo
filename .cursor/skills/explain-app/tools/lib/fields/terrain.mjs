@@ -71,7 +71,8 @@ export function terrainRows(region, parts, { floor, blocks, measure }) {
   if (!parts.length) return [];
   const { size, below } = TERRAIN;
   const { pitch } = GRID[size];
-  const cw = measure("M", size);
+  // Rounded so the page's measured advance and the sketch's fixed one place every letter alike.
+  const cw = Math.round(measure("M", size) * 100) / 100;
   const at = ridge(parts, floor);
   const base = floor + below;
   const out = [];

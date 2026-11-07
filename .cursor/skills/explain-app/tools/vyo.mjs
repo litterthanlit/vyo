@@ -14,12 +14,15 @@ import { sketch } from "./lib/sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE } from "./lib/geometry.mjs";
 import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, LINE_HEIGHT } from "./lib/render.mjs";
 import { runChecks } from "./lib/check.mjs";
+import { FIELDS } from "./lib/fields/index.mjs";
+import { partsFromFacts, accentIds, unplainName, PART_DEFAULTS } from "./lib/parts.mjs";
 
 const USAGE = `Usage:
   vyo scan    <repo-dir> --out <dir>/<repo>-facts.json
   vyo show    <facts.json>
   vyo presets [<id>]
-  vyo compose <facts.json> [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
+  vyo parts   <facts.json>
+  vyo compose <facts.json> [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
   vyo sketch  <spec.json> [--facts <facts.json>]
   vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--paper ${PAPERS.join("|")}]
   vyo check   <spec.json> [--facts <facts.json>]
@@ -117,6 +120,27 @@ function cmdScan(argv) {
   return 0;
 }
 
+const pct = (n) => `${Math.round(n * 100)}%`;
+
+function cmdParts(argv) {
+  const { pos } = args(argv, {}, 1);
+  const facts = readFacts(pos[0]);
+  const parts = partsFromFacts(facts);
+  const lines = parts.reduce((s, p) => s + p.loc, 0);
+  const files = parts.reduce((s, p) => s + p.files, 0);
+  const width = Math.max(2, ...parts.map((p) => p.id.length));
+  const out = [
+    `${facts.repo.name}: ${parts.length} parts, ${lines} lines in ${files} files (parts under ${pct(PART_DEFAULTS.minShare)} of the lines merge into their parent; at most ${PART_DEFAULTS.maxParts})`,
+    `${"id".padEnd(width)}  share  lines  files  name`,
+    ...parts.map((p) =>
+      `${p.id.padEnd(width)}  ${pct(lines ? p.loc / lines : 0).padStart(5)}  ${String(p.loc).padStart(5)}  ${String(p.files).padStart(5)}  ${p.name}${unplainName(p.name) ? "  ! looks like a vendor or code name" : ""}`,
+    ),
+    "Set a field's accent to one id. Give each flagged part a plain name in the field's names, keyed by its id.",
+  ];
+  process.stdout.write(out.join("\n") + "\n");
+  return 0;
+}
+
 function cmdShow(argv) {
   const { pos } = args(argv, {}, 1);
   process.stdout.write(showFacts(readFacts(pos[0])));
@@ -131,7 +155,7 @@ function loadPresets() {
   );
 }
 
-const shapeOf = (r) => (r.kind === "dots" ? `dots, ${r.lines.length} lines` : `${SHAPE_KEYS.find((k) => r[k] !== undefined)}${r.holes ? ` with ${r.holes.length} hole${r.holes.length === 1 ? "" : "s"}` : ""}${r.hot ? ", hot" : ""}`);
+const shapeOf = (r) => (r.kind === "field" ? `${r.field} field${r.accent ? `, accent ${r.accent}` : ""}` : r.kind === "dots" ? `dots, ${r.lines.length} lines` : `${SHAPE_KEYS.find((k) => r[k] !== undefined)}${r.holes ? ` with ${r.holes.length} hole${r.holes.length === 1 ? "" : "s"}` : ""}${r.hot ? ", hot" : ""}`);
 
 function cmdPresets(argv) {
   const { pos } = args(argv, {}, argv.filter((a) => !a.startsWith("-")).length ? 1 : 0);
@@ -159,7 +183,7 @@ function cmdPresets(argv) {
 }
 
 /** The numbers an agent places texts and regions by, printed by compose. */
-function authoringNotes(notes) {
+function authoringNotes(notes, field) {
   const floor = floorFor(notes, 1);
   const aside = 12;
   return [
@@ -169,8 +193,12 @@ function authoringNotes(notes) {
     `masthead: ${LINE_HEIGHT.masthead(84)}px per line at size 84; it shrinks to fit w.`,
     `headline: ${LINE_HEIGHT.headline(22)}px per line at size 22; a 224px column wraps it to 2 or 3 lines.`,
     `aside: ${LINE_HEIGHT.aside(aside)}px per line, ${Math.round(ADVANCE * aside * 10) / 10}px per character at size ${aside}.`,
-    `rows: ${GRID[12].pitch}px apart at size 12, ${GRID[11].pitch}px at size 11, on a grid from the top of the sheet.`,
-    "Pick a silhouette a person would name at thumbnail size and that acts out the main moment; hearts, circles and plain boxes are the defaults to avoid.",
+    ...(field
+      ? [`field: ${field}, ${FIELDS[field].about}. Its rows come from the scan and skip the text blocks; move a text block and the field makes room.`]
+      : [
+          `rows: ${GRID[12].pitch}px apart at size 12, ${GRID[11].pitch}px at size 11, on a grid from the top of the sheet.`,
+          "Pick a silhouette a person would name at thumbnail size and that acts out the main moment; hearts, circles and plain boxes are the defaults to avoid.",
+        ]),
   ];
 }
 
@@ -183,10 +211,19 @@ function git(dir, format) {
 }
 
 function cmdCompose(argv) {
-  const { pos, opt } = args(argv, { from: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } }, 1);
+  const { pos, opt } = args(
+    argv,
+    { field: { type: "string" }, accent: { type: "string" }, from: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } },
+    1,
+  );
   const presets = loadPresets();
   const preset = opt.from === undefined ? undefined : presets[opt.from];
   if (opt.from !== undefined && !preset) throw new Usage(`--from ${opt.from} is not a preset; one of ${Object.keys(presets).join(", ")}`);
+  const fieldPreset = preset?.figure.regions.find((r) => r.kind === "field");
+  if (fieldPreset) throw new Usage(`--from ${opt.from} is a field preset, drawn from its own scan; use --field ${fieldPreset.field}`);
+  if (preset && (opt.field !== undefined || opt.accent !== undefined)) throw new Usage("--field and --accent make a field poster; --from starts from a fill preset. Pass one or the other");
+  const field = preset ? undefined : (opt.field ?? "wave");
+  if (field && !FIELDS[field]) throw new Usage(`--field ${field} is not a field; use ${Object.keys(FIELDS).join(" or ")}`);
   const theme = opt.theme ?? preset?.theme ?? "light";
   if (!THEMES.includes(theme)) throw new Usage(`--theme ${theme} is not a theme; use ${THEMES.join(" or ")}`);
   const facts = readFacts(pos[0]);
@@ -201,12 +238,16 @@ function cmdCompose(argv) {
   const out = opt.out ?? path.join(path.dirname(pos[0]), `${facts.repo.name}-poster.json`);
   if (fs.existsSync(out) && !opt.force) throw new Failure(`${out} exists; it may hold your words. Pass --force to replace it with a fresh scaffold`);
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
+  const parts = partsFromFacts(facts);
+  if (opt.accent !== undefined && !accentIds(parts, opt.accent).size) throw new Usage(`--accent ${opt.accent} names no part; vyo parts ${pos[0]} lists the part ids`);
+  const unplain = parts.filter((p) => unplainName(p.name));
   const notes = preset ? preset.notes.length : 3;
-  fs.writeFileSync(out, JSON.stringify(scaffoldSpec(facts, { theme, commit, date, floor: floorFor(notes, 1), preset }), null, 2) + "\n");
-  const from = preset ? `the ${opt.from} preset's geometry and its words taken out` : "one box-shaped region to reshape";
+  fs.writeFileSync(out, JSON.stringify(scaffoldSpec(facts, { theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, unplain }), null, 2) + "\n");
+  const from = preset ? `the ${opt.from} preset's geometry and its words taken out` : `a ${field} field of ${parts.length} parts${opt.accent ? ` with ${opt.accent} in the accent` : ""}`;
   const lines = [
     `Wrote ${out}: a scaffold with ${from}. Replace every "…" value, then run vyo sketch ${out}, adjust, sketch again, then vyo render ${out}`,
-    ...authoringNotes(notes),
+    ...(field ? [`vyo parts ${pos[0]} lists the parts: pick the accent by its id${unplain.length ? ` and name the ${unplain.length} flagged part${unplain.length === 1 ? "" : "s"} in names` : ""}.`] : []),
+    ...authoringNotes(notes, field),
   ];
   process.stdout.write(lines.join("\n") + "\n");
   return 0;
@@ -285,7 +326,7 @@ async function cmdCheck(argv) {
   }
 }
 
-const COMMANDS = { scan: cmdScan, show: cmdShow, presets: cmdPresets, compose: cmdCompose, sketch: cmdSketch, render: cmdRender, check: cmdCheck };
+const COMMANDS = { scan: cmdScan, show: cmdShow, parts: cmdParts, presets: cmdPresets, compose: cmdCompose, sketch: cmdSketch, render: cmdRender, check: cmdCheck };
 
 export async function main(argv) {
   const [cmd, ...rest] = argv;
