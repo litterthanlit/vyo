@@ -258,10 +258,11 @@
     ],
     "texts": [
       {
-        "role": "masthead",
-        "id": "masthead",
-        "x": 50,
-        "y": 40,
+        "role": "display",
+        "id": "start",
+        "text": "Plan it in the kitchen.",
+        "x": 56,
+        "y": 56,
         "w": 470
       },
       {
@@ -273,29 +274,28 @@
         "w": 224
       },
       {
-        "role": "label",
-        "id": "start",
-        "text": "Plan it in the kitchen",
+        "role": "masthead",
+        "id": "masthead",
         "x": 56,
-        "y": 168,
-        "w": 300
-      },
-      {
-        "role": "label",
-        "id": "end",
-        "text": "Shop it in the aisle",
-        "x": 484,
-        "y": 742,
-        "w": 300,
-        "align": "right"
+        "y": 740,
+        "w": 330,
+        "size": 48
       },
       {
         "role": "headline",
         "id": "headline",
         "x": 56,
-        "y": 776,
-        "w": 360,
-        "size": 28
+        "y": 804,
+        "w": 330
+      },
+      {
+        "role": "display",
+        "id": "end",
+        "text": "Shop it in the aisle.",
+        "x": 384,
+        "y": 764,
+        "w": 400,
+        "align": "right"
       }
     ]
   },
