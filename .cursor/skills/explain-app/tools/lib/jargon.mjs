@@ -3,8 +3,8 @@
 export const BANNED = [
   "api", "endpoint", "endpoints", "middleware", "orm", "webhook", "webhooks",
   "deploy", "deployment", "env var", "frontend", "backend", "monorepo", "sdk",
-  "rest", "graphql", "component", "components", "module", "modules",
-  "repository", "repo", "commit", "commits", "branch", "pr", "mvp", "beta",
+  "graphql", "component", "components", "module", "modules",
+  "repository", "repo", "commit", "commits", "pr", "mvp", "beta",
   "leverage", "utilize", "platform", "ecosystem", "synergy", "holistic",
   "disruptive", "revolutionary",
 ];

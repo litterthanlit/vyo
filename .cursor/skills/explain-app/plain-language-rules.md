@@ -30,7 +30,6 @@ Render rejects any word in the first column, in any visible text. Use the second
 | backend | "what runs behind the scenes" |
 | monorepo | Leave it out. Name the product |
 | sdk | Name the action the user gets |
-| rest | Leave it out. Describe the action |
 | graphql | Leave it out. Describe the action |
 | component | "screen", "section", "part of the app" |
 | components | "screens", "parts of the app" |
@@ -40,7 +39,6 @@ Render rejects any word in the first column, in any visible text. Use the second
 | repo | "project", or the product name |
 | commit | Leave it out. The footer already names the version |
 | commits | Leave it out |
-| branch | Leave it out |
 | pr | Leave it out |
 | mvp | "what's live now" |
 | beta | "what's live now", or put the feature in `notBuilt` |
@@ -52,8 +50,6 @@ Render rejects any word in the first column, in any visible text. Use the second
 | holistic | Leave it out |
 | disruptive | Leave it out. Show the contrast instead |
 | revolutionary | Leave it out. Show the contrast instead |
-
-The check matches whole words, ignoring case. "rest" therefore also catches "the rest of the week". Reword it.
 
 ## Naming the words in slots
 

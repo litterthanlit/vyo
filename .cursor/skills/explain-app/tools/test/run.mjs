@@ -11,7 +11,7 @@ const TOOLS = path.join(HERE, "..");
 const OUT = path.join(HERE, ".out");
 const VYO = path.join(TOOLS, "vyo.mjs");
 
-const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "band", "shapes", "check"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
+const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "band", "shapes", "check", "docs"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });

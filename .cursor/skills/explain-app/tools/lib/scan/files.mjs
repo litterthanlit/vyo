@@ -15,7 +15,7 @@ export const MAX_BYTES = 512 * 1024;
 export const MAX_FILES = 20000;
 
 const EXCLUDED_DIRS = new Set([
-  "node_modules", ".git", "dist", "build", "out", ".next", ".nuxt", ".svelte-kit", ".turbo", ".vercel",
+  "node_modules", ".git", "dist", "build", "vyo", "out", ".next", ".nuxt", ".svelte-kit", ".turbo", ".vercel",
   "coverage", "vendor", "venv", ".venv", "__pycache__", "site-packages", "bower_components",
   "__tests__", "tests", "test", "e2e", "cypress", "playwright", "public", "static", "assets",
 ]);

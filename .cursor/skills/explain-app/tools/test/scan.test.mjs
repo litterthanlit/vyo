@@ -1085,11 +1085,13 @@ describe("real-world edges", () => {
       write(root, "app/broken.py", 'def (:\n  from . import\nimport\n"""never closed\n');
       write(root, "app/layout.tsx", "export default function L(){ return null }\n");
       write(root, "node_modules/pkg/index.js", "module.exports = 1;\n");
+      write(root, "vyo/earlier-poster.ts", "export const x = 1;\n");
       const facts = await scanRepo(root);
       assert.ok(facts.files["app/page.tsx"]);
       assert.ok(!facts.files["app/big.ts"], "over 512 KB is skipped");
       assert.ok(!facts.files["app/blob.ts"], "binary is skipped");
       assert.ok(!Object.keys(facts.files).some((f) => f.startsWith("node_modules")));
+      assert.ok(!Object.keys(facts.files).some((f) => f.startsWith("vyo/")), "an earlier run's output folder is not read");
       assert.deepEqual(ids(facts, "screen"), ["screen:/"]);
       assert.equal(facts.unresolved["./missing"], 1, "unresolved relative imports are counted");
       assert.equal(facts.hash, factsHash(facts));
