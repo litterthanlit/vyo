@@ -3,7 +3,7 @@
 import { validateSpec, textProblems, hasWord, geometryKey } from "./spec.mjs";
 import { bandCounts, bandLine } from "./band.mjs";
 import { FONT_FACES, tokensOf } from "./render.mjs";
-import { partsFromFacts, regionParts, unplainName } from "./parts.mjs";
+import { partsFromFacts, regionParts, unplainName, sameNames } from "./parts.mjs";
 
 const rgb = (hex) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(", ")})`;
 const overlap = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
@@ -104,13 +104,14 @@ export const CHECKS = [
     },
   },
   {
-    id: "part-name", level: "warn", stage: "spec", about: "every part a field draws has a plain name, and every name in names belongs to a part",
+    id: "part-name", level: "warn", stage: "spec", about: "every part a field draws has a plain name of its own, and every name in names belongs to a part",
     run: ({ spec, facts }) =>
       fieldsOf(spec).flatMap((r) => {
         const parts = partsFromFacts(facts, r);
         return [
           ...parts.filter((p) => unplainName(p.name)).map((p) => `part "${p.name}" (${p.id}) looks like a vendor or code name; add a plain name in names`),
           ...Object.keys(r.names ?? {}).filter((id) => !parts.some((p) => p.id === id)).map((id) => `names has ${id}, which is not a part of region ${r.id}; vyo parts lists the part ids`),
+          ...sameNames(parts).map((g) => `parts ${g.map((p) => p.id).join(" and ")} are all called "${g[0].name}"; give each a plain name of its own in names`),
         ];
       }),
   },

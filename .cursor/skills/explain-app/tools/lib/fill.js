@@ -59,7 +59,7 @@ function drawRow(S, r, data, height, weight) {
     {
       fontSize: r.size + "px", lineHeight: height + "px", height: height + "px",
       left: r.x + "px", top: r.y + "px", width: Math.ceil(r.width) + 1 + "px", letterSpacing: r.spacing + "px",
-      color: r.hot ? "var(--hot)" : `var(--${r.tone})`, fontWeight: weight,
+      color: r.hot ? "var(--hot)" : `var(--${r.tone})`, fontWeight: weight, opacity: r.alpha ?? 1,
     },
     text.slice(0, -1),
   );
@@ -82,7 +82,7 @@ function drawFill(S, region, blocks) {
 }
 
 function drawField(S, region, blocks) {
-  const items = FIELDS[region.field].layout(region, region.parts, { floor: F.floor, mirror: F.mirror, blocks, measure });
+  const items = FIELDS[region.field].layout(region, region.parts, { floor: F.floor, mirror: F.mirror, theme: F.theme, blocks, measure });
   for (const r of items) drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, 400);
   const box = items.length ? bbox([items.flatMap((r) => [[r.x, r.y], [r.x + r.width, r.y + r.height]])]) : { left: 0, top: 0, right: 0, bottom: 0 };
   return { id: region.id, kind: "field", bbox: box, rows: items.length };

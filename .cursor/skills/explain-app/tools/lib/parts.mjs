@@ -78,6 +78,13 @@ export function partsFromFacts(facts, { minShare = PART_DEFAULTS.minShare, maxPa
     .map(([id, p], order) => ({ id, name: names[id] ?? areas.get(id)?.name ?? id.slice(5), loc: p.loc, files: p.files, order }));
 }
 
+/** Groups of two or more parts whose names read the same, ignoring case: a reader cannot tell them apart. */
+export function sameNames(parts) {
+  const by = new Map();
+  for (const p of parts) by.set(p.name.toLowerCase(), [...(by.get(p.name.toLowerCase()) ?? []), p]);
+  return [...by.values()].filter((g) => g.length > 1);
+}
+
 /**
  * The ids of the parts `accent` names: a glob over part ids, a part's own id, the parts inside an area,
  * or else the part an area was merged into.
