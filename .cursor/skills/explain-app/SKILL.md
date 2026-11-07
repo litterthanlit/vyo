@@ -32,7 +32,7 @@ For Chromium, run `npx --prefix tools playwright install chromium` or set `VYO_C
 
 1. Scan: `node tools/vyo.mjs scan <repo> --out <repo>/vyo/<name>-facts.json`.
 2. Summarise: `node tools/vyo.mjs show <repo>/vyo/<name>-facts.json`.
-3. Read `README*`, `docs/` and `.cursor/skills/explain-app/project-context.md` in the target repo. Write down the product's name, audience and main moment: one sentence about what it does for a person. Every claim on the poster must point at the scan, the docs or the code.
+3. Read `README*`, `docs/` and `.cursor/skills/explain-app/project-context.md` in the target repo. Write down the product's name, audience and main moment: one sentence about what it does for a person. Every claim must point at the scan, the docs or the code.
 4. Invent the picture. Write its `fits` sentence before any numbers.
 5. Write the scaffold:
    ```bash
@@ -40,7 +40,7 @@ For Chromium, run `npx --prefix tools playwright install chromium` or set `VYO_C
    ```
    `--repo` puts the latest commit in the footer. `--from <preset>` starts from a preset's geometry (`node tools/vyo.mjs presets` lists them). `compose` prints `floor: <y>`, the lowest y the figure may reach. `--force` overwrites.
 6. Write the figure and fields (see "Describe it" and "Fill the spec").
-7. Sketch: `node tools/vyo.mjs sketch <repo>/vyo/<name>-poster.json`. It prints the sheet in letters, with coverage, width spread and the floor. Adjust and sketch again until a stranger would name the silhouette.
+7. Sketch: `node tools/vyo.mjs sketch <repo>/vyo/<name>-poster.json`. It prints the sheet in letters, plus coverage, width spread and floor. Adjust and sketch again until a stranger would name the silhouette.
 8. Render: `node tools/vyo.mjs render <repo>/vyo/<name>-poster.json`.
 9. Fix every `✗` line. Render exits 1 until none is left. Weigh every `!` line. `preset-copy` means you kept a preset's geometry. Change it, or say in chat why it fits.
 10. Open the PNG, full size and as a thumbnail. The silhouette must read as the main moment, the hot word must stand out, and no word may read as code. If not, go back to step 7.
@@ -63,7 +63,7 @@ Start from the verb in the main moment, not the product's category.
 
 Bend it to the product. A ring can break open where today's item leaves. A stair can end in the hot word. Test it: shrunk to a thumbnail, would a person name the shape in one word, and does that word describe what the product does?
 
-A model that has not thought about the product draws these. Never use them:
+A model that has not thought about the product draws these, and none acts out a moment. Never use them:
 
 - a heart, for anything about people or care
 - a plain circle, which passes every check, or a box filled edge to edge
@@ -76,7 +76,7 @@ The words:
 - Each region has one job and its own words: what goes in, what comes out, what travels.
 - One hot word on the whole poster, where the moment happens: the waist, the iris, the last line.
 - Tones give depth. `soft` is far or past, `ink` is near or now, and two or three tones fade down a region. `cold` and `cool` are blue-greys for a state not yet warm.
-- Leave paper. The eye's empty pupil and the hourglass's narrow waist are what make them read.
+- Leave paper. The eye's empty pupil and the hourglass's thin waist make them read.
 
 ## Describe it
 

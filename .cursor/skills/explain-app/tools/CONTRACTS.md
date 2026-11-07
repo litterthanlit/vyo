@@ -1,17 +1,19 @@
-# Poster contracts: facts, spec, shapes, checks
+# Poster contracts: facts, spec, geometry, checks
 
-The poster pipeline has four pieces, and this file is the only agreement between them. If code and this file disagree, fix the code, or change this file first and say so.
+The poster pipeline has five pieces, and this file is the only agreement between them. If code and this file disagree, fix the code, or change this file first and say so.
 
 ```
-repo ──scan──▶ <repo>-facts.json ──compose──▶ <repo>-poster.json (agent fills) ──render──▶ html, png, pdf (+ check)
+repo ──scan──▶ <repo>-facts.json ──compose (optional preset)──▶ <repo>-poster.json (agent writes the figure) ──sketch──▶ text preview
+                                                                                    └──render──▶ html, png, pdf (+ check)
 ```
 
 | Piece | File(s) | Job |
 |---|---|---|
 | Scanner | `tools/lib/scan/*.mjs` | Repo → `facts.json`. Deterministic, no network, no LLM |
-| Spec | `tools/lib/spec.mjs`, `tools/lib/jargon.mjs` | Scaffold a spec from facts and a shape. Validate a filled spec. Pure, no I/O |
-| Shapes | `tools/lib/shapes/<id>.mjs`, registry in `tools/lib/shapes/index.mjs` | Spec → the HTML for the whole sheet |
-| Render and check | `tools/vyo.mjs`, `tools/lib/check.mjs` | Page shell, fonts, footer, Playwright screenshot and PDF, and the checks |
+| Spec | `tools/lib/spec.mjs`, `tools/lib/jargon.mjs` | Scaffold a spec from facts and an optional preset. Validate a filled spec, including path parsing. Pure, no I/O, never measures text |
+| Presets | `tools/presets/<id>.json` | Example figures the agent may start from with `compose --from`. They double as the goldens |
+| Fill | `tools/lib/fill.js` | Runs in the page. Samples each region's outline into rows, fills them with words, draws dots, places the texts |
+| Render and check | `tools/vyo.mjs`, `tools/lib/render.mjs`, `tools/lib/check.mjs`, `tools/lib/inspect.js` | Page shell, fonts, palette, footer, Playwright screenshot and PDF, and the checks |
 
 Shared helpers live in `tools/lib/hash.mjs`: `stableStringify`, `factsHash`, `fnv1a`. Use them. Don't re-implement them.
 
@@ -24,19 +26,26 @@ One dispatcher, `tools/vyo.mjs` (`package.json` bin `vyo`). All commands run fro
 ```bash
 node tools/vyo.mjs scan    <repo-dir> --out <dir>/<repo>-facts.json
 node tools/vyo.mjs show    <facts.json>
-node tools/vyo.mjs shapes
-node tools/vyo.mjs compose <facts.json> --shape <id> [--repo <dir>] [--theme light|dark] [--out <spec.json>] [--force]
+node tools/vyo.mjs presets [<id>]
+node tools/vyo.mjs compose <facts.json> [--from <preset>] [--repo <dir>] [--theme light|dark] [--out <spec.json>] [--force]
+node tools/vyo.mjs sketch  <spec.json>
 node tools/vyo.mjs render  <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--paper fit|a4|letter]
 node tools/vyo.mjs check   <spec.json> [--facts <facts.json>]
 ```
 
 - `scan` and `show` are the v1 scanner, unchanged. `scan` never writes inside the scanned repo except to `--out`.
-- `shapes` prints, for each shape: id, "fits when", themes, notes count, and each slot with its kind, prompt and limits.
-- `compose` writes a scaffold spec (§3). It fills `facts` from the facts file, `product.name` and `product.repo` from `facts.repo.name`, and `theme` from `--theme` or the shape's first theme. It rejects a theme the shape does not declare. It refuses to overwrite an existing spec, which may hold the agent's words, unless `--force` is given. Every slot holds a placeholder, which validation rejects, so a scaffold cannot render.
+- `presets` prints, for each preset in `tools/presets/`, its id, its `fits` sentence and a one-line summary of its regions and texts. `presets <id>` prints that preset's `figure` as JSON.
+- `compose` writes a scaffold spec (§3). It fills `facts` from the facts file, `product.name` and `product.repo` from `facts.repo.name`, and `theme` from `--theme`. It refuses to overwrite an existing spec, which may hold the agent's words, unless `--force` is given.
+  - Without `--from`: a minimal figure with one fill region whose `polygon` and `words` are placeholders, one masthead, one headline and one aside.
+  - With `--from <preset>`: the preset's figure with its geometry kept and every word replaced by a placeholder.
+  - Validation rejects placeholders, so a scaffold cannot render.
+  - It prints `floor: <y>`, the footer top for the spec's notes count with a one-line not-built list (§5), and says that each extra not-built line raises the floor by 16px.
   - With `--repo <dir>`: `product.commit` is `git -C <dir> log -1 --format=%h` and `product.date` is `git -C <dir> log -1 --format=%cs`, so reruns are stable.
   - Without it: no `commit`, and `date` is today's ISO date. `facts.json` stays free of timestamps.
+- `sketch` validates the spec and prints the sheet as ASCII (§4.4). It needs no browser.
 - `render` validates the spec, builds the HTML, writes a PNG at 2× and a PDF, then runs every check (§6). Default `--facts` is `<repo>-facts.json` beside the spec, where `<repo>` is `product.repo`. Default `--out` is the spec's directory. Outputs: `<repo>-poster.html`, `<repo>-poster.png`, `<repo>-poster.pdf`. The HTML embeds its fonts as base64 data URIs.
 - `check` does what `render` does in a temporary directory and writes nothing to `--out`.
+- `vyo shapes` no longer exists.
 - Exit codes: 0 ok (warnings on stderr, prefixed `! `), 1 rule error (`✗ ` lines on stderr), 2 usage.
 - `VYO_CHROMIUM` names the Chromium binary when Playwright's own is not installed.
 - When `tools/fonts/` is missing, `render` and `check` exit 1 with `run tools/fetch-fonts.sh`.
@@ -182,12 +191,11 @@ Show, in this order:
 
 ## 3. The spec
 
-`<repo>-poster.json` is the single contract between `compose` and `render`. The agent edits only this file.
+`<repo>-poster.json` is the single contract between `compose`, `sketch` and `render`. The agent edits only this file.
 
 ```ts
-type ShapeId = "hourglass" | "ribbon" | "warm-start" | "eye";
 type Spec = {
-  version: 2;
+  version: 3;
   facts: string;                 // facts.json `hash`. Render refuses a mismatch (a stale spec)
   product: {
     name: string;                // customer-facing name. compose copies facts.repo.name, and render warns until it differs
@@ -195,96 +203,174 @@ type Spec = {
     commit?: string;             // short sha, only when compose had --repo
     date: string;                // ISO date: the commit date with --repo, else the day compose ran
   };
-  theme: "light" | "dark";       // must be a key of the shape's `themes`
-  shape: ShapeId;
+  theme: "light" | "dark";
+  accent?: string;               // "#rrggbb". Replaces the theme's hot colour (the ribbon preset uses #9284FF on dark)
   headline: string;              // one serif sentence about the outcome, ≤ 72 chars
   hot: string;                   // one word or two-word phrase, set in the accent. See "hot" below
-  slots: Record<string, string | string[]>;   // exactly the shape's slots (§4)
-  notes: { title: string; text: string }[];   // exactly the shape's `notes` count (2 or 3). title ≤ 24 chars, text ≤ 220
-  notBuilt: string[];            // 0–6 plain items of ≤ 32 chars, rendered as "Not built yet: a, b, c". [] renders nothing
+  figure: Figure;
+  notes: { title: string; text: string }[];   // 2 or 3. title ≤ 24 chars, text ≤ 220
+  notBuilt: string[];            // 0 to 6 plain items of ≤ 32 chars, rendered as "Not built yet: a, b, c". [] renders nothing
   audience?: string;             // optional, ≤ 40 chars
+};
+
+type Figure = {
+  fits: string;                  // ≤ 160 chars: the picture and why it acts out the main moment. Printed by `presets`. Never drawn
+  regions: Region[];             // 1 to 6
+  texts: Text[];                 // 1 to 6: exactly one "masthead", at most one "headline"
+};
+
+type Outline =                   // exactly one key (§4.1)
+  | { profile: [number, number, number][] }                 // [y, cx, halfWidth], 3 to 24 stops, y strictly increasing
+  | { ellipse: { cx: number; cy: number; rx: number; ry: number } }
+  | { polygon: [number, number][] }                         // 3 to 40 points, closed
+  | { path: string };                                       // SVG path data in sheet px
+
+type Ink = "soft" | "mid" | "ink" | "cold" | "cool";
+type Tone = Ink | [Ink, Ink] | [Ink, Ink, Ink];             // a list interpolates by row from the region's top row to its bottom row
+
+type Region =
+  | (Outline & {
+      kind: "fill";
+      id: string;
+      words: string[];           // 2 to 14, each ≤ 24 chars, nouns in the user's words
+      tone: Tone;
+      holes?: Outline[];         // cut out with the even-odd rule
+      caps?: boolean;            // default true
+      band?: 1 | 2 | 3 | 4;      // rows per word, default 1 (the ribbon preset uses 3)
+      size?: 11 | 12;            // font size and row grid: 12 → 16px rows, 11 → 14px rows. Default 12
+      hot?: boolean;             // every row in the accent, with data-hot (the eye's iris)
+    })
+  | {
+      kind: "dots";
+      id: string;
+      lines: string[];           // 2 to 4 words, letters A to Z and spaces, ≤ 5 chars each
+      x: number; y: number;      // top-left corner, sheet px
+      cell: number;              // px per square
+      tones: Tone[];             // one per line. The line equal to `hot` is drawn in the accent
+    };
+
+type Text = {
+  role: "masthead" | "headline" | "aside" | "label";
+  id: string;
+  text?: string;                 // required for aside and label. The masthead renders product.name with the accent full stop. The headline renders spec.headline
+  x: number; y: number; w: number;   // sheet px. w is the wrap width. For the masthead it is the fit width, and the name shrinks to fit
+  size?: number;                 // masthead 84 (48 to 120), headline 22 (18 to 40), aside and label 12 (10 to 14)
+  align?: "left" | "right";      // default left
+  hot?: boolean;                 // label only: set in the accent, uppercase, tracked (the hourglass waist)
 };
 ```
 
 Validation lives in `lib/spec.mjs`. It is pure and every error names the field.
 
 - Unknown keys are rejected, at every level.
-- Every limit is enforced. The shared limits are `LIMITS` in `lib/spec.mjs`, and the table below states them. Slot limits come from the shape (§4).
-- `slots` holds every slot the shape declares, with no placeholder value, and no slot the shape does not declare.
-- A `words` slot is a `string[]` within `min` and `max`. A `phrase` or `line` slot is a string within `max`.
-- `**bold**` markup is allowed only at the start of a `line` slot. It renders as `<b>`.
-- **`hot`** matches case-folded, as a whole word, against the words of the slots the shape names (§4). For `warm-start` it must equal the last of `lines`, case-folded.
-- Every string passes `isJargon` from `lib/jargon.mjs` (exact tokens, whole word, case-folded).
+- Every limit in the table below is enforced. The shared limits are `LIMITS` in `lib/spec.mjs`.
+- Each fill region and each hole has exactly one of `profile`, `ellipse`, `polygon` and `path`.
+- Every geometry number is finite. `rx`, `ry`, `cell` and every half-width are positive. A `path` must parse with the small tokenizer in `lib/spec.mjs`, which accepts M, L, C, Q, A, H, V and Z in absolute and relative forms. The validator checks numbers only. Bounds against the sheet and the footer are the page-stage `path` check (§6).
+- `text` is required on asides and labels. `hot` is allowed only on labels.
+- `**bold**` markup is allowed only at the start of an aside. It renders as `<b>`.
+- **`hot`** matches case-folded, as a whole word (`hasWord`), against a word of some fill region, a dots line, or the `text` of a label with `hot: true`. It may also stand alone when some region has `hot: true`.
+- Every visible string passes `isJargon` from `lib/jargon.mjs` (exact tokens, whole word, case-folded).
 - No file paths: no `/`-containing token with an extension, no `src/`, no `lib/`, no `.tsx` and the like.
 - No "01/02/03" style markers and no middle-dot meta strings.
+- No placeholder survives from `compose`.
 
 | Field | Limit |
 |---|---|
 | `product.name` | 24 characters |
 | `headline` | 72 characters |
 | `hot` | 24 characters, one word or two |
+| `notes` | 2 or 3 |
 | `notes[].title` | 24 characters |
 | `notes[].text` | 220 characters |
 | `notBuilt` | 6 items, 32 characters each |
 | `audience` | 40 characters |
-| Each word in a `words` slot | 24 characters unless the slot sets `each`: `hourglass` 16, `ribbon` `travels` 22, `eye` 18, `warm-start` `lines` 5 |
+| `figure.fits` | 160 characters |
+| `figure.regions` | 1 to 6 |
+| `figure.texts` | 1 to 6, exactly one masthead, at most one headline |
+| Fill `words` | 2 to 14 items, 24 characters each |
+| `profile` | 3 to 24 stops, y strictly increasing |
+| `polygon` | 3 to 40 points |
+| `band` | 1 to 4 |
+| `size` (fill) | 11 or 12 |
+| Dots `lines` | 2 to 4 items, 5 letters each, letters and spaces only |
+| Dots `tones` | One per line |
+| `size` (masthead) | 48 to 120, default 84 |
+| `size` (headline) | 18 to 40, default 22 |
+| `size` (aside, label) | 10 to 14, default 12 |
 
 `lib/jargon.mjs` exports `BANNED: string[]` and `isJargon(text): string[]`, which returns the offending tokens. The "Instead of" column of the banned-term table in `plain-language-rules.md` holds the same tokens, and a test parses that table and compares.
 
 ---
 
-## 4. Shape modules
+## 4. Geometry
 
-Each shape is one module, `lib/shapes/<id>.mjs`, with a default export. `lib/shapes/index.mjs` registers them and checks that each has the fields below.
+The sheet is 840×1190 CSS px with y growing downward. Every number in a figure is sheet px. The footer's top is `1190 − footerHeight − 36` (§5), and everything the agent places must sit above it.
 
-```ts
-type Tokens = Record<string, string> & { hot: string };   // CSS variable name → hex. One of them is `hot`
-type Slot =
-  | { kind: "words"; min: number; max: number; each?: number; letters?: true; prompt: string }    // string[]. `each` caps one item (default LIMITS.word). warm-start's `lines` sets each: 5 and letters: true
-  | { kind: "phrase"; max: number; prompt: string }                // string, set in caps by the shape
-  | { kind: "line"; max: number; prompt: string };                 // one sentence, may start with **bold**
-type Shape = {
-  id: ShapeId;
-  fits: string;                  // "fits when", printed by `vyo shapes`. The agent picks by this
-  themes: { light?: Tokens; dark?: Tokens };   // only the themes the shape has
-  notes: 2 | 3;                  // footer columns
-  slots: Record<string, Slot>;
-  hotWords(slots): string[];     // the words `hot` may match
-  hotRule: string;               // the same rule in words, used in the error message
-  draw(spec: Spec, ctx: DrawCtx): string;      // HTML for the whole 840×1190 sheet
-};
-type DrawCtx = {
-  masthead: string;              // product name with the accent full stop, which carries data-hot
-  headline: string;              // the serif line, ready to place
-  footer: string;                // §5, ready to place
-  footerHeight: number;          // place the footer at top = 1190 − footerHeight − margin
-  mastFont: string;              // the masthead's font-family value
-  esc(s): string;                // HTML-escape
-  line(s): string;               // a `line` slot as HTML, with the leading **bold** as <b>
-  json(v): string;               // JSON safe to inline in a <script>
-};
-```
+### 4.1 Outlines
 
-| Shape | Themes | Notes | Slots | `hot` comes from |
-|---|---|---|---|---|
-| `hourglass` | light, dark | 3 | `top` words 6–12, `waist` phrase ≤ 16, `bottom` words 3–8, `asideLeft` line ≤ 90, `asideRight` line ≤ 110, `asideBottom` line ≤ 90 | `top` or `waist` |
-| `ribbon` | dark | 3 | `leftLine` phrase ≤ 24, `rightLine` phrase ≤ 24, `travels` words 4–10, `aside` line ≤ 110 | `travels`. The ribbon rows are the accent by design. `hot` is the one word set bold and bright |
-| `warm-start` | light | 2 | `lines` words 2–4 (each ≤ 5 letters, letters only), `aside` line ≤ 110 | Equals the last of `lines` |
-| `eye` | light | 3 | `lids` words 6–12, `iris` words 3–6, `blurb` line ≤ 140 | `iris`. The masthead sits in the iris |
+| Primitive | Outline |
+|---|---|
+| `profile` | For each stop `[y, cx, halfWidth]`, the left edge is `cx − halfWidth` and the right edge is `cx + halfWidth`. Between stops, `cx` and `halfWidth` follow a monotone cubic interpolation, so the outline is smooth and never overshoots a stop. The region spans the first stop's y to the last |
+| `ellipse` | Centre `(cx, cy)`, radii `rx` and `ry` |
+| `polygon` | The points in order, closed back to the first |
+| `path` | The SVG path, filled with the even-odd rule |
 
-Render owns the page shell: the doctype, the `@font-face` rules, the palette variables from the shape's theme, the sheet `div`, and the wait for `window.drawn`. The shape owns everything inside the sheet, including where the masthead, headline and footer go. Each mockup in `explorations/2026-10-29-type-posters/` is the geometry for its shape.
+`holes` are outlines of the same four kinds. They join the region's path, which is filled with the even-odd rule, so a hole cuts the region.
 
-Word rows are measured in the browser. `draw` may return a `<script>` that awaits `document.fonts.ready`, measures with a canvas 2d context, lays out the rows, and then sets `window.drawn = true`.
+### 4.2 Sampling rows (in the page)
+
+`lib/fill.js` builds each outline as an offscreen `<svg><path>` and uses `getBBox()` and `isPointInFill()`. Geometry is never computed in Node, except by `sketch` (§4.4).
+
+1. Rows snap to one grid for the whole sheet: 16px for size 12, 14px for size 11.
+2. A point x on the row with top y is inside when both `y + 3` and `y + 13` are inside the fill (`y + 2` and `y + 12` at size 11). The sampler tests every 1px across the bounding box and collects the inside runs.
+3. Every text block's measured rect, padded by 12px, is cut out of the runs. A masthead can therefore sit inside a region, as in the eye preset.
+4. Gaps narrower than 24px are merged, unless the gap came from a text block.
+5. Runs narrower than 24px are dropped.
+
+### 4.3 Filling rows
+
+- Font `400 12px "Commit Mono"`, or 11px at size 11, uppercase unless `caps` is false.
+- One word per row, shared by every run on that row, so the eye's two lid runs show the same word. With `band: n`, a word holds for n rows.
+- The next word is the next one in the list that fits the row, cycling, and no word is skipped for more than one full cycle.
+- A run narrower than the word draws the word centred at its natural width. It may overhang the run.
+- A run narrower than twice the word's natural width draws the word once, centred, with no tracking.
+- A wider run repeats the word with three spaces between copies and letter-spaces the result to the run's width. Tracking is never below 0.
+- A tone list interpolates by row index from the region's top row to its bottom row. Each row snaps to one theme token, so `palette` still holds.
+- A row whose word matches `hot` (`hasWord`) is set in the accent at weight 700 and carries `data-hot`. Every row of a region with `hot: true` does the same.
+- Dots regions draw with v2's warm-start glyph table, shipped in full for A to Z and space: 5×7 squares per letter at `(x, y)` with `cell` px per square. Each line takes its tone, and the line equal to `hot` takes the accent.
+- Texts render as absolutely positioned blocks with `data-block=<id>`. The masthead uses `fitWidth` to shrink into `w`. A hot label is set in the accent, uppercase and tracked.
+- `window.drawn` is set to `true` when every region and text is laid out.
+
+### 4.4 Sketch
+
+`vyo sketch` runs the sampler of §4.2 in Node on a polygon version of each outline. Profiles and ellipses become exact polygons. Paths are flattened, or, if flattening is not shipped, `sketch` prints `path regions are not sketched`.
+
+- The sheet prints at 20px per character: 42 columns by about 60 lines.
+- `A` to `F` mark the fill rows of the first to the sixth region, `#` marks dots, `=` marks the footer top, and `·` marks hot rows.
+- Text blocks print as boxes, with heights estimated at 7.2px per character for mono text, 88px per masthead line at size 84, and 28px per headline line at a 224px width.
+- Under the sheet it prints the coverage (as `silhouette` measures it), the spread of row widths (standard deviation over mean, as `row-variety` measures it), and the floor.
+
+### 4.5 Authoring numbers
+
+These are the numbers `compose` prints and SKILL.md teaches.
+
+| What | Number |
+|---|---|
+| Masthead line | 88px tall at size 84 |
+| Headline | 28px per line in a 224px column at size 22 |
+| Aside | 18px per line, 7.2px per character at size 12 |
+| Usual figure band | y 170 to the floor |
+| Floor | The footer top for the notes count, with a one-line not-built list. Each extra not-built line raises it by 16px |
 
 ---
 
 ## 5. The footer
 
-The footer is one fragment that render builds and passes as `ctx.footer`, with a fixed height in `ctx.footerHeight`. Top to bottom:
+The footer is one fragment that render builds and places at `top = 1190 − footerHeight − 36`. `footerHeight` grows with the notes count and with each line the not-built list wraps to. That top is the figure's floor (§4.5). With the current footer constants and a one-line not-built list, it is 884 for 3 notes and 920 for 2. Top to bottom:
 
 1. A hairline rule.
 2. The counts line, in the soft ink colour.
-3. The notes row: 2 or 3 columns, from the shape's `notes`. Each column is a bold title over its text.
+3. The notes row: 2 or 3 columns, one per item of `spec.notes`. Each column is a bold title over its text.
 4. The bottom line: provenance on the left, `Not built yet: a, b, c` centred when `notBuilt` is not empty, and `Drawn by Vyo.` on the right. The full stop of `Drawn by Vyo.` carries `data-hot`.
 
 Provenance is `<name> at <commit>, <date long form>`, such as `Hypher at 04186f4, 28 October 2026`. With no commit it is `<name>, <date long form>`. The footer never prints the word "commit".
@@ -326,18 +412,24 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 | `facts-hash` | ✗ | `spec.facts` equals the facts file's `hash` |
 | `facts-empty` | ! | `facts.empty` is true: the scan found nothing to count, so the footer shows provenance only |
 | `product-name` | ! | `product.name` equals `facts.repo.name`, the folder name |
-| `slot-at-max` | ! | A slot is filled to its limit, which risks crowding |
-| `drawn` | ✗ | The shape's script ran to the end: the page raised no error and set `window.drawn` |
+| `preset-copy` | ! | Every region's geometry equals a preset region's geometry, numbers compared exactly |
+| `one-region` | ! | The figure has one fill region, no dots region, no hot rows and no hot label |
+| `drawn` | ✗ | The fill script ran to the end: the page raised no error and set `window.drawn` |
 | `fonts` | ✗ | `document.fonts` holds a `FontFace` with status `loaded` for Commit Mono 400, Commit Mono 700 and Newsreader 400 |
 | `masthead-font` | ! | Inter Display or Inter is installed for the product name |
+| `path` | ✗ | Every outline parses and has a non-empty bounding box inside the sheet whose bottom is above the footer top. Message: `region <id> reaches <n>px below the footer; move it up by <n>` |
 | `rows-fit` | ✗ | Every `.row` has `scrollWidth ≤ clientWidth` and sits inside the 840×1190 sheet |
-| `words-drawn` | ✗ | Every slot word appears in a rendered `.row`, and `hot` appears in the accent colour in the figure |
-| `blocks-apart` | ✗ | No two `[data-block]` text blocks overlap |
+| `region-size` | ✗ | Every fill region produced at least 4 rows, and every dots region fits above the footer. The message names the region |
+| `regions-apart` | ✗ | Row rects of different regions at the same y do not overlap, with 4px horizontal inflation |
+| `words-drawn` | ✗ | Per region, every word is drawn at least once. Message: `region <id>: "<word>" never drawn; shorten the list or enlarge the path` |
+| `silhouette` | ✗ | Row rects plus dots line rects cover at least 15% of the area above the footer, and the figure spans at least 55% of that area's height and at least 60% of its width |
+| `row-variety` | ✗ | Over all fill rows, the standard deviation of run widths divided by the mean is at least 0.15. Message: `the figure is a box; a silhouette changes width` |
+| `blocks-apart` | ✗ | No two `[data-block]` text blocks, or a text block and a row, come within 8px. Two rows at the same y are compared horizontally only |
 | `blocks-inside` | ✗ | Every `[data-block]` text block sits inside the sheet |
-| `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens |
-| `hot-tagged` | ✗ | Anything in the `hot` colour carries `data-hot` |
+| `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens: `paper`, `ink`, `soft`, `mid`, `cold`, `cool`, or `hot` (or `accent`) |
+| `hot-tagged` | ✗ | Anything in the hot colour carries `data-hot` |
 | `copy` | ✗ | The visible words hold no banned term, file path, "01/02/03" marker or middle dot. The masthead and the render-owned footer lines are exempt |
-| `notes` | ✗ | The footer shows the shape's `notes` count of notes |
+| `notes` | ✗ | The footer shows exactly the notes in `spec.notes` |
 | `band` | ✗ | The footer counts line equals the line built from `bandCounts(facts)` |
 | `headline-lines` | ! | The headline wraps to more than 2 lines |
 
@@ -345,13 +437,15 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 
 ## 7. DOM contract
 
-Shapes produce, and the checks read, these markers:
+`lib/fill.js` and render produce, and the checks read, these markers:
 
 | Marker | Who sets it | Meaning |
 |---|---|---|
-| `data-hot` | Render on the two full stops. The shape on everything else in the accent | This element is meant to be in the `hot` colour. Anything in that colour without it fails `hot-tagged` |
-| `data-block` | The shape | A text block to measure for overlap: masthead, headline, asides, blurb, notes, footer lines |
-| `.row` | The shape | One row of words in the figure. Measured by `rows-fit` and read by `words-drawn` |
-| `window.drawn` | The shape's script | Set to `true` after the fonts load and every row is laid out. Render waits for it before the screenshot, the PDF and the checks |
+| `.row` | Fill | One run of words on one row of a fill region. Measured by `rows-fit`, `regions-apart`, `blocks-apart`, `silhouette` and `row-variety` |
+| `data-region` | Fill | The region `id` on every `.row` and on every dots line. Lets the checks group rows by region |
+| `data-word` | Fill | The source word, as written in the spec, on every `.row`. Read by `words-drawn` |
+| `data-hot` | Render on the two full stops. Fill on hot rows, the hot dots line and a hot label | This element is meant to be in the hot colour. Anything in that colour without it fails `hot-tagged` |
+| `data-block` | Fill for every text, with the text's `id`. Render for the footer blocks | A text block to measure for overlap and bounds, and to cut out of the rows |
+| `window.drawn` | Fill | Set to `true` after the fonts load and every region and text is laid out. Render waits for it before the screenshot, the PDF and the checks |
 
 The sheet is 840×1190 CSS px. The PNG is rendered at a device scale factor of 2.
