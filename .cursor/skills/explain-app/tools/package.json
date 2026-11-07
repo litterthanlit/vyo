@@ -1,20 +1,14 @@
 {
-  "name": "explain-app-poster-tools",
+  "name": "vyo",
   "private": true,
   "type": "module",
-  "description": "Check explain-app poster canvases against the Swiss rules and export them to PNG/PDF.",
+  "description": "Scan a repo, compose a poster spec, render it to HTML, PNG and PDF, and check it.",
+  "bin": { "vyo": "./vyo.mjs" },
   "scripts": {
-    "test": "node --test test/scan.test.mjs"
+    "test": "node test/run.mjs"
   },
   "dependencies": {
-    "esbuild": "^0.28.2",
-    "playwright": "^1.56.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "playwright": "^1.56.1"
   },
-  "devDependencies": {
-    "@types/react": "^18.3.12",
-    "typescript": "^5.6.3"
-  },
-  "engines": { "node": ">=18" }
+  "engines": { "node": ">=18.3" }
 }
