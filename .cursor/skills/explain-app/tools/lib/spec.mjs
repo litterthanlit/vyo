@@ -35,12 +35,11 @@ const KEYS = {
 
 const isStr = (v) => typeof v === "string";
 const isPlaceholder = (v) => isStr(v) && v.trim().startsWith(PLACEHOLDER);
-export const fold = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
-const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-/** Whole-word, case-folded: does `phrase` occur in `text`? */
+/** Whole-word, case-folded: does `phrase` occur in `text`? Self-contained: render injects its source into the page. */
 export function hasWord(text, phrase) {
-  return new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRe(fold(phrase))}($|[^\\p{L}\\p{N}])`, "u").test(fold(text));
+  const fold = (x) => String(x).toLowerCase().replace(/\s+/g, " ").trim();
+  const needle = fold(phrase).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^\\p{L}\\p{N}])${needle}($|[^\\p{L}\\p{N}])`, "u").test(fold(text));
 }
 
 const PATH = [
@@ -192,4 +191,27 @@ export function slotsAtMax(spec, shape) {
   return Object.entries(shape.slots)
     .filter(([k, s]) => spec.slots[k].length === s.max)
     .map(([k]) => k);
+}
+
+/**
+ * The spec `compose` writes: everything known filled in, every slot holding its prompt as a placeholder.
+ * @param {{ hash: string, repo: { name: string } }} facts
+ * @param {Shape} shape
+ * @param {{ theme: string, commit?: string, date: string }} o
+ * @returns {Spec}
+ */
+export function scaffoldSpec(facts, shape, { theme, commit, date }) {
+  const hold = (prompt) => `${PLACEHOLDER} ${prompt}`;
+  return {
+    version: 2,
+    facts: facts.hash,
+    product: { name: facts.repo.name, repo: facts.repo.name, ...(commit ? { commit } : {}), date },
+    theme,
+    shape: shape.id,
+    headline: hold(`one plain sentence about the outcome, at most ${LIMITS.headline} characters`),
+    hot: hold(`the one word set in the accent colour: ${shape.hotRule}`),
+    slots: Object.fromEntries(Object.entries(shape.slots).map(([k, s]) => [k, s.kind === "words" ? [hold(s.prompt)] : hold(s.prompt)])),
+    notes: Array.from({ length: shape.notes }, () => ({ title: hold(`at most ${LIMITS.noteTitle} characters`), text: hold(`at most ${LIMITS.noteText} characters`) })),
+    notBuilt: [],
+  };
 }
