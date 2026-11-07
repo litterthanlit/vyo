@@ -55,7 +55,7 @@ test("each page check catches its defect", () => {
     ["regions-apart", { rows: [...rows, { ...rows[25], region: "top", rect: rect(482, 640, 600, 656) }] }, /^regions bottom and top touch at y 640/],
     ["silhouette", { rows: rows.slice(0, 3) }, /covers \d+% of the sheet above the footer; it needs 15%/],
     ["silhouette", { rows: rows.slice(0, 20) }, /spans \d+% of the height above the footer; it needs 55%/],
-    ["row-variety", { rows: rows.map((r, i) => ({ ...r, rect: rect(100, 176 + i * 16, 740, 192 + i * 16) })) }, /^the figure is a box; a silhouette changes width$/],
+    ["row-variety", { rows: rows.map((r, i) => (r.region === "bottom" ? { ...r, rect: rect(100, 560 + (i - 20) * 16, 740, 576 + (i - 20) * 16) } : r)) }, /^region bottom is a box; a silhouette changes width along its whole height \(spread\/mean 0\.00, needs 0\.25\)$/],
   ];
   for (const [id, over, re] of cases) {
     const found = failures(page(over));
@@ -63,10 +63,18 @@ test("each page check catches its defect", () => {
   }
 });
 
-test("row-variety and one-region are skipped when the figure has no fill regions", () => {
+test("thin-region warns for a narrow region, and a hole does not make a wide region thin", () => {
+  const narrow = rows.map((r, i) => (r.region === "bottom" ? { ...r, rect: rect(380 - (i % 5) * 10, r.rect.top, 460 + (i % 5) * 10, r.rect.bottom) } : r));
+  const thin = findings(page({ rows: narrow })).filter((f) => f.id === "thin-region");
+  assert.deepEqual(thin.map((f) => [f.level, f.message]), [["warn", "region bottom reads as a column; widen it or make it part of the main silhouette (120px across on average, under 160px)"]]);
+  const split = rows.flatMap((r) => (r.region === "top" ? [{ ...r, rect: { ...r.rect, right: r.rect.left + 40 } }, { ...r, rect: { ...r.rect, left: r.rect.right - 40 } }] : [r]));
+  assert.deepEqual(findings(page({ rows: split })).filter((f) => ["thin-region", "row-variety"].includes(f.id)), []);
+});
+
+test("row-variety, thin-region and one-region are skipped when the figure has no fill regions", () => {
   const dotsOnly = { ...spec, figure: { ...spec.figure, regions: [{ kind: "dots", id: "words", lines: ["PLAN", "EAT"], x: 130, y: 56, cell: 20, tones: ["ink", "hot"] }] } };
   const p = page({ rows: [], regions: [{ id: "words", kind: "dots", bbox: rect(130, 56, 710, 736), rows: 2 }], dots: [{ word: "PLAN", region: "words", hot: false, rect: rect(130, 56, 710, 196) }, { word: "EAT", region: "words", hot: true, rect: rect(130, 236, 710, 736) }] });
-  assert.deepEqual(findings(p, dotsOnly).filter((f) => ["row-variety", "one-region"].includes(f.id)), []);
+  assert.deepEqual(findings(p, dotsOnly).filter((f) => ["row-variety", "thin-region", "one-region"].includes(f.id)), []);
 });
 
 test("one-region warns for a single plain fill region and not when there is an accent", () => {
@@ -89,6 +97,6 @@ test("every check has a unique id, a level, a stage and a description", () => {
   for (const c of CHECKS) assert.ok(["fail", "warn"].includes(c.level) && ["spec", "page"].includes(c.stage) && c.about, c.id);
   assert.deepEqual(
     CHECKS.map((c) => c.id).sort(),
-    ["band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "fonts", "headline-lines", "hot-tagged", "masthead-font", "notes", "one-region", "palette", "path", "preset-copy", "product-name", "region-size", "regions-apart", "row-variety", "rows-fit", "silhouette", "spec", "words-drawn"],
+    ["band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "fonts", "headline-lines", "hot-tagged", "masthead-font", "notes", "one-region", "palette", "path", "preset-copy", "product-name", "region-size", "regions-apart", "row-variety", "rows-fit", "silhouette", "spec", "thin-region", "words-drawn"],
   );
 });

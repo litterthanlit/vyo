@@ -12,7 +12,7 @@ Run them from the skill directory.
 | `node tools/vyo.mjs show <facts.json>` | Prints a plain summary of the facts |
 | `node tools/vyo.mjs presets [<id>]` | Lists the presets with id, `fits`, and a summary of regions and texts. With an id, prints that preset's figure as JSON |
 | `node tools/vyo.mjs compose <facts.json> [--from <preset>] [--repo <dir>] [--theme light\|dark] [--out <spec.json>] [--force]` | Writes a scaffold spec and prints the figure's floor. Refuses to overwrite an existing spec unless `--force` is given |
-| `node tools/vyo.mjs sketch <spec.json>` | Prints the sheet as ASCII, with coverage, width spread and the floor. Needs no browser |
+| `node tools/vyo.mjs sketch <spec.json>` | Prints the sheet as ASCII, with coverage, each region's width spread and mean width, and the floor. Needs no browser |
 | `node tools/vyo.mjs render <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--paper fit\|a4\|letter]` | Validates the spec, writes HTML, a 2× PNG and a PDF, then runs every check |
 | `node tools/vyo.mjs check <spec.json> [--facts <facts.json>]` | Runs the same validation and checks in a temporary directory. Writes nothing to `--out` |
 
@@ -98,7 +98,8 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 | `regions-apart` | ✗ | No row of one region comes within 4px, horizontally, of a row of another region at the same y |
 | `words-drawn` | ✗ | Every word of every region is drawn at least once. The message says `region <id>: "<word>" never drawn; shorten the list or enlarge the path` |
 | `silhouette` | ✗ | Rows and dots lines cover at least 15% of the area above the footer, and the figure spans at least 55% of that area's height and 60% of its width |
-| `row-variety` | ✗ | Across all fill rows, the standard deviation of run widths divided by their mean is at least 0.15. Skipped when the figure has no fill region. The message says `the figure is a box; a silhouette changes width` |
+| `row-variety` | ✗ | In every fill region, the standard deviation of its line widths divided by their mean is at least 0.25. A line is all the region's runs at one y, merged into their outer span, so a hole does not count as variety. Skipped when the figure has no fill region. The message says `region <id> is a box; a silhouette changes width along its whole height` |
+| `thin-region` | ! | Every fill region's lines are at least 160px wide on average. The message says `region <id> reads as a column; widen it or make it part of the main silhouette` |
 | `blocks-apart` | ✗ | No text block comes within 8px of another block or of a row. Two rows at the same y keep 8px horizontally |
 | `blocks-inside` | ✗ | Every `[data-block]` text block sits inside the sheet |
 | `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens, `cold` and `cool` included |
@@ -120,7 +121,7 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 | `=` | The footer's top line |
 | `·` | A hot row |
 
-Under the sheet it prints `regions:`, `texts:` and `floor:` lines, then the coverage, height and width and the spread of row widths (standard deviation over mean), each marked ok or too low, so the agent sees `silhouette` and `row-variety` before it renders. Lines that start with `! ` flag a region under 4 rows, a word that may never be drawn, and anything below the floor.
+Under the sheet it prints `regions:`, `texts:` and `floor:` lines, then the coverage, height and width, each marked ok or too low, and one line per fill region with its spread of line widths (standard deviation over mean) and mean width, so the agent sees `silhouette`, `row-variety` and `thin-region` before it renders. Lines that start with `! ` flag a region under 4 rows, a word that may never be drawn, anything below the floor, and the `row-variety` and `thin-region` messages.
 
 ## Tests
 
@@ -131,7 +132,7 @@ cd tools && npm test
 `npm test` runs `node test/run.mjs`. Browser tests need Chromium: set `VYO_CHROMIUM` (in this environment, `/opt/pw-browsers/chromium`). The rendered PNGs go to `test/.out/`, which git ignores, so a person can look at them.
 
 - **Pure tests.** The scanner, the counts line for the `recipe` fixture, the banned-term table in `plain-language-rules.md` against `lib/jargon.mjs`, and spec validation. Validation accepts the four presets and rejects an unknown region kind, a path that does not parse, a polygon with two points, two mastheads, a `hot` found in no region, words with jargon, and 7 regions.
-- **Browser tests.** Every preset renders against a fresh scan of `test/fixtures/recipe` and passes. Planted bugs fail with their check: two overlapping outlines (`regions-apart`), a 30px outline (`region-size`), one tiny region (`silhouette`), 14 long words in a small outline (`words-drawn`), an aside placed on a row (`blocks-apart`), an outline below the footer (`path`), and the v2 bugs that still apply: jargon, a file path, an untagged hot word, four notes, and a long not-built list that passes.
+- **Browser tests.** Every preset renders against a fresh scan of `test/fixtures/recipe` and passes. Planted bugs fail with their check: two overlapping outlines (`regions-apart`), a 30px outline (`region-size`), one tiny region (`silhouette`), a box with a slanted top (`row-variety`), a 90px column (`thin-region`, a warning), 14 long words in a small outline (`words-drawn`), an aside placed on a row (`blocks-apart`), an outline below the footer (`path`), and the v2 bugs that still apply: jargon, a file path, an untagged hot word, four notes, and a long not-built list that passes.
 - **Docs tests.** `test/docs.test.mjs` fails when the check ids in this file or in CONTRACTS.md drift from `CHECKS`.
 
 ## How it works

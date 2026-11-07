@@ -1,9 +1,9 @@
 // `vyo sketch`: the figure as ASCII at 20px cells, laid out in Node with the page's own geometry and
-// Commit Mono's fixed advance, so the agent sees rows, coverage and the floor before rendering.
+// Commit Mono's fixed advance, so the agent sees rows, coverage, each region's widths and the floor before rendering.
 import { SHEET, GRID, ADVANCE, regionRows, fillRows, dotsLines } from "./geometry.mjs";
 import { hasWord, PLACEHOLDER } from "./spec.mjs";
 import { floorOf, LINE_HEIGHT, textSize } from "./render.mjs";
-import { figureStats, SILHOUETTE } from "./check.mjs";
+import { figureStats, regionStats, SILHOUETTE, REGION, boxMessage, thinMessage } from "./check.mjs";
 
 const CELL = 20;
 const COLS = SHEET.width / CELL;
@@ -77,7 +77,7 @@ export function sketch(spec) {
     const pitch = GRID[size].pitch;
     for (const it of items) {
       const rect = { left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + pitch };
-      rowRects.push(rect);
+      rowRects.push({ ...rect, region: region.id });
       for (let c = 0; c < COLS; c++) {
         const cx = c * CELL + CELL / 2;
         if (cx >= rect.left && cx < rect.right) put(Math.floor((it.y + pitch / 2) / CELL), c, it.hot ? "·" : mark);
@@ -114,6 +114,11 @@ export function sketch(spec) {
   for (let c = 0; c < COLS; c++) put(footRow, c, "=");
 
   const s = figureStats(rowRects, dotRects, floor);
+  const perRegion = regionStats(rowRects);
+  for (const r of perRegion) {
+    if (r.variety < REGION.variety) notes.push(boxMessage(r));
+    if (r.width < REGION.width) notes.push(thinMessage(r));
+  }
   const ok = (v, need) => (v >= need ? "ok" : "too low");
   const out = [
     ...grid.slice(0, footRow + 1).map((r) => r.join("").trimEnd()),
@@ -122,7 +127,7 @@ export function sketch(spec) {
     `texts: ${texts.map((b) => `${b.id} ${Math.round(b.left)},${Math.round(b.top)} to ${Math.round(b.right)},${Math.round(b.bottom)}`).join("; ")}`,
     `floor: ${floor}`,
     `coverage ${Math.round(s.coverage * 100)}% (needs ${Math.round(SILHOUETTE.coverage * 100)}%, ${ok(s.coverage, SILHOUETTE.coverage)}), height ${Math.round(s.height * 100)}% (needs ${Math.round(SILHOUETTE.height * 100)}%, ${ok(s.height, SILHOUETTE.height)}), width ${Math.round(s.width * 100)}% (needs ${Math.round(SILHOUETTE.width * 100)}%, ${ok(s.width, SILHOUETTE.width)})`,
-    s.variety === null ? "row widths: no fill rows" : `row widths: spread/mean ${s.variety.toFixed(2)} (needs ${SILHOUETTE.variety}, ${ok(s.variety, SILHOUETTE.variety)})`,
+    ...(perRegion.length ? perRegion.map((r) => `region ${r.id}: spread/mean ${r.variety.toFixed(2)} (needs ${REGION.variety}), ${Math.round(r.width)}px across on average (needs ${REGION.width})`) : ["regions: no fill rows"]),
     ...notes.map((n) => `! ${n}`),
   ];
   return out.join("\n") + "\n";

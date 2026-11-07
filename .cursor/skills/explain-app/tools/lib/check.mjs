@@ -16,22 +16,51 @@ const pct = (n) => `${Math.round(n * 100)}%`;
 const fillIds = (spec) => spec.figure.regions.filter((r) => r.kind === "fill").map((r) => r.id);
 const union = (rects) => rects.reduce((u, r) => ({ left: Math.min(u.left, r.left), top: Math.min(u.top, r.top), right: Math.max(u.right, r.right), bottom: Math.max(u.bottom, r.bottom) }), { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
 
-/** The coverage numbers `silhouette` and `row-variety` judge; `vyo sketch` prints the same from its estimate. */
+const spreadOf = (widths) => {
+  const mean = widths.reduce((s, w) => s + w, 0) / (widths.length || 1);
+  const sd = Math.sqrt(widths.reduce((s, w) => s + (w - mean) ** 2, 0) / (widths.length || 1));
+  return { mean, spread: sd / mean };
+};
+
+/** The coverage numbers `silhouette` judges; `vyo sketch` prints the same from its estimate. */
 export function figureStats(rowRects, dotRects, floor) {
   const all = [...rowRects, ...dotRects];
   const area = all.reduce((s, r) => s + (r.right - r.left) * (r.bottom - r.top), 0);
   const u = union(all);
-  const widths = rowRects.map((r) => r.right - r.left);
-  const mean = widths.reduce((s, w) => s + w, 0) / (widths.length || 1);
-  const sd = Math.sqrt(widths.reduce((s, w) => s + (w - mean) ** 2, 0) / (widths.length || 1));
   return {
     coverage: area / (840 * floor),
     height: all.length ? (u.bottom - u.top) / floor : 0,
     width: all.length ? (u.right - u.left) / 840 : 0,
-    variety: widths.length ? sd / mean : null,
   };
 }
-export const SILHOUETTE = { coverage: 0.15, height: 0.55, width: 0.6, variety: 0.15 };
+export const SILHOUETTE = { coverage: 0.15, height: 0.55, width: 0.6 };
+
+/**
+ * Per fill region, the numbers `row-variety` and `thin-region` judge. A line is every run of the region at one y,
+ * merged into its outer span, so a hole does not make a box look varied or a wide ring look thin.
+ * @param {{ region: string, left: number, right: number, top: number }[]} rows
+ * @returns {{ id: string, variety: number, width: number }[]}
+ */
+export function regionStats(rows) {
+  const regions = new Map();
+  for (const r of rows) {
+    if (!regions.has(r.region)) regions.set(r.region, new Map());
+    const lines = regions.get(r.region);
+    const y = Math.round(r.top);
+    const [left, right] = lines.get(y) ?? [Infinity, -Infinity];
+    lines.set(y, [Math.min(left, r.left), Math.max(right, r.right)]);
+  }
+  return [...regions].map(([id, lines]) => {
+    const { mean, spread } = spreadOf([...lines.values()].map(([left, right]) => right - left));
+    return { id, variety: spread, width: mean };
+  });
+}
+// Measured on rendered posters: weak figures' main regions spread 0.15 to 0.22, good ones 0.31 to 0.50;
+// weak columns averaged 84 to 128px across, the presets' narrowest region 238px.
+export const REGION = { variety: 0.25, width: 160 };
+export const boxMessage = (s) => `region ${s.id} is a box; a silhouette changes width along its whole height (spread/mean ${s.variety.toFixed(2)}, needs ${REGION.variety})`;
+export const thinMessage = (s) => `region ${s.id} reads as a column; widen it or make it part of the main silhouette (${Math.round(s.width)}px across on average, under ${REGION.width}px)`;
+const pageRegionStats = (page) => regionStats(page.rows.map((r) => ({ region: r.region, ...r.rect })));
 
 /**
  * @typedef {{ spec: any, facts: any, presets: Record<string, any>, page?: any }} CheckInput
@@ -170,12 +199,12 @@ export const CHECKS = [
     },
   },
   {
-    id: "row-variety", level: "fail", stage: "page", about: "the rows change width: their spread over their mean is at least 0.15",
-    run: ({ spec, page }) => {
-      if (!fillIds(spec).length) return [];
-      const { variety } = figureStats(page.rows.map((r) => r.rect), [], page.footerTop);
-      return variety !== null && variety < SILHOUETTE.variety ? ["the figure is a box; a silhouette changes width"] : [];
-    },
+    id: "row-variety", level: "fail", stage: "page", about: `every fill region changes width: its lines' spread over their mean is at least ${REGION.variety}`,
+    run: ({ page }) => pageRegionStats(page).filter((s) => s.variety < REGION.variety).map(boxMessage),
+  },
+  {
+    id: "thin-region", level: "warn", stage: "page", about: `every fill region is at least ${REGION.width}px across on average`,
+    run: ({ page }) => pageRegionStats(page).filter((s) => s.width < REGION.width).map(thinMessage),
   },
   {
     id: "one-region", level: "warn", stage: "page", about: "the figure has more than one fill region, or dots, or an accent",

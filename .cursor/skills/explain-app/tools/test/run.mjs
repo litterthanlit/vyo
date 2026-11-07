@@ -72,6 +72,12 @@ const PLANTED = [
     /^✗ words-drawn: region outputs: "weeknight dinner [a-n]" never drawn; shorten the list or enlarge the path/m,
   ],
   ["an aside placed on a dots line", "warm-start", (s) => s.figure.texts.push({ role: "aside", id: "stray", text: "Plan once.", x: 200, y: 120, w: 160 }), /^✗ blocks-apart: (stray overlaps the dots line "PLAN"|the dots line "PLAN" overlaps stray)/m],
+  [
+    "a box with a slanted top",
+    "hourglass",
+    (s) => (s.figure.regions[1] = fill("outputs", { polygon: [[100, 640], [740, 600], [740, 860], [100, 860]] }, ["lists", "dinners", "the plan"])),
+    /^✗ row-variety: region outputs is a box; a silhouette changes width along its whole height/m,
+  ],
   ["a region below the footer", "hourglass", (s) => (s.figure.regions[1].profile.at(-1)[0] = 950), /^✗ path: region outputs reaches 66px below the footer; move it up by 66$/m],
 ];
 
@@ -91,6 +97,15 @@ for (const [name, id, mutate, expect] of PLANTED) {
   fs.writeFileSync(file, JSON.stringify(spec, null, 2));
   const r = vyo("check", file, "--facts", factsFile);
   result(r.status === 0 && !/^✗/m.test(r.stderr), "six 32-character not-built items render on their own lines and pass", `exit ${r.status}\n${r.stderr}`);
+}
+
+{
+  const spec = preset("hourglass");
+  spec.figure.regions.push(fill("post", { polygon: [[690, 380], [780, 380], [780, 500], [690, 500]] }, ["recipes", "cravings"]));
+  const file = path.join(OUT, "column.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(/^! thin-region: region post reads as a column; widen it or make it part of the main silhouette/m.test(r.stderr), "a 90px-wide column warns thin-region", `exit ${r.status}\n${r.stderr}`);
 }
 
 const emptyFacts = path.join(OUT, "empty-facts.json");

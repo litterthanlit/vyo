@@ -355,7 +355,7 @@ The sheet is 840×1190 CSS px with y growing downward. Every number in a figure 
 - The sheet prints at 20px per character: 42 columns by about 60 lines.
 - `A` to `F` mark the fill rows of the first to the sixth region, `#` marks dots, `=` marks the footer top, and `·` marks hot rows.
 - Text blocks print as boxes labelled with their ids, with heights estimated at 7.2px per character for mono text, 88px per masthead line at size 84, 28px per headline line at a 224px width, and the line heights of §4.5 for displays and labels.
-- Under the sheet it prints, in order: `regions:` (letter, id and row count per region), `texts:` (each box's corners), `floor: <y>`, the coverage, height and width (as `silhouette` measures them, each marked ok or too low), and `row widths:` (spread over mean, as `row-variety` measures it, or `no fill rows`). Notes that start with `! ` follow: a region under 4 rows, a word that may never be drawn, a region or text below the floor.
+- Under the sheet it prints, in order: `regions:` (letter, id and row count per region), `texts:` (each box's corners), `floor: <y>`, the coverage, height and width (as `silhouette` measures them, each marked ok or too low), and one `region <id>:` line per fill region with its spread over mean and mean width, as `row-variety` and `thin-region` measure them (or `regions: no fill rows`). Notes that start with `! ` follow: a region under 4 rows, a word that may never be drawn, a region or text below the floor, and the `row-variety` and `thin-region` messages.
 
 ### 4.5 Authoring numbers
 
@@ -434,7 +434,8 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 | `regions-apart` | ✗ | Row rects of different regions at the same y do not overlap, with 4px horizontal inflation |
 | `words-drawn` | ✗ | Per region, every word is drawn at least once. Message: `region <id>: "<word>" never drawn; shorten the list or enlarge the path` |
 | `silhouette` | ✗ | Row rects plus dots line rects cover at least 15% of the area above the footer, and the figure spans at least 55% of that area's height and at least 60% of its width |
-| `row-variety` | ✗ | Over all fill rows, the standard deviation of run widths divided by the mean is at least 0.15. Skipped when the figure has no fill region. Message: `the figure is a box; a silhouette changes width` |
+| `row-variety` | ✗ | In every fill region, the standard deviation of its line widths divided by their mean is at least 0.25. A line is all the region's runs at one y, merged into their outer span. Skipped when the figure has no fill region. Message: `region <id> is a box; a silhouette changes width along its whole height` |
+| `thin-region` | ! | Every fill region's lines are at least 160px wide on average. Message: `region <id> reads as a column; widen it or make it part of the main silhouette` |
 | `blocks-apart` | ✗ | No two `[data-block]` text blocks, or a text block and a row, come within 8px. Two rows at the same y are compared horizontally only |
 | `blocks-inside` | ✗ | Every `[data-block]` text block sits inside the sheet |
 | `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens: `paper`, `ink`, `soft`, `mid`, `cold`, `cool`, or `hot` (or `accent`) |
@@ -452,7 +453,7 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 
 | Marker | Who sets it | Meaning |
 |---|---|---|
-| `.row` | Fill | One run of words on one row of a fill region. Measured by `rows-fit`, `regions-apart`, `blocks-apart`, `silhouette` and `row-variety` |
+| `.row` | Fill | One run of words on one row of a fill region. Measured by `rows-fit`, `regions-apart`, `blocks-apart`, `silhouette`, `row-variety` and `thin-region` |
 | `data-region` | Fill | The region `id` on every `.row` and on every dots line. Lets the checks group rows by region |
 | `data-word` | Fill | The source word, as written in the spec, on every `.row`. Read by `words-drawn` |
 | `data-hot` | Render on the two full stops. Fill on hot rows, the hot dots line and a hot label | This element is meant to be in the hot colour. Anything in that colour without it fails `hot-tagged` |

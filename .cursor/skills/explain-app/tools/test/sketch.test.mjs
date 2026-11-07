@@ -22,19 +22,32 @@ test("the hourglass sketch: 42 columns, both regions, hot rows, texts, the floor
   assert.match(out, /^regions: A inputs \(21 rows\), B outputs \(19 rows\)/m);
   assert.match(out, /^floor: 884$/m);
   assert.match(out, /^coverage \d+% \(needs 15%, ok\), height \d+% \(needs 55%, ok\), width \d+% \(needs 60%, ok\)$/m);
-  assert.match(out, /^row widths: spread\/mean 0\.\d\d \(needs 0\.15, ok\)$/m);
+  assert.match(out, /^region inputs: spread\/mean 0\.\d\d \(needs 0\.25\), \d{3}px across on average \(needs 160\)$/m);
+  assert.match(out, /^region outputs: spread\/mean /m);
+  assert.doesNotMatch(out, /^! /m, "the hourglass has no warnings");
 });
 
 test("dots draw as #, and a figure with no fill rows says so", () => {
   const out = sketch(preset("warm-start"));
   assert.match(out, /#{29}/);
-  assert.match(out, /^row widths: no fill rows$/m);
+  assert.match(out, /^regions: no fill rows$/m);
   assert.match(out, /^floor: 920$/m);
 });
 
-test("the compose starter is a box, and the sketch says its widths are too even", () => {
+test("the compose starter is a box, and the sketch says so before render", () => {
   const spec = scaffoldSpec({ hash: "d73b88fe2d4e", repo: { name: "recipe" } }, { theme: "light", date: "2026-11-07", floor: 884 });
-  assert.match(sketch(spec), /^row widths: spread\/mean 0\.\d\d \(needs 0\.15, too low\)$/m);
+  const id = spec.figure.regions[0].id;
+  assert.match(sketch(spec), new RegExp(`^! region ${id} is a box; a silhouette changes width along its whole height \\(spread/mean 0\\.\\d\\d, needs 0\\.25\\)$`, "m"));
+});
+
+test("a box with a slanted top is a box, and a 90px column reads as a column", () => {
+  const spec = preset("hourglass");
+  spec.figure.regions[1] = { kind: "fill", id: "slab", polygon: [[100, 600], [500, 560], [500, 860], [100, 860]], words: ["lists", "dinners"], tone: "ink" };
+  spec.figure.regions.push({ kind: "fill", id: "post", polygon: [[640, 560], [730, 560], [730, 860], [640, 860]], words: ["a", "b"], tone: "ink" });
+  const out = sketch(spec);
+  assert.match(out, /^! region slab is a box; a silhouette changes width along its whole height/m);
+  assert.match(out, /^! region post reads as a column; widen it or make it part of the main silhouette \(\d+px across on average, under 160px\)$/m);
+  assert.doesNotMatch(out, /^! region inputs/m);
 });
 
 test("a region too short or below the floor is flagged before render", () => {
