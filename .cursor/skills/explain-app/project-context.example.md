@@ -14,19 +14,29 @@ Copy this file into the target app's repo at `.cursor/skills/explain-app/project
 
 <!-- formal | friendly | investor-brief -->
 
-## Main moment
+## Main moment, the story
 
 <!-- One sentence: the thing the product does that the poster should act out.
      e.g. "Pantry turns your recipes and leftovers into one week of dinners and a shopping list." -->
 
-## Hot word
+## Hot word (drawn silhouettes only)
 
 <!-- The one word, or two-word phrase, that matters most. It is set in the accent colour.
      It must be one of the words in the picture. e.g. "leftovers" -->
 
+## Field preference
+
+<!-- wave | terrain. Wave for a story of flow or hand-off, terrain for what is big and what matters.
+     Leave blank to let the skill choose. -->
+
+## Accent part
+
+<!-- The part the poster is about, by its id from `vyo parts`. e.g. "area:lib/plan" -->
+
 ## The picture
 
-<!-- Optional. One sentence describing the silhouette you want, and what it acts out.
+<!-- Optional. Fill this only if you want a drawn silhouette instead of a field.
+     One sentence describing the silhouette, and what it acts out.
      e.g. "An hourglass: everything we juggle in a week pours through one plan into a shopping list."
      Leave blank to let the skill invent one from the main moment. -->
 

@@ -14,7 +14,298 @@
 **A picture in mind**
 > Draw my codebase as an hourglass: everything my users throw at it, squeezed into one plan.
 
-## From the main moment to the picture
+## Choosing the field for three products
+
+Write the product's story in one sentence. If it moves something from one place to another, take wave. If it is about which parts carry the product, take terrain. Then run `vyo parts` and put the accent on the part the story is about.
+
+| Product | Story | Field | Accent part | Plain names |
+|---|---|---|---|---|
+| Pantry, a meal planner | Your recipes go in, one week of dinners comes out, and the list goes to the shop | wave | `area:lib/plan`, the part that builds the week | Two parts scan as "Plan". Call `area:components/plan` "week view" and `area:lib/plan` "the plan" |
+| Tally, a review inbox for small shops | Of all the parts, the one that picks today's review is the product | terrain | the part that ranks reviews | A scanned name like `RANKER2` is flagged. Call it "today's pick" |
+| Hypher, project memory for coding agents | A handoff leaves one agent and the next agent picks it up | wave | `area:packages/hypher-cli/src`, the command that saves and resumes | `area:hypher-web/convex` is flagged as "Convex", a vendor. Call it "server". Two parts both scan as "Inner workings", so give each its own name |
+
+Tally is made up. Pantry is the `recipe` test fixture, and Hypher's parts come from `explorations/2026-11-07-abstract-fields/hypher-facts.json`.
+
+## The fields, as full specs for Pantry
+
+Pantry is the `recipe` test fixture. It has 6 screens (recipes, a recipe, a new recipe, the weekly plan, settings, home), recipes with ingredients, a weekly plan, a shopping list, AI suggestions, and a weekly email every Monday at 8. It has payment code but no checkout screen, so each spec puts "paid plans" in `notBuilt`.
+
+Each block below is the preset file in `tools/presets/`. `compose --field <id>` writes the same shape with placeholders. The `facts` value is a placeholder: yours is the hash from your own scan, and `compose` writes it. The fixture is not a git repo, so `product` has no `commit`. Both specs name every part, not only the flagged ones, because the scanned names repeat ("Plan", "Recipes", "Main app").
+
+Render writes the counts line from the scan. Never type it:
+
+```
+6 screens, 3 kinds of request, 4 kinds of saved record, 3 outside services (email, payments, sign-in), 1 AI model, runs 1 job on its own
+```
+
+### wave
+
+Pantry's story is a flow: recipes go in, the week's plan forms, the list goes to the shop. The wave carries that flow down the page, and the accent on `area:lib/plan` lights the rows where the plan is built.
+
+```json
+{
+  "version": 3,
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "date": "2026-11-07"
+  },
+  "theme": "light",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "fits": "Pantry as a wave of its own parts, one row per share of its code, with the part that builds the week's plan in the accent.",
+    "regions": [
+      {
+        "kind": "field",
+        "id": "wave",
+        "field": "wave",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "sentence": "dinner, decided"
+      }
+    ],
+    "texts": [
+      {
+        "role": "masthead",
+        "id": "masthead",
+        "x": 50,
+        "y": 36,
+        "w": 490
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 56,
+        "y": 150,
+        "w": 420
+      },
+      {
+        "role": "aside",
+        "id": "aside",
+        "x": 56,
+        "y": 764,
+        "w": 240,
+        "text": "Every row is a part of Pantry, as many rows as it has code. The orange rows build the week's plan."
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "How it works",
+      "text": "Save the recipes you already cook. Pantry fills the week from them, suggests a few new ones, and builds the shopping list from what the plan needs."
+    },
+    {
+      "title": "Every Monday",
+      "text": "At 8 in the morning Pantry emails you the week's plan, so the first dinner is decided before the day starts."
+    },
+    {
+      "title": "Yours alone",
+      "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can pick up the week on any device."
+    }
+  ],
+  "notBuilt": [
+    "paid plans"
+  ]
+}
+```
+
+### terrain
+
+Read as a range, Pantry shows that its screens are the biggest part and that a few small parts do the planning. The accent is a glob, `area:lib/*`, so the plan, the suggestions and the recipe book all stand out as one ridge.
+
+```json
+{
+  "version": 3,
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "fits": "Pantry as a range of peaks, one per part, height by code and width by files, with the parts that plan the week and suggest recipes in orange.",
+    "regions": [
+      {
+        "kind": "field",
+        "id": "terrain",
+        "field": "terrain",
+        "accent": "area:lib/*",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      {
+        "role": "masthead",
+        "id": "masthead",
+        "x": 50,
+        "y": 36,
+        "w": 490
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 56,
+        "y": 150,
+        "w": 490
+      },
+      {
+        "role": "aside",
+        "id": "aside",
+        "x": 594,
+        "y": 64,
+        "w": 190,
+        "text": "Each peak is a part of Pantry: height by its code, width by its files. The orange peaks plan the week and suggest recipes."
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "How it works",
+      "text": "Save the recipes you already cook. Pantry fills the week from them, suggests a few new ones, and builds the shopping list from what the plan needs."
+    },
+    {
+      "title": "Every Monday",
+      "text": "At 8 in the morning Pantry emails you the week's plan, so the first dinner is decided before the day starts."
+    },
+    {
+      "title": "Yours alone",
+      "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can pick up the week on any device."
+    }
+  ],
+  "notBuilt": [
+    "paid plans"
+  ]
+}
+```
+
+## Sample chat reply
+
+```markdown
+Pantry plans a week of dinners from the recipes you already cook, then turns the plan into a shopping list and emails it every Monday.
+
+I drew Pantry as a wave of its own parts, one row per share of its code, from saved recipes at the top to the recipe book at the bottom. The rows that build the week's plan are in orange, because the plan is what Pantry is for.
+
+- PNG: /Users/<you>/code/pantry/vyo/recipe-poster.png
+- PDF: /Users/<you>/code/pantry/vyo/recipe-poster.pdf
+
+Gaps: the code has payments, but there is no checkout screen, so the poster lists "paid plans" under "Not built yet". Add `vyo/` to `.gitignore` unless you want to commit the poster.
+```
+
+## Drawing your own silhouette
+
+Use this path when the owner asks for a picture, or the scan is empty. You invent one silhouette that acts out the product's main moment and describe it as fill regions and texts. Start from `compose --from <preset>`, then sketch, render and check as for a field.
+
+### Find the shape
+
+Start from the verb in the main moment, not the category.
+
+| When the product... | Try |
+|---|---|
+| squeezes many things into one | hourglass |
+| carries something from one place to another | ribbon |
+| reads everything, then focuses on one thing | eye |
+| warms up, or turns unknown into known | dot letters, cold to hot |
+| grows, or takes you up in stages | tree or stair |
+| joins two sides | bridge or knot |
+| guards or keeps safe | shield or wall |
+| repeats on a cycle | ring |
+
+Bend it to the product. A ring can break open where today's item leaves.
+
+Make one strong silhouette:
+
+- Draw one dominant silhouette, not separate blocks. Two blocks side by side read as two columns, whatever their tops do.
+- Its outline is a continuous curve across the whole band. The profile's half-widths change at most stops, not only at the ends.
+- Negative space goes inside the shape as holes, not as gaps between blocks, like the eye's empty pupil.
+- Aim for about a third of the band covered.
+- A region narrower than about 160px reads as a column. `thin-region` warns under 160px on average. `row-variety` fails a region whose line widths spread less than 0.25 of their mean.
+- A hot region cycles its words down every row, so give it two or three short phrases, not a list.
+- The thumbnail test: shrink it in your head to a stamp and name it in one word. That word must describe what the product does.
+
+None of these acts out a moment. Never use:
+
+- a heart, for anything about people or care
+- a plain circle, which passes every check, or a box filled edge to edge
+- a blob with no edge a person could name
+- "01, 02, 03" step markers
+
+The words:
+
+- Every word is a noun the product's user would say: "leftovers", "busy nights", "the shopping list". Never a feature name, a role word or a code name. Product and tool names the user actually uses today (Claude Code, Codex, Cursor) are allowed; they are not jargon.
+- Each region has one job and its own words: what goes in, what comes out, what travels.
+- One hot word on the whole poster, where the moment happens: the waist, the iris, the last line.
+- Tones give depth. `soft` is far or past, `ink` is near or now. Two or three tones step down a region, each row taking the nearest stop. `cold` and `cool` are blue-greys for a state not yet warm.
+
+### Describe the regions
+
+The sheet is 840 by 1190 px and y grows downward. A figure has `fits` (at most 160 characters), 1 to 6 `regions` and 1 to 6 `texts`.
+
+A fill region has `kind: "fill"`, `id`, one geometry, `words` (2 to 14, at most 24 characters each) and `tone`. Options: `holes` (shapes to cut out), `band` (1 to 4 rows per word), `size` (11 or 12), `caps`, and `hot` (every row in the accent). Geometry, by preference: `profile`, 3 to 24 stops `[y, cx, halfWidth]` with y increasing; `ellipse` `{ cx, cy, rx, ry }`; `polygon`, 3 to 40 `[x, y]` points for hard corners; `path`, an SVG path.
+
+A dots region spells 2 to 4 words of at most 5 letters in squares: `kind: "dots"`, `id`, `lines`, `x`, `y`, `cell` (px per square), and `tones`, one per line, which may include `hot`. A dots line is 29 squares wide and 7 tall, with lines 9 squares apart.
+
+A text has `role` (`masthead`, `headline`, `display`, `aside` or `label`), `id`, `x`, `y`, `w`, and optional `size`, `align` (`left`, `right` or `center`) and `hot`. Asides, displays and labels need `text`. One masthead prints the product name, shrunk to fit `w`. At most one headline prints `spec.headline`. A `display` is a bold sans line of at most 40 characters A label with `hot: true` is set in the accent, uppercase and tracked. Default sizes: masthead 84 (48 to 120), headline 22 (18 to 40), display 56 (32 to 64), aside 12 (10 to 14), label 12 (10 to 32), hot label 26. No region or text may use the ids `note`, `counts`, `notBuilt`, `provenance` or `credit`.
+
+Rows are 16px tall, 14px at size 11, on a sheet-wide grid. The tool skips any part of a row within 12px of a text and drops runs under 24px. A fill region needs 4 rows or more.
+
+Six worked profiles for a band from y 180 to 860. Each passed `silhouette` and `row-variety` as one region. Move or stretch them, and keep holes inside the outline.
+
+| Shape | `profile` | Hole |
+|---|---|---|
+| flame | `[[180,450,4],[300,400,80],[440,450,180],[620,410,270],[770,420,260],[860,420,130]]` | |
+| bottle | `[[180,420,50],[300,420,50],[380,420,110],[460,420,260],[800,420,270],[860,420,230]]` | |
+| bridge arch | `[[200,420,40],[300,420,200],[460,420,340],[640,420,390],[860,420,400]]` | profile `[[500,420,30],[580,420,180],[700,420,260],[860,420,290]]` |
+| leaf | `[[180,560,4],[300,500,160],[480,440,260],[660,380,230],[800,330,110],[860,310,6]]` | |
+| key | `[[180,420,150],[240,420,260],[340,420,260],[420,420,140],[470,420,60],[700,420,60],[740,480,120],[860,480,120]]` | ellipse `cx 420, cy 300, rx 110, ry 60` |
+| wave | `[[180,330,90],[260,270,190],[340,330,230],[460,430,250],[640,430,330],[860,420,390]]` | ellipse `cx 230, cy 380, rx 70, ry 60` |
+
+A figure with no fill region (dots only) skips `row-variety`, `thin-region` and `one-region`.
+
+### Fill the spec
+
+`compose` fills `version`, `facts`, `product`, `theme` (`light` or `dark`) and a placeholder `figure`, which render rejects.
+
+| Field | What it is |
+|---|---|
+| `product.name` | The customer-facing name. `product-name` warns while it is the folder name |
+| `accent` | Optional hot colour, a hex |
+| `headline` | One plain sentence about the outcome, at most 72 characters |
+| `hot` | The one word or two-word phrase that matters, drawn in the figure |
+| `notes` | 2 or 3 footer columns. `title` at most 24 characters, `text` at most 220 |
+| `notBuilt` | 0 to 6 plain items (at most 32 characters each) the code has but a user cannot use yet |
+
+Each note does a job the picture cannot: how it works, what you get, what stays private, what runs on its own, or proof. Never type a count, a commit or a date into the footer; render writes those. Follow [plain-language-rules.md](plain-language-rules.md). The presets and the invented figures below are worked specs.
+
+### From the main moment to the picture
 
 Write the main moment as one sentence. Find its verb. The verb gives the shape.
 
@@ -25,21 +316,13 @@ Write the main moment as one sentence. Find its verb. The verb gives the shape.
 | Tally, a review inbox for small shops | Reads every review and flags the one to answer today | reads, then focuses | An eye. The lids are every review, the iris is the one that matters |
 | A habit app | A streak that warms up day by day | warms up | Dot letters that go from cold blue-grey to the accent |
 
-## The presets, as full specs for Pantry
+### The fill presets, as full specs for Pantry
 
-Pantry is the `recipe` test fixture. It has 6 screens (recipes, a recipe, a new recipe, the weekly plan, settings, home), recipes with ingredients, a weekly plan, a shopping list, AI suggestions, and a weekly email every Monday at 8. It has payment code but no checkout screen, so every spec puts "paid plans" in `notBuilt`.
+Pantry is the same fixture as above. `node tools/vyo.mjs presets` lists these four beside wave and terrain. `compose --from <id>` copies one with its words replaced by placeholders. A poster that keeps a preset's geometry unchanged gets the `preset-copy` warning, so use them to learn from or to bend, not to ship as they are.
 
-`node tools/vyo.mjs presets` lists these four. `compose --from <id>` copies one with its words replaced by placeholders. A poster that keeps a preset's geometry unchanged gets the `preset-copy` warning, so use them to learn from or to bend, not to ship as they are.
+Each block below is the preset file in `tools/presets/`, with the same words and geometry. Only the layout of the number lists is tighter.
 
-Each block below is the preset file in `tools/presets/`, with the same words and geometry. Only the layout of the number lists is tighter. The `facts` value is a placeholder: yours is the hash from your own scan, and `compose` writes it. The fixture is not a git repo, so `product` has no `commit`.
-
-Render writes the counts line from the scan. Never type it:
-
-```
-6 screens, 3 kinds of request, 4 kinds of saved record, 3 outside services (email, payments, sign-in), 1 AI model, runs 1 job on its own
-```
-
-### hourglass
+#### hourglass
 
 Two profile regions meet at a narrow waist, 30px each side of x 420 where `inputs` ends at y 512 and `outputs` starts at y 576. The top holds what you juggle and steps from soft to mid. The bottom holds what comes out, in ink. The hot label sits in the gap, `align: "center"` in a wide box, and at size 26 by default.
 
@@ -154,7 +437,7 @@ Two profile regions meet at a narrow waist, 30px each side of x 420 where `input
 }
 ```
 
-### ribbon
+#### ribbon
 
 Three profile regions make one ribbon that runs from top left to bottom right. Each ends on the pinch where the next begins. The middle region is the back face of the twist, set soft so the ribbon reads as turning over. `band: 3` keeps each word for three rows, so the words read as stripes along the ribbon. The two ends are `display` texts, bold sans lines of the poster's own words: "Plan it in the kitchen." at the top and "Shop it in the aisle." at the bottom right, with `align: "right"`.
 
@@ -289,7 +572,7 @@ Three profile regions make one ribbon that runs from top left to bottom right. E
 }
 ```
 
-### eye
+#### eye
 
 The lids are a profile with a hole, and their tone steps soft, mid, soft down the rows. The iris is an ellipse with its own hole and `hot: true`, so every iris row is in the accent. The masthead is centred at size 72 in the hole, and the fill clears it, which leaves the pupil empty.
 
@@ -392,7 +675,7 @@ The lids are a profile with a hole, and their tone steps soft, mid, soft down th
 }
 ```
 
-### warm-start
+#### warm-start
 
 One dots region spells four words in squares. Its `tones` run cold, cool, ink, hot, and the last line also equals the spec's `hot`, so it is set in the accent. There are no fill regions, so `row-variety` and `one-region` are skipped. With 2 notes the footer is shorter and the floor is 920.
 
@@ -444,11 +727,11 @@ One dots region spells four words in squares. Its `tones` run cold, cool, ink, h
 }
 ```
 
-## Three invented pictures
+### Three invented pictures
 
 None of these is a preset. Each starts from a main moment, finds its verb, and builds one silhouette a person would name at thumbnail size. The products are made up. Each block below is the `figure` only. Each passes every check with three notes and a short not-built list, but the numbers are a first draft to sketch from.
 
-### A bridge for a sync tool
+#### A bridge for a sync tool
 
 Tandem keeps the files on your phone and your laptop the same. Main moment: the photo you take on your phone is on your laptop when you sit down. The verb is "joins", so the picture is one bridge arch, its left foot on the phone's side and its right foot on the laptop's. The whole arch is made of what crosses, soft at the crown and ink at the feet. The opening under it is a hole, so the water stays empty paper inside the shape. Two separate towers with a deck between them would read as two columns, so the arch is one region with one outline.
 
@@ -472,7 +755,7 @@ Tandem keeps the files on your phone and your laptop the same. Main moment: the 
 
 `hot` is "latest version". It matches a word in the arch.
 
-### A stair for a learning app
+#### A stair for a learning app
 
 Rungs teaches a language ten minutes a day, and each lesson opens the next. Main moment: every lesson you finish is one step up, and the top step is your first real conversation. The verb is "climbs", so the picture is a stair rising from left to right. One polygon draws the lower steps with the early lessons. Its two tones split it: soft in the upper rows and ink in the lower, because the lessons you have done are near and solid. Above the top step, a speech bubble is its own region with `hot: true`, so the goal is the one bright thing on the page. A plain box on top would read as a column.
 
@@ -497,7 +780,7 @@ Rungs teaches a language ten minutes a day, and each lesson opens the next. Main
 
 `hot` is "first conversation". The steps change width on every step, and the bubble is round, so each region passes `row-variety`.
 
-### A shield for a backup tool
+#### A shield for a backup tool
 
 Nightly copies a small office's files every night. Main moment: whatever the office made today is safe by morning. The verb is "guards", so the picture is a shield. A profile draws the outline, wide at the top and narrowing to a point. A smaller profile inside it is cut out as a hole and drawn again as its own region in the accent. That gives the shield a rim of what it guards and an emblem of the copy that keeps it.
 
@@ -522,16 +805,3 @@ Nightly copies a small office's files every night. Main moment: whatever the off
 ```
 
 `hot` is "last night". The emblem region has `hot: true`, so all its rows are in the accent.
-
-## Sample chat reply
-
-```markdown
-Pantry plans a week of dinners from the recipes you already cook, then turns the plan into a shopping list and emails it every Monday.
-
-I drew an hourglass: recipes, leftovers, cravings and busy nights pour through one week's plan and come out as a shopping list and a Monday email.
-
-- PNG: /Users/<you>/code/pantry/vyo/recipe-poster.png
-- PDF: /Users/<you>/code/pantry/vyo/recipe-poster.pdf
-
-Gaps: the code has payments, but there is no checkout screen, so the poster lists "paid plans" under "Not built yet". The figure started from the hourglass preset, and I reshaped the waist and the bottom so it is Pantry's own. Add `vyo/` to `.gitignore` unless you want to commit the poster.
-```

@@ -1,6 +1,6 @@
 # Plain language rules
 
-These rules cover every word you write into the poster spec: the headline, the region words, the texts, the notes and `notBuilt`. Render checks the banned terms and file paths for you. The rest is your judgment.
+These rules cover every word you write into the poster spec: the headline, the part names, the woven sentence, the region words, the texts, the notes and `notBuilt`. Render checks the banned terms and file paths for you. The rest is your judgment.
 
 ## Principles
 
@@ -49,6 +49,15 @@ Render rejects any word in the first column, in any visible text. Use the second
 | holistic | Leave it out |
 | disruptive | Leave it out. Show the contrast instead |
 | revolutionary | Leave it out. Show the contrast instead |
+
+## Naming the parts of a field
+
+A field prints each part of the code as rows of its name. `vyo parts` lists the scanned names and flags the ones that read as code. Give each flagged part a plain name in the field's `names`.
+
+- **Say what the part does for a person.** "server", "sign-in", "payments", "the plan", "recipe cards".
+- **Never the vendor, the folder or the code name.** "Convex" becomes "server". "lib" becomes what it holds. "API" becomes "requests".
+- **One name per part.** When two parts scan with the same name, like two "Inner workings", give each its own.
+- **Short.** At most 24 characters. The row prints it in lower case, so capitals add nothing.
 
 ## Naming the words in the figure
 
