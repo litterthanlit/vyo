@@ -24,30 +24,41 @@ const line = (s) => {
   return m ? `<b>${esc(m[1])}</b>${esc(s.slice(m[0].length))}` : esc(s);
 };
 
-// The footer's rows, top to bottom, in CSS px from the hairline.
-const FOOT = { counts: 14, notes: 60, noteLine: 18, noteLines: { 2: 7, 3: 9 }, gap: 16, meta: 16 };
-const footerHeight = (notes) => FOOT.notes + FOOT.noteLines[notes] * FOOT.noteLine + FOOT.gap + FOOT.meta;
+// The footer, top to bottom in CSS px from the hairline: counts at 14, notes at 60 (9 lines of 18px
+// for three notes, 7 for two), a 16px gap, then 16px meta lines. "Not built yet: …" takes its own
+// meta lines, flush left, wrapped at spaces to the 728px width; the last meta line holds provenance
+// on the left and the credit on the right.
+const FOOT = { counts: 14, notes: 60, noteLine: 18, noteLines: { 2: 7, 3: 9 }, gap: 16, meta: 16, metaSize: 11, width: 728 };
+// Commit Mono advances 0.6em, so a meta line holds a known number of characters.
+const META_CHARS = Math.floor(FOOT.width / (FOOT.metaSize * 0.6));
+
+function wrapMeta(text) {
+  const lines = [];
+  for (const word of text.split(" ")) {
+    const last = lines.length - 1;
+    if (last >= 0 && lines[last].length + 1 + word.length <= META_CHARS) lines[last] += ` ${word}`;
+    else lines.push(word);
+  }
+  return lines;
+}
 
 function footer(spec, facts, shape) {
-  const height = footerHeight(shape.notes);
+  const notBuilt = spec.notBuilt.length ? wrapMeta(`Not built yet: ${spec.notBuilt.join(", ")}`) : [];
+  const height = FOOT.notes + FOOT.noteLines[shape.notes] * FOOT.noteLine + FOOT.gap + (notBuilt.length + 1) * FOOT.meta;
+  const lastLine = height - FOOT.meta;
   const gutter = 22;
-  const col = (728 - gutter * (shape.notes - 1)) / shape.notes;
-  const meta = `position:absolute;top:${height - FOOT.meta}px;font-size:11px;line-height:${FOOT.meta}px;color:var(--soft);white-space:nowrap`;
+  const col = (FOOT.width - gutter * (shape.notes - 1)) / shape.notes;
+  const meta = `position:absolute;font-size:${FOOT.metaSize}px;line-height:${FOOT.meta}px;color:var(--soft);white-space:nowrap`;
   const counts = bandLine(bandCounts(facts));
-  // Centred in the gap between provenance and credit; Commit Mono advances 0.6em, so widths are known here.
-  const metaWidth = (text) => text.length * 11 * 0.6;
-  const notBuilt = spec.notBuilt.length ? `Not built yet: ${spec.notBuilt.join(", ")}` : "";
-  const gapLeft = metaWidth(provenance(spec.product));
-  const notBuiltLeft = Math.round(gapLeft + (728 - metaWidth("Drawn by Vyo.") - gapLeft - metaWidth(notBuilt)) / 2);
   const notes = spec.notes
     .map((n, i) => `<div class="t" data-block="note" data-owner="notes" style="left:${i * (col + gutter)}px;top:${FOOT.notes}px;width:${col}px"><b>${esc(n.title)}</b><br>${esc(n.text)}</div>`)
     .join("");
-  const html = `<div style="position:absolute;left:0;top:0;width:728px;height:1px;background:var(--ink)"></div>
-${counts ? `<div class="t" data-block="counts" data-owner="render" style="left:0;top:${FOOT.counts}px;width:728px;font-size:11px;line-height:16px;color:var(--soft)">${esc(counts)}</div>` : ""}
+  const html = `<div data-footer style="position:absolute;left:0;top:0;width:${FOOT.width}px;height:1px;background:var(--ink)"></div>
+${counts ? `<div class="t" data-block="counts" data-owner="render" style="left:0;top:${FOOT.counts}px;width:${FOOT.width}px;font-size:11px;line-height:16px;color:var(--soft)">${esc(counts)}</div>` : ""}
 ${notes}
-<div data-block="provenance" data-owner="render" style="${meta};left:0">${esc(provenance(spec.product))}</div>
-${notBuilt ? `<div data-block="notBuilt" data-owner="notBuilt" style="${meta};left:${notBuiltLeft}px">${esc(notBuilt)}</div>` : ""}
-<div data-block="credit" data-owner="render" style="${meta};right:0">Drawn by Vyo<span data-hot data-owner="render" style="color:var(--hot)">.</span></div>`;
+${notBuilt.length ? `<div data-block="notBuilt" data-owner="notBuilt" style="${meta};left:0;top:${lastLine - notBuilt.length * FOOT.meta}px">${notBuilt.map(esc).join("<br>")}</div>` : ""}
+<div data-block="provenance" data-owner="render" style="${meta};left:0;top:${lastLine}px">${esc(provenance(spec.product))}</div>
+<div data-block="credit" data-owner="render" style="${meta};right:0;top:${lastLine}px">Drawn by Vyo<span data-hot data-owner="render" style="color:var(--hot)">.</span></div>`;
   return { html, height };
 }
 
