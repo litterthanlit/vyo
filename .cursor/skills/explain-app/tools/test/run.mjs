@@ -45,7 +45,7 @@ for (const id of Object.keys(SHAPES)) {
 
 const PLANTED = [
   ["a file path", "hourglass", (s) => (s.notes[0].text = "Saved by lib/plan/save.ts each week."), /^✗ spec: notes\[0\]\.text: a file path/m],
-  ["jargon", "hourglass", (s) => (s.headline = "Your recipes behind one API."), /^✗ spec: headline: jargon: "api"/m],
+  ["jargon", "eye", (s) => (s.headline = "Your recipes behind one API."), /^✗ spec: headline: jargon: "api"/m],
   ["a hot word not in the slots", "ribbon", (s) => (s.hot = "breakfast"), /^✗ spec: hot: "breakfast" must be/m],
   ["a fourth note", "hourglass", (s) => s.notes.push({ title: "More", text: "One more note." }), /^✗ spec: notes: 4 notes; hourglass takes exactly 3/m],
   [
@@ -54,7 +54,7 @@ const PLANTED = [
     (s) => (s.slots.top = ["weeknight dinner", "saved favourites", "pantry leftovers", "seasonal produce", "kitchen cupboard", "allergies listed"]),
     /^✗ rows-fit: the row "[^"]+" needs \d+px but has \d+px; use shorter words/m,
   ],
-  ["a note that runs into the bottom line", "hourglass", (s) => (s.notes[1].text = "Plain words that keep going. ".repeat(8).slice(0, 220).replace(/ /g, "")), /^✗ blocks-(apart|inside): /m],
+  ["a note that runs into the bottom line", "eye", (s) => (s.notes[1].text = "Plain words that keep going. ".repeat(8).slice(0, 220).replace(/ /g, "")), /^✗ blocks-(apart|inside): /m],
   ["a stale facts hash", "warm-start", (s) => (s.facts = "000000000000"), /^✗ facts-hash: spec\.facts is 000000000000 but facts\.json is /m],
 ];
 

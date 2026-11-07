@@ -2,6 +2,7 @@
 import hourglass from "./hourglass.mjs";
 import ribbon from "./ribbon.mjs";
 import warmStart from "./warm-start.mjs";
+import eye from "./eye.mjs";
 
 const KINDS = ["words", "phrase", "line"];
 
@@ -25,4 +26,4 @@ function assertShape(shape) {
 }
 
 /** @type {Record<string, import("../spec.mjs").Shape>} */
-export const SHAPES = Object.fromEntries([hourglass, ribbon, warmStart].map((s) => [s.id, assertShape(s)]));
+export const SHAPES = Object.fromEntries([hourglass, ribbon, warmStart, eye].map((s) => [s.id, assertShape(s)]));
