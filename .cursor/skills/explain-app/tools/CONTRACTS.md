@@ -25,14 +25,14 @@ One dispatcher, `tools/vyo.mjs` (`package.json` bin `vyo`). All commands run fro
 node tools/vyo.mjs scan    <repo-dir> --out <dir>/<repo>-facts.json
 node tools/vyo.mjs show    <facts.json>
 node tools/vyo.mjs shapes
-node tools/vyo.mjs compose <facts.json> --shape <id> [--repo <dir>] [--theme light|dark] [--out <spec.json>]
+node tools/vyo.mjs compose <facts.json> --shape <id> [--repo <dir>] [--theme light|dark] [--out <spec.json>] [--force]
 node tools/vyo.mjs render  <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--paper fit|a4|letter]
 node tools/vyo.mjs check   <spec.json> [--facts <facts.json>]
 ```
 
 - `scan` and `show` are the v1 scanner, unchanged. `scan` never writes inside the scanned repo except to `--out`.
 - `shapes` prints, for each shape: id, "fits when", themes, notes count, and each slot with its kind, prompt and limits.
-- `compose` writes a scaffold spec (§3). It fills `facts` from the facts file, `product.name` and `product.repo` from `facts.repo.name`, and `theme` from `--theme` or the shape's first theme. It rejects a theme the shape does not declare. Every slot holds a placeholder, which validation rejects, so a scaffold cannot render.
+- `compose` writes a scaffold spec (§3). It fills `facts` from the facts file, `product.name` and `product.repo` from `facts.repo.name`, and `theme` from `--theme` or the shape's first theme. It rejects a theme the shape does not declare. It refuses to overwrite an existing spec, which may hold the agent's words, unless `--force` is given. Every slot holds a placeholder, which validation rejects, so a scaffold cannot render.
   - With `--repo <dir>`: `product.commit` is `git -C <dir> log -1 --format=%h` and `product.date` is `git -C <dir> log -1 --format=%cs`, so reruns are stable.
   - Without it: no `commit`, and `date` is today's ISO date. `facts.json` stays free of timestamps.
 - `render` validates the spec, builds the HTML, writes a PNG at 2× and a PDF, then runs every check (§6). Default `--facts` is `<repo>-facts.json` beside the spec, where `<repo>` is `product.repo`. Default `--out` is the spec's directory. Outputs: `<repo>-poster.html`, `<repo>-poster.png`, `<repo>-poster.pdf`. The HTML embeds its fonts as base64 data URIs.
@@ -197,19 +197,19 @@ type Spec = {
   };
   theme: "light" | "dark";       // must be a key of the shape's `themes`
   shape: ShapeId;
-  headline: string;              // one serif sentence about the outcome, ≤ 72 chars. Omitted only when the shape declares headline: false
+  headline: string;              // one serif sentence about the outcome, ≤ 72 chars
   hot: string;                   // one word or two-word phrase, set in the accent. See "hot" below
   slots: Record<string, string | string[]>;   // exactly the shape's slots (§4)
   notes: { title: string; text: string }[];   // exactly the shape's `notes` count (2 or 3). title ≤ 24 chars, text ≤ 220
-  notBuilt: string[];            // 0–6 plain items, rendered as "Not built yet: a, b, c". [] renders nothing
-  audience?: string;             // optional, folio only
+  notBuilt: string[];            // 0–6 plain items of ≤ 32 chars, rendered as "Not built yet: a, b, c". [] renders nothing
+  audience?: string;             // optional, ≤ 40 chars
 };
 ```
 
 Validation lives in `lib/spec.mjs`. It is pure and every error names the field.
 
 - Unknown keys are rejected, at every level.
-- Every limit is enforced: lengths, list sizes, notes count, `notBuilt` size.
+- Every limit is enforced. The shared limits are `LIMITS` in `lib/spec.mjs`, and the table below states them. Slot limits come from the shape (§4).
 - `slots` holds every slot the shape declares, with no placeholder value, and no slot the shape does not declare.
 - A `words` slot is a `string[]` within `min` and `max`. A `phrase` or `line` slot is a string within `max`.
 - `**bold**` markup is allowed only at the start of a `line` slot. It renders as `<b>`.
@@ -217,6 +217,17 @@ Validation lives in `lib/spec.mjs`. It is pure and every error names the field.
 - Every string passes `isJargon` from `lib/jargon.mjs` (exact tokens, whole word, case-folded).
 - No file paths: no `/`-containing token with an extension, no `src/`, no `lib/`, no `.tsx` and the like.
 - No "01/02/03" style markers and no middle-dot meta strings.
+
+| Field | Limit |
+|---|---|
+| `product.name` | 24 characters |
+| `headline` | 72 characters |
+| `hot` | 24 characters, one word or two |
+| `notes[].title` | 24 characters |
+| `notes[].text` | 220 characters |
+| `notBuilt` | 6 items, 32 characters each |
+| `audience` | 40 characters |
+| Each word in a `words` slot | 24 characters unless the slot sets `each`: `hourglass` 16, `ribbon` `travels` 22, `eye` 18, `warm-start` `lines` 5 |
 
 `lib/jargon.mjs` exports `BANNED: string[]` and `isJargon(text): string[]`, which returns the offending tokens. The "Instead of" column of the banned-term table in `plain-language-rules.md` holds the same tokens, and a test parses that table and compares.
 
@@ -229,7 +240,7 @@ Each shape is one module, `lib/shapes/<id>.mjs`, with a default export. `lib/sha
 ```ts
 type Tokens = Record<string, string> & { hot: string };   // CSS variable name → hex. One of them is `hot`
 type Slot =
-  | { kind: "words"; min: number; max: number; prompt: string }    // string[]. warm-start's `lines` also caps each item at 5 letters, letters only
+  | { kind: "words"; min: number; max: number; each?: number; letters?: true; prompt: string }    // string[]. `each` caps one item (default LIMITS.word). warm-start's `lines` sets each: 5 and letters: true
   | { kind: "phrase"; max: number; prompt: string }                // string, set in caps by the shape
   | { kind: "line"; max: number; prompt: string };                 // one sentence, may start with **bold**
 type Shape = {
@@ -237,8 +248,9 @@ type Shape = {
   fits: string;                  // "fits when", printed by `vyo shapes`. The agent picks by this
   themes: { light?: Tokens; dark?: Tokens };   // only the themes the shape has
   notes: 2 | 3;                  // footer columns
-  headline?: false;              // false when the shape has no headline. Otherwise headline is required
   slots: Record<string, Slot>;
+  hotWords(slots): string[];     // the words `hot` may match
+  hotRule: string;               // the same rule in words, used in the error message
   draw(spec: Spec, ctx: DrawCtx): string;      // HTML for the whole 840×1190 sheet
 };
 type DrawCtx = {
@@ -246,6 +258,10 @@ type DrawCtx = {
   headline: string;              // the serif line, ready to place
   footer: string;                // §5, ready to place
   footerHeight: number;          // place the footer at top = 1190 − footerHeight − margin
+  mastFont: string;              // the masthead's font-family value
+  esc(s): string;                // HTML-escape
+  line(s): string;               // a `line` slot as HTML, with the leading **bold** as <b>
+  json(v): string;               // JSON safe to inline in a <script>
 };
 ```
 
@@ -302,26 +318,28 @@ The counts line and provenance are exempt from the jargon and file-path checks, 
 
 ## 6. Checks
 
-The checks are one table in `lib/check.mjs` of `{ id, level, run }` records, so this list and the README come from the same source. The spec checks are pure. The rest run in the rendered page through Playwright.
+The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, about, run }` records. `tools/test/docs.test.mjs` fails when this table or the README's drifts from it. A `spec` stage check is pure and runs before render. A `page` stage check judges the measurements `lib/inspect.js` takes in the rendered page through Playwright. `✗` fails the run, `!` is a warning.
 
 | id | Level | What it measures |
 |---|---|---|
-| `spec` | ✗ | The spec passes every rule in §3 |
+| `spec` | ✗ | The spec passes every rule in §3. When it fails, no other check runs |
 | `facts-hash` | ✗ | `spec.facts` equals the facts file's `hash` |
-| `rows-fit` | ✗ | Every `.row` has `scrollWidth ≤ clientWidth` and sits inside the 840×1190 sheet |
-| `words-drawn` | ✗ | Every slot word, and `hot`, appears case-folded in at least one rendered `.row` |
-| `blocks-apart` | ✗ | The `Range` client rects of the `[data-block]` elements do not intersect, and all sit inside the sheet |
-| `accent` | ✗ | Every element whose computed colour, or square background, equals the `hot` token carries `data-hot`. At least one `data-hot` element exists besides the two full stops |
-| `palette` | ✗ | Every computed `color` on an element with a text node, every square's `background-color`, and every visible box's `background-color` is one of the theme's tokens. `opacity` is allowed |
+| `facts-empty` | ! | `facts.empty` is true: the scan found nothing to count, so the footer shows provenance only |
+| `product-name` | ! | `product.name` equals `facts.repo.name`, the folder name |
+| `slot-at-max` | ! | A slot is filled to its limit, which risks crowding |
+| `drawn` | ✗ | The shape's script ran to the end: the page raised no error and set `window.drawn` |
 | `fonts` | ✗ | `document.fonts` holds a `FontFace` with status `loaded` for Commit Mono 400, Commit Mono 700 and Newsreader 400 |
-| `visible-text` | ✗ | `isJargon` and the file-path rule find nothing in the visible text, the counts line and provenance excepted |
-| `notes-count` | ✗ | The footer has exactly the shape's `notes` count of columns |
-| `counts-line` | ✗ | The rendered counts line equals the text built from `bandCounts(facts)` |
-| `masthead-font` | ! | Inter Display or Inter resolved for the masthead. The check compares a probe string's width against the fallback |
-| `slot-at-max` | ! | A slot is at its maximum length or item count |
+| `masthead-font` | ! | Inter Display or Inter is installed for the product name |
+| `rows-fit` | ✗ | Every `.row` has `scrollWidth ≤ clientWidth` and sits inside the 840×1190 sheet |
+| `words-drawn` | ✗ | Every slot word appears in a rendered `.row`, and `hot` appears in the accent colour in the figure |
+| `blocks-apart` | ✗ | No two `[data-block]` text blocks overlap |
+| `blocks-inside` | ✗ | Every `[data-block]` text block sits inside the sheet |
+| `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens |
+| `hot-tagged` | ✗ | Anything in the `hot` colour carries `data-hot` |
+| `copy` | ✗ | The visible words hold no banned term, file path, "01/02/03" marker or middle dot. The masthead and the render-owned footer lines are exempt |
+| `notes` | ✗ | The footer shows the shape's `notes` count of notes |
+| `band` | ✗ | The footer counts line equals the line built from `bandCounts(facts)` |
 | `headline-lines` | ! | The headline wraps to more than 2 lines |
-| `facts-empty` | ! | `facts.empty` is true. Message: `! no application facts` |
-| `product-name` | ! | `product.name` equals `product.repo`. Message: `! product name equals the folder name` |
 
 ---
 
@@ -331,7 +349,7 @@ Shapes produce, and the checks read, these markers:
 
 | Marker | Who sets it | Meaning |
 |---|---|---|
-| `data-hot` | Render on the two full stops. The shape on everything else in the accent | This element is meant to be in the `hot` colour. Anything in that colour without it fails `accent` |
+| `data-hot` | Render on the two full stops. The shape on everything else in the accent | This element is meant to be in the `hot` colour. Anything in that colour without it fails `hot-tagged` |
 | `data-block` | The shape | A text block to measure for overlap: masthead, headline, asides, blurb, notes, footer lines |
 | `.row` | The shape | One row of words in the figure. Measured by `rows-fit` and read by `words-drawn` |
 | `window.drawn` | The shape's script | Set to `true` after the fonts load and every row is laid out. Render waits for it before the screenshot, the PDF and the checks |

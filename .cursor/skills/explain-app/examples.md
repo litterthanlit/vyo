@@ -53,7 +53,7 @@ Render writes this counts line from the scan. Never type it:
   "headline": "A week of dinners, planned in one go.",
   "hot": "leftovers",
   "slots": {
-    "top": ["recipes", "cravings", "leftovers", "busy nights", "allergies", "what's in season", "the budget", "family favourites"],
+    "top": ["recipes", "cravings", "leftovers", "busy nights", "allergies", "what's in season", "the budget", "family picks"],
     "waist": "ONE WEEK",
     "bottom": ["shopping list", "tonight's dinner", "Monday's email", "next week"],
     "asideLeft": "What you juggle. Recipes, cravings, leftovers, allergies, busy nights.",

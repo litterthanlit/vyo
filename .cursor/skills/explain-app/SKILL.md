@@ -22,10 +22,11 @@ You write one small JSON spec. The tools measure, draw and check everything else
 ## Set up once
 
 ```bash
-cd tools && npm install && bash fetch-fonts.sh
+npm install --prefix tools
+bash tools/fetch-fonts.sh
 ```
 
-If Playwright's Chromium is not installed, run `npx playwright install chromium` or set `VYO_CHROMIUM` to a Chromium binary.
+If Playwright's Chromium is not installed, run `npx --prefix tools playwright install chromium` or set `VYO_CHROMIUM` to a Chromium binary.
 
 ## Make the poster
 
@@ -42,6 +43,7 @@ In the commands, `<repo>` is the app's directory and `<name>` is its folder name
    ```bash
    node tools/vyo.mjs compose <repo>/vyo/<name>-facts.json --shape <id> --repo <repo> --out <repo>/vyo/<name>-poster.json
    ```
+   `compose` refuses to overwrite an existing spec unless you pass `--force`. Without `--theme` it uses the shape's first theme.
 6. Fill every slot in the spec in the user's words. See the next section.
 7. Render: `node tools/vyo.mjs render <repo>/vyo/<name>-poster.json`.
 8. Fix every `✗` line. Render exits 1 until none is left. Weigh every `!` line, and fix it unless you have a reason to keep it.

@@ -11,23 +11,24 @@ Run them from the skill directory.
 | `node tools/vyo.mjs scan <repo-dir> --out <dir>/<repo>-facts.json` | Reads the repo and writes `facts.json`. Never writes inside the repo except to `--out` |
 | `node tools/vyo.mjs show <facts.json>` | Prints a plain summary of the facts |
 | `node tools/vyo.mjs shapes` | Lists the shape library: id, "fits when", themes, notes count, and each slot's prompt and limits |
-| `node tools/vyo.mjs compose <facts.json> --shape <id> [--repo <dir>] [--theme light\|dark] [--out <spec.json>]` | Writes a scaffold spec with every slot holding a placeholder |
+| `node tools/vyo.mjs compose <facts.json> --shape <id> [--repo <dir>] [--theme light\|dark] [--out <spec.json>] [--force]` | Writes a scaffold spec with every slot holding a placeholder. Refuses to overwrite an existing spec unless `--force` is given |
 | `node tools/vyo.mjs render <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--paper fit\|a4\|letter]` | Validates the spec, writes HTML, a 2× PNG and a PDF, then runs every check |
 | `node tools/vyo.mjs check <spec.json> [--facts <facts.json>]` | Runs the same validation and checks in a temporary directory. Writes nothing to `--out` |
 
 Exit codes: 0 when everything passes (warnings go to stderr as `! ` lines), 1 on any rule error (`✗ ` lines on stderr), 2 on a usage error.
 
-`compose --repo <dir>` reads the latest commit's short hash and commit date with git, so reruns give the same footer. Without `--repo` the spec has no commit and `date` is today. `compose` rejects a `--theme` the shape does not declare.
+`compose --repo <dir>` reads the latest commit's short hash and commit date with git, so reruns give the same footer. Without `--repo` the spec has no commit and `date` is today. `--theme` defaults to the shape's first theme, and `compose` rejects a theme the shape does not declare. `compose` refuses to overwrite an existing spec, which may hold the agent's words, unless you pass `--force`.
 
 `render` and `check` read the facts from `--facts`, or by default from `<repo>-facts.json` beside the spec, where `<repo>` is the spec's `product.repo`. Output goes to `--out`, by default the spec's directory: `<repo>-poster.html`, `<repo>-poster.png` and `<repo>-poster.pdf`. The HTML embeds its fonts, so it opens anywhere.
 
 ## Setup
 
+Run these from the skill directory.
+
 ```bash
-cd tools
-npm install
-bash fetch-fonts.sh               # Commit Mono and Newsreader into tools/fonts/ (not committed)
-npx playwright install chromium   # or set VYO_CHROMIUM=/path/to/chromium
+npm install --prefix tools
+bash tools/fetch-fonts.sh               # Commit Mono and Newsreader into tools/fonts/ (not committed)
+npx --prefix tools playwright install chromium   # or set VYO_CHROMIUM=/path/to/chromium
 ```
 
 Render fails with `run tools/fetch-fonts.sh` when `tools/fonts/` is missing. The masthead uses Inter Display if it is installed, then Inter, then Helvetica or Arial. The tools never download Helvetica.
@@ -49,29 +50,28 @@ Slot kinds: `words` is a list of short nouns, `phrase` is a short string set in 
 
 ## What `check` enforces
 
-`render` and `check` run the same checks. The checks are one table in `lib/check.mjs`, and [CONTRACTS.md §6](CONTRACTS.md#6-checks) lists them with their ids.
+`render` and `check` run the same checks. They are one table, `CHECKS` in `lib/check.mjs`, and [CONTRACTS.md §6](CONTRACTS.md#6-checks) lists them too. `✗` fails the run and `!` is a warning for the agent to weigh.
 
-Errors (`✗`) fail the run:
-
-- The spec is invalid: an unknown key, a missing or placeholder slot, a slot the shape does not declare, a limit exceeded, a theme the shape does not declare, `hot` not among the slot words, `**` anywhere but the start of a `line` slot, a banned term, a file path, a "01/02/03" marker, or a middle-dot string.
-- The spec's `facts` hash differs from the facts file. Re-run `compose`, or update the spec, after a new scan.
-- A word row is wider than its box or sits outside the sheet.
-- A slot word, or `hot`, appears in no rendered row.
-- Two text blocks overlap, or a text block sits outside the sheet.
-- Text or a square in the accent colour lacks `data-hot`, or no `data-hot` element exists besides the two full stops.
-- A text colour, a square's background or a visible box's background is not one of the theme's tokens.
-- Commit Mono 400, Commit Mono 700 or Newsreader 400 did not load.
-- Visible text contains a banned term or a file path. The counts line and the provenance line are exempt.
-- The number of notes differs from the shape's notes count.
-- The counts line differs from the counts recomputed from the facts.
-
-Warnings (`!`) are for the agent to weigh:
-
-- Neither Inter Display nor Inter is installed, so the masthead fell back.
-- A slot is at its maximum.
-- The headline runs to more than 2 lines.
-- `! no application facts`: the scan found nothing to count.
-- `! product name equals the folder name`.
+| id | Level | What it measures |
+|---|---|---|
+| `spec` | ✗ | The spec passes every rule in §3. When it fails, no other check runs |
+| `facts-hash` | ✗ | `spec.facts` equals the facts file's `hash` |
+| `facts-empty` | ! | `facts.empty` is true: the scan found nothing to count, so the footer shows provenance only |
+| `product-name` | ! | `product.name` equals `facts.repo.name`, the folder name |
+| `slot-at-max` | ! | A slot is filled to its limit, which risks crowding |
+| `drawn` | ✗ | The shape's script ran to the end: the page raised no error and set `window.drawn` |
+| `fonts` | ✗ | `document.fonts` holds a `FontFace` with status `loaded` for Commit Mono 400, Commit Mono 700 and Newsreader 400 |
+| `masthead-font` | ! | Inter Display or Inter is installed for the product name |
+| `rows-fit` | ✗ | Every `.row` has `scrollWidth ≤ clientWidth` and sits inside the 840×1190 sheet |
+| `words-drawn` | ✗ | Every slot word appears in a rendered `.row`, and `hot` appears in the accent colour in the figure |
+| `blocks-apart` | ✗ | No two `[data-block]` text blocks overlap |
+| `blocks-inside` | ✗ | Every `[data-block]` text block sits inside the sheet |
+| `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens |
+| `hot-tagged` | ✗ | Anything in the `hot` colour carries `data-hot` |
+| `copy` | ✗ | The visible words hold no banned term, file path, "01/02/03" marker or middle dot. The masthead and the render-owned footer lines are exempt |
+| `notes` | ✗ | The footer shows the shape's `notes` count of notes |
+| `band` | ✗ | The footer counts line equals the line built from `bandCounts(facts)` |
+| `headline-lines` | ! | The headline wraps to more than 2 lines |
 
 ## Tests
 
