@@ -31,7 +31,7 @@ Pantry is the `recipe` test fixture. It has 6 screens (recipes, a recipe, a new 
 
 `node tools/vyo.mjs presets` lists these four. `compose --from <id>` copies one with its words replaced by placeholders. A poster that keeps a preset's geometry unchanged gets the `preset-copy` warning, so use them to learn from or to bend, not to ship as they are.
 
-The geometry numbers below are illustrative until they are reconciled with the shipped presets in `tools/presets/`. The `facts` hash is from one scan of the fixture. Yours comes from your own scan. The fixture is not a git repo, so `product` has no `commit`.
+Each block below is the preset file in `tools/presets/`, with the same words and geometry. Only the layout of the number lists is tighter. The `facts` value is a placeholder: yours is the hash from your own scan, and `compose` writes it. The fixture is not a git repo, so `product` has no `commit`.
 
 Render writes the counts line from the scan. Never type it:
 
@@ -41,39 +41,114 @@ Render writes the counts line from the scan. Never type it:
 
 ### hourglass
 
-Two profile regions meet at a narrow waist. The top holds what you juggle and fades from soft to mid. The bottom holds what comes out, in ink. The hot label sits in the waist.
+Two profile regions meet at a narrow waist, 30px each side of x 420 where `inputs` ends at y 512 and `outputs` starts at y 576. The top holds what you juggle and steps from soft to mid. The bottom holds what comes out, in ink. The hot label sits in the gap, `align: "center"` in a wide box, and at size 26 by default.
 
 ```json
 {
   "version": 3,
-  "facts": "d73b88fe2d4e",
+  "facts": "000000000000",
   "product": { "name": "Pantry", "repo": "recipe", "date": "2026-11-07" },
   "theme": "light",
   "headline": "A week of dinners, planned in one go.",
   "hot": "leftovers",
   "figure": {
-    "fits": "Everything you juggle in a week squeezes through one plan and comes out as a shopping list.",
+    "fits": "An hourglass: everything you juggle pours in at the top, narrows to one week's plan at the waist, and comes out as a list and an email.",
     "regions": [
-      { "kind": "fill", "id": "top", "tone": ["soft", "mid"],
-        "words": ["recipes", "cravings", "leftovers", "busy nights", "allergies", "what's in season", "the budget", "family picks"],
-        "profile": [[176, 420, 365], [272, 420, 264], [368, 420, 168], [448, 420, 95], [496, 420, 56]] },
-      { "kind": "fill", "id": "bottom", "tone": "ink",
+      {
+        "kind": "fill",
+        "id": "inputs",
+        "profile": [
+          [176, 420, 365],
+          [189, 420, 365],
+          [253, 420, 297],
+          [317, 420, 231.2],
+          [381, 420, 168.3],
+          [445, 420, 109.1],
+          [493, 420, 68.4],
+          [509, 420, 55.9],
+          [512, 420, 30]
+        ],
+        "words": [
+          "recipes",
+          "cravings",
+          "leftovers",
+          "busy nights",
+          "allergies",
+          "what's in season",
+          "the budget",
+          "family picks"
+        ],
+        "tone": ["soft", "mid"]
+      },
+      {
+        "kind": "fill",
+        "id": "outputs",
+        "profile": [
+          [576, 420, 30],
+          [579, 420, 70.2],
+          [595, 420, 84],
+          [659, 420, 143.8],
+          [723, 420, 208.4],
+          [787, 420, 276.4],
+          [867, 420, 365],
+          [880, 420, 365]
+        ],
         "words": ["shopping list", "tonight's dinner", "Monday's email", "next week"],
-        "profile": [[560, 420, 57], [608, 420, 98], [688, 420, 176], [768, 420, 259], [864, 420, 365]] }
+        "tone": "ink"
+      }
     ],
     "texts": [
-      { "role": "masthead", "id": "name", "x": 50, "y": 36, "w": 490, "size": 84 },
-      { "role": "headline", "id": "headline", "x": 560, "y": 64, "w": 224, "size": 22 },
-      { "role": "label", "id": "waist", "text": "One week", "hot": true, "x": 360, "y": 522, "w": 120, "size": 14 },
-      { "role": "aside", "id": "in", "text": "What you juggle. Recipes, cravings, leftovers, allergies, busy nights.", "x": 56, "y": 520, "w": 190 },
-      { "role": "aside", "id": "plan", "text": "**One plan a week:** seven dinners from your own recipes, with the leftovers used up first.", "x": 594, "y": 526, "w": 190 },
-      { "role": "aside", "id": "out", "text": "What comes out. A shopping list, and the plan in your inbox every Monday.", "x": 56, "y": 640, "w": 190 }
+      { "role": "masthead", "id": "masthead", "x": 50, "y": 36, "w": 490 },
+      { "role": "headline", "id": "headline", "x": 560, "y": 64, "w": 224 },
+      {
+        "role": "label",
+        "id": "waist",
+        "text": "ONE WEEK",
+        "hot": true,
+        "x": 220,
+        "y": 526,
+        "w": 400,
+        "align": "center"
+      },
+      {
+        "role": "aside",
+        "id": "juggle",
+        "text": "What you juggle. Recipes, cravings, leftovers, allergies, busy nights.",
+        "x": 56,
+        "y": 522,
+        "w": 190
+      },
+      {
+        "role": "aside",
+        "id": "plan",
+        "text": "**One plan a week:** seven dinners from your own recipes, with the leftovers used up first.",
+        "x": 594,
+        "y": 528,
+        "w": 190
+      },
+      {
+        "role": "aside",
+        "id": "out",
+        "text": "What comes out. A shopping list, and the plan in your inbox every Monday.",
+        "x": 56,
+        "y": 650,
+        "w": 190
+      }
     ]
   },
   "notes": [
-    { "title": "How it works", "text": "Save the recipes you already cook. Pantry fills the week from them, suggests a few new ones, and builds the shopping list from what the plan needs." },
-    { "title": "Every Monday", "text": "At 8 in the morning Pantry emails you the week's plan, so the first dinner is decided before the day starts." },
-    { "title": "Yours alone", "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can pick up the week on any device." }
+    {
+      "title": "How it works",
+      "text": "Save the recipes you already cook. Pantry fills the week from them, suggests a few new ones, and builds the shopping list from what the plan needs."
+    },
+    {
+      "title": "Every Monday",
+      "text": "At 8 in the morning Pantry emails you the week's plan, so the first dinner is decided before the day starts."
+    },
+    {
+      "title": "Yours alone",
+      "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can pick up the week on any device."
+    }
   ],
   "notBuilt": ["paid plans"]
 }
@@ -81,42 +156,134 @@ Two profile regions meet at a narrow waist. The top holds what you juggle and fa
 
 ### ribbon
 
-Three profile regions make one ribbon that runs from top left to bottom right. The middle region is the back face of the twist, set soft so the ribbon reads as turning over. `band: 3` keeps each word for three rows, so the words read as stripes along the ribbon.
+Three profile regions make one ribbon that runs from top left to bottom right. Each ends on the pinch where the next begins. The middle region is the back face of the twist, set soft so the ribbon reads as turning over. `band: 3` keeps each word for three rows, so the words read as stripes along the ribbon. The two ends are `display` texts, bold sans lines of the poster's own words: "Plan it in the kitchen." at the top and "Shop it in the aisle." at the bottom right, with `align: "right"`.
 
 ```json
 {
   "version": 3,
-  "facts": "d73b88fe2d4e",
+  "facts": "000000000000",
   "product": { "name": "Pantry", "repo": "recipe", "date": "2026-11-07" },
   "theme": "dark",
   "accent": "#9284FF",
-  "headline": "Plan it in the kitchen. Shop it in the aisle.",
+  "headline": "The week you plan at home is the list in your hand.",
   "hot": "shopping list",
   "figure": {
-    "fits": "The week's plan travels from the kitchen to the shop, and the ribbon is made of what travels.",
+    "fits": "A ribbon that twists from the kitchen at the top to the aisle at the bottom, made of what travels between them: dinners, the list, amounts.",
     "regions": [
-      { "kind": "fill", "id": "near", "tone": "mid", "size": 11, "band": 3,
-        "words": ["seven dinners", "shopping list", "amounts"],
-        "profile": [[200, 230, 185], [242, 252, 154], [270, 272, 104], [298, 294, 42]] },
-      { "kind": "fill", "id": "back", "tone": "soft", "size": 11, "band": 3,
-        "words": ["what's left over", "who's eating", "swaps", "seven dinners", "shopping list"],
-        "profile": [[312, 306, 61], [354, 343, 146], [403, 387, 186], [452, 430, 141], [494, 467, 55]] },
-      { "kind": "fill", "id": "far", "tone": "mid", "size": 11, "band": 3,
-        "words": ["amounts", "what's left over", "who's eating", "swaps", "shopping list"],
-        "profile": [[508, 479, 48], [564, 529, 158], [606, 566, 185], [648, 599, 150], [704, 630, 35]] }
+      {
+        "kind": "fill",
+        "id": "kitchen",
+        "profile": [
+          [196, 228.6, 184.7],
+          [210, 234.1, 183.2],
+          [224, 241.1, 174.6],
+          [238, 249.3, 159.5],
+          [252, 258.5, 138.4],
+          [266, 268.7, 112.4],
+          [280, 279.6, 82.8],
+          [294, 291, 50.9],
+          [308, 302.9, 51.8]
+        ],
+        "words": ["seven dinners", "amounts"],
+        "tone": "mid",
+        "size": 11,
+        "band": 3
+      },
+      {
+        "kind": "fill",
+        "id": "turn",
+        "profile": [
+          [308, 302.9, 51.8],
+          [322, 315.1, 83.7],
+          [336, 327.4, 113.2],
+          [350, 339.9, 139.1],
+          [364, 352.4, 160],
+          [378, 364.9, 175],
+          [392, 377.3, 183.3],
+          [406, 389.7, 184.6],
+          [420, 402, 178.9],
+          [434, 414.3, 166.3],
+          [448, 426.5, 147.5],
+          [462, 438.7, 123.3],
+          [476, 451, 95],
+          [490, 463.2, 63.8],
+          [504, 475.6, 38.7]
+        ],
+        "words": ["shopping list", "what's left over", "who's eating"],
+        "tone": "soft",
+        "size": 11,
+        "band": 3
+      },
+      {
+        "kind": "fill",
+        "id": "aisle",
+        "profile": [
+          [504, 475.6, 38.7],
+          [518.5, 488.5, 72.3],
+          [533.1, 501.4, 104],
+          [547.6, 514.4, 132.1],
+          [562.1, 527.4, 155.3],
+          [576.7, 540.2, 172.4],
+          [591.2, 553, 182.4],
+          [605.7, 565.4, 184.9],
+          [620.3, 577.4, 179.7],
+          [634.8, 588.9, 167.2],
+          [649.3, 599.6, 147.9],
+          [663.9, 609.4, 122.8],
+          [678.4, 618, 93.3],
+          [692.9, 625.4, 60.7],
+          [707.5, 631.2, 43.1],
+          [722, 635.4, 76.5]
+        ],
+        "words": ["swaps", "shopping list", "seven dinners", "amounts"],
+        "tone": "mid",
+        "size": 11,
+        "band": 3
+      }
     ],
     "texts": [
-      { "role": "headline", "id": "headline", "x": 56, "y": 56, "w": 470, "size": 40 },
-      { "role": "aside", "id": "travels", "text": "**What travels.** Seven dinners, the shopping list with amounts, and what's left over from last week.", "x": 560, "y": 64, "w": 224 },
-      { "role": "label", "id": "start", "text": "In the kitchen", "x": 440, "y": 204, "w": 120 },
-      { "role": "label", "id": "end", "text": "In the aisle", "x": 680, "y": 698, "w": 104 },
-      { "role": "masthead", "id": "name", "x": 56, "y": 740, "w": 330, "size": 48 }
+      {
+        "role": "display",
+        "id": "start",
+        "text": "Plan it in the kitchen.",
+        "x": 56,
+        "y": 56,
+        "w": 470
+      },
+      {
+        "role": "aside",
+        "id": "travels",
+        "text": "**What travels.** Seven dinners, the shopping list with amounts, and what's left over from last week.",
+        "x": 560,
+        "y": 64,
+        "w": 224
+      },
+      { "role": "masthead", "id": "masthead", "x": 56, "y": 740, "w": 330, "size": 48 },
+      { "role": "headline", "id": "headline", "x": 56, "y": 804, "w": 330 },
+      {
+        "role": "display",
+        "id": "end",
+        "text": "Shop it in the aisle.",
+        "x": 384,
+        "y": 764,
+        "w": 400,
+        "align": "right"
+      }
     ]
   },
   "notes": [
-    { "title": "How it works", "text": "Pick your recipes for the week. Pantry adds up the ingredients and turns them into one shopping list you can read in the shop." },
-    { "title": "Every Monday", "text": "At 8 in the morning Pantry emails you the week's plan and the list, so nothing is left on the kitchen table." },
-    { "title": "Yours alone", "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can open them on any device." }
+    {
+      "title": "How it works",
+      "text": "Pick your recipes for the week. Pantry adds up the ingredients and turns them into one shopping list you can read in the shop."
+    },
+    {
+      "title": "Every Monday",
+      "text": "At 8 in the morning Pantry emails you the week's plan and the list, so nothing is left on the kitchen table."
+    },
+    {
+      "title": "Yours alone",
+      "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can open them on any device."
+    }
   ],
   "notBuilt": ["paid plans"]
 }
@@ -124,37 +291,102 @@ Three profile regions make one ribbon that runs from top left to bottom right. T
 
 ### eye
 
-The lids are an ellipse with a round hole. The iris is a smaller ellipse with `hot: true`, so every iris row is in the accent. The masthead sits in the middle of the iris, and the fill clears it, which leaves the pupil empty.
+The lids are a profile with a hole, and their tone steps soft, mid, soft down the rows. The iris is an ellipse with its own hole and `hot: true`, so every iris row is in the accent. The masthead is centred at size 72 in the hole, and the fill clears it, which leaves the pupil empty.
 
 ```json
 {
   "version": 3,
-  "facts": "d73b88fe2d4e",
+  "facts": "000000000000",
   "product": { "name": "Pantry", "repo": "recipe", "date": "2026-11-07" },
   "theme": "light",
   "headline": "It knows what you cook, then suggests what to cook next.",
   "hot": "new ideas",
   "figure": {
-    "fits": "Pantry reads everything you cook and keep, then focuses on the few new recipes worth trying.",
+    "fits": "An eye: the lids are everything Pantry reads about your kitchen, the iris is the few ideas it sees, and the name sits in the pupil.",
     "regions": [
-      { "kind": "fill", "id": "lids", "tone": ["soft", "mid", "soft"], "size": 11,
-        "words": ["your recipes", "last week", "leftovers", "allergies", "the season", "busy nights", "the budget", "favourites"],
-        "ellipse": { "cx": 420, "cy": 600, "rx": 372, "ry": 280 },
-        "holes": [{ "ellipse": { "cx": 420, "cy": 600, "rx": 186, "ry": 186 } }] },
-      { "kind": "fill", "id": "iris", "tone": "ink", "size": 11, "hot": true,
+      {
+        "kind": "fill",
+        "id": "lids",
+        "profile": [
+          [320, 420, 0],
+          [360, 420, 98.7],
+          [400, 420, 182.2],
+          [440, 420, 250.5],
+          [480, 420, 303.7],
+          [520, 420, 341.6],
+          [560, 420, 364.4],
+          [600, 420, 372],
+          [640, 420, 364.4],
+          [680, 420, 341.6],
+          [720, 420, 303.7],
+          [760, 420, 250.5],
+          [800, 420, 182.2],
+          [840, 420, 98.7],
+          [880, 420, 0]
+        ],
+        "holes": [
+          { "ellipse": { "cx": 420, "cy": 600, "rx": 240, "ry": 240 } }
+        ],
+        "words": [
+          "your recipes",
+          "last week",
+          "leftovers",
+          "allergies",
+          "the season",
+          "busy nights",
+          "the budget",
+          "favourites"
+        ],
+        "tone": ["soft", "mid", "soft"],
+        "size": 11
+      },
+      {
+        "kind": "fill",
+        "id": "iris",
+        "ellipse": { "cx": 420, "cy": 600, "rx": 222, "ry": 222 },
+        "holes": [
+          { "ellipse": { "cx": 420, "cy": 600, "rx": 114, "ry": 114 } }
+        ],
         "words": ["tonight's dinner", "new ideas", "the list"],
-        "ellipse": { "cx": 420, "cy": 600, "rx": 168, "ry": 168 } }
+        "tone": "ink",
+        "size": 11,
+        "hot": true
+      }
     ],
     "texts": [
       { "role": "headline", "id": "headline", "x": 56, "y": 52, "w": 520, "size": 40 },
-      { "role": "aside", "id": "blurb", "text": "Pantry looks at what you cook, what's left and who's eating, then suggests the few new recipes worth trying this week.", "x": 600, "y": 60, "w": 184 },
-      { "role": "masthead", "id": "name", "x": 290, "y": 562, "w": 260, "size": 72 }
+      {
+        "role": "aside",
+        "id": "blurb",
+        "text": "Pantry looks at what you cook, what's left and who's eating, then suggests the few new recipes worth trying this week.",
+        "x": 600,
+        "y": 60,
+        "w": 184
+      },
+      {
+        "role": "masthead",
+        "id": "masthead",
+        "x": 290,
+        "y": 562,
+        "w": 260,
+        "size": 72,
+        "align": "center"
+      }
     ]
   },
   "notes": [
-    { "title": "What it reads", "text": "Your saved recipes and their ingredients, last week's plan, and what you told it about allergies and busy nights." },
-    { "title": "What it suggests", "text": "A few new recipes that fit the week, from an AI model. You choose which ones to keep." },
-    { "title": "What it sends", "text": "The week's plan by email every Monday at 8, and a shopping list built from the plan." }
+    {
+      "title": "What it reads",
+      "text": "Your saved recipes and their ingredients, last week's plan, and what you told it about allergies and busy nights."
+    },
+    {
+      "title": "What it suggests",
+      "text": "A few new recipes that fit the week, from an AI model. You choose which ones to keep."
+    },
+    {
+      "title": "What it sends",
+      "text": "The week's plan by email every Monday at 8, and a shopping list built from the plan."
+    }
   ],
   "notBuilt": ["paid plans"]
 }
@@ -162,30 +394,51 @@ The lids are an ellipse with a round hole. The iris is a smaller ellipse with `h
 
 ### warm-start
 
-One dots region spells four words in squares, from cold to ink. The last line equals `hot`, so it is set in the accent. With 2 notes the footer is shorter, so the floor is lower and the headline band fits under the letters.
+One dots region spells four words in squares. Its `tones` run cold, cool, ink, hot, and the last line also equals the spec's `hot`, so it is set in the accent. There are no fill regions, so `row-variety` and `one-region` are skipped. With 2 notes the footer is shorter and the floor is 920.
 
 ```json
 {
   "version": 3,
-  "facts": "d73b88fe2d4e",
+  "facts": "000000000000",
   "product": { "name": "Pantry", "repo": "recipe", "date": "2026-11-07" },
   "theme": "light",
   "headline": "Every week starts with a question. Pantry answers it on Monday.",
   "hot": "well",
   "figure": {
-    "fits": "A week that starts cold and undecided warms up line by line until dinner is settled.",
+    "fits": "Four words drawn in squares that warm up line by line, cold blue to the accent, the way a blank week fills up by Monday.",
     "regions": [
-      { "kind": "dots", "id": "warm", "lines": ["PLAN", "ONCE", "EAT", "WELL"], "x": 130, "y": 56, "cell": 20, "tones": ["cold", "cool", "ink", "ink"] }
+      {
+        "kind": "dots",
+        "id": "words",
+        "lines": ["PLAN", "ONCE", "EAT", "WELL"],
+        "x": 130,
+        "y": 56,
+        "cell": 20,
+        "tones": ["cold", "cool", "ink", "hot"]
+      }
     ],
     "texts": [
       { "role": "headline", "id": "headline", "x": 56, "y": 772, "w": 400, "size": 34 },
-      { "role": "masthead", "id": "name", "x": 496, "y": 766, "w": 288, "size": 48 },
-      { "role": "aside", "id": "monday", "text": "**Monday at 8:** the week's plan lands in your inbox, so the first dinner is already decided.", "x": 496, "y": 830, "w": 288 }
+      { "role": "masthead", "id": "masthead", "x": 496, "y": 766, "w": 288, "size": 48 },
+      {
+        "role": "aside",
+        "id": "monday",
+        "text": "**Monday at 8:** the week's plan lands in your inbox, so the first dinner is already decided.",
+        "x": 496,
+        "y": 830,
+        "w": 288
+      }
     ]
   },
   "notes": [
-    { "title": "How", "text": "Save the recipes you already cook. Pantry fills the week from them, uses up the leftovers first, and builds the shopping list." },
-    { "title": "New ideas", "text": "Ask for a suggestion and Pantry offers a few recipes that fit your week. Keep the ones you like and they join your recipes." }
+    {
+      "title": "How",
+      "text": "Save the recipes you already cook. Pantry fills the week from them, uses up the leftovers first, and builds the shopping list."
+    },
+    {
+      "title": "New ideas",
+      "text": "Ask for a suggestion and Pantry offers a few recipes that fit your week. Keep the ones you like and they join your recipes."
+    }
   ],
   "notBuilt": ["paid plans"]
 }
@@ -193,7 +446,7 @@ One dots region spells four words in squares, from cold to ink. The last line eq
 
 ## Three invented pictures
 
-None of these is a preset. Each starts from a main moment, finds its verb, and builds a silhouette a person would name at thumbnail size. The products are made up. Each block below is the `figure` only, and its numbers are a first draft to sketch from.
+None of these is a preset. Each starts from a main moment, finds its verb, and builds a silhouette a person would name at thumbnail size. The products are made up. Each block below is the `figure` only. Each passes every check with three notes and a short not-built list, but the numbers are a first draft to sketch from.
 
 ### A bridge for a sync tool
 
@@ -205,19 +458,19 @@ Tandem keeps the files on your phone and your laptop the same. Main moment: the 
   "regions": [
     { "kind": "fill", "id": "phone", "tone": "soft",
       "words": ["photos", "voice notes", "screenshots", "receipts"],
-      "polygon": [[120, 880], [120, 330], [170, 296], [220, 330], [220, 880]] },
+      "polygon": [[80, 880], [80, 330], [160, 290], [240, 330], [240, 880]] },
     { "kind": "fill", "id": "deck", "tone": "mid",
       "words": ["photos", "notes", "the latest version"],
-      "polygon": [[232, 600], [320, 552], [420, 536], [520, 552], [608, 600], [608, 664], [520, 616], [420, 600], [320, 616], [232, 664]] },
+      "polygon": [[252, 600], [330, 552], [420, 536], [510, 552], [588, 600], [588, 664], [510, 616], [420, 600], [330, 616], [252, 664]] },
     { "kind": "fill", "id": "laptop", "tone": "ink",
       "words": ["folders", "drafts", "downloads", "receipts"],
-      "polygon": [[620, 880], [620, 330], [670, 296], [720, 330], [720, 880]] }
+      "polygon": [[600, 880], [600, 330], [680, 290], [760, 330], [760, 880]] }
   ],
   "texts": [
     { "role": "masthead", "id": "name", "x": 56, "y": 40, "w": 420 },
     { "role": "headline", "id": "headline", "x": 560, "y": 64, "w": 224 },
-    { "role": "aside", "id": "left", "text": "On your phone.", "x": 120, "y": 270, "w": 120 },
-    { "role": "aside", "id": "right", "text": "On your laptop.", "x": 620, "y": 270, "w": 120 }
+    { "role": "aside", "id": "left", "text": "On your phone.", "x": 80, "y": 250, "w": 160 },
+    { "role": "aside", "id": "right", "text": "On your laptop.", "x": 600, "y": 250, "w": 160 }
   ]
 }
 ```
@@ -226,7 +479,7 @@ Tandem keeps the files on your phone and your laptop the same. Main moment: the 
 
 ### A stair for a learning app
 
-Rungs teaches a language ten minutes a day, and each lesson opens the next. Main moment: every lesson you finish is one step up, and the top step is your first real conversation. The verb is "climbs", so the picture is a stair rising from left to right. One polygon draws the lower steps with the early lessons. Its tone runs from soft at the top to ink at the bottom, because the lessons you have done are near and solid. The top step is its own region with `hot: true`, so the goal is the one bright thing on the page.
+Rungs teaches a language ten minutes a day, and each lesson opens the next. Main moment: every lesson you finish is one step up, and the top step is your first real conversation. The verb is "climbs", so the picture is a stair rising from left to right. One polygon draws the lower steps with the early lessons. Its two tones split it: soft in the upper rows and ink in the lower, because the lessons you have done are near and solid. The top step is its own region with `hot: true`, so the goal is the one bright thing on the page.
 
 ```json
 {
@@ -237,7 +490,7 @@ Rungs teaches a language ten minutes a day, and each lesson opens the next. Main
       "polygon": [[80, 860], [80, 760], [200, 760], [200, 660], [320, 660], [320, 560], [440, 560], [440, 460], [760, 460], [760, 860]] },
     { "kind": "fill", "id": "top", "tone": "ink", "hot": true,
       "words": ["first conversation", "your own words"],
-      "polygon": [[560, 360], [760, 360], [760, 452], [560, 452]] }
+      "polygon": [[560, 300], [760, 300], [760, 452], [560, 452]] }
   ],
   "texts": [
     { "role": "masthead", "id": "name", "x": 56, "y": 40, "w": 420 },

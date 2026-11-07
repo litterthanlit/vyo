@@ -38,9 +38,9 @@ For Chromium, run `npx --prefix tools playwright install chromium` or set `VYO_C
    ```bash
    node tools/vyo.mjs compose <repo>/vyo/<name>-facts.json --repo <repo> --out <repo>/vyo/<name>-poster.json
    ```
-   `--repo` puts the latest commit in the footer. `--from <preset>` starts from a preset's geometry (`node tools/vyo.mjs presets` lists them). `compose` prints `floor: <y>`, the lowest y the figure may reach. `--force` overwrites.
+   `--repo` puts the latest commit in the footer. `--from <preset>` starts from a preset's geometry (`node tools/vyo.mjs presets` lists them). `--force` overwrites. `compose` prints `floor: <y>`, the lowest y the figure may reach, then masthead, headline, aside and rows lines: line heights and the row grid. Without `--from` the figure is one box-shaped profile that fails `row-variety` on purpose. Reshape it.
 6. Write the figure and fields (see "Describe it" and "Fill the spec").
-7. Sketch: `node tools/vyo.mjs sketch <repo>/vyo/<name>-poster.json`. It prints the sheet in letters, plus coverage, width spread and floor. Adjust and sketch again until a stranger would name the silhouette.
+7. Sketch: `node tools/vyo.mjs sketch <repo>/vyo/<name>-poster.json`. It prints the sheet in letters, plus coverage, width spread and floor. Letters A to F mark regions, `#` dots, `·` hot rows and `=` the floor. Adjust and sketch again until a stranger would name the silhouette.
 8. Render: `node tools/vyo.mjs render <repo>/vyo/<name>-poster.json`.
 9. Fix every `✗` line. Render exits 1 until none is left. Weigh every `!` line. `preset-copy` means you kept a preset's geometry. Change it, or say in chat why it fits.
 10. Open the PNG, full size and as a thumbnail. The silhouette must read as the main moment, the hot word must stand out, and no word may read as code. If not, go back to step 7.
@@ -48,7 +48,7 @@ For Chromium, run `npx --prefix tools playwright install chromium` or set `VYO_C
 
 ## Invent the picture
 
-Start from the verb in the main moment, not the product's category.
+Start from the verb in the main moment, not the category.
 
 | When the product... | Try |
 |---|---|
@@ -63,7 +63,7 @@ Start from the verb in the main moment, not the product's category.
 
 Bend it to the product. A ring can break open where today's item leaves. A stair can end in the hot word. Test it: shrunk to a thumbnail, would a person name the shape in one word, and does that word describe what the product does?
 
-A model that has not thought about the product draws these, and none acts out a moment. Never use them:
+A model that has not thought about the product draws these, and none acts out a moment. Never use:
 
 - a heart, for anything about people or care
 - a plain circle, which passes every check, or a box filled edge to edge
@@ -75,7 +75,7 @@ The words:
 - Every word is a noun the product's user would say: "leftovers", "busy nights", "the shopping list". Never a feature name, a role word or a code name.
 - Each region has one job and its own words: what goes in, what comes out, what travels.
 - One hot word on the whole poster, where the moment happens: the waist, the iris, the last line.
-- Tones give depth. `soft` is far or past, `ink` is near or now, and two or three tones fade down a region. `cold` and `cool` are blue-greys for a state not yet warm.
+- Tones give depth. `soft` is far or past, `ink` is near or now. Two or three tones step down a region, each row taking the nearest stop. `cold` and `cool` are blue-greys for a state not yet warm.
 - Leave paper. The eye's empty pupil and the hourglass's thin waist make them read.
 
 ## Describe it
@@ -91,25 +91,21 @@ A fill region has `kind: "fill"`, `id`, one geometry, `words` (2 to 14, at most 
 
 `holes` lists shapes of the same kinds to cut out. A dots region spells 2 to 4 words of at most 5 letters in squares: `kind: "dots"`, `id`, `lines`, `x`, `y`, `cell` (px per square), and `tones`, one per line.
 
-A text has `role` (`masthead`, `headline`, `aside` or `label`), `id`, `x`, `y`, `w`, and optional `size`, `align` and `hot`. Asides and labels need `text`. Exactly one masthead prints the product name and shrinks to fit `w`. At most one headline prints `spec.headline`. A label with `hot: true` is set in the accent, uppercase and tracked.
+A dots line is 29 squares wide and 7 tall, with lines 9 squares apart. Its `tones` may include `hot`, and any line matching `hot` is drawn hot anyway.
+
+A text has `role` (`masthead`, `headline`, `display`, `aside` or `label`), `id`, `x`, `y`, `w`, and optional `size`, `align` (`left`, `right` or `center`) and `hot`. Asides, displays and labels need `text`. Exactly one masthead prints the product name and shrinks to fit `w`. At most one headline prints `spec.headline`. A `display` is a bold sans line in the poster's own words, such as the ribbon's "Save in Claude Code." (at most 40 characters). A label with `hot: true` is set in the accent, uppercase and tracked, and defaults to size 26. No region or text may use the ids `note`, `counts`, `notBuilt`, `provenance` or `credit`.
 
 | Text | Size (range) | Height |
 |---|---|---|
 | `masthead` | 84 (48 to 120) | 88px per line at 84 |
 | `headline` | 22 (18 to 40) | 28px per line in a 224px column |
-| `aside`, `label` | 12 (10 to 14) | 18px per line, 7.2px per character |
+| `display` | 56 (32 to 64) | 1px per size px, one line |
+| `aside` | 12 (10 to 14) | 18px per line, 7.2px per character |
+| `label` | 12 (10 to 32), hot 26 | 1.25px per size px |
 
 Rows are 16px tall, 14px at size 11, on a sheet-wide grid. The tool skips any part of a row within 12px of a text, so a masthead can sit inside a region. It drops runs under 24px. A fill region needs 4 rows or more.
 
-An hourglass as one region with six stops, centred on x 420:
-
-```json
-{ "kind": "fill", "id": "glass", "tone": ["soft", "ink"],
-  "words": ["recipes", "leftovers", "busy nights", "cravings", "shopping list", "the plan"],
-  "profile": [[176, 420, 365], [320, 420, 200], [500, 420, 48], [560, 420, 48], [740, 420, 200], [864, 420, 365]] }
-```
-
-The outer stops set the rims. The two at 48 hold the waist for four rows. One region mixes what goes in with what comes out, so the `hourglass` preset splits it at the waist into two regions and puts a hot label between them.
+An hourglass is a profile of six stops on x 420: rims at the outer two, a waist held at halfWidth 48 by the middle two. The `hourglass` preset splits it at the waist so in and out get separate words, with a hot label between. A figure with no fill region (dots only) skips `row-variety` and `one-region`.
 
 ## Fill the spec
 
@@ -148,4 +144,4 @@ Render writes `<name>-poster.html`, `.png` and `.pdf` beside the spec or into `-
 
 ## Related skills
 
-If installed, use `codebase-onboarding` for a developer joining the repo, `codebase-documenter` for contributor docs and API reference, and `project-handoff` for build status and next steps.
+If installed: `codebase-onboarding` for developers, `codebase-documenter` for contributor docs, `project-handoff` for build status.

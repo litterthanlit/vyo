@@ -18,7 +18,7 @@ Run them from the skill directory.
 
 Exit codes: 0 when everything passes (warnings go to stderr as `! ` lines), 1 on any rule error (`✗ ` lines on stderr), 2 on a usage error.
 
-`compose` fills `product`, `facts` and `theme`. Without `--from`, the figure is one fill region with a placeholder polygon and placeholder words, one masthead, one headline and one aside. With `--from <preset>`, the figure is the preset's, with its geometry kept and its words replaced by placeholders. Render rejects every placeholder. `compose` prints `floor: <y>` for the spec's notes count, assuming a one-line not-built list. Each extra not-built line raises the floor by 16px.
+`compose` fills `product`, `facts` and `theme`. Without `--from`, the figure is one box-shaped fill region (a three-stop profile of constant width) with placeholder words, one masthead, one headline and one aside. The box fails `row-variety` on purpose, so reshape it. With `--from <preset>`, the figure is the preset's, with its geometry kept and its words replaced by placeholders. Render rejects every placeholder. `compose` prints `floor: <y>` for the spec's notes count, assuming a one-line not-built list, then the `masthead`, `headline`, `aside` and `rows` lines: line heights, characters per line and the row grid. Each extra not-built line raises the floor by 16px.
 
 `compose --repo <dir>` reads the latest commit's short hash and commit date with git, so reruns give the same footer. Without `--repo` the spec has no commit and `date` is today.
 
@@ -44,7 +44,9 @@ A figure has a `fits` sentence (at most 160 characters, printed by `presets`, ne
 
 - A **fill region** is an outline that the tool fills with rows of the region's `words`, 2 to 14 of them, each at most 24 characters.
 - A **dots region** spells 2 to 4 words of at most 5 letters each in squares, at `x`, `y` with a `cell` size in px.
-- A **text** is a `masthead` (exactly one, the product name), a `headline` (at most one, the spec's headline), an `aside` or a `label`, placed at `x`, `y` with a wrap width `w`.
+- A **text** is a `masthead` (exactly one, the product name), a `headline` (at most one, the spec's headline), a `display` (a bold sans line, at most 40 characters, size 32 to 64, default 56), an `aside` (size 10 to 14) or a `label` (size 10 to 32, default 12, and 26 when `hot`), placed at `x`, `y` with a wrap width `w`. `align` is `left`, `right` or `center`.
+
+Region and text ids are lowercase and unique. `note`, `counts`, `notBuilt`, `provenance` and `credit` are footer block names, so a region or text cannot take them.
 
 ## Geometry
 
@@ -63,7 +65,7 @@ Rows sit on a sheet-wide grid of 16px, or 14px at size 11. The tool skips any pa
 
 ## Tones
 
-A fill region's `tone` is one token, or a list of 2 or 3 tokens that the tool interpolates by row from the region's top row to its bottom row. Three tokens give the eye's lids their soft, mid, soft fade. A dots region's `tones` has one entry per line.
+A fill region's `tone` is one token, or a list of 2 or 3 tokens that step down the region. Each row takes the nearest stop, so a pair gives the top half the first token and the bottom half the second. Three tokens give the eye's lids their soft, mid, soft bands. A dots region's `tones` has one entry per line, and a line may be `hot`.
 
 | Token | Use |
 |---|---|
@@ -73,7 +75,7 @@ A fill region's `tone` is one token, or a list of 2 or 3 tokens that the tool in
 | `cold` | A blue-grey for a state that has not started |
 | `cool` | A darker blue-grey, one step warmer |
 
-Both themes define all five, plus `paper` and `hot`. `accent` in the spec replaces the theme's `hot`. Anything in the hot colour is the hot word: rows whose word matches `hot`, rows of a region with `hot: true`, a dots line equal to `hot`, and a label with `hot: true`.
+Both themes define all five, plus `paper` and `hot`. `accent` in the spec replaces the theme's `hot`. Anything in the hot colour is the hot word: rows whose word matches `hot`, rows of a region with `hot: true`, a dots line with tone `hot` or a word matching `hot`, and a label with `hot: true`.
 
 ## What `check` enforces
 
@@ -86,7 +88,7 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 | `facts-empty` | ! | `facts.empty` is true: the scan found nothing to count, so the footer shows provenance only |
 | `product-name` | ! | `product.name` equals `facts.repo.name`, the folder name |
 | `preset-copy` | ! | Every region's geometry equals a preset region's geometry, numbers compared exactly |
-| `one-region` | ! | The figure has one fill region, no dots region, no hot rows and no hot label |
+| `one-region` | ! | The figure is a single fill region with no hot rows and no hot label. A figure with dots, or with more than one region, never trips it |
 | `drawn` | ✗ | The fill script ran to the end: the page raised no error and set `window.drawn` |
 | `fonts` | ✗ | `document.fonts` holds a `FontFace` with status `loaded` for Commit Mono 400, Commit Mono 700 and Newsreader 400 |
 | `masthead-font` | ! | Inter Display or Inter is installed for the product name |
@@ -96,7 +98,7 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 | `regions-apart` | ✗ | No row of one region comes within 4px, horizontally, of a row of another region at the same y |
 | `words-drawn` | ✗ | Every word of every region is drawn at least once. The message says `region <id>: "<word>" never drawn; shorten the list or enlarge the path` |
 | `silhouette` | ✗ | Rows and dots lines cover at least 15% of the area above the footer, and the figure spans at least 55% of that area's height and 60% of its width |
-| `row-variety` | ✗ | Across all fill rows, the standard deviation of run widths divided by their mean is at least 0.15. The message says `the figure is a box; a silhouette changes width` |
+| `row-variety` | ✗ | Across all fill rows, the standard deviation of run widths divided by their mean is at least 0.15. Skipped when the figure has no fill region. The message says `the figure is a box; a silhouette changes width` |
 | `blocks-apart` | ✗ | No text block comes within 8px of another block or of a row. Two rows at the same y keep 8px horizontally |
 | `blocks-inside` | ✗ | Every `[data-block]` text block sits inside the sheet |
 | `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens, `cold` and `cool` included |
@@ -114,11 +116,11 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 |---|---|
 | `A` to `F` | Fill rows of the first to the sixth region, in spec order |
 | `#` | Squares of a dots region |
-| A box | A text block, with its height estimated: 88px for a masthead line at size 84, 28px per headline line in a 224px column, 7.2px per character of mono text |
+| A box | A text block labelled with its id, with its height estimated: 88px for a masthead line at size 84, 28px per headline line in a 224px column, 7.2px per character of mono text, one line of the size's height for a display |
 | `=` | The footer's top line |
 | `·` | A hot row |
 
-Under the sheet it prints the coverage and the spread of row widths (standard deviation over mean), so the agent sees `silhouette` and `row-variety` before it renders, and the floor.
+Under the sheet it prints `regions:`, `texts:` and `floor:` lines, then the coverage, height and width and the spread of row widths (standard deviation over mean), each marked ok or too low, so the agent sees `silhouette` and `row-variety` before it renders. Lines that start with `! ` flag a region under 4 rows, a word that may never be drawn, and anything below the floor.
 
 ## Tests
 
