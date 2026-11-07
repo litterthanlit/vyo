@@ -21,7 +21,7 @@ Write the main moment as one sentence. Find its verb. The verb gives the shape.
 | App | Main moment | Verb | Picture |
 |---|---|---|---|
 | Pantry, a meal planner | Turns your recipes, leftovers and cravings into one week of dinners | squeezes | An hourglass. What you juggle pours through one week's plan into a shopping list |
-| Hypher, a handoff note for coding agents | Save in Claude Code, resume in Codex | carries | A ribbon made of what travels, from one tool to the other |
+| Relay, a handoff board for shift teams | The night shift's notes are waiting when the day shift arrives | carries | A ribbon made of what travels, from one shift to the other |
 | Tally, a review inbox for small shops | Reads every review and flags the one to answer today | reads, then focuses | An eye. The lids are every review, the iris is the one that matters |
 | A habit app | A streak that warms up day by day | warms up | Dot letters that go from cold blue-grey to the accent |
 
@@ -446,40 +446,35 @@ One dots region spells four words in squares. Its `tones` run cold, cool, ink, h
 
 ## Three invented pictures
 
-None of these is a preset. Each starts from a main moment, finds its verb, and builds a silhouette a person would name at thumbnail size. The products are made up. Each block below is the `figure` only. Each passes every check with three notes and a short not-built list, but the numbers are a first draft to sketch from.
+None of these is a preset. Each starts from a main moment, finds its verb, and builds one silhouette a person would name at thumbnail size. The products are made up. Each block below is the `figure` only. Each passes every check with three notes and a short not-built list, but the numbers are a first draft to sketch from.
 
 ### A bridge for a sync tool
 
-Tandem keeps the files on your phone and your laptop the same. Main moment: the photo you take on your phone is on your laptop when you sit down. The verb is "joins", so the picture is a bridge. Two towers stand on the two banks. The left tower holds what lives on the phone, in soft tones because it is far. The right tower holds what lives on the laptop, in ink because it is where you are. An arched deck between them carries what crosses, and the hot word is on the deck. The water under the deck stays empty paper, which is what makes it a bridge and not a block.
+Tandem keeps the files on your phone and your laptop the same. Main moment: the photo you take on your phone is on your laptop when you sit down. The verb is "joins", so the picture is one bridge arch, its left foot on the phone's side and its right foot on the laptop's. The whole arch is made of what crosses, soft at the crown and ink at the feet. The opening under it is a hole, so the water stays empty paper inside the shape. Two separate towers with a deck between them would read as two columns, so the arch is one region with one outline.
 
 ```json
 {
-  "fits": "A bridge between your phone and your laptop. The deck is made of what crosses it.",
+  "fits": "One bridge arch from your phone to your laptop, made of what crosses it.",
   "regions": [
-    { "kind": "fill", "id": "phone", "tone": "soft",
-      "words": ["photos", "voice notes", "screenshots", "receipts"],
-      "polygon": [[80, 880], [80, 330], [160, 290], [240, 330], [240, 880]] },
-    { "kind": "fill", "id": "deck", "tone": "mid",
-      "words": ["photos", "notes", "the latest version"],
-      "polygon": [[252, 600], [330, 552], [420, 536], [510, 552], [588, 600], [588, 664], [510, 616], [420, 600], [330, 616], [252, 664]] },
-    { "kind": "fill", "id": "laptop", "tone": "ink",
-      "words": ["folders", "drafts", "downloads", "receipts"],
-      "polygon": [[600, 880], [600, 330], [680, 290], [760, 330], [760, 880]] }
+    { "kind": "fill", "id": "arch", "tone": ["soft", "mid", "ink"],
+      "words": ["photos", "voice notes", "the latest version", "screenshots", "receipts", "drafts"],
+      "profile": [[200, 420, 40], [300, 420, 200], [460, 420, 340], [640, 420, 390], [860, 420, 400]],
+      "holes": [{ "profile": [[500, 420, 30], [580, 420, 180], [700, 420, 260], [860, 420, 290]] }] }
   ],
   "texts": [
     { "role": "masthead", "id": "name", "x": 56, "y": 40, "w": 420 },
     { "role": "headline", "id": "headline", "x": 560, "y": 64, "w": 224 },
-    { "role": "aside", "id": "left", "text": "On your phone.", "x": 80, "y": 250, "w": 160 },
-    { "role": "aside", "id": "right", "text": "On your laptop.", "x": 600, "y": 250, "w": 160 }
+    { "role": "aside", "id": "left", "text": "From your phone.", "x": 196, "y": 790, "w": 150 },
+    { "role": "aside", "id": "right", "text": "To your laptop.", "x": 494, "y": 790, "w": 150, "align": "right" }
   ]
 }
 ```
 
-`hot` is "latest version". It matches a word on the deck.
+`hot` is "latest version". It matches a word in the arch.
 
 ### A stair for a learning app
 
-Rungs teaches a language ten minutes a day, and each lesson opens the next. Main moment: every lesson you finish is one step up, and the top step is your first real conversation. The verb is "climbs", so the picture is a stair rising from left to right. One polygon draws the lower steps with the early lessons. Its two tones split it: soft in the upper rows and ink in the lower, because the lessons you have done are near and solid. The top step is its own region with `hot: true`, so the goal is the one bright thing on the page.
+Rungs teaches a language ten minutes a day, and each lesson opens the next. Main moment: every lesson you finish is one step up, and the top step is your first real conversation. The verb is "climbs", so the picture is a stair rising from left to right. One polygon draws the lower steps with the early lessons. Its two tones split it: soft in the upper rows and ink in the lower, because the lessons you have done are near and solid. Above the top step, a speech bubble is its own region with `hot: true`, so the goal is the one bright thing on the page. A plain box on top would read as a column.
 
 ```json
 {
@@ -488,9 +483,9 @@ Rungs teaches a language ten minutes a day, and each lesson opens the next. Main
     { "kind": "fill", "id": "steps", "tone": ["soft", "ink"],
       "words": ["greetings", "numbers", "the café", "directions", "small talk"],
       "polygon": [[80, 860], [80, 760], [200, 760], [200, 660], [320, 660], [320, 560], [440, 560], [440, 460], [760, 460], [760, 860]] },
-    { "kind": "fill", "id": "top", "tone": "ink", "hot": true,
+    { "kind": "fill", "id": "bubble", "tone": "ink", "hot": true,
       "words": ["first conversation", "your own words"],
-      "polygon": [[560, 300], [760, 300], [760, 452], [560, 452]] }
+      "ellipse": { "cx": 640, "cy": 350, "rx": 140, "ry": 80 } }
   ],
   "texts": [
     { "role": "masthead", "id": "name", "x": 56, "y": 40, "w": 420 },
@@ -500,7 +495,7 @@ Rungs teaches a language ten minutes a day, and each lesson opens the next. Main
 }
 ```
 
-`hot` is "first conversation". The top step alone is a box, but the stair as a whole changes width on every step, so `row-variety` passes.
+`hot` is "first conversation". The steps change width on every step, and the bubble is round, so each region passes `row-variety`.
 
 ### A shield for a backup tool
 

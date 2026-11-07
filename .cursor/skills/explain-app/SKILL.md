@@ -13,10 +13,6 @@ description: >-
 
 You invent one picture that acts out the product's main moment and describe it in a JSON spec as a few regions and texts. The tools fill each region with the product's words, add a footer of counts from the code, and check the result.
 
-```
-repo → scan → facts.json → compose → you write the figure → sketch loop → render → png + pdf
-```
-
 Run commands from this skill's directory. `<repo>` is the app's directory, `<name>` its folder name.
 
 ## Set up once
@@ -38,9 +34,9 @@ For Chromium, run `npx --prefix tools playwright install chromium` or set `VYO_C
    ```bash
    node tools/vyo.mjs compose <repo>/vyo/<name>-facts.json --repo <repo> --out <repo>/vyo/<name>-poster.json
    ```
-   `--repo` puts the latest commit in the footer. `--from <preset>` starts from a preset's geometry (`node tools/vyo.mjs presets` lists them). `--force` overwrites. `compose` prints `floor: <y>`, the lowest y the figure may reach, then masthead, headline, aside and rows lines: line heights and the row grid. Without `--from` the figure is one box-shaped profile that fails `row-variety` on purpose. Reshape it.
+   `--repo` puts the latest commit in the footer. `--from <preset>` starts from a preset's geometry (`node tools/vyo.mjs presets` lists them). `compose` prints `floor: <y>`, the lowest y the figure may reach, and the line heights and row grid. Without `--from` the figure is a box that fails `row-variety` on purpose.
 6. Write the figure and fields (see "Describe it" and "Fill the spec").
-7. Sketch: `node tools/vyo.mjs sketch <repo>/vyo/<name>-poster.json`. It prints the sheet in letters, plus coverage, width spread and floor. Letters A to F mark regions, `#` dots, `·` hot rows and `=` the floor. Adjust and sketch again until a stranger would name the silhouette.
+7. Sketch: `node tools/vyo.mjs sketch <repo>/vyo/<name>-poster.json`. It prints the sheet in letters (A to F regions, `#` dots, `·` hot rows, `=` the floor), the coverage, and each region's width spread and mean width. Act on every `!` line. Sketch again until a stranger would name the silhouette.
 8. Render: `node tools/vyo.mjs render <repo>/vyo/<name>-poster.json`.
 9. Fix every `✗` line. Render exits 1 until none is left. Weigh every `!` line. `preset-copy` means you kept a preset's geometry. Change it, or say in chat why it fits.
 10. Open the PNG, full size and as a thumbnail. The silhouette must read as the main moment, the hot word must stand out, and no word may read as code. If not, go back to step 7.
@@ -61,9 +57,19 @@ Start from the verb in the main moment, not the category.
 | guards or keeps safe | shield or wall |
 | repeats on a cycle | ring |
 
-Bend it to the product. A ring can break open where today's item leaves. A stair can end in the hot word. Test it: shrunk to a thumbnail, would a person name the shape in one word, and does that word describe what the product does?
+Bend it to the product. A ring can break open where today's item leaves.
 
-A model that has not thought about the product draws these, and none acts out a moment. Never use:
+Make one strong silhouette:
+
+- Draw one dominant silhouette, not separate blocks. Two blocks side by side read as two columns, whatever their tops do.
+- Its outline is a continuous curve across the whole band. The profile's half-widths change at most stops, not only at the ends.
+- Negative space goes inside the shape as holes, not as gaps between blocks, like the eye's empty pupil.
+- Aim for about a third of the band covered.
+- A region narrower than about 160px reads as a column. `thin-region` warns under 160px on average. `row-variety` fails a region whose line widths spread less than 0.25 of their mean.
+- A hot region repeats all its words, so give it one to three phrases.
+- The thumbnail test: shrink it in your head to a stamp and name it in one word. That word must describe what the product does.
+
+None of these acts out a moment. Never use:
 
 - a heart, for anything about people or care
 - a plain circle, which passes every check, or a box filled edge to edge
@@ -76,52 +82,46 @@ The words:
 - Each region has one job and its own words: what goes in, what comes out, what travels.
 - One hot word on the whole poster, where the moment happens: the waist, the iris, the last line.
 - Tones give depth. `soft` is far or past, `ink` is near or now. Two or three tones step down a region, each row taking the nearest stop. `cold` and `cool` are blue-greys for a state not yet warm.
-- Leave paper. The eye's empty pupil and the hourglass's thin waist make them read.
 
 ## Describe it
 
-The sheet is 840 by 1190 px, y grows downward, and the figure usually sits between y 170 and the floor. A figure has `fits` (at most 160 characters), 1 to 6 `regions` and 1 to 6 `texts`.
+The sheet is 840 by 1190 px and y grows downward. A figure has `fits` (at most 160 characters), 1 to 6 `regions` and 1 to 6 `texts`.
 
-A fill region has `kind: "fill"`, `id`, one geometry, `words` (2 to 14, at most 24 characters each) and `tone`. Options: `holes`, `band` (1 to 4 rows per word), `size` (11 or 12), `caps`, and `hot` (every row in the accent). Geometry, by preference:
+A fill region has `kind: "fill"`, `id`, one geometry, `words` (2 to 14, at most 24 characters each) and `tone`. Options: `holes` (shapes to cut out), `band` (1 to 4 rows per word), `size` (11 or 12), `caps`, and `hot` (every row in the accent). Geometry, by preference: `profile`, 3 to 24 stops `[y, cx, halfWidth]` with y increasing, drawn as a smooth outline; `ellipse` `{ cx, cy, rx, ry }`; `polygon`, 3 to 40 `[x, y]` points for hard corners; `path`, an SVG path.
 
-- `profile`: 3 to 24 stops `[y, cx, halfWidth]`, y increasing. The tool draws a smooth outline through them.
-- `ellipse`: `{ cx, cy, rx, ry }`.
-- `polygon`: 3 to 40 `[x, y]` points, for hard corners such as steps.
-- `path`: an SVG path, when nothing else draws it.
+A dots region spells 2 to 4 words of at most 5 letters in squares: `kind: "dots"`, `id`, `lines`, `x`, `y`, `cell` (px per square), and `tones`, one per line, which may include `hot`. A dots line is 29 squares wide and 7 tall, with lines 9 squares apart.
 
-`holes` lists shapes of the same kinds to cut out. A dots region spells 2 to 4 words of at most 5 letters in squares: `kind: "dots"`, `id`, `lines`, `x`, `y`, `cell` (px per square), and `tones`, one per line.
+A text has `role` (`masthead`, `headline`, `display`, `aside` or `label`), `id`, `x`, `y`, `w`, and optional `size`, `align` (`left`, `right` or `center`) and `hot`. Asides, displays and labels need `text`. Exactly one masthead prints the product name and shrinks to fit `w`. At most one headline prints `spec.headline`. A `display` is a bold sans line of at most 40 characters, such as the ribbon's "Plan it in the kitchen." A label with `hot: true` is set in the accent, uppercase and tracked. Default sizes: masthead 84 (48 to 120), headline 22 (18 to 40), display 56 (32 to 64), aside 12 (10 to 14), label 12 (10 to 32), hot label 26. `compose` prints the line heights. No region or text may use the ids `note`, `counts`, `notBuilt`, `provenance` or `credit`.
 
-A dots line is 29 squares wide and 7 tall, with lines 9 squares apart. Its `tones` may include `hot`, and any line matching `hot` is drawn hot anyway.
+Rows are 16px tall, 14px at size 11, on a sheet-wide grid. The tool skips any part of a row within 12px of a text and drops runs under 24px. A fill region needs 4 rows or more.
 
-A text has `role` (`masthead`, `headline`, `display`, `aside` or `label`), `id`, `x`, `y`, `w`, and optional `size`, `align` (`left`, `right` or `center`) and `hot`. Asides, displays and labels need `text`. Exactly one masthead prints the product name and shrinks to fit `w`. At most one headline prints `spec.headline`. A `display` is a bold sans line in the poster's own words, such as the ribbon's "Save in Claude Code." (at most 40 characters). A label with `hot: true` is set in the accent, uppercase and tracked, and defaults to size 26. No region or text may use the ids `note`, `counts`, `notBuilt`, `provenance` or `credit`.
+Six worked profiles for a band from y 180 to 860. Each passed `silhouette` and `row-variety` as one region. Move or stretch them, split one at a stop to give in and out their own words, and keep holes inside the outline.
 
-| Text | Size (range) | Height |
+| Shape | `profile` | Hole |
 |---|---|---|
-| `masthead` | 84 (48 to 120) | 88px per line at 84 |
-| `headline` | 22 (18 to 40) | 28px per line in a 224px column |
-| `display` | 56 (32 to 64) | 1px per size px, one line |
-| `aside` | 12 (10 to 14) | 18px per line, 7.2px per character |
-| `label` | 12 (10 to 32), hot 26 | 1.25px per size px |
+| flame | `[[180,450,4],[300,400,80],[440,450,180],[620,410,270],[770,420,260],[860,420,130]]` | |
+| bottle | `[[180,420,50],[300,420,50],[380,420,110],[460,420,260],[800,420,270],[860,420,230]]` | |
+| bridge arch | `[[200,420,40],[300,420,200],[460,420,340],[640,420,390],[860,420,400]]` | profile `[[500,420,30],[580,420,180],[700,420,260],[860,420,290]]` |
+| leaf | `[[180,560,4],[300,500,160],[480,440,260],[660,380,230],[800,330,110],[860,310,6]]` | |
+| key | `[[180,420,150],[240,420,260],[340,420,260],[420,420,140],[470,420,60],[700,420,60],[740,480,120],[860,480,120]]` | ellipse `cx 420, cy 300, rx 110, ry 60` |
+| wave | `[[180,330,90],[260,270,190],[340,330,230],[460,430,250],[640,430,330],[860,420,390]]` | ellipse `cx 230, cy 380, rx 70, ry 60` |
 
-Rows are 16px tall, 14px at size 11, on a sheet-wide grid. The tool skips any part of a row within 12px of a text, so a masthead can sit inside a region. It drops runs under 24px. A fill region needs 4 rows or more.
-
-An hourglass is a profile of six stops on x 420: rims at the outer two, a waist held at halfWidth 48 by the middle two. The `hourglass` preset splits it at the waist so in and out get separate words, with a hot label between. A figure with no fill region (dots only) skips `row-variety` and `one-region`.
+A figure with no fill region (dots only) skips `row-variety`, `thin-region` and `one-region`.
 
 ## Fill the spec
 
-`compose` fills `version`, `facts`, `product`, `theme` and a placeholder `figure`, which render rejects.
+`compose` fills `version`, `facts`, `product`, `theme` (`light` or `dark`) and a placeholder `figure`, which render rejects.
 
 | Field | What it is |
 |---|---|
 | `product.name` | The customer-facing name. `product-name` warns while it is the folder name |
-| `theme` | `light` or `dark` |
 | `accent` | Optional hot colour, a hex |
 | `headline` | One plain sentence about the outcome, at most 72 characters |
-| `hot` | The one word or two-word phrase that matters. It must be a word in a fill region, a dots line, or a hot label's text, unless a region has `hot: true` |
+| `hot` | The one word or two-word phrase that matters, drawn in the figure |
 | `notes` | 2 or 3 footer columns. `title` at most 24 characters, `text` at most 220 |
 | `notBuilt` | 0 to 6 plain items the code has but a user cannot use yet |
 
-Each note does a job the picture cannot: how it works, what you get, what stays private, what runs on its own, or dated proof from the docs. Never type a count, a commit or a date. Follow [plain-language-rules.md](plain-language-rules.md). [examples.md](examples.md) has each preset as a full spec and three invented figures.
+Each note does a job the picture cannot: how it works, what you get, what stays private, what runs on its own, or proof. Never type a count, a commit or a date into the footer; render writes those. A dated proof from the docs may appear in a note. Follow [plain-language-rules.md](plain-language-rules.md). [examples.md](examples.md) has each preset as a full spec and three invented figures.
 
 ## Where output goes
 
@@ -141,7 +141,3 @@ Render writes `<name>-poster.html`, `.png` and `.pdf` beside the spec or into `-
 - **Several apps.** Scan the root. Name the product, not a folder.
 - **No screens.** Say "there is no user interface in this repository" and describe what the service does for its callers.
 - **`project-context.md`.** Its name, audience, main moment, hot word, picture and not-built list win over what you inferred.
-
-## Related skills
-
-If installed: `codebase-onboarding` for developers, `codebase-documenter` for contributor docs, `project-handoff` for build status.
