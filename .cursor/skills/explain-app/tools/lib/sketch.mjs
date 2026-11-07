@@ -126,7 +126,7 @@ export function sketch(spec) {
     `regions: ${legend.join(", ")}; · marks hot rows`,
     `texts: ${texts.map((b) => `${b.id} ${Math.round(b.left)},${Math.round(b.top)} to ${Math.round(b.right)},${Math.round(b.bottom)}`).join("; ")}`,
     `floor: ${floor}`,
-    `coverage ${Math.round(s.coverage * 100)}% (needs ${Math.round(SILHOUETTE.coverage * 100)}%, ${ok(s.coverage, SILHOUETTE.coverage)}), height ${Math.round(s.height * 100)}% (needs ${Math.round(SILHOUETTE.height * 100)}%, ${ok(s.height, SILHOUETTE.height)}), width ${Math.round(s.width * 100)}% (needs ${Math.round(SILHOUETTE.width * 100)}%, ${ok(s.width, SILHOUETTE.width)})`,
+    `${[s.coverage >= SILHOUETTE.coverage, s.height >= SILHOUETTE.height, s.width >= SILHOUETTE.width].every(Boolean) ? "" : "! "}coverage ${Math.round(s.coverage * 100)}% (needs ${Math.round(SILHOUETTE.coverage * 100)}%, ${ok(s.coverage, SILHOUETTE.coverage)}), height ${Math.round(s.height * 100)}% (needs ${Math.round(SILHOUETTE.height * 100)}%, ${ok(s.height, SILHOUETTE.height)}), width ${Math.round(s.width * 100)}% (needs ${Math.round(SILHOUETTE.width * 100)}%, ${ok(s.width, SILHOUETTE.width)})`,
     ...(perRegion.length ? perRegion.map((r) => `region ${r.id}: spread/mean ${r.variety.toFixed(2)} (needs ${REGION.variety}), ${Math.round(r.width)}px across on average (needs ${REGION.width})`) : ["regions: no fill rows"]),
     ...notes.map((n) => `! ${n}`),
   ];

@@ -11,7 +11,7 @@ description: >-
 
 # Explain App
 
-You invent one picture that acts out the product's main moment and describe it in a JSON spec as a few regions and texts. The tools fill each region with the product's words, add a footer of counts from the code, and check the result.
+You invent one picture that acts out the product's main moment and describe it in a JSON spec as a few regions and texts. The tools fill the regions with its words, add a footer of counts, and check it.
 
 Run commands from this skill's directory. `<repo>` is the app's directory, `<name>` its folder name.
 
@@ -28,7 +28,7 @@ For Chromium, run `npx --prefix tools playwright install chromium` or set `VYO_C
 
 1. Scan: `node tools/vyo.mjs scan <repo> --out <repo>/vyo/<name>-facts.json`.
 2. Summarise: `node tools/vyo.mjs show <repo>/vyo/<name>-facts.json`.
-3. Read `README*`, `docs/` and `.cursor/skills/explain-app/project-context.md` in the target repo. Write down the product's name, audience and main moment: one sentence about what it does for a person. Every claim must point at the scan, the docs or the code.
+3. Read `README*`, `docs/` and `.cursor/skills/explain-app/project-context.md` in the target repo if the owner wrote one (most repos have none). Write down the product's name, audience and main moment: one sentence about what it does for a person. Every claim must point at the scan, the docs or the code.
 4. Invent the picture. Write its `fits` sentence before any numbers.
 5. Write the scaffold:
    ```bash
@@ -36,7 +36,7 @@ For Chromium, run `npx --prefix tools playwright install chromium` or set `VYO_C
    ```
    `--repo` puts the latest commit in the footer. `--from <preset>` starts from a preset's geometry (`node tools/vyo.mjs presets` lists them). `compose` prints `floor: <y>`, the lowest y the figure may reach, and the line heights and row grid. Without `--from` the figure is a box that fails `row-variety` on purpose.
 6. Write the figure and fields (see "Describe it" and "Fill the spec").
-7. Sketch: `node tools/vyo.mjs sketch <repo>/vyo/<name>-poster.json`. It prints the sheet in letters (A to F regions, `#` dots, `·` hot rows, `=` the floor), the coverage, and each region's width spread and mean width. Act on every `!` line. Sketch again until a stranger would name the silhouette.
+7. Sketch: `node tools/vyo.mjs sketch <repo>/vyo/<name>-poster.json`. It prints the sheet in letters (A to F regions, `#` dots, `·` hot rows, `=` the floor), the coverage, and each region's width spread and mean width. Act on every `!` line, including width and coverage, before you render. Sketch again until a stranger would name the silhouette.
 8. Render: `node tools/vyo.mjs render <repo>/vyo/<name>-poster.json`.
 9. Fix every `✗` line. Render exits 1 until none is left. Weigh every `!` line. `preset-copy` means you kept a preset's geometry. Change it, or say in chat why it fits.
 10. Open the PNG, full size and as a thumbnail. The silhouette must read as the main moment, the hot word must stand out, and no word may read as code. If not, go back to step 7.
@@ -66,7 +66,7 @@ Make one strong silhouette:
 - Negative space goes inside the shape as holes, not as gaps between blocks, like the eye's empty pupil.
 - Aim for about a third of the band covered.
 - A region narrower than about 160px reads as a column. `thin-region` warns under 160px on average. `row-variety` fails a region whose line widths spread less than 0.25 of their mean.
-- A hot region repeats all its words, so give it one to three phrases.
+- A hot region cycles its words down every row, so give it two or three short phrases, not a list.
 - The thumbnail test: shrink it in your head to a stamp and name it in one word. That word must describe what the product does.
 
 None of these acts out a moment. Never use:
@@ -78,7 +78,7 @@ None of these acts out a moment. Never use:
 
 The words:
 
-- Every word is a noun the product's user would say: "leftovers", "busy nights", "the shopping list". Never a feature name, a role word or a code name.
+- Every word is a noun the product's user would say: "leftovers", "busy nights", "the shopping list". Never a feature name, a role word or a code name. Product and tool names the user actually uses today (Claude Code, Codex, Cursor) are allowed; they are not jargon.
 - Each region has one job and its own words: what goes in, what comes out, what travels.
 - One hot word on the whole poster, where the moment happens: the waist, the iris, the last line.
 - Tones give depth. `soft` is far or past, `ink` is near or now. Two or three tones step down a region, each row taking the nearest stop. `cold` and `cool` are blue-greys for a state not yet warm.
@@ -87,15 +87,15 @@ The words:
 
 The sheet is 840 by 1190 px and y grows downward. A figure has `fits` (at most 160 characters), 1 to 6 `regions` and 1 to 6 `texts`.
 
-A fill region has `kind: "fill"`, `id`, one geometry, `words` (2 to 14, at most 24 characters each) and `tone`. Options: `holes` (shapes to cut out), `band` (1 to 4 rows per word), `size` (11 or 12), `caps`, and `hot` (every row in the accent). Geometry, by preference: `profile`, 3 to 24 stops `[y, cx, halfWidth]` with y increasing, drawn as a smooth outline; `ellipse` `{ cx, cy, rx, ry }`; `polygon`, 3 to 40 `[x, y]` points for hard corners; `path`, an SVG path.
+A fill region has `kind: "fill"`, `id`, one geometry, `words` (2 to 14, at most 24 characters each) and `tone`. Options: `holes` (shapes to cut out), `band` (1 to 4 rows per word), `size` (11 or 12), `caps`, and `hot` (every row in the accent). Geometry, by preference: `profile`, 3 to 24 stops `[y, cx, halfWidth]` with y increasing; `ellipse` `{ cx, cy, rx, ry }`; `polygon`, 3 to 40 `[x, y]` points for hard corners; `path`, an SVG path.
 
 A dots region spells 2 to 4 words of at most 5 letters in squares: `kind: "dots"`, `id`, `lines`, `x`, `y`, `cell` (px per square), and `tones`, one per line, which may include `hot`. A dots line is 29 squares wide and 7 tall, with lines 9 squares apart.
 
-A text has `role` (`masthead`, `headline`, `display`, `aside` or `label`), `id`, `x`, `y`, `w`, and optional `size`, `align` (`left`, `right` or `center`) and `hot`. Asides, displays and labels need `text`. Exactly one masthead prints the product name and shrinks to fit `w`. At most one headline prints `spec.headline`. A `display` is a bold sans line of at most 40 characters, such as the ribbon's "Plan it in the kitchen." A label with `hot: true` is set in the accent, uppercase and tracked. Default sizes: masthead 84 (48 to 120), headline 22 (18 to 40), display 56 (32 to 64), aside 12 (10 to 14), label 12 (10 to 32), hot label 26. `compose` prints the line heights. No region or text may use the ids `note`, `counts`, `notBuilt`, `provenance` or `credit`.
+A text has `role` (`masthead`, `headline`, `display`, `aside` or `label`), `id`, `x`, `y`, `w`, and optional `size`, `align` (`left`, `right` or `center`) and `hot`. Asides, displays and labels need `text`. One masthead prints the product name, shrunk to fit `w`. At most one headline prints `spec.headline`. A `display` is a bold sans line of at most 40 characters A label with `hot: true` is set in the accent, uppercase and tracked. Default sizes: masthead 84 (48 to 120), headline 22 (18 to 40), display 56 (32 to 64), aside 12 (10 to 14), label 12 (10 to 32), hot label 26. No region or text may use the ids `note`, `counts`, `notBuilt`, `provenance` or `credit`.
 
 Rows are 16px tall, 14px at size 11, on a sheet-wide grid. The tool skips any part of a row within 12px of a text and drops runs under 24px. A fill region needs 4 rows or more.
 
-Six worked profiles for a band from y 180 to 860. Each passed `silhouette` and `row-variety` as one region. Move or stretch them, split one at a stop to give in and out their own words, and keep holes inside the outline.
+Six worked profiles for a band from y 180 to 860. Each passed `silhouette` and `row-variety` as one region. Move or stretch them, and keep holes inside the outline.
 
 | Shape | `profile` | Hole |
 |---|---|---|
@@ -119,9 +119,9 @@ A figure with no fill region (dots only) skips `row-variety`, `thin-region` and 
 | `headline` | One plain sentence about the outcome, at most 72 characters |
 | `hot` | The one word or two-word phrase that matters, drawn in the figure |
 | `notes` | 2 or 3 footer columns. `title` at most 24 characters, `text` at most 220 |
-| `notBuilt` | 0 to 6 plain items the code has but a user cannot use yet |
+| `notBuilt` | 0 to 6 plain items (at most 32 characters each) the code has but a user cannot use yet |
 
-Each note does a job the picture cannot: how it works, what you get, what stays private, what runs on its own, or proof. Never type a count, a commit or a date into the footer; render writes those. A dated proof from the docs may appear in a note. Follow [plain-language-rules.md](plain-language-rules.md). [examples.md](examples.md) has each preset as a full spec and three invented figures.
+Each note does a job the picture cannot: how it works, what you get, what stays private, what runs on its own, or proof. Never type a count, a commit or a date into the footer; render writes those. Follow [plain-language-rules.md](plain-language-rules.md). [examples.md](examples.md) has each preset as a full spec and three invented figures.
 
 ## Where output goes
 

@@ -58,7 +58,7 @@ Region words build the picture, so each one must make sense on its own to someon
 - **Use nouns.** Region words are things that go in, travel or come out: "leftovers", "seven dinners", "the plan". A verb phrase belongs in an aside or a note.
 - **Give each region its own words.** The words in one region share a job: what goes in, what comes out, what crosses. Don't repeat a whole list across regions unless the picture is one thing seen twice, like the two faces of a ribbon.
 - **No role words.** Screen, table, service, request, job, model and schema describe how code is organised, not what a user gets. The footer's counts already use them in plain phrases like "4 kinds of saved record". Don't repeat those in the figure.
-- **No vendor names, unless the user can use that vendor today.** "Claude Code" and "Codex" are fine on Hypher's poster because a user connects them. "Stripe" is not fine on a poster for an app with no checkout screen. Say "payments" in `notBuilt` instead.
+- **No vendor names, unless the user can use that vendor today.** Product and tool names the user actually uses today (Claude Code, Codex, Cursor) are allowed as words; they are not jargon. "Claude Code" and "Codex" are fine on Hypher's poster because a user connects them. "Stripe" is not fine on a poster for an app with no checkout screen. Say "payments" in `notBuilt` instead.
 - **No counts.** Render writes every count from the scan. A word like "6 screens" can drift from the code.
 
 ## Naming the hot word and labels

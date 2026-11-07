@@ -27,6 +27,13 @@ test("the hourglass sketch: 42 columns, both regions, hot rows, texts, the floor
   assert.doesNotMatch(out, /^! /m, "the hourglass has no warnings");
 });
 
+test("a figure under the width floor prefixes the coverage line with !", () => {
+  const spec = preset("hourglass");
+  const thin = spec.figure.regions.map((r) => (r.profile ? { ...r, profile: r.profile.map(([y, cx, hw]) => [y, cx, hw / 3]) } : r));
+  const out = sketch({ ...spec, figure: { ...spec.figure, regions: thin } });
+  assert.match(out, /^! coverage \d+% .*too low/m);
+});
+
 test("dots draw as #, and a figure with no fill rows says so", () => {
   const out = sketch(preset("warm-start"));
   assert.match(out, /#{29}/);

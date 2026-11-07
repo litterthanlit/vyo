@@ -163,7 +163,7 @@ export const CHECKS = [
       items.forEach((a, i) =>
         items.slice(i + 1).forEach((b) => {
           if (a.region !== b.region && sameBand(a.rect, b.rect) && overlap(grow(a.rect, 2, 0), grow(b.rect, 2, 0))) {
-            out.add(`regions ${a.region} and ${b.region} touch at y ${round(Math.max(a.rect.top, b.rect.top))}; leave 4px between them or cut a hole`);
+            out.add(`regions ${a.region} and ${b.region} touch at y ${round(Math.max(a.rect.top, b.rect.top))}; leave 4px between them or cut a hole. A long phrase that overhangs a narrow run can also cause this; shorten the word or widen the run.`);
           }
         }),
       );
