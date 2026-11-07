@@ -17,5 +17,6 @@ Three takes on "the project painted as a field" for Hypher, each driven by `hyph
 | `f-wave-paper/` | The wave again, on paper in violet | One row per 300 lines of each part; every fifth row carries the sentence |
 | `g-flow/` | A river system in binary digits | One stream per part, thickness by lines, merging by import ties into one channel |
 | `h-arc/` | One crescent cut from the repeated sentence | Radius from total lines, thickness from the handoff part's share |
+| `i-loose/` | The wave and terrain with no Swiss frame: no masthead, hairline, counts line or note columns | Field bleeds on all edges; name small in a corner; headline the only large type; two short paragraphs and a parts list in empty corners; one record line |
 
 Each folder has its own README with what was tried and the region kind the skill's engine would need. These are not the skill and are not checked by it. Regenerate with `node render.mjs` in each folder (needs Playwright and the fonts in `.cursor/skills/explain-app/tools/fonts/`).
