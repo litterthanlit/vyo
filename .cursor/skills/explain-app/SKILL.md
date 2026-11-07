@@ -5,19 +5,19 @@ description: >-
   client, PM or stakeholder, create a non-technical overview, demystify the
   codebase for someone who does not code, help someone sell or talk about their
   product, visualize the repo as a poster, or draw the codebase. Produces one
-  type-led poster (PNG and PDF) in which the product's own words build a shape
-  that acts out what the product does.
+  type-led poster (PNG and PDF): a silhouette invented for the product, built
+  from its own words, that acts out what it does.
 ---
 
 # Explain App
 
-The deliverable is one poster. A shape acts out the product's main moment, and the product's own words fill it. One accent colour marks the one word that matters, and the footer carries counts the tools read from the code.
+You invent one picture that acts out the product's main moment and describe it in a JSON spec as a few regions and texts. The tools fill each region with the product's words, add a footer of counts from the code, and check the result.
 
 ```
-repo → scan → facts.json → compose (agent fills a spec) → render → png + pdf
+repo → scan → facts.json → compose → you write the figure → sketch loop → render → png + pdf
 ```
 
-You write one small JSON spec. The tools measure, draw and check everything else. Run every command from this skill's directory.
+Run commands from this skill's directory. `<repo>` is the app's directory, `<name>` its folder name.
 
 ## Set up once
 
@@ -26,77 +26,126 @@ npm install --prefix tools
 bash tools/fetch-fonts.sh
 ```
 
-If Playwright's Chromium is not installed, run `npx --prefix tools playwright install chromium` or set `VYO_CHROMIUM` to a Chromium binary.
+For Chromium, run `npx --prefix tools playwright install chromium` or set `VYO_CHROMIUM`.
 
 ## Make the poster
 
-In the commands, `<repo>` is the app's directory and `<name>` is its folder name.
-
-1. Scan the code.
+1. Scan: `node tools/vyo.mjs scan <repo> --out <repo>/vyo/<name>-facts.json`.
+2. Summarise: `node tools/vyo.mjs show <repo>/vyo/<name>-facts.json`.
+3. Read `README*`, `docs/` and `.cursor/skills/explain-app/project-context.md` in the target repo. Write down the product's name, audience and main moment: one sentence about what it does for a person. Every claim on the poster must point at the scan, the docs or the code.
+4. Invent the picture. Write its `fits` sentence before any numbers.
+5. Write the scaffold:
    ```bash
-   node tools/vyo.mjs scan <repo> --out <repo>/vyo/<name>-facts.json
+   node tools/vyo.mjs compose <repo>/vyo/<name>-facts.json --repo <repo> --out <repo>/vyo/<name>-poster.json
    ```
-2. Read the summary: `node tools/vyo.mjs show <repo>/vyo/<name>-facts.json`.
-3. Read the product's own docs: `README*`, `docs/`, and `.cursor/skills/explain-app/project-context.md` in the target repo, if the owner has written one (most repos have none). Write down the customer-facing name, the audience, and the main moment. The main moment is one sentence about the thing the product does that the poster acts out. If no README or `project-context.md` names the product, keep the folder name in `product.name`, expect the `! product name equals the folder name` warning, and ask the user for the real name in your reply. Never invent a product name. You may read the code to confirm a claim. Every claim on the poster must point at something in the scan, the docs or the code. Never write what you cannot point at.
-4. List the shapes with `node tools/vyo.mjs shapes`. Pick the shape whose "fits when" matches the main moment. If none fits well, use `hourglass` for an app where a person puts things in and gets one thing back, and `eye` for an app that reads or monitors. Say in chat that the fit is loose. Never invent a shape.
-5. Write the scaffold spec. `--repo` reads the latest commit and its date for the footer.
-   ```bash
-   node tools/vyo.mjs compose <repo>/vyo/<name>-facts.json --shape <id> --repo <repo> --out <repo>/vyo/<name>-poster.json
-   ```
-   `compose` refuses to overwrite an existing spec unless you pass `--force`. Without `--theme` it uses the shape's first theme.
-6. Fill every slot in the spec in the user's words. See the next section.
-7. Render: `node tools/vyo.mjs render <repo>/vyo/<name>-poster.json`.
-8. Fix every `✗` line. Render exits 1 until none is left. Weigh every `!` line, and fix it unless you have a reason to keep it.
-9. Open the PNG and look at it. The shape must read as the main moment, the hot word must stand out, and no word may read as code.
-10. Reply in chat in the format below.
+   `--repo` puts the latest commit in the footer. `--from <preset>` starts from a preset's geometry (`node tools/vyo.mjs presets` lists them). `compose` prints `floor: <y>`, the lowest y the figure may reach. `--force` overwrites.
+6. Write the figure and fields (see "Describe it" and "Fill the spec").
+7. Sketch: `node tools/vyo.mjs sketch <repo>/vyo/<name>-poster.json`. It prints the sheet in letters, with coverage, width spread and the floor. Adjust and sketch again until a stranger would name the silhouette.
+8. Render: `node tools/vyo.mjs render <repo>/vyo/<name>-poster.json`.
+9. Fix every `✗` line. Render exits 1 until none is left. Weigh every `!` line. `preset-copy` means you kept a preset's geometry. Change it, or say in chat why it fits.
+10. Open the PNG, full size and as a thumbnail. The silhouette must read as the main moment, the hot word must stand out, and no word may read as code. If not, go back to step 7.
+11. Reply in chat in the format below.
 
-## Write the spec
+## Invent the picture
 
-`compose` fills `version`, `facts`, `product`, `theme` and `shape`. You fill the rest.
+Start from the verb in the main moment, not the product's category.
+
+| When the product... | Try |
+|---|---|
+| squeezes many things into one | hourglass |
+| carries something from one place to another | ribbon |
+| reads everything, then focuses on one thing | eye |
+| warms up, or turns unknown into known | dot letters, cold to hot |
+| grows, or takes you up in stages | tree or stair |
+| joins two sides | bridge or knot |
+| guards or keeps safe | shield or wall |
+| repeats on a cycle | ring |
+
+Bend it to the product. A ring can break open where today's item leaves. A stair can end in the hot word. Test it: shrunk to a thumbnail, would a person name the shape in one word, and does that word describe what the product does?
+
+A model that has not thought about the product draws these. Never use them:
+
+- a heart, for anything about people or care
+- a plain circle, which passes every check, or a box filled edge to edge
+- a blob with no edge a person could name
+- "01, 02, 03" step markers
+
+The words:
+
+- Every word is a noun the product's user would say: "leftovers", "busy nights", "the shopping list". Never a feature name, a role word or a code name.
+- Each region has one job and its own words: what goes in, what comes out, what travels.
+- One hot word on the whole poster, where the moment happens: the waist, the iris, the last line.
+- Tones give depth. `soft` is far or past, `ink` is near or now, and two or three tones fade down a region. `cold` and `cool` are blue-greys for a state not yet warm.
+- Leave paper. The eye's empty pupil and the hourglass's narrow waist are what make them read.
+
+## Describe it
+
+The sheet is 840 by 1190 px, y grows downward, and the figure usually sits between y 170 and the floor. A figure has `fits` (at most 160 characters), 1 to 6 `regions` and 1 to 6 `texts`.
+
+A fill region has `kind: "fill"`, `id`, one geometry, `words` (2 to 14, at most 24 characters each) and `tone`. Options: `holes`, `band` (1 to 4 rows per word), `size` (11 or 12), `caps`, and `hot` (every row in the accent). Geometry, by preference:
+
+- `profile`: 3 to 24 stops `[y, cx, halfWidth]`, y increasing. The tool draws a smooth outline through them.
+- `ellipse`: `{ cx, cy, rx, ry }`.
+- `polygon`: 3 to 40 `[x, y]` points, for hard corners such as steps.
+- `path`: an SVG path, when nothing else draws it.
+
+`holes` lists shapes of the same kinds to cut out. A dots region spells 2 to 4 words of at most 5 letters in squares: `kind: "dots"`, `id`, `lines`, `x`, `y`, `cell` (px per square), and `tones`, one per line.
+
+A text has `role` (`masthead`, `headline`, `aside` or `label`), `id`, `x`, `y`, `w`, and optional `size`, `align` and `hot`. Asides and labels need `text`. Exactly one masthead prints the product name and shrinks to fit `w`. At most one headline prints `spec.headline`. A label with `hot: true` is set in the accent, uppercase and tracked.
+
+| Text | Size (range) | Height |
+|---|---|---|
+| `masthead` | 84 (48 to 120) | 88px per line at 84 |
+| `headline` | 22 (18 to 40) | 28px per line in a 224px column |
+| `aside`, `label` | 12 (10 to 14) | 18px per line, 7.2px per character |
+
+Rows are 16px tall, 14px at size 11, on a sheet-wide grid. The tool skips any part of a row within 12px of a text, so a masthead can sit inside a region. It drops runs under 24px. A fill region needs 4 rows or more.
+
+An hourglass as one region with six stops, centred on x 420:
+
+```json
+{ "kind": "fill", "id": "glass", "tone": ["soft", "ink"],
+  "words": ["recipes", "leftovers", "busy nights", "cravings", "shopping list", "the plan"],
+  "profile": [[176, 420, 365], [320, 420, 200], [500, 420, 48], [560, 420, 48], [740, 420, 200], [864, 420, 365]] }
+```
+
+The outer stops set the rims. The two at 48 hold the waist for four rows. One region mixes what goes in with what comes out, so the `hourglass` preset splits it at the waist into two regions and puts a hot label between them.
+
+## Fill the spec
+
+`compose` fills `version`, `facts`, `product`, `theme` and a placeholder `figure`, which render rejects.
 
 | Field | What it is |
 |---|---|
-| `product.name` | The customer-facing name. `compose` copies the folder name, and render warns `! product name equals the folder name` until you change it |
-| `theme` | `light` or `dark`, from the themes `vyo shapes` lists for the shape |
-| `headline` | One plain sentence about the outcome, at most 72 characters, such as "Switch agents without starting over." Never a feature list |
-| `hot` | The one word, or two-word phrase, that matters. It must be one of the words in the slots. A single word inside a longer slot phrase counts, and the whole phrase is set in the accent. It is the only text in the accent colour |
-| `slots` | The words that build the shape. `vyo shapes` prints each slot's prompt and limits. Fill word slots toward the top of their range with nouns the user would say, because a short list repeats on every row and words like "edits, removals" read as filler |
-| `notes` | The footer columns: 3 for most shapes, 2 for `warm-start`. Each has a `title` of at most 24 characters and a `text` of at most 220. The jobs below are suggestions, not required |
-| `notBuilt` | 0 to 6 plain items the code has but the user cannot use yet. Render prints them as "Not built yet: …" |
-| `audience` | Optional. Who the poster is for |
+| `product.name` | The customer-facing name. `product-name` warns while it is the folder name |
+| `theme` | `light` or `dark` |
+| `accent` | Optional hot colour, a hex |
+| `headline` | One plain sentence about the outcome, at most 72 characters |
+| `hot` | The one word or two-word phrase that matters. It must be a word in a fill region, a dots line, or a hot label's text, unless a region has `hot: true` |
+| `notes` | 2 or 3 footer columns. `title` at most 24 characters, `text` at most 220 |
+| `notBuilt` | 0 to 6 plain items the code has but a user cannot use yet |
 
-The notes say what the shape cannot. Pick each column's job from these: how it works, what you get, what stays private, what runs on its own, and proof (only when a doc records a dated real run). Never write a note that says something is missing. Pick a different job for that column.
-
-`notBuilt` keeps the poster honest. A payments library with no checkout screen goes here, never in a slot or a note.
-
-Never type a count, a commit or a date. Render writes the counts line and the provenance line from the scan.
-
-Follow [plain-language-rules.md](plain-language-rules.md) for voice, naming and the banned terms. Render rejects banned terms, file paths, and "01/02/03" markers. [examples.md](examples.md) has a full sample spec for every shape.
+Each note does a job the picture cannot: how it works, what you get, what stays private, what runs on its own, or dated proof from the docs. Never type a count, a commit or a date. Follow [plain-language-rules.md](plain-language-rules.md). [examples.md](examples.md) has each preset as a full spec and three invented figures.
 
 ## Where output goes
 
-Render writes `<name>-poster.html`, `<name>-poster.png` and `<name>-poster.pdf` beside the spec, or into `--out <dir>`. Keep every file in `<repo>/vyo/`. Tell the user to add `vyo/` to `.gitignore` unless they want to commit the poster. Never write anywhere else inside the scanned repo.
+Render writes `<name>-poster.html`, `.png` and `.pdf` beside the spec or into `--out <dir>`. Keep every file in `<repo>/vyo/`, and suggest adding it to `.gitignore`.
 
 ## Reply in chat
 
-Four parts, in this order:
-
 1. One sentence on what the app does.
-2. The shape you chose and why, in one sentence.
+2. The picture and why it acts out the main moment.
 3. The absolute paths of the PNG and the PDF.
-4. Honest gaps: what is not built yet, a loose shape fit if you had one, and a request for the real product name if no doc gave it.
+4. Gaps: what is not built, a preset kept unchanged, and a request for the real name if no doc gave one.
 
 ## Edge cases
 
-- **Empty scan.** `show` reports no facts and render prints `! no application facts`. If the docs describe a product, make the poster from the docs and say in chat that the footer has no counts. If there are no docs either, make no poster. Tell the user no app was found, and suggest a README or a filled `project-context.md`.
-- **No screens.** The code answers requests but has no screens. Say "there is no user interface in this repository" in chat, and write the slots about what the service does for the people who call it.
-- **Several apps in one repo.** Scan the root. `show` lists the packages. Name the product, not a folder, and never mention how the code is split.
-- **`project-context.md` exists.** Its name, audience, main moment, hot word and shape preference win over what you inferred. Its not-built list goes into `notBuilt`.
+- **Empty scan.** Render warns `facts-empty`. Work from the docs and say the footer has no counts. With no docs either, make no poster.
+- **No docs.** Keep the folder name, accept the `product-name` warning, and ask for the real name. Never invent one.
+- **Several apps.** Scan the root. Name the product, not a folder.
+- **No screens.** Say "there is no user interface in this repository" and describe what the service does for its callers.
+- **`project-context.md`.** Its name, audience, main moment, hot word, picture and not-built list win over what you inferred.
 
 ## Related skills
 
-| Skill | Use instead when |
-|---|---|
-| `codebase-onboarding` (if installed) | A developer is joining the repo |
-| `codebase-documenter` (if installed) | Contributor docs, README, API reference |
-| `project-handoff` (if installed) | Build status and next steps for agents |
+If installed, use `codebase-onboarding` for a developer joining the repo, `codebase-documenter` for contributor docs and API reference, and `project-handoff` for build status and next steps.

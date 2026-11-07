@@ -22,12 +22,13 @@ Copy this file into the target app's repo at `.cursor/skills/explain-app/project
 ## Hot word
 
 <!-- The one word, or two-word phrase, that matters most. It is set in the accent colour.
-     It must be one of the words on the poster. e.g. "leftovers" -->
+     It must be one of the words in the picture. e.g. "leftovers" -->
 
-## Shape preference
+## The picture
 
-<!-- hourglass | ribbon | warm-start | eye, or blank to let the skill pick.
-     Run `node tools/vyo.mjs shapes` to see what each one fits -->
+<!-- Optional. One sentence describing the silhouette you want, and what it acts out.
+     e.g. "An hourglass: everything we juggle in a week pours through one plan into a shopping list."
+     Leave blank to let the skill invent one from the main moment. -->
 
 ## Terms to use
 
