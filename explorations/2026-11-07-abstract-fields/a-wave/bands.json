@@ -1,0 +1,202 @@
+[
+{
+"path": "Hypher/Hypher",
+"name": "Hypher",
+"loc": 100
+},
+{
+"path": "Hypher/Hypher/Models",
+"name": "Data shapes",
+"loc": 221
+},
+{
+"path": "Hypher/Hypher/Services",
+"name": "Inner workings",
+"loc": 314
+},
+{
+"path": "Hypher/Hypher/Views",
+"name": "Screens",
+"loc": 835
+},
+{
+"path": "extensions/chrome",
+"name": "Chrome",
+"loc": 582
+},
+{
+"path": "extensions/chrome/lib",
+"name": "Inner workings",
+"loc": 339
+},
+{
+"path": "extensions/cursor/scripts",
+"name": "Helper scripts",
+"loc": 547
+},
+{
+"path": "hypher-web",
+"name": "Hypher web",
+"loc": 68
+},
+{
+"path": "hypher-web/convex",
+"name": "Convex",
+"loc": 8039
+},
+{
+"path": "hypher-web/convex/lib",
+"name": "Inner workings",
+"loc": 2361
+},
+{
+"path": "hypher-web/shared",
+"name": "Shared parts",
+"loc": 8637
+},
+{
+"path": "hypher-web/src",
+"name": "Main app",
+"loc": 25
+},
+{
+"path": "hypher-web/src/app",
+"name": "Main app",
+"loc": 163
+},
+{
+"path": "hypher-web/src/app/api",
+"name": "Requests",
+"loc": 261
+},
+{
+"path": "hypher-web/src/app/api/capture-tokens",
+"name": "Capture tokens",
+"loc": 196
+},
+{
+"path": "hypher-web/src/app/api/cli",
+"name": "Helper scripts",
+"loc": 209
+},
+{
+"path": "hypher-web/src/app/api/mcp",
+"name": "Mcp",
+"loc": 486
+},
+{
+"path": "hypher-web/src/app/api/projects",
+"name": "Projects",
+"loc": 136
+},
+{
+"path": "hypher-web/src/app/api/stripe",
+"name": "Stripe",
+"loc": 225
+},
+{
+"path": "hypher-web/src/app/app",
+"name": "Main app",
+"loc": 505
+},
+{
+"path": "hypher-web/src/app/app/settings",
+"name": "Settings",
+"loc": 231
+},
+{
+"path": "hypher-web/src/app/capture",
+"name": "Capture",
+"loc": 337
+},
+{
+"path": "hypher-web/src/app/connect",
+"name": "Connect",
+"loc": 142
+},
+{
+"path": "hypher-web/src/app/oauth",
+"name": "Oauth",
+"loc": 36
+},
+{
+"path": "hypher-web/src/app/oauth/authorize",
+"name": "Authorize",
+"loc": 157
+},
+{
+"path": "hypher-web/src/app/oauth/consent",
+"name": "Consent",
+"loc": 119
+},
+{
+"path": "hypher-web/src/app/oauth/token",
+"name": "Token",
+"loc": 101
+},
+{
+"path": "hypher-web/src/components",
+"name": "Screen pieces",
+"loc": 3200
+},
+{
+"path": "hypher-web/src/components/marketing",
+"name": "Marketing",
+"loc": 3833
+},
+{
+"path": "hypher-web/src/lib",
+"name": "Inner workings",
+"loc": 6405
+},
+{
+"path": "hypher-web/src/types",
+"name": "Data shapes",
+"loc": 253
+},
+{
+"path": "hypher-web/tools",
+"name": "Helper scripts",
+"loc": 367
+},
+{
+"path": "packages",
+"name": "Shared parts",
+"loc": 446
+},
+{
+"path": "packages/core/src",
+"name": "Main app",
+"loc": 367
+},
+{
+"path": "packages/hypher-cli",
+"name": "Hypher cli",
+"loc": 3
+},
+{
+"path": "packages/hypher-cli/src",
+"name": "Main app",
+"loc": 2662
+},
+{
+"path": "packages/hypher-cli/src/commands",
+"name": "Commands",
+"loc": 1357
+},
+{
+"path": "packages/hypher-cli/src/hooks",
+"name": "Screen behaviour",
+"loc": 224
+},
+{
+"path": "script",
+"name": "Script",
+"loc": 492
+},
+{
+"path": "script/baton",
+"name": "Baton",
+"loc": 2694
+}
+]
