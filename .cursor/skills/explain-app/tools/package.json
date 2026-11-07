@@ -3,11 +3,8 @@
   "private": true,
   "type": "module",
   "description": "Check explain-app poster canvases against the Swiss rules and export them to PNG/PDF.",
-  "bin": { "explain-app-poster": "./poster.mjs" },
   "scripts": {
-    "check": "node poster.mjs check",
-    "export": "node poster.mjs export",
-    "test": "node test/run.mjs"
+    "test": "node --test test/scan.test.mjs"
   },
   "dependencies": {
     "esbuild": "^0.28.2",
