@@ -11,7 +11,7 @@ const inside = (r, s) => r.left >= s.left - 0.5 && r.top >= s.top - 0.5 && r.rig
 const round = (n) => Math.round(n);
 
 /**
- * @typedef {{ spec: any, facts: any, shape: any, page?: any }} CheckInput
+ * @typedef {{ spec: any, facts: any, shapes: object, shape: any, page?: any }} CheckInput
  * @type {{ id: string, level: "fail" | "warn", stage: "spec" | "page", about: string, run: (i: CheckInput) => string[] }[]}
  */
 export const CHECKS = [
