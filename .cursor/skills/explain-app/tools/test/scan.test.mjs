@@ -1141,3 +1141,23 @@ describe("real-world edges", () => {
     }
   });
 });
+
+describe("scan --out inside the scanned repo", () => {
+  const recipe = path.join(FIX, "recipe");
+  const run = (out) => spawnSync(process.execPath, [path.join(TOOLS, "vyo.mjs"), "scan", recipe, "--out", out], { encoding: "utf8" });
+  test("<repo>/vyo/ is allowed; any other path in the repo is refused", () => {
+    const vyoDir = path.join(recipe, "vyo");
+    const bad = path.join(recipe, "facts.json");
+    try {
+      const ok = run(path.join(vyoDir, "recipe-facts.json"));
+      assert.equal(ok.status, 0, ok.stderr);
+      assert.ok(fs.existsSync(path.join(vyoDir, "recipe-facts.json")));
+      const refused = run(bad);
+      assert.equal(refused.status, 1);
+      assert.match(refused.stderr, /inside the scanned repo/);
+      assert.ok(!fs.existsSync(bad));
+    } finally {
+      fs.rmSync(vyoDir, { recursive: true, force: true });
+    }
+  });
+});

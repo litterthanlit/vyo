@@ -86,8 +86,10 @@ function cmdScan(argv) {
   const out = opt.out;
   if (out !== "-") {
     const outAbs = path.resolve(out);
-    if (isInside(outAbs, dir) || isInside(path.join(realOrResolved(path.dirname(outAbs)), path.basename(outAbs)), realOrResolved(dir))) {
-      throw new Failure(`--out ${out} is inside the scanned repo; the scanner never writes there. Pick a path outside ${pos[0]}`);
+    const outReal = path.join(realOrResolved(path.dirname(outAbs)), path.basename(outAbs));
+    const inVyo = path.dirname(outAbs) === path.join(dir, "vyo") || path.dirname(outReal) === path.join(realOrResolved(dir), "vyo");
+    if (!inVyo && (isInside(outAbs, dir) || isInside(outReal, realOrResolved(dir)))) {
+      throw new Failure(`--out ${out} is inside the scanned repo; the scanner never writes there, except ${pos[0]}/vyo/. Pick a path outside ${pos[0]}`);
     }
   }
   const { facts, diag } = scanRepoDetailed(dir);
