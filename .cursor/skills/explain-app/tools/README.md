@@ -10,19 +10,20 @@ Run them from the skill directory.
 |---|---|
 | `node tools/vyo.mjs scan <repo-dir> --out <dir>/<repo>-facts.json` | Reads the repo and writes `facts.json`. Never writes inside the repo except to `--out` |
 | `node tools/vyo.mjs show <facts.json>` | Prints a plain summary of the facts |
+| `node tools/vyo.mjs parts <facts.json>` | Prints the parts a field draws: id, share of lines, lines, files and scanned name, with `! looks like a vendor or code name` after each unplain name |
 | `node tools/vyo.mjs presets [<id>]` | Lists the presets with id, `fits`, and a summary of regions and texts. With an id, prints that preset's figure as JSON |
-| `node tools/vyo.mjs compose <facts.json> [--from <preset>] [--repo <dir>] [--theme light\|dark] [--out <spec.json>] [--force]` | Writes a scaffold spec and prints the figure's floor. Refuses to overwrite an existing spec unless `--force` is given |
-| `node tools/vyo.mjs sketch <spec.json>` | Prints the sheet as ASCII, with coverage, each region's width spread and mean width, and the floor. Needs no browser |
+| `node tools/vyo.mjs compose <facts.json> [--field wave\|terrain] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light\|dark] [--out <spec.json>] [--force]` | Writes a scaffold spec and prints the figure's floor. Without `--from`, the figure is a field. Refuses to overwrite an existing spec unless `--force` is given |
+| `node tools/vyo.mjs sketch <spec.json> [--facts <facts.json>]` | Prints the sheet as ASCII, with coverage, each fill region's width spread and mean width, and the floor. A figure with a field reads the facts. Needs no browser |
 | `node tools/vyo.mjs render <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--paper fit\|a4\|letter]` | Validates the spec, writes HTML, a 2× PNG and a PDF, then runs every check |
 | `node tools/vyo.mjs check <spec.json> [--facts <facts.json>]` | Runs the same validation and checks in a temporary directory. Writes nothing to `--out` |
 
 Exit codes: 0 when everything passes (warnings go to stderr as `! ` lines), 1 on any rule error (`✗ ` lines on stderr), 2 on a usage error.
 
-`compose` fills `product`, `facts` and `theme`. Without `--from`, the figure is one box-shaped fill region (a three-stop profile of constant width) with placeholder words, one masthead, one headline and one aside. The box fails `row-variety` on purpose, so reshape it. With `--from <preset>`, the figure is the preset's, with its geometry kept and its words replaced by placeholders. Render rejects every placeholder. `compose` prints `floor: <y>` for the spec's notes count, assuming a one-line not-built list, then the `masthead`, `headline`, `aside` and `rows` lines: line heights, characters per line and the row grid. Each extra not-built line raises the floor by 16px.
+`compose` fills `product`, `facts` and `theme`. Without `--from`, the figure is one field region (`--field`, default `wave`) with `accent` set from `--accent`, a placeholder in `names` for each part whose scanned name looks like a vendor or code name, a placeholder `sentence` for a wave, and a masthead, headline and aside placed where that field leaves room. The spec has no `hot`. With `--from <preset>`, the figure is a fill preset's, with its geometry kept and its words replaced by placeholders; `--from` refuses a field preset and names the `--field` to use instead, and refuses `--field` or `--accent` beside it. `--accent` must name a part. Render rejects every placeholder. `compose` prints `floor: <y>` for the spec's notes count, assuming a one-line not-built list, then the `masthead`, `headline` and `aside` lines: line heights and characters per line. A field scaffold adds a line pointing at `vyo parts` and a `field:` line; a preset scaffold adds the `rows` line. Each extra not-built line raises the floor by 16px.
 
 `compose --repo <dir>` reads the latest commit's short hash and commit date with git, so reruns give the same footer. Without `--repo` the spec has no commit and `date` is today.
 
-`render` and `check` read the facts from `--facts`, or by default from `<repo>-facts.json` beside the spec, where `<repo>` is the spec's `product.repo`. Output goes to `--out`, by default the spec's directory: `<repo>-poster.html`, `<repo>-poster.png` and `<repo>-poster.pdf`. The HTML embeds its fonts, so it opens anywhere.
+`sketch`, `render` and `check` read the facts from `--facts`, or by default from `<repo>-facts.json` beside the spec, where `<repo>` is the spec's `product.repo`. Output goes to `--out`, by default the spec's directory: `<repo>-poster.html`, `<repo>-poster.png` and `<repo>-poster.pdf`. The HTML embeds its fonts, so it opens anywhere.
 
 ## Setup
 
@@ -38,15 +39,31 @@ Render fails with `run tools/fetch-fonts.sh` when `tools/fonts/` is missing. The
 
 ## The spec
 
-The spec, `<repo>-poster.json`, is the only file the agent edits. `compose` fills `version`, `facts`, `product` and `theme`. The agent writes `figure`, `headline`, `hot`, `notes` and `notBuilt`, may set `accent` and `audience`, and replaces `product.name` with the customer-facing name. The full type and validation rules are in [CONTRACTS.md §3](CONTRACTS.md#3-the-spec). Every preset as a full spec, and three invented figures, are in [examples.md](../examples.md).
+The spec, `<repo>-poster.json`, is the only file the agent edits. `compose` fills `version`, `facts`, `product` and `theme`. The agent writes `figure`, `headline`, `hot` (optional when the figure has a field), `notes` and `notBuilt`, may set `accent` and `audience`, and replaces `product.name` with the customer-facing name. The full type and validation rules are in [CONTRACTS.md §3](CONTRACTS.md#3-the-spec). Every preset as a full spec, and three invented figures, are in [examples.md](../examples.md).
 
 A figure has a `fits` sentence (at most 160 characters, printed by `presets`, never drawn), 1 to 6 regions and 1 to 6 texts.
 
+- A **field region** draws the repo itself: its rows come from the parts of `facts.json` at render time, and the agent picks only the field, the accent part and plain names. At most one per figure. See [Fields](#fields).
 - A **fill region** is an outline that the tool fills with rows of the region's `words`, 2 to 14 of them, each at most 24 characters.
 - A **dots region** spells 2 to 4 words of at most 5 letters each in squares, at `x`, `y` with a `cell` size in px.
 - A **text** is a `masthead` (exactly one, the product name), a `headline` (at most one, the spec's headline), a `display` (a bold sans line, at most 40 characters, size 32 to 64, default 56), an `aside` (size 10 to 14) or a `label` (size 10 to 32, default 12, and 26 when `hot`), placed at `x`, `y` with a wrap width `w`. `align` is `left`, `right` or `center`.
 
 Region and text ids are lowercase and unique. `note`, `counts`, `notBuilt`, `provenance` and `credit` are footer block names, so a region or text cannot take them.
+
+## Fields
+
+A field region is `{ kind: "field", id, field, accent?, names?, sentence?, every?, minShare?, maxParts? }`. Two fields ship, one entry each in the registry `FIELDS` in `lib/fields/index.mjs`:
+
+| `field` | What it draws | Takes |
+|---|---|---|
+| `wave` | One row of a part's name per share of lines, at least one row per part, in tree order, bent into one band that enters at the top on the side away from the masthead, swings across the sheet and leaves through the floor. 60 to 72 rows. Parts near the top of the tree take `mid`, deeper ones `soft` | `sentence` (at most 40 characters, set in every `every`th row, default 5) |
+| `terrain` | One peak per part, height by lines and width by files, left to right in tree order, on rows of the 14px grid. Each row reads the name of the part whose slope it crosses, letters spread on steep slopes and tight on flats; the rim is `ink`, slopes that face left `mid`, the rest `soft`. A part narrower than 40px gets 40px, and inside that width it shows as a foothill under a bigger neighbour | nothing more |
+
+- `accent` is a part id, an area id or a glob over part ids (`area:lib/*`). An area that merged into a bigger part names that part; an area that holds parts names all of them. The accent parts are drawn in `hot` and carry `data-hot`. Without it, `check` warns `accent-part`.
+- `names` maps part ids to plain names of at most 24 characters, checked for jargon like any copy. A part's row text is its name in lower case.
+- Rows skip the text blocks with 12px to spare, so moving a text block makes room; a part whose every row is covered fails `field-parts`.
+
+**Parts.** `vyo parts <facts.json>` prints them. Every non-generated file starts in its nearest leaf area, or in its own area when no leaf holds it. A part under `minShare` of the lines (default 0.02) merges into its parent area, deepest first, until it is big enough or sits at the top level. Then the smallest parts merge up until there are at most `maxParts` (default 14). The parts hold every line exactly once. A name is flagged as unplain when it is all caps, holds a company name the scan knows, or is one word ending in a digit.
 
 ## Geometry
 
@@ -96,14 +113,14 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 | `masthead-font` | ! | Inter Display or Inter is installed for the product name |
 | `path` | ✗ | Every outline parses and has a non-empty bounding box inside the sheet and above the footer. The message says `region <id> reaches <n>px below the footer; move it up by <n>` |
 | `rows-fit` | ✗ | Every `.row` has `scrollWidth ≤ clientWidth` and sits inside the 840×1190 sheet |
-| `region-size` | ✗ | Every fill region has at least 4 rows, and every dots region fits. The message names the region |
+| `region-size` | ✗ | Every fill region has at least 4 rows, and every dots region fits. The message names the region. Fields are exempt |
 | `regions-apart` | ✗ | No row of one region comes within 4px, horizontally, of a row of another region at the same y |
-| `words-drawn` | ✗ | Every word of every region is drawn at least once. The message says `region <id>: "<word>" never drawn; shorten the list or enlarge the path` |
+| `words-drawn` | ✗ | Every word of every fill region is drawn at least once, and the hot word, when the spec has one, is drawn in the accent. The message says `region <id>: "<word>" never drawn; shorten the list or enlarge the path` |
 | `silhouette` | ✗ | Rows and dots lines cover at least 15% of the area above the footer, and the figure spans at least 55% of that area's height and 60% of its width |
 | `field-parts` | ✗ | A field's parts hold every non-generated line of `facts.json`, every part has at least one row (wave) or one run of letters (terrain), and `accent` names a part. Message: `region <id>: part "<name>" (<id>) is never drawn; move the text blocks that cover it` |
-| `row-variety` | ✗ | In every fill region, the standard deviation of its line widths divided by their mean is at least 0.25. A line is all the region's runs at one y, merged into their outer span, so a hole does not count as variety. Skipped when the figure has no fill region. The message says `region <id> is a box; a silhouette changes width along its whole height` |
-| `thin-region` | ! | Every fill region's lines are at least 160px wide on average. The message says `region <id> reads as a column; widen it or make it part of the main silhouette` |
-| `blocks-apart` | ✗ | No text block comes within 8px of another block or of a row. Two rows at the same y keep 8px horizontally |
+| `row-variety` | ✗ | In every fill region, the standard deviation of its line widths divided by their mean is at least 0.25. A line is all the region's runs at one y, merged into their outer span, so a hole does not count as variety. Fields are exempt, and the check is skipped when the figure has no fill region. The message says `region <id> is a box; a silhouette changes width along its whole height` |
+| `thin-region` | ! | Every fill region's lines are at least 160px wide on average. Fields are exempt. The message says `region <id> reads as a column; widen it or make it part of the main silhouette` |
+| `blocks-apart` | ✗ | No text block comes within 8px of another block or of a row. Two rows of one fill region at the same y keep 8px horizontally; a field's rows are not compared with each other |
 | `blocks-inside` | ✗ | Every `[data-block]` text block sits inside the sheet |
 | `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens, `cold` and `cool` included |
 | `hot-tagged` | ✗ | Anything in the hot colour carries `data-hot` |
@@ -118,13 +135,15 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 
 | Mark | Meaning |
 |---|---|
-| `A` to `F` | Fill rows of the first to the sixth region, in spec order |
+| `A` to `F` | Rows of the first to the sixth fill or field region, in spec order |
 | `#` | Squares of a dots region |
 | A box | A text block labelled with its id, with its height estimated: 88px for a masthead line at size 84, 28px per headline line in a 224px column, 7.2px per character of mono text, one line of the size's height for a display |
 | `=` | The footer's top line |
 | `·` | A hot row |
 
-Under the sheet it prints `regions:`, `texts:` and `floor:` lines, then the coverage, height and width, each marked ok or too low, and one line per fill region with its spread of line widths (standard deviation over mean) and mean width, so the agent sees `silhouette`, `row-variety` and `thin-region` before it renders. Lines that start with `! ` flag a region under 4 rows, a word that may never be drawn, anything below the floor, and the `row-variety` and `thin-region` messages.
+A field's rows come from the same layout module the page runs, given the estimated text blocks and Commit Mono's 0.6em advance; with the page's own text blocks the two place every row within 2px. Its legend entry reads `A wave (wave, 13 parts, 66 rows)`.
+
+Under the sheet it prints `regions:`, `texts:` and `floor:` lines, then the coverage, height and width, each marked ok or too low, and one line per fill region with its spread of line widths (standard deviation over mean) and mean width, so the agent sees `silhouette`, `row-variety` and `thin-region` before it renders. Lines that start with `! ` flag a field part that is never drawn (`region <id>: part "<name>" (<id>) is never drawn`) or an accent that names no part, a region under 4 rows, a word that may never be drawn, anything below the floor, and the `row-variety` and `thin-region` messages.
 
 ## Tests
 
@@ -134,10 +153,10 @@ cd tools && npm test
 
 `npm test` runs `node test/run.mjs`. Browser tests need Chromium: set `VYO_CHROMIUM` (in this environment, `/opt/pw-browsers/chromium`). The rendered PNGs go to `test/.out/`, which git ignores, so a person can look at them.
 
-- **Pure tests.** The scanner, the counts line for the `recipe` fixture, the banned-term table in `plain-language-rules.md` against `lib/jargon.mjs`, and spec validation. Validation accepts the four presets and rejects an unknown region kind, a path that does not parse, a polygon with two points, two mastheads, a `hot` found in no region, words with jargon, and 7 regions.
-- **Browser tests.** Every preset renders against a fresh scan of `test/fixtures/recipe` and passes. Planted bugs fail with their check: two overlapping outlines (`regions-apart`), a 30px outline (`region-size`), one tiny region (`silhouette`), a box with a slanted top (`row-variety`), a 90px column (`thin-region`, a warning), 14 long words in a small outline (`words-drawn`), an aside placed on a row (`blocks-apart`), an outline below the footer (`path`), and the v2 bugs that still apply: jargon, a file path, an untagged hot word, four notes, and a long not-built list that passes.
+- **Pure tests.** The scanner, the counts line for the `recipe` fixture, the banned-term table in `plain-language-rules.md` against `lib/jargon.mjs`, and spec validation. The parts of the recipe fixture and of `explorations/2026-11-07-abstract-fields/hypher-facts.json` hold every line, merge as the rules say and resolve accents; the wave and terrain layouts give every part a row, clear the text blocks and keep their shape. Validation accepts the six presets, checks field keys, and rejects an unknown region kind, a path that does not parse, a polygon with two points, two mastheads, a `hot` found in no region, words with jargon, and 7 regions.
+- **Browser tests.** Every preset, the four fill presets and `wave` and `terrain`, renders against a fresh scan of `test/fixtures/recipe` and passes. For each field preset, the sketch's rows and the page's rows match within 2px. Planted bugs fail with their check: a text block over a field's first part and an accent that names no part (`field-parts`), two overlapping outlines (`regions-apart`), a 30px outline (`region-size`), one tiny region (`silhouette`), a box with a slanted top (`row-variety`), a 90px column (`thin-region`, a warning), 14 long words in a small outline (`words-drawn`), an aside placed on a row (`blocks-apart`), an outline below the footer (`path`), and the v2 bugs that still apply: jargon, a file path, an untagged hot word, four notes, and a long not-built list that passes.
 - **Docs tests.** `test/docs.test.mjs` fails when the check ids in this file or in CONTRACTS.md drift from `CHECKS`.
 
 ## How it works
 
-`scan` turns the repo into `facts.json` with no network and no model, so two scans of the same tree are byte-identical. `compose` turns the facts, and optionally a preset, into a spec whose figure the agent writes in plain words and sheet coordinates. `render` builds one HTML page in which `lib/fill.js` samples each outline into rows, fills them with the region's words, and places the texts, then Playwright waits for `window.drawn`, takes a 2× screenshot and prints a PDF. The checks run in the same page and measure what was drawn, so a rule break shows up as a `✗` line instead of a bad poster.
+`scan` turns the repo into `facts.json` with no network and no model, so two scans of the same tree are byte-identical. `compose` turns the facts into a field poster, or a preset into a spec whose figure the agent writes in plain words and sheet coordinates. `render` computes each field's parts from the facts, then builds one HTML page in which `lib/fill.js` lays out each field with its module from `lib/fields/`, samples each outline into rows, fills them with the region's words, and places the texts, then Playwright waits for `window.drawn`, takes a 2× screenshot and prints a PDF. The checks run in the same page and measure what was drawn, so a rule break shows up as a `✗` line instead of a bad poster.
