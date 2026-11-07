@@ -1,160 +1,92 @@
-# Plain Language Rules
+# Plain language rules
 
-Writing rules for explain-app. Primary Canvas sections must pass these checks.
+These rules cover every word you write into the poster spec: the headline, the slots, the notes and `notBuilt`. Render checks the banned terms and file paths for you. The rest is your judgment.
 
-**Swiss posters (the default deliverable) have no glossary and no technical appendix.** If a banned term is still on the poster, rewrite. Do not park jargon in a collapsed section that does not exist.
+## Principles
 
-The glossary / appendix / "At a glance" sections below apply **only** to the legacy document canvas (`canvas-layout.md`) when the user explicitly asks for that fallback.
+1. **Outcomes first.** "Dinner is decided before Monday starts" comes before anything about how the app is built.
+2. **The user's words.** Describe what people see, do and get, in the words they use for it.
+3. **Honest status.** Only what a user can do today goes in the slots and notes. Everything else goes in `notBuilt`.
+4. **One idea per sentence.** Short sentences, no nested clauses.
+5. **Replace, never define.** The poster has no glossary. If a term needs explaining, use a plainer word.
 
-## Core Principles
+## Banned terms
 
-1. **Outcomes first** — "You can invite your team" before "Next.js monorepo"
-2. **UI language** — describe what people see and click, not what files run
-3. **Honest status** — distinguish works in the app / not built yet / behind the scenes only
-4. **One idea per sentence** — short sentences; avoid nested clauses
-5. **Define or ban** — every technical term is either removed or defined in the glossary
-
-## Banned Terms (poster surface)
-
-Do not move these to a glossary — **replace them**:
+Render rejects any word in the first column, in any visible text. Use the second column instead. Vendor names are not on this list. The naming rules below cover them.
 
 | Instead of | Say |
 |------------|-----|
-| API / endpoint | "the app sends a request" or name the action ("saves your profile") |
-| middleware | "a check that runs before the page loads" |
-| ORM / query | "looks up your data" / "saves to the database" |
-| webhook | "a notification from [Service] when something happens" |
-| deploy / deployment | "goes live" / "published to the internet" |
-| env var / environment | omit or "server configuration" in appendix only |
-| frontend / backend | "what you see" / "what runs behind the scenes" |
-| monorepo | omit unless appendix; say "multiple apps in one project" if needed |
-| SDK / Clerk / Convex / Stripe as if the user clicks them | name the action ("sign in", "saved instantly") unless the user can actually do that in the app today |
-| REST / GraphQL | omit; describe the action |
-| component / module | "screen", "section", "part of the app" |
-| repository / repo | "project" or product name |
-| commit / branch / PR | omit in primary sections |
+| api | Name the action: "saves your recipe", "sends the request" |
+| endpoint | Name the action the request does |
+| endpoints | "kinds of request", or name the actions |
+| middleware | "a check that runs before the page opens" |
+| orm | "looks up your data", "saves it" |
+| webhook | "a message from [service] when something happens" |
+| webhooks | "messages from [service]" |
+| deploy | "goes live" |
+| deployment | "the live app" |
+| env var | Leave it out |
+| frontend | "what you see" |
+| backend | "what runs behind the scenes" |
+| monorepo | Leave it out. Name the product |
+| sdk | Name the action the user gets |
+| rest | Leave it out. Describe the action |
+| graphql | Leave it out. Describe the action |
+| component | "screen", "section", "part of the app" |
+| components | "screens", "parts of the app" |
+| module | "part of the app" |
+| modules | "parts of the app" |
+| repository | "project", or the product name |
+| repo | "project", or the product name |
+| commit | Leave it out. The footer already names the version |
+| commits | Leave it out |
+| branch | Leave it out |
+| pr | Leave it out |
+| mvp | "what's live now" |
+| beta | "what's live now", or put the feature in `notBuilt` |
+| leverage | "use" |
+| utilize | "use" |
+| platform | "app", or the product name |
+| ecosystem | Leave it out |
+| synergy | Leave it out |
+| holistic | Leave it out |
+| disruptive | Leave it out. Show the contrast instead |
+| revolutionary | Leave it out. Show the contrast instead |
 
-## Naming parts
+The check matches whole words, ignoring case. "rest" therefore also catches "the rest of the week". Reword it.
 
-Page 3 draws the app's real parts. You name each part and write its one-sentence `line`; the drawing writes everything else (item names, counts) from the scan. Name each part after what a person gets from it, never after the folder or library that provides it.
+## Naming the words in slots
 
-| In the code (fact kind, typical folder) | Part (role) | Part name | What the drawing lists under it |
-|-----------------------------------------|-------------|-----------|---------------------------------|
-| `screen:` facts; `app/(dashboard)`, `pages/`, routes | screens | "What you see" | Screen names as a user says them: "Dashboard", "Recipe detail", "Billing" |
-| `area:lib/billing`, `area:components/billing` | feature | The feature: "Billing", "Recipe box", "Pricing rules" | Its sub-folders by plain name, plus its share of the code |
-| `area:` for a whole product area (`app/(chat)`) | feature | What it is for: "Chat", "Planner" | Sub-folders |
-| `ai:` facts; `lib/ai` | ai | What it does for the user: "Recipe ideas", "Smart replies" | The model provider; AI tool count |
-| `job:` facts; `jobs/`, cron, queues, workers | jobs | What it does: "Weekly email", "Daily digest", "Reminders" | Job names |
-| `table:` facts; `prisma/`, `db/`, Supabase, Convex | data | What is kept: "Saved recipes", "Your data" | Kinds of saved record: "Recipe", "Meal plan" |
-| `service:payments`, `service:email`, `service:sign-in` | service | "Outside services" for all, or one by capability: "Payments", "Sign-in" | Capability names: "Payments", "Email", "Sign-in" |
-| `endpoint:` facts, when the API is the product | api | What callers get: "Message intake", "Partner access" | Kinds of request |
+Slot words build the shape, so each one must make sense on its own to someone who has never seen the code.
 
-Rules:
+- **Use the user's words.** "Shopping list", not the name of the folder that builds it. "Recipes", not the name of the table that stores them.
+- **Use nouns.** Slot words are things that go in, travel or come out: "leftovers", "seven dinners", "the plan". A verb phrase belongs in an aside or a note.
+- **No role words.** Screen, table, service, request, job, model and schema describe how code is organised, not what a user gets. The footer's counts already use them in plain phrases like "4 kinds of saved record". Don't repeat those in slots.
+- **No vendor names, unless the user can use that vendor today.** "Claude Code" and "Codex" are fine on Hypher's poster because a user connects them. "Stripe" is not fine on a poster for an app with no checkout screen. Say "payments" in `notBuilt` instead.
+- **No counts.** Render writes every count from the scan. A slot word like "6 screens" can drift from the code.
 
-- **Part names are noun phrases, 18 characters at most**, first letter capital, in a user's words. A name that wraps in the label is too long.
-- **Role words never appear on the poster as jargon**: API, endpoint, table, component, module, schema, backend. "Outside services" and "kinds of saved record" are plain English and fine.
-- **Library and vendor names are not part names** ("Prisma", "Next.js", "tRPC", "Supabase"). A vendor may appear in a `line` only if the user would recognise it and can use it today.
-- **Folder names become what people get**: `lib/billing` → "Billing", `lib/ai` → "Recipe ideas".
-- **The drawing phrases the counts**: "12 screens", "8 kinds of request", "40% of the code", "1 AI model · 2 tools", "Runs 1 job on its own", "5 kinds of saved record", "3 outside services". Never type one, and don't repeat a count in a `line`.
-- **Each `line` is one sentence**: "When you X, the app Y". For automatic work, "When [trigger], …" or "Every week, …".
-- **Page 3 has no analogy.** The drawing already is the app's real parts. Don't add "the kitchen" or "the engine room" on top.
+## Voice for the headline
 
-## Analogy Budget
+- One sentence about the outcome for the user. "A week of dinners, planned in one go." Not "Recipes, plans and AI suggestions."
+- Plain and calm. No exclamation marks, no superlatives, no questions.
+- At most 72 characters, so it stays on two lines or fewer.
 
-- At most **one** simple analogy per major section
-- Prefer concrete UI language over metaphors
-- Good: "Like a filing cabinet — each project has its own folder"
-- Bad: extended metaphor chains, kitchen/sports clichés, "think of it as a Swiss Army knife"
+## Voice for the notes
 
-## Audience Adaptation
+Each note is a short title and two or three sentences. The notes say what the shape cannot.
 
-| Audience | Emphasize | De-emphasize | Length |
-|----------|-----------|--------------|--------|
-| **Client** | What was built, what they can do today, why it matters | Stack, file structure | Medium |
-| **PM / operator** | Flows, dependencies between features, what's not live | Implementation detail | Medium–long |
-| **Exec / investor** | Problem, outcome, traction signals, connected services | Step-by-step UI | Short |
-| **General** (default) | Balanced: purpose, 2–3 journeys, main areas | Technical appendix only | Medium |
+- **How it works.** The steps a user takes, as actions: "Save the recipes you cook. Pantry fills the week from them."
+- **Proof.** Something real and dated, if the docs have one: a recorded run, a first customer, a test the user can repeat. If there is no proof, use the column for what happens on its own ("Every Monday at 8, the plan arrives by email").
+- **What stays private.** What the product keeps and what it never keeps, in plain words.
 
-If audience is unclear, use **general** for page 1 and **project owner / seller** for page 2.
+Write "you" for the user and the product name for the app. Never "the system" or "the platform".
 
-## Page 2 — Project Story voice
+## Status honesty
 
-Page 2 is for people who **own or sell** the product — not engineers, not agency handoff recipients. They want to feel connected to what they built and talk about it without reading code.
+| Where it goes | When |
+|---|---|
+| Slots, headline and notes | A user can do it in the app today |
+| `notBuilt` | The code has it, but no screen lets a user use it yet. A payment library with no checkout screen. An email job with no way to turn it on |
+| Nowhere | It is planned but not in the code |
 
-### Principles
-
-1. **Speakable copy** — every talking point and the "in one breath" script should sound natural out loud
-2. **Ownership** — "your app", "what you've built", "you set out to" — not "the system" or "the platform"
-3. **Customer language** — describe outcomes for *their* customer, not UI areas
-4. **Honest confidence** — "what's real today" builds trust; one limitation beats overselling
-5. **No architecture** — page 2 never mentions stack, services, or how it's built (that's page 1's "Connected" column)
-
-### Banned on page 2
-
-Everything in the primary-sections ban list, plus:
-
-| Instead of | Say |
-|------------|-----|
-| MVP / beta / v1 | "what's live now" or omit |
-| leverage / utilize | "use" |
-| solution / platform / ecosystem | name the product or say "app" |
-| disruptive / revolutionary | omit — show the contrast instead |
-| TAM / moat / ARR / runway | omit unless exec audience in project-context |
-| synergy / holistic | omit |
-
-### Talking points format
-
-Write as quoted lines the owner can memorize or read:
-
-```
-1. "Most solo builders lose ideas across ten tabs — this keeps everything in one place."
-```
-
-Not bullet fragments: ~~"idea capture, spatial canvas, AI digest"~~
-
-### Vision band
-
-Connect the owner to the *why* behind the build. Pull from README mission, playbook positioning, or product name etymology if docs are thin. Example tone:
-
-> You started this because scattered notes were costing you momentum. What you've built is a single place to think, organize, and share — without becoming a project manager.
-
-## Section Voice
-
-### Journeys
-Numbered steps. Each step = one user action + what they see.
-
-```
-1. Open the app and tap Sign in
-2. Enter your email — you receive a link in your inbox
-3. You land on your dashboard with your recent activity
-```
-
-### Behind the scenes
-"When you [action], the app [plain result]." No code, no paths.
-
-### Status honesty labels
-Use plain labels when feature status matters:
-
-| Label | Meaning |
-|-------|---------|
-| **Available now** | User can do this in the app today |
-| **Coming soon** | Planned; not in the UI |
-| **Behind the scenes** | Works server-side; no user-facing screen yet |
-
-## Glossary & appendix (legacy document canvas only)
-
-Posters: skip this entire section. If the user asked for the document-style fallback, then:
-
-- Only include terms that appeared unavoidable after rewriting
-- Format: Term → one-sentence plain definition
-- Max 8 entries; if more are needed, the copy is still too technical — rewrite primary sections
-
-## Technical Appendix (legacy document canvas only)
-
-Allowed here only:
-
-- Stack summary (framework, database, hosting) in one short paragraph
-- Key file paths for the technical contact
-- Repo structure at one level deep with friendly labels
-
-Never put the appendix content in primary sections "just in case."
+Never describe a `notBuilt` item as something a user can do. One honest gap builds more trust than a full list of claims.

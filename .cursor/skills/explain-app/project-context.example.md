@@ -1,54 +1,47 @@
 # Project context for explain-app
 
-Copy this file into the **target app's repo** at `.cursor/skills/explain-app/project-context.md` and fill it in. The explain-app skill reads it there before inspecting that repo. Leave any section blank to let the skill infer it.
+Copy this file into the target app's repo at `.cursor/skills/explain-app/project-context.md` and fill it in. The explain-app skill reads it before it writes the poster, and what you write here wins over what it infers. Leave a section blank to let the skill infer it.
 
 ## Product name (customer-facing)
 
-<!-- e.g. Vyo — use this in the poster hero title, not the repo folder name -->
+<!-- e.g. Pantry. Use this on the poster, not the repo folder name -->
 
-## Primary audience for this explanation
+## Audience
 
-<!-- client | pm | exec | general — page 1 handoff audience -->
-
-## Page 2 owner
-
-<!-- Who sells or shares the product: founder | solo builder | agency client | operator -->
+<!-- client | pm | exec | general. Who will read the poster -->
 
 ## Tone
 
 <!-- formal | friendly | investor-brief -->
 
-## Tagline direction (page 2)
+## Main moment
 
-<!-- Emotional one-liner if you already have one — e.g. "Your ideas, finally in one place." -->
+<!-- One sentence: the thing the product does that the poster should act out.
+     e.g. "Pantry turns your recipes and leftovers into one week of dinners and a shopping list." -->
 
-## Competitors or alternatives to contrast
+## Hot word
 
-<!-- spreadsheets, Notion, named competitors — helps page 2 differentiation -->
+<!-- The one word, or two-word phrase, that matters most. It is set in the accent colour.
+     It must be one of the words on the poster. e.g. "leftovers" -->
 
-## Vision / why we built this
+## Shape preference
 
-<!-- 1–3 sentences for page 2 "The vision" band — ownership language -->
+<!-- hourglass | ribbon | warm-start | eye, or blank to let the skill pick.
+     Run `node tools/vyo.mjs shapes` to see what each one fits -->
 
 ## Terms to use
 
-<!-- Product-specific names: "workspace", "flow", "campaign" -->
+<!-- Product-specific words: "weekly plan", "pantry", "swap" -->
 
 ## Terms to avoid
 
 <!-- e.g. internal codenames, the repo folder name if it differs from the product name -->
 
-## Features that are backend-only or not user-facing yet
+## Features that are not built yet
 
-<!-- List features the skill must NOT describe as "available now" -->
-<!-- e.g. Stripe webhooks exist but no checkout UI -->
-
-## Custom flows to emphasize
-
-<!-- 2–4 journeys that matter most for this handoff -->
-<!-- 1. Sign up and onboarding -->
-<!-- 2. … -->
+<!-- Features the code has that users cannot use yet. They go in the poster's "Not built yet" line.
+     e.g. Stripe code exists but there is no checkout screen -->
 
 ## Additional context
 
-<!-- Links to playbook, Figma, Notion, or positioning docs -->
+<!-- Links to the playbook, Figma, Notion, or positioning docs -->
