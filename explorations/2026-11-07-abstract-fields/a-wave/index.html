@@ -1,0 +1,52 @@
+<!doctype html><html data-theme="light"><head><meta charset="utf-8"><title>Hypher wave</title>
+<style>/*FONTS*/
+:root{--paper:#EAE8E2;--ink:#17161a;--g1:#7d7b75;--g2:#b5b2aa;--acc:#5b2ee6;--soft:#55534e}
+[data-theme=dark]{--paper:#121320;--ink:#ecebe6;--g1:#8a8a9a;--g2:#454760;--acc:#ff6a1f;--soft:#a3a3b2}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper)}
+.sheet{position:relative;width:840px;height:1190px;overflow:hidden;background:var(--paper);color:var(--ink)}
+canvas{position:absolute;inset:0}
+.name{position:absolute;left:44px;top:40px;font:700 112px/0.9 "Inter Display","Helvetica Neue",sans-serif;letter-spacing:-4px}
+.line{position:absolute;left:48px;top:156px;font:400 25px/1.2 Newsreader,serif}
+.para{position:absolute;right:48px;top:52px;width:236px;font:400 15px/1.4 Newsreader,serif;color:var(--soft)}
+.foot{position:absolute;bottom:34px;font:400 10px/1 Commit,monospace;color:var(--soft);letter-spacing:.3px}
+.fl{left:48px}.fr{right:48px}
+</style></head><body><div class="sheet">
+<canvas id="c" width="1680" height="2380" style="width:840px;height:1190px"></canvas>
+<div class="name">Hypher</div>
+<div class="line">Switch agents without starting over.</div>
+<div class="para">Each row is one part of Hypher, rows in proportion to its code. The <span class="accw">violet</span> band holds the handoff note.</div>
+<div class="foot fl">Hypher at 7e1ff3a, 7 November 2026</div>
+<div class="foot fr">Drawn by Vyo.</div>
+</div>
+<script>
+const BANDS = /*BANDS*/;
+const NOTE = "hypher-web/shared";              // where handoffNote, ledgerFold, structuredHandoff live
+window.draw = () => {
+  const dark = document.documentElement.dataset.theme === "dark";
+  document.querySelector(".accw").textContent = dark ? "orange" : "violet";
+  const css = getComputedStyle(document.documentElement), v = k => css.getPropertyValue(k).trim();
+  const c = document.getElementById("c"), x = c.getContext("2d"); x.scale(2, 2);
+  const total = BANDS.reduce((s, b) => s + b.loc, 0), PER = 420;    // lines of code per row
+  const rows = [];
+  for (const b of BANDS) {
+    const n = Math.max(1, Math.round(b.loc / PER)), depth = b.path.split("/").length;
+    for (let i = 0; i < n; i++) rows.push({ word: b.name.toUpperCase(), color: b.path === NOTE ? v("--acc") : depth <= 2 ? v("--g1") : v("--g2") });
+  }
+  const N = rows.length, TOP = 262, H = 7.9, FS = 6.9;
+  x.font = `400 ${FS}px Commit`; x.textBaseline = "alphabetic";
+  const cw = x.measureText("M").width;
+  rows.forEach((r, i) => {
+    const t = i / (N - 1);
+    // one asymmetric swell: enters off the right edge, sweeps deep left, leaves off the bottom
+    const cx = 760 - 400 * Math.sin(Math.PI * Math.pow(t, 0.75)) - 230 * t;
+    const slope = Math.cos(Math.PI * Math.pow(t, 0.75));
+    const hw = 120 + 95 * slope * slope * (1 - 0.5 * t);                 // the band thickens where it turns
+    const track = 0.6 + (hw - 120) / 9;                  // and its letters open up with it
+    const L = cx - hw, R = cx + hw, y = TOP + i * H;
+    x.fillStyle = r.color;
+    const s = r.word + "  "; let k = 0, px = L;
+    while (px + cw <= R) { x.fillText(s[k % s.length], px, y); px += cw + track; k++; }
+  });
+};
+</script></body></html>
