@@ -56,6 +56,12 @@ const PLANTED = [
   ],
   ["a note that runs into the bottom line", "eye", (s) => (s.notes[1].text = "Plain words that keep going. ".repeat(8).slice(0, 220).replace(/ /g, "")), /^✗ blocks-(apart|inside): /m],
   ["a stale facts hash", "warm-start", (s) => (s.facts = "000000000000"), /^✗ facts-hash: spec\.facts is 000000000000 but facts\.json is /m],
+  [
+    "an aside that ends 2px short of the waist",
+    "hourglass",
+    (s) => ((s.slots.waist = "ONE LIST"), (s.hot = "ONE LIST"), (s.slots.asideLeft = "What you give it. Everythingyoukeepwantandcannotforgetall")),
+    /^✗ blocks-apart: waist overlaps asideLeft or sits within 8px of it/m,
+  ],
 ];
 
 for (const [name, id, mutate, expect] of PLANTED) {
@@ -65,6 +71,15 @@ for (const [name, id, mutate, expect] of PLANTED) {
   fs.writeFileSync(file, JSON.stringify(spec, null, 2));
   const r = vyo("check", file, "--facts", factsFile);
   result(r.status === 1 && expect.test(r.stderr), `planted bug (${name}) fails with ${expect}`, `exit ${r.status}\n${r.stderr}`);
+}
+
+{
+  const spec = golden("hourglass");
+  spec.notBuilt = ["a", "b", "c", "d", "e", "f"].map((c) => `${c} weekly summary email to people`);
+  const file = path.join(OUT, "long-not-built.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(r.status === 0 && !/^✗/m.test(r.stderr), "six 32-character not-built items render on their own lines and pass", `exit ${r.status}\n${r.stderr}`);
 }
 
 const emptyFacts = path.join(OUT, "empty-facts.json");

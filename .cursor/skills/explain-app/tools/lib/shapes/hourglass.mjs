@@ -23,13 +23,16 @@ export default {
   draw(spec, ctx) {
     const s = spec.slots;
     const footerTop = 1190 - ctx.footerHeight - 36;
+    // A tall footer (a not-built list on two lines) lifts the whole figure so its last row clears the hairline by 4px.
+    const top = TOP + Math.min(0, footerTop - 4 - (TOP + ROWS * LH));
+    const waistTop = top + WAIST * LH - 8;
     return `
 <div class="t" data-block="masthead" style="left:50px;top:36px;font-size:84px;line-height:88px;font-weight:700;letter-spacing:-.035em;white-space:nowrap;font-family:${ctx.mastFont}">${ctx.masthead}</div>
 <div class="t serif" data-block="headline" style="left:560px;top:64px;width:224px;font-size:22px;line-height:28px;letter-spacing:-.005em;color:var(--mid)">${ctx.headline}</div>
-<div class="t" data-block="waist" data-hot style="left:${CX - 200}px;top:${TOP + WAIST * LH - 8}px;width:400px;text-align:center;font-size:26px;line-height:32px;font-weight:700;color:var(--hot);letter-spacing:.18em">${ctx.esc(s.waist.toUpperCase())}</div>
-<div class="t" data-block="asideLeft" style="left:56px;top:520px;width:190px;color:var(--mid)">${ctx.line(s.asideLeft)}</div>
-<div class="t" data-block="asideRight" style="left:594px;top:526px;width:190px">${ctx.line(s.asideRight)}</div>
-<div class="t" data-block="asideBottom" style="left:56px;top:640px;width:190px;color:var(--mid)">${ctx.line(s.asideBottom)}</div>
+<div class="t" data-block="waist" data-hot style="left:${CX - 200}px;top:${waistTop}px;width:400px;text-align:center;font-size:26px;line-height:32px;font-weight:700;color:var(--hot);letter-spacing:.18em">${ctx.esc(s.waist.toUpperCase())}</div>
+<div class="t" data-block="asideLeft" style="left:56px;top:${waistTop}px;width:190px;color:var(--mid)">${ctx.line(s.asideLeft)}</div>
+<div class="t" data-block="asideRight" style="left:594px;top:${waistTop + 6}px;width:190px">${ctx.line(s.asideRight)}</div>
+<div class="t" data-block="asideBottom" style="left:56px;top:${waistTop + 120}px;width:190px;color:var(--mid)">${ctx.line(s.asideBottom)}</div>
 <div style="position:absolute;left:56px;top:${footerTop}px;width:728px;height:${ctx.footerHeight}px">${ctx.footer}</div>
 <script>
 (async () => {
@@ -66,7 +69,7 @@ export default {
     if (hot) e.dataset.hot = "";
     Object.assign(e.style, {
       fontSize: "12px", lineHeight: "16px", height: "16px",
-      left: ${CX} - w / 2 + "px", top: ${TOP} + r * ${LH} + "px", width: Math.ceil(w + ls) + 1 + "px", letterSpacing: ls + "px",
+      left: ${CX} - w / 2 + "px", top: ${top} + r * ${LH} + "px", width: Math.ceil(w + ls) + 1 + "px", letterSpacing: ls + "px",
       color: hot ? "var(--hot)" : r < ${WAIST} ? (Math.abs(t) > .5 ? "var(--soft)" : "var(--mid)") : "var(--ink)", fontWeight: hot ? 700 : 400,
     });
     e.textContent = plain.replace(/ /g, "\\u00a0");

@@ -55,5 +55,8 @@
     return a !== ctx.measureText("Hamburgefontsiv 0123").width;
   };
 
-  return { sheet: sr, texts, boxes, rows, blocks, figureHot, faces, inter: probe('"Inter Display"') || probe("Inter"), drawn: window.drawn === true };
+  const hairline = sheet.querySelector("[data-footer]");
+  const footerTop = hairline ? hairline.getBoundingClientRect().top : sr.bottom;
+
+  return { sheet: sr, footerTop, texts, boxes, rows, blocks, figureHot, faces, inter: probe('"Inter Display"') || probe("Inter"), drawn: window.drawn === true };
 }

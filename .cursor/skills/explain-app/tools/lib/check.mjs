@@ -7,6 +7,11 @@ import { FONT_FACES } from "./render.mjs";
 const rgb = (hex) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(", ")})`;
 const tokensOf = (shape, spec) => shape.themes[spec.theme];
 const overlap = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
+// Blocks side by side need 8px between them: rects that share a horizontal band are inflated by 4px each.
+const CLEAR = 4;
+const sameBand = (a, b) => a.top < b.bottom && b.top < a.bottom;
+const grow = (r) => ({ left: r.left - CLEAR, right: r.right + CLEAR, top: r.top - CLEAR, bottom: r.bottom + CLEAR });
+const crowd = (a, b) => (sameBand(a, b) ? overlap(grow(a), grow(b)) : overlap(a, b));
 const inside = (r, s) => r.left >= s.left - 0.5 && r.top >= s.top - 0.5 && r.right <= s.right + 0.5 && r.bottom <= s.bottom + 0.5;
 const round = (n) => Math.round(n);
 
@@ -51,11 +56,12 @@ export const CHECKS = [
     run: ({ page }) => (page.inter ? [] : ["neither Inter Display nor Inter is installed; the product name falls back to Helvetica or Arial"]),
   },
   {
-    id: "rows-fit", level: "fail", stage: "page", about: "every row of words fits its planned width, inside the sheet",
+    id: "rows-fit", level: "fail", stage: "page", about: "every row of words fits its planned width, inside the sheet and above the footer",
     run: ({ page }) =>
       page.rows.flatMap((r) => [
         ...(r.scrollWidth > r.clientWidth ? [`the row "${r.word}" needs ${r.scrollWidth}px but has ${r.clientWidth}px; use shorter words`] : []),
         ...(inside(r.rect, page.sheet) ? [] : [`the row "${r.word}" sits outside the sheet`]),
+        ...(r.rect.bottom > page.footerTop + 0.5 ? [`the row "${r.word}" runs into the footer (bottom at ${round(r.rect.bottom)}px, footer at ${round(page.footerTop)}px)`] : []),
       ]),
   },
   {
@@ -69,10 +75,10 @@ export const CHECKS = [
     },
   },
   {
-    id: "blocks-apart", level: "fail", stage: "page", about: "no two text blocks touch",
+    id: "blocks-apart", level: "fail", stage: "page", about: "no two text blocks overlap, and blocks side by side keep 8px apart",
     run: ({ page }) => {
       const out = [];
-      page.blocks.forEach((a, i) => page.blocks.slice(i + 1).forEach((b) => overlap(a.rect, b.rect) && out.push(`${a.name} overlaps ${b.name}; shorten one of them`)));
+      page.blocks.forEach((a, i) => page.blocks.slice(i + 1).forEach((b) => crowd(a.rect, b.rect) && out.push(`${a.name} overlaps ${b.name} or sits within 8px of it; shorten one of them`)));
       return out;
     },
   },
