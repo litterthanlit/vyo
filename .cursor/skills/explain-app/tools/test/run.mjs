@@ -1,4 +1,4 @@
-// npm test: the pure tests, then every preset rendered and checked, then the planted bugs.
+// npm test: the pure tests, then every preset rendered and checked, then the planted bugs, then the packed package installed and run.
 // Posters land in test/.out/<preset>/ for a human to look at.
 import fs from "node:fs";
 import path from "node:path";
@@ -166,6 +166,10 @@ vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
   result(r.status === 1 && r.stderr === `✗ ${BROWSER_NOTE}\n` && !fs.existsSync(path.join(OUT, "recipe-poster.png")), "render with no browser prints the browser note and exits 1", `exit ${r.status}\n${r.stderr}`);
 }
 
-if (pure.status !== 0) console.log("✗ the pure tests failed (see above)");
 console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length} planted bugs caught`);
-process.exit(failed || pure.status !== 0 ? 1 : 0);
+
+const pack = spawnSync(process.execPath, ["--test", path.join(HERE, "pack.test.mjs")], { stdio: "inherit" });
+
+if (pure.status !== 0) console.log("✗ the pure tests failed (see above)");
+if (pack.status !== 0) console.log("✗ the pack test failed (see above)");
+process.exit(failed || pure.status !== 0 || pack.status !== 0 ? 1 : 0);
