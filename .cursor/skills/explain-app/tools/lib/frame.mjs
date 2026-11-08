@@ -1,6 +1,6 @@
 // The frames a poster can sit in, and each frame's text roles: a closed set per frame. Spec validation,
 // render, sketch and compose read the same table. Pure.
-import { SHEET, ADVANCE } from "./geometry.mjs";
+import { SHEET, ADVANCE, CORNERS } from "./geometry.mjs";
 
 /**
  * A text role: its size as [default, min, max] in px, line height from size, how many a figure holds,
@@ -75,3 +75,62 @@ export const recordRect = (spot) =>
   spot.side === "bottom"
     ? { left: spot.x, top: spot.y, right: spot.x + spot.w, bottom: spot.y + RECORD.size }
     : { left: spot.x, top: spot.y - spot.w, right: spot.x + RECORD.size, bottom: spot.y };
+
+// How compose fills the corners: 40px from the sheet's edges, 16px from the field, 24px between blocks; the
+// bottom stacks end above the record line. Widths and the lines each block is given room for.
+export const SCAFFOLD = { inset: 40, gap: 16, between: 24, bottomEnd: 60, minW: 160, minH: 60 };
+// A block's width, and the characters it is given room for: three quarters of its role's limit (the headline's 72).
+const BLOCKS = { label: { w: 220 }, headline: { w: 380, chars: 54 }, list: { w: 240 }, legend: { w: 260, chars: 135 }, paragraph: { w: 240, chars: 165 } };
+
+/**
+ * Where compose puts the loose frame's texts, by i-loose's rule: the headline in the largest empty corner,
+ * the label in the smallest, the list in the tallest, the legend in the corner nearest the accent part, the
+ * paragraph where the most room is left. A block that does not fit its corner goes to the corner with the most
+ * room left; the list and the paragraph are dropped when none has room, the others are placed anyway.
+ * @param {ReturnType<import("./geometry.mjs").corners>} corners
+ * @param {{ x: number, y: number }} accent  the centre of the accent part's rows, or of all rows
+ * @param {number} listLines  how many parts the list prints
+ * @returns {Record<string, { x: number, y: number, w: number, align: "left" | "right" }>}
+ */
+export function scaffoldPlaces(corners, accent, listLines) {
+  const { inset, gap, between, bottomEnd, minW, minH } = SCAFFOLD;
+  const room = Object.fromEntries(
+    CORNERS.map((n) => {
+      const c = corners[n];
+      const top = n.startsWith("top");
+      const h = top ? c.h - inset - gap : c.h - gap - bottomEnd;
+      return [n, { name: n, c, w: c.w - inset - gap, h, used: 0 }];
+    }),
+  );
+  const usable = Object.values(room).filter((r) => r.w >= minW && r.h >= minH);
+  if (!usable.length) usable.push(...Object.values(room).sort((a, b) => b.w * b.h - a.w * a.h).slice(0, 1));
+  const area = (r) => r.c.w * r.c.h;
+  const by = (f) => [...usable].sort((a, b) => f(a) - f(b));
+  const dist = (r) => Math.hypot(r.c.x + r.c.w / 2 - accent.x, r.c.y + r.c.h / 2 - accent.y);
+  const want = {
+    label: by(area)[0],
+    headline: by((r) => -area(r))[0],
+    list: by((r) => -r.h)[0],
+    legend: by(dist)[0],
+    paragraph: null,
+  };
+  const out = {};
+  for (const [role, b] of Object.entries(BLOCKS)) {
+    const { size: [size], lh, em } = ROLES.loose[role];
+    const widthIn = (r) => Math.max(minW / 2, Math.min(b.w, r.w));
+    const heightIn = (r) => lh(size) * (role === "list" ? listLines : b.chars ? Math.ceil(b.chars / Math.floor(widthIn(r) / (em * size))) : 1);
+    const fits = (r) => r.h - r.used - (r.used ? between : 0) >= heightIn(r);
+    const most = by((r) => -(r.h - r.used))[0];
+    const r = [want[role], most].find((x) => x && fits(x)) ?? (role === "list" || role === "paragraph" ? null : want[role] ?? most);
+    if (!r) continue;
+    const w = widthIn(r);
+    const height = heightIn(r);
+    const top = r.name.startsWith("top");
+    const right = r.name.endsWith("right");
+    const offset = r.used + (r.used ? between : 0);
+    const y = top ? inset + offset : SHEET.height - bottomEnd - offset - height;
+    r.used = offset + height;
+    out[role] = { x: right ? SHEET.width - inset - w : inset, y: Math.round(y), w: Math.round(w), align: right ? "right" : "left" };
+  }
+  return out;
+}

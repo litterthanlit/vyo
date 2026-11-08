@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parsePath, shapeRings, regionRings, spans, bbox, regionRows, fillRows } from "../lib/geometry.mjs";
+import { parsePath, shapeRings, regionRings, spans, bbox, regionRows, fillRows, corners } from "../lib/geometry.mjs";
 
 const near = (a, b, eps = 0.5) => assert.ok(Math.abs(a - b) <= eps, `${a} is not within ${eps} of ${b}`);
 const width = (s) => s.reduce((t, [l, r]) => t + r - l, 0);
@@ -93,4 +93,22 @@ test("a wide run repeats the word and letter-spaces it to the run", () => {
   assert.ok(out[0].text.split("   ").length >= 3);
   const visible = out[0].text.length * 7.2 + out[0].spacing * (out[0].text.length - 1);
   assert.ok(visible <= 600 && visible > 599, `visible width ${visible}`);
+});
+
+test("corners: the largest empty rect at each corner, wide enough for text, overlaps split along an edge", () => {
+  const empty = corners([]);
+  assert.deepEqual(empty["top-left"], { x: 0, y: 0, w: 420, h: 590 }, "an empty sheet splits evenly, to the 20px grid");
+  assert.deepEqual(empty["bottom-right"], { x: 420, y: 600, w: 420, h: 590 });
+  // A diagonal band from top left to bottom right, 200px wide.
+  const band = Array.from({ length: 119 }, (_, i) => ({ left: i * 6 - 100, top: i * 10, right: i * 6 + 100, bottom: i * 10 + 10 }));
+  const c = corners(band);
+  assert.equal(c["top-left"].w, 0, "the band covers the top-left corner");
+  const tr = c["top-right"];
+  assert.ok(tr.x + tr.w === 840 && tr.y === 0 && tr.w >= 220, `top right is wide enough for text: ${JSON.stringify(tr)}`);
+  for (const r of band) assert.ok(!(r.left < tr.x + tr.w && r.right > tr.x && r.top < tr.h && r.bottom > 0), "and empty");
+  const bl = c["bottom-left"];
+  assert.ok(bl.x === 0 && bl.y + bl.h === 1190 && bl.w >= 220, JSON.stringify(bl));
+  // A full-width strip across the middle: both top corners would be the whole top band, so they split it.
+  const strip = corners([{ left: 0, top: 500, right: 840, bottom: 700 }]);
+  assert.deepEqual([strip["top-left"], strip["top-right"], strip["bottom-left"]], [{ x: 0, y: 0, w: 420, h: 500 }, { x: 420, y: 0, w: 420, h: 500 }, { x: 0, y: 700, w: 420, h: 490 }]);
 });

@@ -12,18 +12,19 @@ import { showFacts } from "./lib/scan/show.mjs";
 import { scaffoldSpec, validateSpec, THEMES } from "./lib/spec.mjs";
 import { sketch } from "./lib/sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE } from "./lib/geometry.mjs";
-import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP } from "./lib/render.mjs";
-import { ROLES, FRAMES } from "./lib/frame.mjs";
+import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
+import { ROLES, FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
+import { cornersLine } from "./lib/geometry.mjs";
 import { runChecks } from "./lib/check.mjs";
 import { FIELDS } from "./lib/fields/index.mjs";
-import { partsFromFacts, accentIds, unplainName, sameNames, PART_DEFAULTS } from "./lib/parts.mjs";
+import { partsFromFacts, partOptions, regionParts, accentIds, unplainName, sameNames, PART_DEFAULTS } from "./lib/parts.mjs";
 
 const USAGE = `Usage:
   vyo scan    <repo-dir> --out <dir>/<repo>-facts.json
   vyo show    <facts.json>
   vyo presets [<id>]
-  vyo parts   <facts.json>
-  vyo compose <facts.json> [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
+  vyo parts   <facts.json> [--field ${Object.keys(FIELDS).join("|")}]
+  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
   vyo sketch  <spec.json> [--facts <facts.json>]
   vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--paper ${PAPERS.join("|")}]
   vyo check   <spec.json> [--facts <facts.json>]
@@ -124,16 +125,18 @@ function cmdScan(argv) {
 const pct = (n) => `${Math.round(n * 100)}%`;
 
 function cmdParts(argv) {
-  const { pos } = args(argv, {}, 1);
+  const { pos, opt } = args(argv, { field: { type: "string" } }, 1);
+  if (opt.field !== undefined && !FIELDS[opt.field]) throw new Usage(`--field ${opt.field} is not a field; use ${Object.keys(FIELDS).join(" or ")}`);
   const facts = readFacts(pos[0]);
-  const parts = partsFromFacts(facts);
+  const options = partOptions({ field: opt.field });
+  const parts = partsFromFacts(facts, options);
   const lines = parts.reduce((s, p) => s + p.loc, 0);
   const files = parts.reduce((s, p) => s + p.files, 0);
   const width = Math.max(2, ...parts.map((p) => p.id.length));
   const twin = new Map(sameNames(parts).flatMap((g) => g.map((p) => [p.id, g.filter((q) => q !== p).map((q) => q.id).join(", ")])));
   const flag = (p) => (unplainName(p.name) ? "  ! looks like a vendor or code name" : twin.has(p.id) ? `  ! same name as ${twin.get(p.id)}` : "");
   const out = [
-    `${facts.repo.name}: ${parts.length} parts, ${lines} lines in ${files} files (parts under ${pct(PART_DEFAULTS.minShare)} of the lines merge into their parent; at most ${PART_DEFAULTS.maxParts})`,
+    `${facts.repo.name}: ${parts.length} parts${opt.field ? ` of a ${opt.field}` : ""}, ${lines} lines in ${files} files (parts under ${pct(options.minShare ?? PART_DEFAULTS.minShare)} of the lines merge into their parent; at most ${options.maxParts ?? PART_DEFAULTS.maxParts})`,
     `${"id".padEnd(width)}  share  lines  files  name`,
     ...parts.map((p) =>
       `${p.id.padEnd(width)}  ${pct(lines ? p.loc / lines : 0).padStart(5)}  ${String(p.loc).padStart(5)}  ${String(p.files).padStart(5)}  ${p.name}${flag(p)}`,
@@ -205,6 +208,23 @@ function authoringNotes(notes, field) {
   ];
 }
 
+/** The numbers an agent places the loose frame's texts by, printed by compose. */
+function looseNotes(field, space) {
+  const L = ROLES.loose;
+  const at = (r) => `${L[r].size[0]}px (${L[r].size[1]} to ${L[r].size[2]}), ${L[r].lh(L[r].size[0])}px per line`;
+  return [
+    `field: ${field}, ${FIELDS[field].about}. It runs to every edge it reaches; no text sits on it.`,
+    cornersLine(space.corners),
+    "  Compose put the headline in the largest corner, the label in the smallest, the list in the tallest and the legend nearest the accent part. Move them within the corners; vyo sketch prints the corners again.",
+    `label ${at("label")}: the product name in capitals.`,
+    `headline ${at("headline")}: the only large type, ragged on the side that faces the field (align right in a right corner).`,
+    `paragraph ${at("paragraph")}: 0 to 2 of them, at most 2 sentences and ${L.paragraph.max} characters each.`,
+    `legend ${at("legend")}: exactly one, at most 2 sentences and ${L.legend.max} characters, naming the accent part and the measure.`,
+    `list ${at("list")}: parts: true prints the parts' plain names, one per line. rule ${at("rule")}: one character repeated across w.`,
+    "record: render writes it at the bottom edge, or up the left edge when the field covers the bottom; set record to bottom or left to choose.",
+  ];
+}
+
 function git(dir, format) {
   try {
     return execFileSync("git", ["-C", dir, "log", "-1", `--format=${format}`], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || undefined;
@@ -216,7 +236,7 @@ function git(dir, format) {
 function cmdCompose(argv) {
   const { pos, opt } = args(
     argv,
-    { field: { type: "string" }, accent: { type: "string" }, from: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } },
+    { frame: { type: "string" }, field: { type: "string" }, accent: { type: "string" }, from: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } },
     1,
   );
   const presets = loadPresets();
@@ -227,6 +247,9 @@ function cmdCompose(argv) {
   if (preset && (opt.field !== undefined || opt.accent !== undefined)) throw new Usage("--field and --accent make a field poster; --from starts from a fill preset. Pass one or the other");
   const field = preset ? undefined : (opt.field ?? "wave");
   if (field && !FIELDS[field]) throw new Usage(`--field ${field} is not a field; use ${Object.keys(FIELDS).join(" or ")}`);
+  const frame = opt.frame ?? preset?.frame ?? "loose";
+  if (!FRAMES.includes(frame)) throw new Usage(`--frame ${frame} is not a frame; use ${FRAMES.join(" or ")}`);
+  if (preset && frame !== preset.frame) throw new Usage(`--from ${opt.from} is a ${preset.frame} preset; the loose frame draws a field, so use --field`);
   const theme = opt.theme ?? preset?.theme ?? "light";
   if (!THEMES.includes(theme)) throw new Usage(`--theme ${theme} is not a theme; use ${THEMES.join(" or ")}`);
   const facts = readFacts(pos[0]);
@@ -235,24 +258,34 @@ function cmdCompose(argv) {
   if (opt.repo) {
     commit = git(opt.repo, "%h");
     date = git(opt.repo, "%cs");
-    if (!commit) warn(`${opt.repo} has no git history; the footer will show no commit`);
-  }
+    if (!commit) warn(`${opt.repo} has no git history; the ${frame === "loose" ? "record line" : "footer"} will show no commit`);
+  } else if (frame === "loose") warn("no --repo, so no commit: the loose frame's record line needs one; set product.commit or compose again with --repo");
   date ??= new Date().toISOString().slice(0, 10);
   const out = opt.out ?? path.join(path.dirname(pos[0]), `${facts.repo.name}-poster.json`);
   if (fs.existsSync(out) && !opt.force) throw new Failure(`${out} exists; it may hold your words. Pass --force to replace it with a fresh scaffold`);
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-  const parts = partsFromFacts(facts);
+  const parts = partsFromFacts(facts, partOptions({ field }));
   if (opt.accent !== undefined && !accentIds(parts, opt.accent).size) throw new Usage(`--accent ${opt.accent} names no part; vyo parts ${pos[0]} lists the part ids`);
   if (field && !parts.length) throw new Failure(`no parts to draw; the scan found no code. Compose a fill poster instead: vyo compose ${pos[0]} --from <preset> (vyo presets lists them)`);
   const twins = new Set(sameNames(parts).flat());
   const unplain = parts.filter((p) => unplainName(p.name) || twins.has(p));
   const notes = preset ? preset.notes.length : 3;
-  fs.writeFileSync(out, JSON.stringify(scaffoldSpec(facts, { theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, unplain }), null, 2) + "\n");
+  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, unplain };
+  let space;
+  if (frame === "loose") {
+    // Lay the field out on its own sheet, then fill the corners it leaves.
+    const draft = scaffoldSpec(facts, { ...o, places: {} });
+    const region = draft.figure.regions[0];
+    space = fieldSpace(draft, facts);
+    o.accentNames = regionParts(region, facts).filter((p) => p.hot).map((p) => p.name);
+    o.places = scaffoldPlaces(space.corners, space.accent, parts.length);
+  }
+  fs.writeFileSync(out, JSON.stringify(scaffoldSpec(facts, o), null, 2) + "\n");
   const from = preset ? `the ${opt.from} preset's geometry and its words taken out` : `a ${field} field of ${parts.length} parts${opt.accent ? ` with ${opt.accent} in the accent` : ""}`;
   const lines = [
     `Wrote ${out}: a scaffold with ${from}. Replace every "…" value, then run vyo sketch ${out}, adjust, sketch again, then vyo render ${out}`,
-    ...(field ? [`vyo parts ${pos[0]} lists the parts: pick the accent by its id${unplain.length ? ` and name the ${unplain.length} flagged part${unplain.length === 1 ? "" : "s"} in names` : ""}.`] : []),
-    ...authoringNotes(notes, field),
+    ...(field ? [`vyo parts ${pos[0]}${field === "wave" ? "" : ` --field ${field}`} lists the parts: pick the accent by its id${unplain.length ? ` and name the ${unplain.length} flagged part${unplain.length === 1 ? "" : "s"} in names` : ""}.`] : []),
+    ...(frame === "loose" ? looseNotes(field, space) : authoringNotes(notes, field)),
   ];
   process.stdout.write(lines.join("\n") + "\n");
   return 0;

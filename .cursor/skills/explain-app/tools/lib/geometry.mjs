@@ -320,3 +320,72 @@ export function fillRows(region, rows, { measure, isHot }) {
 export const DOTS = { cols: 29, rows: 7, pitch: 9 };
 export const dotsLines = (region) =>
   region.lines.map((word, i) => ({ word, x: region.x, y: region.y + i * DOTS.pitch * region.cell, width: DOTS.cols * region.cell, height: DOTS.rows * region.cell }));
+
+// The empty corners a field leaves, on a 20px grid like `vyo sketch`.
+export const CORNER_CELL = 20;
+// A corner narrower than this holds no text block, so a wider one wins over a larger sliver; and height past
+// CORNER_MAX_H holds nothing a corner's text needs, so it does not count toward a corner's size.
+export const CORNER_MIN_W = 220;
+export const CORNER_MAX_H = 400;
+export const CORNERS = ["top-left", "top-right", "bottom-left", "bottom-right"];
+
+/**
+ * The largest empty rectangle anchored at each corner of the sheet: a cell is taken when any rect touches it.
+ * Grown row by row from the corner, keeping the run of empty cells from the edge. The largest wins, its height
+ * counted up to CORNER_MAX_H, among those at least CORNER_MIN_W wide when there are any. Two corners that
+ * overlap along an edge split the overlap evenly.
+ * @param {{ left: number, top: number, right: number, bottom: number }[]} rects
+ * @returns {Record<"top-left" | "top-right" | "bottom-left" | "bottom-right", { x: number, y: number, w: number, h: number }>}
+ */
+export function corners(rects) {
+  const C = CORNER_CELL;
+  const cols = Math.ceil(SHEET.width / C);
+  const rows = Math.ceil(SHEET.height / C);
+  const taken = Array.from({ length: rows }, () => new Uint8Array(cols));
+  for (const r of rects) {
+    for (let q = Math.max(0, Math.floor(r.top / C)); q < Math.min(rows, Math.ceil(r.bottom / C)); q++)
+      for (let c = Math.max(0, Math.floor(r.left / C)); c < Math.min(cols, Math.ceil(r.right / C)); c++) taken[q][c] = 1;
+  }
+  const out = {};
+  for (const name of CORNERS) {
+    const [vert, horiz] = name.split("-");
+    // Capped area first, then the whole area, so of two corners equal under the cap the larger wins.
+    const score = (b) => b.cols * Math.min(b.rows, CORNER_MAX_H / C) * 1e6 + b.cols * b.rows;
+    let best = { cols: 0, rows: 0 };
+    let wide = { cols: 0, rows: 0 };
+    let run = cols;
+    for (let k = 0; k < rows && run > 0; k++) {
+      const row = taken[vert === "top" ? k : rows - 1 - k];
+      let n = 0;
+      while (n < run && !row[horiz === "left" ? n : cols - 1 - n]) n++;
+      run = n;
+      const here = { cols: run, rows: k + 1 };
+      if (score(here) > score(best)) best = here;
+      if (run * C >= CORNER_MIN_W && score(here) > score(wide)) wide = here;
+    }
+    if (wide.cols) best = wide;
+    const w = Math.min(SHEET.width, best.cols * C);
+    // The bottom row of cells hangs past the sheet's edge, which is not a whole number of cells.
+    const h = Math.max(0, Math.min(SHEET.height, best.rows * C - (vert === "bottom" ? rows * C - SHEET.height : 0)));
+    out[name] = { w, h };
+  }
+  const split = (a, b, size) => {
+    const over = out[a][size] + out[b][size] - (size === "w" ? SHEET.width : SHEET.height);
+    if (over <= 0 || !out[a][size === "w" ? "h" : "w"] || !out[b][size === "w" ? "h" : "w"]) return;
+    const cut = Math.ceil(over / 2 / C) * C;
+    out[a][size] = Math.max(0, out[a][size] - cut);
+    out[b][size] = Math.max(0, out[b][size] - cut);
+  };
+  split("top-left", "top-right", "w");
+  split("bottom-left", "bottom-right", "w");
+  split("top-left", "bottom-left", "h");
+  split("top-right", "bottom-right", "h");
+  for (const name of CORNERS) {
+    const { w, h } = out[name];
+    out[name] = { x: name.endsWith("left") ? 0 : SHEET.width - w, y: name.startsWith("top") ? 0 : SHEET.height - h, w, h };
+  }
+  return out;
+}
+
+/** One line per corner for the agent: "top-left at 0,0 is 420 by 380". */
+export const cornersLine = (c) => `corners: ${CORNERS.map((n) => `${n} at ${c[n].x},${c[n].y} is ${c[n].w} by ${c[n].h}`).join("; ")}`;

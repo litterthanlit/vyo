@@ -414,21 +414,46 @@ const hold = (prompt) => `${PLACEHOLDER} ${prompt}`;
 function fieldFigure(field, floor, { accent, unplain }) {
   const at = FIELDS[field].texts(floor);
   return {
-    regions: [
-      {
-        kind: "field",
-        id: field,
-        field,
-        fits: hold(`one sentence on why a ${field} matches the product's story, with ${FIELDS[field].fits.map((w) => `"${w}"`).join(" or ")}, at most ${LIMITS.fits} characters`),
-        ...(accent ? { accent } : {}),
-        ...(unplain.length ? { names: Object.fromEntries(unplain.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])) } : {}),
-        ...(FIELDS[field].options.includes("sentence") ? { sentence: hold(`a sentence woven in every ${WAVE.every}th row, at most ${LIMITS.sentence} characters, or remove it`) } : {}),
-      },
-    ],
+    regions: [fieldRegion(field, { accent, unplain })],
     texts: [
       { role: "masthead", id: "masthead", x: 50, y: 36, w: 490 },
       { role: "headline", id: "headline", ...at.headline },
       { role: "aside", id: "aside", ...at.aside, text: hold(`one or two sentences on what the field shows, at most ${FRAME_ROLES.swiss.aside.max} characters`) },
+    ],
+  };
+}
+
+const quoted = (words) => words.map((w) => `"${w}"`).join(" or ");
+
+/** The field region a scaffold starts from, in either frame. */
+function fieldRegion(field, { accent, unplain }) {
+  return {
+    kind: "field",
+    id: field,
+    field,
+    fits: hold(`one sentence on why a ${field} matches the product's story, with ${quoted(FIELDS[field].fits)}, at most ${LIMITS.fits} characters`),
+    ...(accent ? { accent } : {}),
+    ...(unplain.length ? { names: Object.fromEntries(unplain.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])) } : {}),
+    ...(FIELDS[field].options.includes("sentence") ? { sentence: hold(`a sentence woven in every ${WAVE.every}th row, at most ${LIMITS.sentence} characters, or remove it`) } : {}),
+  };
+}
+
+/**
+ * The loose figure `compose` writes: the field, and the label, headline, legend, paragraph and parts list in
+ * the corners the field leaves empty (`places`, from lib/frame.mjs). The legend's placeholder spells out its rule.
+ * @param {{ accent?: string, accentNames: string[], unplain: { id: string, name: string }[], places: Record<string, object> }} o
+ */
+function looseFigure(field, { accent, accentNames, unplain, places }) {
+  const name = accentNames.length ? quoted(accentNames) : "the accent part";
+  const measure = FIELDS[field].measure.map(quoted).join(", and ");
+  return {
+    regions: [fieldRegion(field, { accent, unplain })],
+    texts: [
+      { role: "label", id: "label", ...places.label },
+      { role: "headline", id: "headline", ...places.headline },
+      { role: "legend", id: "legend", ...places.legend, text: hold(`what the picture encodes, at most 2 sentences and ${FRAME_ROLES.loose.legend.max} characters: name ${name} and the measure (${measure})`) },
+      ...(places.paragraph ? [{ role: "paragraph", id: "paragraph", ...places.paragraph, text: hold(`what the product does for its user, at most 2 sentences and ${FRAME_ROLES.loose.paragraph.max} characters, or remove it`) }] : []),
+      ...(places.list ? [{ role: "list", id: "list", ...places.list, parts: true }] : []),
     ],
   };
 }
@@ -449,25 +474,32 @@ function blankFigure(fig) {
 
 /**
  * The spec `compose` writes: everything known filled in, every word the agent must write a placeholder.
- * Without a preset, the figure is a field.
+ * Without a preset, the figure is a field: in the loose frame its texts sit in `places`, in the swiss frame
+ * where the field's registry entry puts them, above a footer of notes.
  * @param {{ hash: string, repo: { name: string } }} facts
- * @param {{ theme: "light" | "dark", commit?: string, date: string, floor: number, preset?: Spec,
- *           field?: keyof typeof FIELDS, accent?: string, unplain?: { id: string, name: string }[] }} o
+ * @param {{ frame?: "loose" | "swiss", theme: "light" | "dark", commit?: string, date: string, floor: number, preset?: Spec,
+ *           field?: keyof typeof FIELDS, accent?: string, accentNames?: string[], unplain?: { id: string, name: string }[],
+ *           places?: Record<string, object> }} o
  * @returns {Spec}
  */
-export function scaffoldSpec(facts, { theme, commit, date, floor, preset, field = "wave", accent, unplain = [] }) {
+export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", theme, commit, date, floor, field = "wave", accent, accentNames = [], unplain = [], places }) {
+  const loose = frame === "loose";
   const notes = preset ? preset.notes.length : 3;
   return {
     version: 3,
-    frame: preset?.frame ?? "swiss",
+    frame,
     facts: facts.hash,
     product: { name: facts.repo.name, repo: facts.repo.name, ...(commit ? { commit } : {}), date },
     theme,
     ...(preset?.accent ? { accent: preset.accent } : {}),
     headline: hold(`one plain sentence about the outcome, at most ${LIMITS.headline} characters`),
     ...(preset ? { hot: hold("the one word set in the accent colour: a word of a fill region, a dots line or a hot label") } : {}),
-    figure: preset ? blankFigure(preset.figure) : fieldFigure(field, floor, { accent, unplain }),
-    notes: Array.from({ length: notes }, () => ({ title: hold(`at most ${LIMITS.noteTitle} characters`), text: hold(`at most ${LIMITS.noteText} characters`) })),
-    notBuilt: [],
+    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, accentNames, unplain, places }) : fieldFigure(field, floor, { accent, unplain }),
+    ...(loose
+      ? {}
+      : {
+          notes: Array.from({ length: notes }, () => ({ title: hold(`at most ${LIMITS.noteTitle} characters`), text: hold(`at most ${LIMITS.noteText} characters`) })),
+          notBuilt: [],
+        }),
   };
 }

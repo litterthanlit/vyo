@@ -113,7 +113,7 @@ test("a scaffold is rejected until every placeholder is written: a field by defa
   const fillPresets = IDS.filter((id) => !preset(id).figure.regions.some((r) => r.kind === "field"));
   for (const from of [undefined, ...fillPresets]) {
     const p = from && preset(from);
-    const spec = scaffoldSpec(facts, { theme: p ? p.theme : "light", date: "2026-10-28", floor: 884, preset: p, unplain: [{ id: "area:lib", name: "Convex" }] });
+    const spec = scaffoldSpec(facts, { frame: "swiss", theme: p ? p.theme : "light", date: "2026-10-28", floor: 884, preset: p, unplain: [{ id: "area:lib", name: "Convex" }] });
     const errors = validateSpec(spec);
     const field = p ? [/^hot: still the placeholder/, /still the placeholder; write \d+ to \d+ (nouns|words)/] : [/^figure\.regions\[0\]\.sentence: still the placeholder/, /^figure\.regions\[0\]\.names\["area:lib"\]: still the placeholder/];
     const fits = p ? /^figure\.fits: still the placeholder/ : /^figure\.regions\[0\]\.fits: still the placeholder/;
@@ -123,7 +123,7 @@ test("a scaffold is rejected until every placeholder is written: a field by defa
     if (p) assert.deepEqual(spec.figure.regions.map((r) => r.profile ?? r.ellipse ?? r.x), p.figure.regions.map((r) => r.profile ?? r.ellipse ?? r.x), "geometry kept");
     else assert.ok(!errors.some((e) => /^hot/.test(e)), "a field scaffold has no hot word to write");
   }
-  const terrain = scaffoldSpec(facts, { theme: "dark", date: "2026-10-28", floor: 884, field: "terrain", accent: "area:lib/ai" });
+  const terrain = scaffoldSpec(facts, { frame: "swiss", theme: "dark", date: "2026-10-28", floor: 884, field: "terrain", accent: "area:lib/ai" });
   assert.deepEqual(terrain.figure.regions.map(({ fits, ...r }) => r), [{ kind: "field", id: "terrain", field: "terrain", accent: "area:lib/ai" }]);
 });
 
@@ -177,4 +177,26 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
   rejects(() => {}, /^figure\.regions\[0\]\.fits: missing$/, withField({ fits: undefined }));
   rejects((s) => (s.figure.fits = "A shape."), /^figure\.fits: a field poster says why it fits on its field region/, withField({}));
   assert.deepEqual(errorsOf((s) => (s.hot = "kitchen"), withField({})), [], "a field's hot word is checked on the page, where its part names exist");
+});
+
+test("a loose scaffold: no notes, the texts where compose placed them, and placeholders that spell out the legend and fits rules", () => {
+  const facts = scanRepo(path.join(HERE, "fixtures", "recipe"));
+  const at = (x, y) => ({ x, y, w: 240, align: "left" });
+  const places = { label: at(40, 40), headline: at(40, 80), legend: at(40, 900), paragraph: at(560, 40), list: at(560, 300) };
+  const spec = scaffoldSpec(facts, { theme: "light", commit: "04186f4", date: "2026-11-07", floor: 1190, field: "river", accent: "area:lib/plan", accentNames: ["the plan"], places });
+  assert.equal(spec.frame, "loose");
+  assert.equal(spec.notes, undefined);
+  assert.deepEqual(spec.figure.texts.map((t) => [t.role, t.x, t.y]), [["label", 40, 40], ["headline", 40, 80], ["legend", 40, 900], ["paragraph", 560, 40], ["list", 560, 300]]);
+  const errors = validateSpec(spec);
+  assert.ok(errors.includes('figure.texts[2].text: still the placeholder; write what the picture encodes, at most 2 sentences and 180 characters: name "the plan" and the measure ("merge" or "join" or "flow")'), JSON.stringify(errors));
+  assert.ok(errors.some((e) => /^figure\.regions\[0\]\.fits: still the placeholder; write one sentence/.test(e)));
+  assert.ok(!errors.some((e) => /^notes/.test(e)));
+});
+
+test("frames: loose takes its own roles and counts, no notes, and a field; swiss rejects a record", () => {
+  const loose = () => ({ ...preset("wave"), frame: "loose", notes: undefined, notBuilt: undefined });
+  rejects((s) => (s.figure.texts = [{ role: "masthead", id: "masthead", x: 50, y: 36, w: 490 }]), /^figure\.texts\[0\]\.role: "masthead" is not a role in the loose frame; use label, headline, paragraph, legend, list, rule$/, loose);
+  rejects((s) => (s.notes = []), /^notes: the loose frame has no footer/, loose);
+  rejects((s) => (s.frame = "poster"), /^frame: "poster" is not a frame; use swiss or loose$/);
+  rejects((s) => (s.record = "left"), /^record: only the loose frame has a record line/);
 });

@@ -44,10 +44,22 @@ test("dots draw as #, and a figure with no fill rows says so", () => {
 test("the compose scaffold is a field that sketches from the facts with no warnings", async () => {
   const { scanRepo } = await import("../lib/scan/index.mjs");
   const facts = scanRepo(path.join(HERE, "fixtures", "recipe"));
-  const spec = scaffoldSpec(facts, { theme: "light", date: "2026-11-07", floor: 884, accent: "area:lib/plan" });
+  const spec = scaffoldSpec(facts, { frame: "swiss", theme: "light", date: "2026-11-07", floor: 884, accent: "area:lib/plan" });
   const out = sketch(spec, facts);
   assert.match(out, /^regions: A wave \(wave, 12 parts, \d+ rows\); · marks hot rows$/m);
   assert.doesNotMatch(out, /^! /m);
+});
+
+test("a loose sketch: no footer line, the record among the texts, and the four corners the field leaves", async () => {
+  const { scanRepo } = await import("../lib/scan/index.mjs");
+  const facts = scanRepo(path.join(HERE, "fixtures", "recipe"));
+  const spec = { ...preset("hourglass"), frame: "loose", notes: undefined, notBuilt: undefined, product: { name: "Pantry", repo: "recipe", commit: "04186f4", date: "2026-11-07" } };
+  spec.figure = { regions: [{ kind: "field", id: "wave", field: "wave", fits: "x", accent: "area:lib/plan" }], texts: [{ role: "label", id: "label", x: 600, y: 40, w: 200 }, { role: "headline", id: "headline", x: 420, y: 70, w: 380 }, { role: "legend", id: "legend", x: 40, y: 900, w: 240, text: "Rows of code." }] };
+  const out = sketch(spec, facts);
+  assert.doesNotMatch(out, /^=+$/m, "no footer line");
+  assert.match(out, /^floor: the sheet's bottom edge \(loose frame\)$/m);
+  assert.match(out, /; record 40,1150 to \d+,1160$/m, "the record along the bottom edge");
+  assert.match(out, /^corners: top-left at 0,0 is \d+ by \d+; top-right at \d+,0 is \d+ by \d+; bottom-left at 0,\d+ is \d+ by \d+; bottom-right at \d+,\d+ is \d+ by \d+$/m);
 });
 
 test("a box with a slanted top is a box, and a 90px column reads as a column", () => {
