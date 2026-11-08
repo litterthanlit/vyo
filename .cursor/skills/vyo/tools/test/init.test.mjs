@@ -20,12 +20,12 @@ test("a rerun overwrites the skill files and keeps one AGENTS.md block after the
   const repo = tmp();
   fs.writeFileSync(path.join(repo, "AGENTS.md"), "# Agents\n\nBe kind.\n");
   init(repo, { editors: ["cursor"], codex: true });
-  fs.writeFileSync(path.join(repo, ".cursor/skills/explain-app/SKILL.md"), "stale");
+  fs.writeFileSync(path.join(repo, ".cursor/skills/vyo/SKILL.md"), "stale");
   const written = init(repo, { editors: ["cursor"], codex: true });
-  assert.deepEqual(written, [...SKILL_FILES.map((f) => path.join(".cursor/skills/explain-app", f)), "AGENTS.md"]);
-  assert.match(fs.readFileSync(path.join(repo, ".cursor/skills/explain-app/SKILL.md"), "utf8"), /^---\nname: explain-app/);
+  assert.deepEqual(written, [...SKILL_FILES.map((f) => path.join(".cursor/skills/vyo", f)), "AGENTS.md"]);
+  assert.match(fs.readFileSync(path.join(repo, ".cursor/skills/vyo/SKILL.md"), "utf8"), /^---\nname: vyo/);
   const agents = fs.readFileSync(path.join(repo, "AGENTS.md"), "utf8");
   assert.equal(agents.match(/vyo:begin/g).length, 1);
   assert.ok(agents.startsWith("# Agents\n\nBe kind.\n\n<!-- vyo:begin"));
-  assert.match(agents, /`\.cursor\/skills\/explain-app\/SKILL\.md`/);
+  assert.match(agents, /`\.cursor\/skills\/vyo\/SKILL\.md`/);
 });
