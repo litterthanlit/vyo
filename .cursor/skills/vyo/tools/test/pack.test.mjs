@@ -43,7 +43,7 @@ test("a packed, installed vyo inits the skill and renders a passing wave poster"
 
   const init = vyo("init", "--cursor", "--dir", app);
   for (const f of ["SKILL.md", "examples.md", "plain-language-rules.md", "project-context.example.md"]) {
-    const file = path.join(app, ".cursor", "skills", "explain-app", f);
+    const file = path.join(app, ".cursor", "skills", "vyo", f);
     assert.ok(fs.existsSync(file), `init wrote ${file}`);
     assert.ok(init.stdout.includes(file), `init printed ${file}`);
   }

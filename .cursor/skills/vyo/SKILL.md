@@ -1,5 +1,5 @@
 ---
-name: explain-app
+name: vyo
 description: >-
   Use when the user asks to explain the app, walk through how it works for a
   client, PM or stakeholder, create a non-technical overview, demystify the
@@ -10,7 +10,7 @@ description: >-
   the picture encodes, and a few plain words around it.
 ---
 
-# Explain App
+# vyo
 
 The poster is a field: the codebase drawn from a scan, one row, peak or stream per part, sized by its code. The field fills the sheet, and a few plain words sit in the corners it leaves empty. You choose the field, the accent part, the plain names and the words, and the tools draw, place and check the rest.
 

@@ -39,7 +39,7 @@ function withBlock(text, block) {
 export function init(repo, { editors, codex }) {
   const written = [];
   for (const editor of editors) {
-    const dir = path.join(EDITORS[editor], "skills", "explain-app");
+    const dir = path.join(EDITORS[editor], "skills", "vyo");
     fs.mkdirSync(path.join(repo, dir), { recursive: true });
     for (const f of SKILL_FILES) {
       fs.copyFileSync(path.join(PACKAGE, f), path.join(repo, dir, f));
@@ -49,7 +49,7 @@ export function init(repo, { editors, codex }) {
   if (codex) {
     const file = path.join(repo, "AGENTS.md");
     const text = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
-    fs.writeFileSync(file, withBlock(text, agentsBlock(path.join(EDITORS[editors[0]], "skills", "explain-app", "SKILL.md"))));
+    fs.writeFileSync(file, withBlock(text, agentsBlock(path.join(EDITORS[editors[0]], "skills", "vyo", "SKILL.md"))));
     written.push("AGENTS.md");
   }
   return written;

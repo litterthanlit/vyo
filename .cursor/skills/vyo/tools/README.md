@@ -1,4 +1,4 @@
-# explain-app poster tools
+# vyo poster tools
 
 `vyo` reads a repo, writes a scaffold spec for a poster, sketches the agent's figure as text, and renders the filled spec to HTML, PNG and PDF. The contract between the pieces is [CONTRACTS.md](CONTRACTS.md). The package README for users is [../README.md](../README.md).
 
@@ -8,7 +8,7 @@ Run them from the target repo as `npx vyo …` once `@litterthanlit/vyo` is a de
 
 | Command | What it does |
 |---|---|
-| `vyo init [--cursor] [--claude] [--codex] [--dir <repo-dir>]` | Copies `SKILL.md` and its three docs into `.cursor/skills/explain-app/` and/or `.claude/skills/explain-app/` of the repo (default `.`; the editor folders it has, or both if it has neither). `--codex` adds one marked block to `AGENTS.md` that points at the skill. A rerun overwrites the same files and replaces the block. Prints each path it wrote |
+| `vyo init [--cursor] [--claude] [--codex] [--dir <repo-dir>]` | Copies `SKILL.md` and its three docs into `.cursor/skills/vyo/` and/or `.claude/skills/vyo/` of the repo (default `.`; the editor folders it has, or both if it has neither). `--codex` adds one marked block to `AGENTS.md` that points at the skill. A rerun overwrites the same files and replaces the block. Prints each path it wrote |
 | `vyo scan <repo-dir> --out <dir>/<repo>-facts.json` | Reads the repo and writes `facts.json`. Never writes inside the repo except to `--out` |
 | `vyo show <facts.json>` | Prints a plain summary of the facts |
 | `vyo parts <facts.json> [--field wave\|terrain\|river]` | Prints the parts a field draws, with that field's part defaults: id, share of lines, lines, files and scanned name, with `! looks like a vendor or code name` after each unplain name and `! same name as <id>` after each name another part shares |
