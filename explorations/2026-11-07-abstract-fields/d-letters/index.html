@@ -1,0 +1,49 @@
+<!doctype html><html data-theme="light"><head><meta charset="utf-8"><title>Hypher letters</title>
+<style>/*FONTS*/
+:root{--paper:#EAE8E2;--ink:#17161a;--soft:#55534e}
+[data-theme=dark]{--paper:#121320;--ink:#ecebe6;--soft:#a3a3b2}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper)}
+.sheet{position:relative;width:840px;height:1190px;overflow:hidden;background:var(--paper);color:var(--ink)}
+canvas{position:absolute;inset:0}
+.line{position:absolute;left:48px;top:46px;font:400 25px/1.2 Newsreader,serif}
+.para{position:absolute;right:48px;top:48px;width:230px;font:400 14px/1.4 Newsreader,serif;color:var(--soft)}
+.foot{position:absolute;bottom:34px;font:400 10px/1 Commit,monospace;color:var(--soft);letter-spacing:.3px}
+.fl{left:48px}.fr{right:48px}
+</style></head><body><div class="sheet">
+<canvas id="c" width="1680" height="2380" style="width:840px;height:1190px"></canvas>
+<div class="line">Switch agents without starting over.</div>
+<div class="para">Each band is one part of the app, as tall as its share of the code. The orange one holds the handoff note.</div>
+<div class="foot fl">Hypher at 7e1ff3a, 7 November 2026</div>
+<div class="foot fr">Drawn by Vyo.</div>
+</div>
+<script>
+const BANDS=/*BANDS*/;
+window.draw=function(){
+const S=2,W=840,H=1190,c=document.getElementById('c'),x=c.getContext('2d');x.scale(S,S);
+const dark=document.documentElement.dataset.theme==='dark';
+const GREY=dark?['#aeb0c4','#7f8199','#c4c5d3','#6e7090']:['#6d6b66','#a09d95','#55534e','#bcb9b0'];
+const ACC=dark?'#ff6a1f':'#5b2ee6';
+const FS=495, CAP=0.727*FS, GAP=26;
+const top=270, span=2*CAP+GAP, bot=top+span;
+// mask
+const m=document.createElement('canvas');m.width=W*S;m.height=H*S;const mx=m.getContext('2d');mx.scale(S,S);
+mx.fillStyle='#000';mx.font=`700 ${FS}px "Inter Display"`;mx.letterSpacing='-14px';mx.textBaseline='alphabetic';
+mx.fillText('HYP',-14,top+CAP);mx.fillText('HER',130,top+CAP+GAP+CAP);
+// texture
+const t=document.createElement('canvas');t.width=W*S;t.height=H*S;const tx=t.getContext('2d');tx.scale(S,S);
+const tot=BANDS.reduce((a,b)=>a+b.loc,0);let y=top,gi=0;
+const TS=8,LH=8.6;
+BANDS.forEach(b=>{const h=span*b.loc/tot,acc=b.name==='handoff note';
+ tx.fillStyle=acc?ACC:GREY[gi++%GREY.length];tx.font=`${acc?700:400} ${TS}px Commit`;tx.textBaseline='top';tx.letterSpacing=0.2+'px';
+ tx.save();tx.beginPath();tx.rect(0,y,W,h);tx.clip();
+ const w=b.name.toUpperCase()+' ';let row=0;
+ for(let yy=y+1;yy<y+h;yy+=LH,row++){const s=w.repeat(60);tx.fillText(s,-((row*7)%40)-20,yy)}
+ tx.restore();y+=h;});
+x.globalCompositeOperation='source-over';
+// composite: texture masked by letters
+const o=document.createElement('canvas');o.width=W*S;o.height=H*S;const ox=o.getContext('2d');
+ox.drawImage(t,0,0);ox.globalCompositeOperation='destination-in';ox.drawImage(m,0,0);
+x.setTransform(1,0,0,1,0,0);x.drawImage(o,0,0);
+};
+</script></body></html>

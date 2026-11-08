@@ -1,54 +1,64 @@
 # Project context for explain-app
 
-Copy this file into the **target app's repo** at `.cursor/skills/explain-app/project-context.md` and fill it in. The explain-app skill reads it there before inspecting that repo. Leave any section blank to let the skill infer it.
+Copy this file into the target app's repo at `.cursor/skills/explain-app/project-context.md` and fill it in. The explain-app skill reads it before it writes the poster, and what you write here wins over what it infers. Leave a section blank to let the skill infer it.
 
 ## Product name (customer-facing)
 
-<!-- e.g. Vyo — use this in the poster hero title, not the repo folder name -->
+<!-- e.g. Pantry. Use this on the poster, not the repo folder name -->
 
-## Primary audience for this explanation
+## Audience
 
-<!-- client | pm | exec | general — page 1 handoff audience -->
-
-## Page 2 owner
-
-<!-- Who sells or shares the product: founder | solo builder | agency client | operator -->
+<!-- client | pm | exec | general. Who will read the poster -->
 
 ## Tone
 
 <!-- formal | friendly | investor-brief -->
 
-## Tagline direction (page 2)
+## Main moment, the story
 
-<!-- Emotional one-liner if you already have one — e.g. "Your ideas, finally in one place." -->
+<!-- One sentence: the thing the product does that the poster should act out.
+     e.g. "Pantry turns your recipes and leftovers into one week of dinners and a shopping list." -->
 
-## Competitors or alternatives to contrast
+## Hot word (drawn silhouettes only)
 
-<!-- spreadsheets, Notion, named competitors — helps page 2 differentiation -->
+<!-- The one word, or two-word phrase, that matters most. It is set in the accent colour.
+     It must be one of the words in the picture. e.g. "leftovers" -->
 
-## Vision / why we built this
+## Frame preference
 
-<!-- 1–3 sentences for page 2 "The vision" band — ownership language -->
+<!-- loose | swiss. Loose (the default) lets the field fill the sheet with a few words in its corners.
+     Swiss adds a masthead and a footer with counts, notes and the not-built list. -->
+
+## Field preference
+
+<!-- wave | terrain | river. Wave for a story of flow or hand-off, terrain for what is big and what
+     matters, river for many things merging into one. Leave blank to let the skill choose. -->
+
+## Accent part
+
+<!-- The part the poster is about, by its id from `vyo parts`. e.g. "area:lib/plan" -->
+
+## The picture
+
+<!-- Optional. Fill this only if you want a drawn silhouette instead of a field.
+     One sentence describing the silhouette, and what it acts out.
+     e.g. "An hourglass: everything we juggle in a week pours through one plan into a shopping list."
+     Leave blank to let the skill invent one from the main moment. -->
 
 ## Terms to use
 
-<!-- Product-specific names: "workspace", "flow", "campaign" -->
+<!-- Product-specific words: "weekly plan", "pantry", "swap" -->
 
 ## Terms to avoid
 
 <!-- e.g. internal codenames, the repo folder name if it differs from the product name -->
 
-## Features that are backend-only or not user-facing yet
+## Features that are not built yet
 
-<!-- List features the skill must NOT describe as "available now" -->
-<!-- e.g. Stripe webhooks exist but no checkout UI -->
-
-## Custom flows to emphasize
-
-<!-- 2–4 journeys that matter most for this handoff -->
-<!-- 1. Sign up and onboarding -->
-<!-- 2. … -->
+<!-- Features the code has that users cannot use yet. They go in the chat reply, and in the
+     "Not built yet" line on a swiss poster.
+     e.g. Stripe code exists but there is no checkout screen -->
 
 ## Additional context
 
-<!-- Links to playbook, Figma, Notion, or positioning docs -->
+<!-- Links to the playbook, Figma, Notion, or positioning docs -->

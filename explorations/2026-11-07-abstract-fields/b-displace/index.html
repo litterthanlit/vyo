@@ -1,0 +1,87 @@
+<!doctype html><html><head><meta charset="utf-8"><style>/*FONTS*/
+* { box-sizing: border-box; margin: 0; padding: 0 }
+:root { --paper:#D9D8D3; --ink:#161616; --hot:#FF4F12 }
+.sheet { position: relative; width: 840px; height: 1190px; overflow: hidden; background: var(--paper); color: var(--ink); font-family: "Commit", monospace }
+canvas { position: absolute; left: 0; top: 0; width: 840px; height: 1190px }
+.t { position: absolute; font-size: 10.5px; line-height: 15px; letter-spacing: .02em }
+.name { font-family: "Inter Display", sans-serif; font-weight: 700; font-size: 15px; letter-spacing: -.01em }
+.line { font-family: "Newsreader", serif; font-size: 30px; line-height: 34px; letter-spacing: -.01em }
+</style></head><body><div class="sheet"><canvas width="1680" height="2380"></canvas></div><script>
+const SCAN = /*SCAN*/null;
+const W = 840, H = 1190, ACCENT = true;
+const SENT = "SWITCH AGENTS WITHOUT STARTING OVER ";
+
+// 1. Constellation: one centre per major part, radius from its lines, pulled together by its imports.
+function layout() {
+  const P = SCAN.parts.map((p, i) => {
+    const a = i * 2.39996, r = 60 + 40 * i;           // golden-angle start, deterministic
+    return { ...p, R: 1.05 * Math.sqrt(p.loc), x: Math.cos(a) * r, y: Math.sin(a) * r };
+  });
+  const idx = Object.fromEntries(P.map((p, i) => [p.id, i]));
+  const L = SCAN.links.map(([a, b, n]) => [idx[a], idx[b], n]);
+  for (let it = 0; it < 4000; it++) {
+    const F = P.map(() => [0, 0]);
+    for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) {
+      const dx = P[j].x - P[i].x, dy = P[j].y - P[i].y, d = Math.hypot(dx, dy) || 1;
+      const min = P[i].R + P[j].R + 64;                 // unlinked parts keep a clear field between them
+      if (d < min) { const f = (min - d) * 0.05; F[i][0] -= dx / d * f; F[i][1] -= dy / d * f; F[j][0] += dx / d * f; F[j][1] += dy / d * f; }
+    }
+    for (const [i, j, n] of L) {                        // linked parts sit closer, closer the more imports
+      const dx = P[j].x - P[i].x, dy = P[j].y - P[i].y, d = Math.hypot(dx, dy) || 1;
+      const target = P[i].R + P[j].R + 64 + 60 / Math.log2(1 + n), f = (d - target) * 0.04;
+      F[i][0] += dx / d * f; F[i][1] += dy / d * f; F[j][0] -= dx / d * f; F[j][1] -= dy / d * f;
+    }
+    P.forEach((p, i) => { F[i][0] -= p.x * 0.004; F[i][1] -= p.y * 0.004; p.x += F[i][0]; p.y += F[i][1]; });
+  }
+  return { P, L };
+}
+
+window.draw = () => {
+  const { P, L } = layout();
+  // place the constellation high and right so the largest part bleeds off the right edge
+  // lines-weighted centroid of the constellation lands at (CX, CY); scale is fixed, so a bigger repo makes bigger openings
+  const tot = P.reduce((a, p) => a + p.loc, 0), gx = P.reduce((a, p) => a + p.x * p.loc, 0) / tot, gy = P.reduce((a, p) => a + p.y * p.loc, 0) / tot;
+  const CX = 610, CY = 520;
+  P.forEach(p => { p.cx = CX + (p.x - gx); p.cy = CY + (p.y - gy); p.r = p.R; });
+  console.log(JSON.stringify(P.map(p => [p.id, Math.round(p.cx), Math.round(p.cy), Math.round(p.r)])));
+
+  const cv = document.querySelector("canvas"), g = cv.getContext("2d");
+  g.scale(2, 2); g.textBaseline = "alphabetic";
+  const FS = 10.5, ADV = FS * 0.6, LH = 13, TOP = 74, BOTTOM = 1000;
+  g.font = `400 ${FS}px Commit`;
+  const ink = getComputedStyle(document.documentElement).getPropertyValue("--ink"), hot = getComputedStyle(document.documentElement).getPropertyValue("--hot");
+  const open = (x, y) => {            // how open the field is here: ~1 inside a part's disc, 0 outside
+    let o = 0;
+    for (const p of P) { const d = Math.hypot(x - p.cx, y - p.cy) / p.r; o = Math.max(o, 1 / (1 + Math.pow(d, 14))); }
+    return o;
+  };
+  const A = 34;
+  const KO = [];   // the product name sits in a clearing top-right                       // inside an opening, letters sit 1 + A times further apart
+  for (let row = 0, y = TOP; y < BOTTOM; row++, y += LH) {
+    const phase = row * 5;           // the sentence steps 5 letters per row
+    let c = 0, next = 0;
+    for (let x = -60; x < W + 60; x += 0.5) {
+      const o = open(x, y - FS * 0.35);
+      c += 0.5 / (ADV * 1.04 * (1 + A * o));
+      if (c >= next && KO.some(([a, b, c2, d]) => x > a && x < c2 && y > b && y < d)) { next += 1; continue; }
+      if (c >= next) {
+        const ch = SENT[(next + phase) % SENT.length];
+        g.fillStyle = ACCENT && o > 0.35 ? hot : ink;
+        g.fillText(ch, x, y);
+        next += 1;
+      }
+    }
+  }
+};
+</script>
+<script>
+const S = document.querySelector(".sheet");
+const put = (cls, css, html) => { const e = document.createElement("div"); e.className = cls; Object.assign(e.style, css); e.innerHTML = html; S.appendChild(e); };
+put("name", { position: "absolute", right: "28px", top: "26px" }, "Hypher");
+put("t", { left: "-4px", top: "1010px", width: "900px", whiteSpace: "nowrap", overflow: "hidden" }, "/".repeat(160));
+put("line", { position: "absolute", left: "28px", top: "1042px" }, "Switch agents without<br>starting over.");
+put("t", { left: "560px", top: "1046px", width: "240px" }, "Dump the mess from one coding agent.<br>Hypher keeps one note.<br>The next agent reads it<br>and carries on.");
+put("t", { left: "28px", bottom: "22px" }, "Hypher at 7e1ff3a, 7 November 2026");
+put("t", { right: "28px", bottom: "22px" }, "Drawn by Vyo.");
+</script>
+</body></html>

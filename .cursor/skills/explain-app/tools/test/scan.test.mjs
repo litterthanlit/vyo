@@ -7,7 +7,11 @@ import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { stableStringify, factsHash } from "../lib/hash.mjs";
-import { scanRepo, draftParts, showFacts, matchGlob, selectIds, plainAreaName, isJargon } from "../scan.mjs";
+import { scanRepo } from "../lib/scan/index.mjs";
+import { draftParts } from "../lib/scan/draft.mjs";
+import { showFacts } from "../lib/scan/show.mjs";
+import { matchGlob, selectIds } from "../lib/scan/glob.mjs";
+import { plainAreaName, isJargon } from "../lib/scan/names.mjs";
 import { scanJs, stripPy, parseJsonc } from "../lib/scan/tokenize.mjs";
 import { normRoutePath, segSuffixMatch, matchSegs } from "../lib/scan/routes.mjs";
 import { routeName, tableName, areaName } from "../lib/scan/names.mjs";
@@ -15,7 +19,7 @@ import { routeName, tableName, areaName } from "../lib/scan/names.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TOOLS = path.resolve(HERE, "..");
 const FIX = path.join(HERE, "fixtures");
-const CLI = path.join(TOOLS, "scan.mjs");
+const CLI = path.join(TOOLS, "vyo.mjs");
 
 const ids = (facts, kind) => facts.facts.filter((f) => f.kind === kind).map((f) => f.id);
 const fact = (facts, id) => facts.facts.find((f) => f.id === id);
@@ -339,32 +343,6 @@ describe("output rules", () => {
     }
   });
 
-  test("wire and why are forwarded to lib/wire.mjs; without it they exit 2 with a message", () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "scan-nowire-"));
-    try {
-      fs.mkdirSync(path.join(tmp, "lib"), { recursive: true });
-      fs.copyFileSync(CLI, path.join(tmp, "scan.mjs"));
-      fs.copyFileSync(path.join(TOOLS, "lib", "hash.mjs"), path.join(tmp, "lib", "hash.mjs"));
-      fs.cpSync(path.join(TOOLS, "lib", "scan"), path.join(tmp, "lib", "scan"), { recursive: true });
-      for (const cmd of ["wire", "why"]) {
-        const r = spawnSync("node", [path.join(tmp, "scan.mjs"), cmd, "facts.json"], { encoding: "utf8" });
-        assert.equal(r.status, 2, r.stderr);
-        assert.match(r.stderr, /wire\.mjs/);
-      }
-      fs.writeFileSync(
-        path.join(tmp, "lib", "wire.mjs"),
-        'export async function wireMain(argv) { console.log("wire " + argv.join(",")); return 0; }\nexport async function whyMain(argv) { console.log("why " + argv.join(",")); return 1; }\n',
-      );
-      const w = spawnSync("node", [path.join(tmp, "scan.mjs"), "wire", "f.json", "--into", "c.tsx"], { encoding: "utf8" });
-      assert.equal(w.status, 0);
-      assert.equal(w.stdout.trim(), "wire f.json,--into,c.tsx");
-      const y = spawnSync("node", [path.join(tmp, "scan.mjs"), "why", "f.json", "A", "B"], { encoding: "utf8" });
-      assert.equal(y.status, 1, "the return value of whyMain is the exit code");
-    } finally {
-      fs.rmSync(tmp, { recursive: true, force: true });
-    }
-  });
-
   test("CLI usage errors exit 2; unknown file exits 1", () => {
     assert.equal(spawnSync("node", [CLI], { encoding: "utf8" }).status, 2);
     assert.equal(spawnSync("node", [CLI, "bogus"], { encoding: "utf8" }).status, 2);
@@ -392,7 +370,7 @@ describe("show and draft", () => {
     assert.match(showFacts(empty), /too small or too unusual/);
   });
 
-  test("CLI show and draft read a facts file", () => {
+  test("CLI show reads a facts file", () => {
     const out = fs.mkdtempSync(path.join(os.tmpdir(), "scan-show-"));
     try {
       const f = path.join(out, "facts.json");
@@ -400,10 +378,6 @@ describe("show and draft", () => {
       const show = spawnSync("node", [CLI, "show", f], { encoding: "utf8" });
       assert.equal(show.status, 0, show.stderr);
       assert.match(show.stdout, /screen:\/ {2,}Home/);
-      const draft = spawnSync("node", [CLI, "draft", f], { encoding: "utf8" });
-      assert.equal(draft.status, 0, draft.stderr);
-      const parts = JSON.parse(draft.stdout);
-      assert.ok(Array.isArray(parts) && parts.length >= 2);
     } finally {
       fs.rmSync(out, { recursive: true, force: true });
     }
@@ -1111,11 +1085,13 @@ describe("real-world edges", () => {
       write(root, "app/broken.py", 'def (:\n  from . import\nimport\n"""never closed\n');
       write(root, "app/layout.tsx", "export default function L(){ return null }\n");
       write(root, "node_modules/pkg/index.js", "module.exports = 1;\n");
+      write(root, "vyo/earlier-poster.ts", "export const x = 1;\n");
       const facts = await scanRepo(root);
       assert.ok(facts.files["app/page.tsx"]);
       assert.ok(!facts.files["app/big.ts"], "over 512 KB is skipped");
       assert.ok(!facts.files["app/blob.ts"], "binary is skipped");
       assert.ok(!Object.keys(facts.files).some((f) => f.startsWith("node_modules")));
+      assert.ok(!Object.keys(facts.files).some((f) => f.startsWith("vyo/")), "an earlier run's output folder is not read");
       assert.deepEqual(ids(facts, "screen"), ["screen:/"]);
       assert.equal(facts.unresolved["./missing"], 1, "unresolved relative imports are counted");
       assert.equal(facts.hash, factsHash(facts));
@@ -1162,6 +1138,26 @@ describe("real-world edges", () => {
       assert.ok(hasImport(facts, "apps/web/app/page.tsx", "packages/ui/src/button.tsx"));
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("scan --out inside the scanned repo", () => {
+  const recipe = path.join(FIX, "recipe");
+  const run = (out) => spawnSync(process.execPath, [path.join(TOOLS, "vyo.mjs"), "scan", recipe, "--out", out], { encoding: "utf8" });
+  test("<repo>/vyo/ is allowed; any other path in the repo is refused", () => {
+    const vyoDir = path.join(recipe, "vyo");
+    const bad = path.join(recipe, "facts.json");
+    try {
+      const ok = run(path.join(vyoDir, "recipe-facts.json"));
+      assert.equal(ok.status, 0, ok.stderr);
+      assert.ok(fs.existsSync(path.join(vyoDir, "recipe-facts.json")));
+      const refused = run(bad);
+      assert.equal(refused.status, 1);
+      assert.match(refused.stderr, /inside the scanned repo/);
+      assert.ok(!fs.existsSync(bad));
+    } finally {
+      fs.rmSync(vyoDir, { recursive: true, force: true });
     }
   });
 });

@@ -73,6 +73,14 @@ const AI = {
   huggingface: { js: [["@huggingface/*", "huggingface"], ["@xenova/transformers", "huggingface"]], py: [["huggingface_hub", "huggingface"]] },
   bedrock: { js: [["@ai-sdk/amazon-bedrock", "ai-sdk"], ["@aws-sdk/client-bedrock-runtime", "aws"]], py: [] },
 };
+// Hosting and data platforms a folder is often named after; not detected as services, but still company names.
+const PLATFORMS = ["convex", "supabase", "firebase", "vercel", "netlify", "cloudflare", "prisma", "drizzle", "mongodb", "planetscale", "neon", "appwrite", "pocketbase", "heroku", "railway"];
+// Vendor keys that are also plain words a folder name can carry ("Emails", "Gateway").
+const PLAIN_WORDS = new Set(["emails", "gateway", "segment", "elastic"]);
+/** Every company name the scan knows, lower-case: a part named after one says who, not what. */
+export const VENDORS = new Set(
+  [...[...Object.values(SERVICES), ...Object.values(AI)].flatMap(({ js, py }) => [...js, ...py].map(([, vendor]) => vendor)), ...Object.keys(AI), ...AUTH_PROVIDERS, ...PLATFORMS].filter((v) => !PLAIN_WORDS.has(v)),
+);
 // ai with no provider package
 const GENERIC_JS = ["ai", "@ai-sdk/react", "@ai-sdk/rsc", "@ai-sdk/ui-utils", "@ai-sdk/provider", "@ai-sdk/provider-utils", "langchain", "@langchain/core", "@langchain/community", "@langchain/langgraph", "llamaindex", "@llamaindex/*"];
 // @ai-sdk/* packages that are helpers, not model providers

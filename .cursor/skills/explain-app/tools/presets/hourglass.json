@@ -1,0 +1,203 @@
+{
+  "version": 3,
+  "frame": "swiss",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "date": "2026-11-07"
+  },
+  "theme": "light",
+  "headline": "A week of dinners, planned in one go.",
+  "hot": "leftovers",
+  "figure": {
+    "fits": "An hourglass: everything you juggle pours in at the top, narrows to one week's plan at the waist, and comes out as a list and an email.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "inputs",
+        "profile": [
+          [
+            176,
+            420,
+            365
+          ],
+          [
+            189,
+            420,
+            365
+          ],
+          [
+            253,
+            420,
+            297
+          ],
+          [
+            317,
+            420,
+            231.2
+          ],
+          [
+            381,
+            420,
+            168.3
+          ],
+          [
+            445,
+            420,
+            109.1
+          ],
+          [
+            493,
+            420,
+            68.4
+          ],
+          [
+            509,
+            420,
+            55.9
+          ],
+          [
+            512,
+            420,
+            30
+          ]
+        ],
+        "words": [
+          "recipes",
+          "cravings",
+          "leftovers",
+          "busy nights",
+          "allergies",
+          "what's in season",
+          "the budget",
+          "family picks"
+        ],
+        "tone": [
+          "soft",
+          "mid"
+        ]
+      },
+      {
+        "kind": "fill",
+        "id": "outputs",
+        "profile": [
+          [
+            576,
+            420,
+            30
+          ],
+          [
+            579,
+            420,
+            70.2
+          ],
+          [
+            595,
+            420,
+            84
+          ],
+          [
+            659,
+            420,
+            143.8
+          ],
+          [
+            723,
+            420,
+            208.4
+          ],
+          [
+            787,
+            420,
+            276.4
+          ],
+          [
+            867,
+            420,
+            365
+          ],
+          [
+            880,
+            420,
+            365
+          ]
+        ],
+        "words": [
+          "shopping list",
+          "tonight's dinner",
+          "Monday's email",
+          "next week"
+        ],
+        "tone": "ink"
+      }
+    ],
+    "texts": [
+      {
+        "role": "masthead",
+        "id": "masthead",
+        "x": 50,
+        "y": 36,
+        "w": 490
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 560,
+        "y": 64,
+        "w": 224
+      },
+      {
+        "role": "label",
+        "id": "waist",
+        "text": "ONE WEEK",
+        "hot": true,
+        "x": 220,
+        "y": 526,
+        "w": 400,
+        "align": "center"
+      },
+      {
+        "role": "aside",
+        "id": "juggle",
+        "text": "What you juggle. Recipes, cravings, leftovers, allergies, busy nights.",
+        "x": 56,
+        "y": 522,
+        "w": 190
+      },
+      {
+        "role": "aside",
+        "id": "plan",
+        "text": "**One plan a week:** seven dinners from your own recipes, with the leftovers used up first.",
+        "x": 594,
+        "y": 528,
+        "w": 190
+      },
+      {
+        "role": "aside",
+        "id": "out",
+        "text": "What comes out. A shopping list, and the plan in your inbox every Monday.",
+        "x": 56,
+        "y": 650,
+        "w": 190
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "How it works",
+      "text": "Save the recipes you already cook. Pantry fills the week from them, suggests a few new ones, and builds the shopping list from what the plan needs."
+    },
+    {
+      "title": "Every Monday",
+      "text": "At 8 in the morning Pantry emails you the week's plan, so the first dinner is decided before the day starts."
+    },
+    {
+      "title": "Yours alone",
+      "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can pick up the week on any device."
+    }
+  ],
+  "notBuilt": [
+    "paid plans"
+  ]
+}

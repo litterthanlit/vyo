@@ -1,0 +1,62 @@
+<!doctype html><html data-theme="paper"><head><meta charset="utf-8"><title>Hypher terrain, loose frame</title>
+<style>/*FONTS*/
+:root{--paper:#EAE8E2;--ink:#17161a;--soft:#55534e;--rgb-ink:23,22,26;--rgb-grey:104,102,116;--rgb-acc:224,82,10;--lift:.14;--hot-lift:.5}
+[data-theme=dark]{--paper:#121320;--ink:#ecebe6;--soft:#a3a3b2;--rgb-ink:236,235,230;--rgb-grey:154,155,176;--rgb-acc:255,106,31;--lift:0;--hot-lift:.3}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper)}
+.sheet{position:relative;width:840px;height:1190px;overflow:hidden;background:var(--paper);color:var(--ink)}
+canvas{position:absolute;inset:0}
+.brand{position:absolute;font:400 13px/1 Commit,monospace;letter-spacing:2.2px;text-transform:uppercase}
+.head{position:absolute;font:400 44px/1.06 Newsreader,serif;letter-spacing:-.4px}
+.txt{position:absolute;font:400 14px/1.38 Newsreader,serif}
+.list{position:absolute;font:400 11px/1.55 Commit,monospace;white-space:pre}
+.rec{position:absolute;font:400 10px/1 Commit,monospace;color:var(--soft);letter-spacing:.3px;white-space:nowrap}
+.up{transform-origin:0 0;transform:rotate(-90deg)}
+</style></head><body><div class="sheet">
+<canvas id="c" width="1680" height="2380" style="width:840px;height:1190px"></canvas>
+<div class="head" style="left:40px;top:34px">Switch agents<br>without starting over.</div>
+<div class="brand" style="right:40px;top:40px">Hypher</div>
+<div class="list" id="list" style="right:40px;top:84px;text-align:right"></div>
+<div class="txt" style="left:318px;top:296px;width:200px">Hypher keeps one note per project under your coding agents. Save when you stop, and the next agent starts from that note.</div>
+<div class="txt" style="left:590px;top:430px;width:200px">Every peak is a part of Hypher, as tall as its code and as wide as its files. The orange peak holds the note the next agent reads.</div>
+<div class="rec up" style="left:24px;top:592px">Hypher at 7e1ff3a, 7 November 2026. Drawn by Vyo.</div>
+</div>
+<script>
+const PARTS = /*DATA*/;
+window.draw = () => {
+  const css = getComputedStyle(document.documentElement), rgb = k => css.getPropertyValue(k).trim().split(",").map(Number);
+  document.getElementById("list").textContent = PARTS.map(p => p.name).join("\n");
+  const c = document.getElementById("c"), x = c.getContext("2d"); x.scale(2, 2);
+  const X0 = -90, X1 = 930, BASE = 1260, PX = 0.0885;
+  const tot = PARTS.reduce((s, p) => s + p.files, 0);
+  let acc = X0; const pk = PARTS.map(p => { const w = (p.files / tot) * (X1 - X0); const q = { ...p, c: acc + w / 2, w, H: p.loc * PX, hot: p.name === "handoff note" }; acc += w; return q; });
+  const P = 4;
+  const bump = (q, xx) => { const d = Math.abs(xx - q.c) / (q.w * 1.25 + 30); return q.H * Math.exp(-Math.pow(d, 1.5) * 1.1); };
+  const hAt = xx => { let s = 0; for (const q of pk) s += Math.pow(bump(q, xx), P); return Math.pow(s, 1 / P); };
+  const owner = xx => { let b = -1, bi = 0; pk.forEach((q, i) => { const v = bump(q, xx); if (v > b) { b = v; bi = i; } }); return pk[bi]; };
+  const FS = 6.9, H = 7.6; x.font = `400 ${FS}px Commit`; x.textBaseline = "alphabetic";
+  const cw = x.measureText("M").width;
+  const hs = new Map(); for (let xx = X0 - 4; xx <= X1 + 4; xx += 1) hs.set(Math.round(xx), hAt(xx));
+  const H_ = xx => hs.get(Math.round(xx));
+  const lift = +css.getPropertyValue("--lift"), hotLift = +css.getPropertyValue("--hot-lift");
+  const ink = rgb("--rgb-ink"), grey = rgb("--rgb-grey"), acc2 = rgb("--rgb-acc");
+  for (let y = 1200; y > 280; y -= H) {
+    const lvl = BASE - y;
+    let px = 0, cur = null, k = 0;
+    while (px < 840) {
+      const h = H_(px), hn = H_(px + 4), hp = H_(px - 4);
+      if (h < lvl) { px += cw; cur = null; continue; }
+      const q = owner(px); if (q !== cur) { if (cur) px += cw * 2; cur = q; k = 0; }
+      const m = (hn - hp) / 8;
+      const depth = h - lvl, a = Math.abs(m);
+      const word = q.name + "   ";
+      const lit = Math.max(0, Math.min(1, 0.5 + m * 0.5));
+      let al = 0.42 + 0.5 * lit - Math.min(0.2, depth / 1600); if (depth < 9) al = Math.min(1, al + 0.35);
+      al += lift; if (q.hot) al = Math.min(1, al + hotLift); al = Math.max(0.22, Math.min(1, al));
+      const col = q.hot ? acc2 : (depth < 9 ? ink : grey);
+      x.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${al})`; x.fillText(word[k % word.length], px, y);
+      k++; px += cw * 0.94 + Math.min(a, 1.6) * 1.5;
+    }
+  }
+};
+</script></body></html>

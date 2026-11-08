@@ -1,0 +1,49 @@
+<!doctype html><html data-theme="light"><head><meta charset="utf-8"><title>Hypher wave on paper</title>
+<style>/*FONTS*/
+:root{--paper:#EAE8E2;--ink:#17161a;--v1:#4a1fd6;--v2:#7a64dc;--soft:#55534e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper)}
+.sheet{position:relative;width:840px;height:1190px;overflow:hidden;background:var(--paper);color:var(--ink)}
+canvas{position:absolute;inset:0}
+.name{text-shadow:0 0 14px var(--paper),0 0 6px var(--paper);position:absolute;left:44px;top:40px;font:700 112px/0.9 "Inter Display","Helvetica Neue",sans-serif;letter-spacing:-4px}
+.line{position:absolute;right:48px;top:46px;width:236px;font:400 25px/1.2 Newsreader,serif;display:none}
+.para{position:absolute;left:48px;bottom:84px;width:250px;font:400 15px/1.4 Newsreader,serif;color:var(--ink)}
+.foot{position:absolute;bottom:34px;font:400 10px/1 Commit,monospace;color:var(--soft);letter-spacing:.3px}
+.fl{left:48px}.fr{right:48px}
+</style></head><body><div class="sheet">
+<canvas id="c" width="1680" height="2380" style="width:840px;height:1190px"></canvas>
+<div class="name">Hypher</div>
+<div class="para">Every row is a part of Hypher, as many rows as it has code. The black part holds the note the next agent reads.</div>
+<div class="foot fl">Hypher at 7e1ff3a, 7 November 2026</div>
+<div class="foot fr">Drawn by Vyo.</div>
+</div>
+<script>
+const BANDS = /*BANDS*/;
+const NOTE = "hypher-web/shared";
+const MSG = "switch agents without starting over";
+window.draw = () => {
+  const css = getComputedStyle(document.documentElement), v = k => css.getPropertyValue(k).trim();
+  const c = document.getElementById("c"), x = c.getContext("2d"); x.scale(2, 2);
+  const PER = 300, rows = [];
+  for (const b of BANDS) {
+    const n = Math.max(1, Math.round(b.loc / PER)), depth = b.path.split("/").length;
+    for (let i = 0; i < n; i++) rows.push({ word: b.name, color: b.path === NOTE ? v("--ink") : depth <= 2 ? v("--v1") : v("--v2") });
+  }
+  const N = rows.length, H = 7.9, FS = 6.9, TOP = -8;
+  x.font = `400 ${FS}px Commit`; x.textBaseline = "alphabetic";
+  const cw = x.measureText("M").width;
+  rows.forEach((r, i) => {
+    const t = i / (N - 1), y = TOP + i * H;
+    // enters top-left behind the name, swings right, back left across the middle, leaves bottom-right
+    const u = Math.min(1, Math.max(0, (y + 8) / 1190)); const cx = 130 + 560 * (u * u * (3 - 2 * u) * 0.6 + u * 0.4) + 95 * Math.sin(6.4 * u + 0.4) * (1 - 0.5 * u);
+    const slope = Math.cos(6.4 * u + 0.4);
+    const hw = 150 + 40 * Math.abs(slope);
+    const track = 0.5 + (hw - 150) / 12;
+    const L = cx - hw, R = cx + hw;
+    const word = (i % 5 === 4 ? MSG : r.word.toLowerCase());
+    x.fillStyle = r.color;
+    const s = word + "   "; let k = 0, px = L;
+    while (px + cw <= R) { if (!(y > 1140 && px > 610)) x.fillText(s[k % s.length], px, y); px += cw + track; k++; }
+  });
+};
+</script></body></html>

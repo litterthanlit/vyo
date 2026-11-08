@@ -1,0 +1,80 @@
+<!doctype html><html><head><meta charset="utf-8"><style>/*FONTS*/
+* { box-sizing: border-box; margin: 0; padding: 0 }
+:root { --paper:#0B0C0E; --ink:#E9EAEC; --mid:#8A8D93; --hot:#FF5A1F }
+.sheet { position: relative; width: 840px; height: 1190px; overflow: hidden; background: var(--paper); color: var(--ink) }
+canvas { position: absolute; left: 0; top: 0; width: 840px; height: 1190px }
+.t { position: absolute }
+.mast { left: 44px; top: 30px; font: 700 96px/96px "Inter Display", sans-serif; letter-spacing: -.045em }
+.line { left: 48px; top: 136px; font: 500 19px/24px "Inter Display", sans-serif; color: var(--mid); letter-spacing: -.005em }
+.para { right: 44px; bottom: 74px; width: 236px; font: 400 13px/18px "Inter Display", sans-serif; color: var(--mid) }
+.foot { bottom: 26px; font: 400 10px/14px "Commit", monospace; color: var(--mid); letter-spacing: .02em }
+</style></head><body><div class="sheet"><canvas></canvas>
+<div class="t mast">Hypher<span style="color:var(--hot)">.</span></div>
+<div class="t line">Switch agents without starting over.</div>
+<div class="t para">Each band is one part of Hypher, as tall as its code. The mess sweeps up into the note.</div>
+<div class="t foot" style="left:48px">Hypher at 7e1ff3a, 7 November 2026</div>
+<div class="t foot" style="right:44px">Drawn by Vyo.</div>
+</div><script>
+const BANDS = /*DATA*/null;
+window.draw = () => {
+  const W = 840, H = 1190, DPR = 2, FS = 3, LH = 3.3;
+  const cv = document.querySelector("canvas"); cv.width = W * DPR; cv.height = H * DPR;
+  const g = cv.getContext("2d"); g.scale(DPR, DPR);
+  g.font = `700 ${FS}px "Commit"`; g.textBaseline = "top";
+  const CW = g.measureText("0".repeat(100)).width / 100, COLS = Math.ceil(W / CW) + 1;
+  // seeded random so every render is the same
+  let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  // the figure: a sweep from bottom-left to top-right, broad and loose where it starts, tight where it ends
+  const TOP = -4, BOT = 1128;
+  const centre = x => { const u = Math.max(0, x / W); return 1230 - 1340 * Math.pow(u, 0.9) + 120 * Math.sin(u * 4.2 + .3) * (1 - u * .6); };
+  const width = x => { const u = Math.min(1, Math.max(0, x / W)); return 70 + 520 * Math.pow(1 - u, 1.5) + 260 * Math.pow(Math.max(0, u - 0.68) / 0.32, 2); };   // flares where it becomes the note
+  let SHIFT = 0;
+  const density = (x, y) => {
+    x -= SHIFT;
+    const d = y - centre(x) + 14 * Math.sin(x / 23 + y / 71) + 9 * Math.sin(x / 7.3 - y / 19);
+    const w = width(x) * (d < 0 ? 0.55 : 1.35);          // sharp crest above, long tail below
+    const u = Math.min(1, Math.max(0, x / W));
+    // fray: the loose end splits into strands, the tight end is solid
+    const strands = 1 - (1 - u) * 0.75 * Math.pow(Math.sin(d / 17 + Math.sin(x / 61) * 2.2), 2);
+    return Math.max(0.045, strands * Math.exp(-Math.pow(Math.abs(d) / w, 2.6) * 1.3));
+  };
+  const total = BANDS.reduce((a, b) => a + b.loc, 0);
+  const tone = i => i === 0 ? 1 : 0.8 - 0.045 * i;          // the note at full ink, the rest fading
+  const hex = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16));
+  const P = hex("#0B0C0E"), I = hex("#E9EAEC"), O = hex("#FF5A1F");
+  const mix = (a, t) => `rgb(${a.map((v, k) => Math.round(P[k] + (v - P[k]) * t)).join(",")})`;
+  const LEVELS = 6;
+  let y = TOP, hotDone = false;
+  const avg = BANDS.reduce((a, b) => a + b.loc / b.files, 0) / BANDS.length;
+  BANDS.forEach((b, i) => {
+    SHIFT = (b.loc / b.files - avg) * 0.35;   // parts with longer files lean right
+    const rows = Math.max(3, Math.round((BOT - TOP) * b.loc / total / LH));
+    let pos = 0;
+    for (let r = 0; r < rows - 1; r++, y += LH) {           // last row of each band left empty: the band edge
+      const yc = y + LH / 2;
+      // hot row: one line of the handoff note's own file, where the sweep crosses the note band
+      const isHot = i === 0 && !hotDone && density(W * 0.86, yc) > 0.9;
+      const src = isHot ? b.hot : b.text;
+      const off = isHot ? 0 : pos; if (!isHot) pos += COLS;
+      if (isHot) hotDone = true;
+      const buckets = Array.from({ length: LEVELS }, () => []);
+      for (let c = 0; c < COLS; c++) {
+        const ch = src[(off + c) % src.length];
+        if (ch === " ") continue;
+        const p = density(c * CW, yc);
+        if (rnd() > p) continue;
+        const lv = Math.min(LEVELS - 1, Math.floor(p * LEVELS));
+        (buckets[lv][c] = ch);
+      }
+      buckets.forEach((arr, lv) => {
+        if (!arr.length) return;
+        let str = ""; for (let c = 0; c < arr.length; c++) str += arr[c] || " ";
+        const t = tone(i) * (0.4 + 0.6 * Math.pow((lv + 1) / LEVELS, 1.2));
+        g.fillStyle = isHot ? mix(O, 0.45 + 0.55 * (lv + 1) / LEVELS) : mix(I, t);
+        g.fillText(str, 0, y);
+      });
+    }
+    y += LH;
+  });
+};
+</script></body></html>

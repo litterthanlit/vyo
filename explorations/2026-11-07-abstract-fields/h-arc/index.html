@@ -1,0 +1,62 @@
+<!doctype html><html><head><meta charset="utf-8"><style>/*FONTS*/
+* { box-sizing: border-box; margin: 0; padding: 0 }
+:root { --paper:#D6D5D0; --ink:#141414; --hot:#E0401A }
+.sheet { position: relative; width: 840px; height: 1190px; overflow: hidden; background: var(--paper); color: var(--ink); font-family: "Commit", monospace }
+canvas { position: absolute; left: 0; top: 0; width: 840px; height: 1190px }
+.t { position: absolute; font-size: 10.5px; line-height: 15px; letter-spacing: .02em; white-space: pre }
+.name { font-family: "Inter Display", sans-serif; font-weight: 700; font-size: 15px; letter-spacing: -.01em }
+.line { font-family: "Newsreader", serif; font-size: 34px; line-height: 38px; letter-spacing: -.01em }
+.rule { overflow: hidden; width: 840px; left: 0 }
+</style></head><body><div class="sheet"><canvas width="1680" height="2380"></canvas>
+<div class="t name" style="left:36px;top:34px">Hypher</div>
+<div class="t rule" style="left:36px;top:826px;width:768px;letter-spacing:.0em">LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL</div>
+<div class="t line" style="left:36px;top:858px">Switch agents without starting over.</div>
+<div class="t" style="left:36px;top:930px">Web app screens
+Server and database
+Shared rules
+Handoffs
+Command line tool
+Release scripts
+Mac app
+Editor and browser add-ons</div>
+<div class="t" style="left:36px;bottom:30px">Hypher at 7e1ff3a, 7 November 2026</div>
+<div class="t" style="right:36px;bottom:30px">Drawn by Vyo.</div>
+</div><script>
+// scan: 47675 lines in all, 3324 of them in handoff files
+const TOTAL = 47675, HAND = 3324;
+const W = 840, H = 1190, SENT = "Switch agents without starting over ";
+const R = 1.95 * Math.sqrt(TOTAL);             // radius from total lines
+const T = R * Math.sqrt(HAND / TOTAL);        // thickness from the handoff share
+const C = { x: 590, y: 395 };
+const dir = { x: 0.8, y: -0.6 };
+const I = { x: C.x + dir.x * T, y: C.y + dir.y * T };
+const SPREAD = 16, SOFT = 5;
+const sm = (e0, e1, v) => { const t = Math.max(0, Math.min(1, (v - e0) / (e1 - e0))); return t * t * (3 - 2 * t) };
+function open(x, y) {
+  const dO = R - Math.hypot(x - C.x, y - C.y);       // >0 inside outer
+  const dI = Math.hypot(x - I.x, y - I.y) - R;       // >0 outside inner
+  return Math.min(sm(-SOFT, SOFT, dO), sm(-SOFT, SOFT, dI));
+}
+window.draw = function () {
+  const cv = document.querySelector("canvas"), g = cv.getContext("2d");
+  g.setTransform(2, 0, 0, 2, 0, 0); g.clearRect(0, 0, W, H);
+  g.font = '700 11px "Commit"'; g.textBaseline = "alphabetic";
+  const cw = g.measureText("m").width * 1.0, lead = 10.5;
+  const ink = getComputedStyle(document.documentElement).getPropertyValue("--ink") || "#141414";
+  let row = 0;
+  for (let y = 8; y < 800; y += lead, row++) {
+    let x = -300 + (row * 7.3) % 40, k = row * 5;
+    while (x < W + 20) {
+      const o = open(x, y - 3);
+      const ch = SENT[k++ % SENT.length];
+      if (x > 138 && ch !== " ") {
+        const dIn = Math.hypot(x - I.x, y - 3 - I.y) - R;
+        const acc = o > 0.55 && dIn < 26;
+        g.fillStyle = acc ? "#E0401A" : "rgba(20,20,20," + (1 - 0.3 * o) + ")";
+        g.fillText(ch, x, y);
+      }
+      x += cw * (1 + (SPREAD - 1) * o);
+    }
+  }
+};
+</script></body></html>

@@ -1,0 +1,58 @@
+<!doctype html><html data-theme="paper"><head><meta charset="utf-8"><title>Hypher wave, loose frame</title>
+<style>/*FONTS*/
+:root{--paper:#EAE8E2;--ink:#17161a;--v1:#4a1fd6;--v2:#7a64dc;--soft:#55534e;--note:#17161a}
+[data-theme=dark]{--paper:#121320;--ink:#ecebe6;--v1:#9a85ff;--v2:#7466c4;--soft:#a3a3b2;--note:#ecebe6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper)}
+.sheet{position:relative;width:840px;height:1190px;overflow:hidden;background:var(--paper);color:var(--ink)}
+canvas{position:absolute;inset:0}
+.brand{position:absolute;font:400 13px/1 Commit,monospace;letter-spacing:2.2px;text-transform:uppercase}
+.head{position:absolute;font:400 42px/1.06 Newsreader,serif;letter-spacing:-.4px}
+.txt{position:absolute;font:400 14px/1.38 Newsreader,serif}
+.list{position:absolute;font:400 11px/1.55 Commit,monospace;white-space:pre}
+.rule{position:absolute;font:400 11px/1 Commit,monospace;letter-spacing:0;white-space:nowrap;overflow:hidden}
+.rec{position:absolute;font:400 10px/1 Commit,monospace;color:var(--soft);letter-spacing:.3px;white-space:nowrap}
+</style></head><body><div class="sheet">
+<canvas id="c" width="1680" height="2380" style="width:840px;height:1190px"></canvas>
+<div class="brand" style="right:40px;top:38px">Hypher</div>
+<div class="head" style="right:40px;top:74px;text-align:right">Switch agents<br>without<br>starting over.</div>
+<div class="txt" style="left:600px;top:420px;width:200px">Hypher keeps one note per project under your coding agents. Save when you stop, and the next agent starts from that note.</div>
+<div class="txt" style="left:40px;top:776px;width:244px">Every row is a part of Hypher, as many rows as it has code. The black rows hold the note the next agent reads.</div>
+<div class="rule" id="rule" style="left:40px;top:850px;width:150px"></div>
+<div class="list" id="list" style="left:40px;top:872px"></div>
+<div class="rec" style="left:40px;bottom:30px">Hypher at 7e1ff3a, 7 November 2026. Drawn by Vyo.</div>
+</div>
+<script>
+const BANDS = /*DATA*/;
+const NOTE = "hypher-web/shared";
+const MSG = "switch agents without starting over";
+const PER = 300;
+window.draw = () => {
+  const css = getComputedStyle(document.documentElement), v = k => css.getPropertyValue(k).trim();
+  // the list: parts with at least three rows, in tree order
+  const big = []; for (const b of BANDS) if (Math.round(b.loc / PER) >= 3 && !big.includes(b.name)) big.push(b.name);
+  document.getElementById("list").textContent = big.join("\n");
+  const rule = document.getElementById("rule"); if (rule) { const m = document.createElement("canvas").getContext("2d"); m.font = "400 11px Commit"; rule.textContent = "L".repeat(Math.floor(parseFloat(rule.style.width) / m.measureText("L").width)); }
+  const c = document.getElementById("c"), x = c.getContext("2d"); x.scale(2, 2);
+  const rows = [];
+  for (const b of BANDS) {
+    const n = Math.max(1, Math.round(b.loc / PER)), depth = b.path.split("/").length;
+    for (let i = 0; i < n; i++) rows.push({ word: b.name, color: b.path === NOTE ? v("--note") : depth <= 2 ? v("--v1") : v("--v2") });
+  }
+  const N = rows.length, H = 7.9, FS = 6.9, TOP = -8;
+  x.font = `400 ${FS}px Commit`; x.textBaseline = "alphabetic";
+  const cw = x.measureText("M").width;
+  rows.forEach((r, i) => {
+    const y = TOP + i * H;
+    const u = Math.min(1, Math.max(0, (y + 8) / 1190)); const cx = 130 + 560 * (u * u * (3 - 2 * u) * 0.6 + u * 0.4) + 95 * Math.sin(6.4 * u + 0.4) * (1 - 0.5 * u);
+    const slope = Math.cos(6.4 * u + 0.4);
+    const hw = 150 + 40 * Math.abs(slope);
+    const track = 0.5 + (hw - 150) / 12;
+    const L = cx - hw, R = cx + hw;
+    const word = (i % 5 === 4 ? MSG : r.word.toLowerCase());
+    x.fillStyle = r.color;
+    const s = word + "   "; let k = 0, px = L;
+    while (px + cw <= R) { x.fillText(s[k % s.length], px, y); px += cw + track; k++; }
+  });
+};
+</script></body></html>

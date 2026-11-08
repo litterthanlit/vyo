@@ -1,221 +1,163 @@
-// Self-test: the starters must pass `check`, and each planted bug must fail
-// with the expected message. Also type-checks the starters and runs the scanner
-// and wire unit tests.
-//
-//   npm test
-//
-// Page 3 cases travel in pairs: <name>-exploded-view.canvas.tsx and the sibling
-// <name>-facts.json the checker wires against (a scan of fixtures/recipe).
-import { execFileSync, spawnSync } from "node:child_process";
-import assert from "node:assert/strict";
+// npm test: the pure tests, then every preset rendered and checked, then the planted bugs.
+// Posters land in test/.out/<preset>/ for a human to look at.
 import fs from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { check, parseState } from "../poster.mjs";
-import { stableStringify } from "../lib/hash.mjs";
-import { readBlocks, wire, writeWiring } from "../lib/wire.mjs";
-import { scanRepo } from "../scan.mjs";
+import { buildPage, renderPage } from "../lib/render.mjs";
+import { fieldItems } from "../lib/sketch.mjs";
 
-const TOOLS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const SKILL = path.resolve(TOOLS, "..");
-const OUT = path.join(TOOLS, "test", ".out");
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const TOOLS = path.join(HERE, "..");
+const OUT = path.join(HERE, ".out");
+const VYO = path.join(TOOLS, "vyo.mjs");
+const PRESETS = fs.readdirSync(path.join(TOOLS, "presets")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
+
+const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "docs"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
+
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
-
-const code = (md) => fs.readFileSync(path.join(SKILL, md), "utf8").match(/```tsx\n([\s\S]*?)```/)[1];
-const app = code("poster-starter.md");
-// Page 2 reuses page 1's constants and helpers ("copy from poster-starter.md").
-const shared = app.split("export default function AppPoster")[0];
-const story = shared + code("sell-sheet-starter.md").replace(/^import .*\n/, "");
-const exploded = shared + code("exploded-view-starter.md").replace(/^import .*\n/, "");
-
-const write = (name, src) => {
-  const f = path.join(OUT, `${name}.canvas.tsx`);
-  fs.writeFileSync(f, src);
-  return f;
-};
-const plant = (src, from, to) => {
-  if (!src.includes(from)) throw new Error(`Fixture anchor not found in starter: ${from}`);
-  return src.replace(from, to);
-};
-
-// ── Page 3 fixtures ──
-// The starter's WIRING was made from a scan of fixtures/recipe, so that scan is the facts file every page 3 case gets.
-const recipeFacts = await scanRepo(path.join(TOOLS, "test", "fixtures", "recipe"));
-const factsText = stableStringify(recipeFacts, 1); // what `scan --out` writes
-const write3 = (name, src, { facts = factsText } = {}) => {
-  const f = write(`${name}-exploded-view`, src);
-  if (facts !== null) fs.writeFileSync(path.join(OUT, `${name}-facts.json`), facts);
-  return f;
-};
-// The starter with its PARTS rewritten; `rewire` also regenerates WIRING, so only the PARTS rule under test is broken.
-const withParts = (src, edit, { rewire = false } = {}) => {
-  const { parts, partsRange } = readBlocks(src);
-  const next = edit(structuredClone(parts));
-  const body = `const PARTS: PartSpec[] = [\n${next.map((p) => `  ${JSON.stringify(p)}`).join(",\n")}\n];\n`;
-  const out = src.slice(0, partsRange.bodyStart) + body + src.slice(partsRange.bodyEnd);
-  if (!rewire) return out;
-  const { wiring, errors } = wire(recipeFacts, next);
-  if (errors.length) throw new Error(`Fixture does not wire: ${errors.join("; ")}`);
-  return writeWiring(out, wiring);
-};
-const cut = (src, re) => {
-  if (!re.test(src)) throw new Error(`Fixture anchor not found in starter: ${re}`);
-  return src.replace(re, "");
-};
-const guard = exploded.split("\n").find((l) => l.includes("if (t.length > 4) throw")); // the canvas's own 4-per-tier guard
-if (!guard) throw new Error("Fixture anchor not found in starter: the 4-per-tier guard");
-const tables = ["User", "Recipe", "Ingredient", "MealPlan"];
-const fiveInATier = (src) =>
-  withParts(src, (parts) => [
-    parts[0],
-    parts[1],
-    ...tables.map((t) => ({ name: `${t} records`, role: "data", line: `Where ${t} is kept.`, from: [`table:${t}`] })),
-    parts[6],
-  ], { rewire: true });
-
-const cases = [
-  { file: write("starter-app-poster", app), expect: null },
-  { file: write("starter-project-story", story), expect: null },
-  { file: write3("starter", exploded), expect: null, clean: true },
-  {
-    file: write("bug-five-stations-app-poster", plant(app, '{ label: "Back out", sub: "what you receive" },', '{ label: "Back out", sub: "what you receive" },\n    { label: "Fifth", sub: "x" },')),
-    expect: /5 won't land on the 12-column grid/,
-  },
-  {
-    file: write("bug-line-gap-app-poster", plant(app, "right: -(GUTTER + DOT / 2)", "right: -DOT / 2")),
-    expect: /does not join two stations/,
-  },
-  {
-    file: write("bug-off-baseline-app-poster", plant(app, "marginTop: BL - 2", "marginTop: BL")),
-    expect: /Off the 8px baseline/,
-  },
-  {
-    file: write("bug-fifth-size-app-poster", plant(app, '<p style={{ ...body, maxWidth: "28em" }}>', '<p style={{ ...body, fontSize: 13, maxWidth: "28em" }}>')),
-    expect: /5 font sizes/,
-  },
-  {
-    file: write("bug-small-masthead-app-poster", plant(app, 'fontSize: 112, lineHeight: "112px"', 'fontSize: 96, lineHeight: "96px"')),
-    expect: /Masthead is 96px/,
-  },
-  {
-    file: write("bug-red-rule-app-poster", plant(app, "borderTop: `1px solid ${INK}`", "borderTop: `1px solid ${ACCENT}`")),
-    expect: /Border colour/,
-  },
-  {
-    file: write("bug-import-app-poster", `import { format } from "date-fns";\n${app}`),
-    expect: /Imports "date-fns"/,
-  },
-  {
-    file: write("bug-file-path-app-poster", plant(app, "One-sentence purpose, set in ink.", "Pages live in src/app/page.tsx.")),
-    expect: /File paths on the poster/,
-  },
-  {
-    file: write("bug-negative-margin-app-poster", plant(app, '<div style={{ gridColumn: "1 / 8" }}>', '<div style={{ gridColumn: "1 / 8", marginLeft: -16 }}>')),
-    expect: /Off the column lines/,
-  },
-  {
-    file: write("bug-overlay-drift-app-poster", plant(app, "inset: MARGIN, ...subgrid", "inset: 0, ...subgrid")),
-    expect: /overlay columns do not match/,
-  },
-  // ── Page 3: the starter, then one planted bug per rule ──
-  { file: write3("facts-override", exploded, { facts: null }), facts: path.join(OUT, "starter-facts.json"), expect: null }, // --facts
-  { file: write3("dark-state", exploded), state: { themeExploded: "dark" }, expect: /Stroke colour rgb\(242, 242, 242\)/ }, // --state reaches the canvas
-  // facts and wiring
-  { file: write3("bug-no-facts", exploded, { facts: null }), expect: /No .*-facts\.json beside the canvas/ },
-  { file: write3("bug-facts-edited", exploded, { facts: plant(factsText, '"loc": ', '"loc": 1') }), expect: /facts\.json hash does not recompute/ },
-  { file: write3("bug-no-wiring", cut(exploded, /\/\/ WIRING:BEGIN[^\n]*\n[^\n]*\n\/\/ WIRING:END\n/)), expect: /No \/\/ WIRING:BEGIN/ },
-  { file: write3("bug-missing-fact", plant(exploded, '"from": ["table:*"]', '"from": ["table:*", "table:Nope"]')), expect: /wire: Part "Saved recipes": "table:Nope" matches nothing/ },
-  { file: write3("bug-hand-edited-wiring", plant(exploded, '{"count":6,"drawn":6,"items":[1,1,1,1,1,1]', '{"count":7,"drawn":6,"items":[1,1,1,1,1,1]')), expect: /WIRING does not match a fresh wire/ },
-  { file: write3("bug-stale-parts", plant(exploded, '"from": ["screen:**"]', '"from": ["screen:/recipes/**"]')), expect: [/PARTS changed/, /WIRING does not match a fresh wire/] },
-  { file: write3("bug-ten-parts", withParts(exploded, (parts) => [...parts, { ...parts[1], name: "Extra one" }, { ...parts[2], name: "Extra two" }, { ...parts[3], name: "Extra three" }])), expect: /wire: 10 parts — use 2 to 9/ },
-  { file: write3("bug-five-in-a-tier", fiveInATier(exploded)), expect: /Tier with 5 parts — merge parts/ },
-  { file: write3("bug-five-in-a-tier-unguarded", plant(fiveInATier(exploded), guard, "")), expect: /5 parts in one tier — merge parts/ },
-  // the drawing against the wiring
-  { file: write3("bug-disks", plant(exploded, "const n = Math.max(1, w.drawn);", "const n = 5;")), expect: /Part 6 draws 5 items but counts 4/ },
-  { file: write3("bug-no-hashes", plant(exploded, "data-facts-hash={WIRING.facts} data-parts-hash={WIRING.parts} ", "")), expect: /data-facts-hash/ },
-  { file: write3("bug-link-ends", plant(exploded, '"data-from-part": p, "data-to-part": q', '"data-from-part": p, "data-to-part": q + 20')), expect: /Link \d+ has bad ends/ },
-  { file: write3("bug-tall-figure", plant(exploded, "const PAD = 32;", "const PAD = 400;")), expect: /Drawing is \d+px tall/ },
-  // palette and copy
-  { file: write3("bug-blue-stroke", plant(exploded, "? { line: T.ink, detail: T.ink,", '? { line: "#0057FF", detail: T.ink,')), expect: /Stroke colour/ },
-  { file: write3("bug-blue-fill", plant(exploded, "<circle key={m} cx={x} cy={y} r={2.5} fill={T.paper}", '<circle key={m} cx={x} cy={y} r={2.5} fill="#0057FF"')), expect: /Fill colour/ },
-  { file: write3("bug-file-path", plant(exploded, "the parts that save your recipes, plan your week and suggest what to cook.", "see src/app/page.tsx for the parts.")), expect: /File paths on the poster/ },
-  // labels and leaders
-  { file: write3("bug-labels-overlap", plant(exploded, "Math.max(routes[i].hint, k ? ys[k - 1] + LABEL_STEP : PAD)", "k ? ys[k - 1] : PAD")), expect: /labels overlap/ },
-  // Labels fit 18 ordinary characters, so the wrap and overrun cases need a deliberately wide name.
-  { file: write3("bug-label-wraps", plant(plant(exploded, 'whiteSpace: "nowrap",', ""), '"name": "Outside services"', '"name": "Wwwwwwwwww Wwwwwww"')), expect: /Label \d wraps/ },
-  { file: write3("bug-leader-drift", plant(exploded, 'return at(i, x + (side[i] === "left" ? 0.1 : -0.1) * 2 * hw, y);', 'return at(i, x + 80 + (side[i] === "left" ? 0.1 : -0.1) * 2 * hw, y);')), expect: /Leader line \d does not start on its part/ },
-  { file: write3("bug-gutter", plant(exploded, '"name": "Outside services"', '"name": "WWWWWWWWWWWWWWWWWW"')), expect: /Label 7 leaves its gutter/ },
-  // warnings: these pass, and say what to look at
-  { file: write3("warn-long-name", plant(exploded, '"name": "Outside services"', '"name": "Wwwwwwwwww Wwwwwww"')), expect: null, warns: /Label 7 runs \d+px past its gutter/ },
-  { file: write3("warn-not-drawn", withParts(exploded, (parts) => parts.slice(0, 6), { rewire: true })), expect: null, warns: /Not drawn: Email \(service\)/ },
-  { file: write3("warn-one-tier", withParts(exploded, (parts) => [parts[1], parts[2], { ...parts[5], role: "feature", from: ["area:lib/ai"] }], { rewire: true })), expect: null, warns: [/has no links/, /slider has nothing to open/] },
-  { file: write3("warn-leader-crosses", plant(exploded, "if (!hit.length) return direct;", "return direct;")), expect: null, warns: /Leader line \d runs across part/ },
-  // interaction
-  { file: write3("bug-no-slider", plant(exploded, 'type="range"', 'type="number"')), expect: /No "Open layers" slider/ },
-  { file: write3("bug-dead-slider", plant(exploded, "const gap = 8 + ((gOpen - 8) * o) / 100;", "const gap = 8;")), expect: /Slider does not open the layers/ },
-  { file: write3("bug-dead-arrows", plant(exploded, "ArrowDown: sel + 1", "ArrowDown: sel")), expect: /ArrowDown in the part list does not move the selection/ },
-  { file: write3("bug-no-hover", plant(exploded, 'onPointerEnter={() => setPicked(i)}\n                      onClick={() => setPicked(i)}\n                      className="xv-ease"', 'onClick={() => setPicked(i)}\n                      className="xv-ease"')), expect: /Pointing at a part does not highlight it/ },
-  { file: write3("bug-no-ink", plant(exploded, "const c = w.hot ? T.ink : T.soft;", "const c = T.soft;")), expect: /Selecting a part does not ink its links/ },
-];
+const factsFile = path.join(OUT, "recipe-facts.json");
+const vyo = (...args) => spawnSync(process.execPath, [VYO, ...args], { encoding: "utf8" });
+const scan = vyo("scan", path.join(HERE, "fixtures", "recipe"), "--out", factsFile);
+if (scan.status !== 0) {
+  console.error(scan.stderr);
+  process.exit(1);
+}
+const hash = JSON.parse(fs.readFileSync(factsFile, "utf8")).hash;
+const preset = (id) => ({ ...JSON.parse(fs.readFileSync(path.join(TOOLS, "presets", `${id}.json`), "utf8")), facts: hash });
 
 let failed = 0;
-// check() takes one state and one facts override per call, so cases that set them run in their own call.
-const groups = new Map();
-for (const c of cases) {
-  const key = JSON.stringify([c.state ?? null, c.facts ?? null]);
-  if (!groups.has(key)) groups.set(key, { state: c.state, facts: c.facts, cases: [] });
-  groups.get(key).cases.push(c);
-}
-const matches = (expect, errors) => (Array.isArray(expect) ? expect : [expect]).every((re) => errors.some((e) => re.test(e)));
-for (const g of groups.values()) {
-  const results = await check(g.cases.map((c) => c.file), { quiet: true, state: g.state, facts: g.facts });
-  for (const [i, r] of results.entries()) {
-    const { expect, clean, warns } = g.cases[i];
-    const name = path.basename(r.file);
-    const ok = expect ? matches(expect, r.errors) : r.errors.length === 0 && (!clean || r.warnings.length === 0) && (!warns || matches(warns, r.warnings));
-    if (!ok) failed++;
-    console.log(`${ok ? "ok  " : "FAIL"} ${name}${expect ? `  expects ${[].concat(expect).join(" + ")}` : `  expects PASS${warns ? ` and ! ${[].concat(warns).join(" + ")}` : ""}`}`);
-    if (!ok) for (const e of [...r.errors.map((m) => `✗ ${m}`), ...r.warnings.map((m) => `! ${m}`)].concat(r.errors.length || r.warnings.length ? [] : ["(no errors reported)"])) console.log(`       ${e}`);
+const result = (ok, name, detail) => {
+  console.log(`${ok ? "ok" : "not ok"} - ${name}`);
+  if (!ok) {
+    failed++;
+    console.log(detail.replace(/^/gm, "    "));
   }
+};
+
+for (const id of PRESETS) {
+  const dir = path.join(OUT, id);
+  fs.mkdirSync(dir, { recursive: true });
+  const specFile = path.join(dir, "recipe-poster.json");
+  fs.writeFileSync(specFile, JSON.stringify(preset(id), null, 2));
+  const r = vyo("render", specFile, "--facts", factsFile);
+  result(r.status === 0 && /^PASS$/m.test(r.stdout) && !/^✗/m.test(r.stderr), `preset ${id} renders and passes every check`, r.stdout + r.stderr);
+  const thumb = path.join(dir, "recipe-poster-thumb.png");
+  const wh = fs.existsSync(thumb) ? [fs.readFileSync(thumb).readUInt32BE(16), fs.readFileSync(thumb).readUInt32BE(20)] : [];
+  result(wh[0] === 280 && wh[1] === 396 && r.stdout.includes(thumb), `preset ${id} writes a 280x396 thumb and prints it`, `${wh}\n${r.stdout}`);
 }
 
-// --state values: JSON when it parses, else text.
-try {
-  assert.deepEqual(parseState(["openExploded=0", "themeExploded=dark", 'themeExploded2="dark"', "partExploded=3", "showGridExploded=true", "note=a=b"]), {
-    openExploded: 0, themeExploded: "dark", themeExploded2: "dark", partExploded: 3, showGridExploded: true, note: "a=b",
+const fill = (id, shape, words, extra = {}) => ({ kind: "fill", id, ...shape, words, tone: "mid", ...extra });
+const PLANTED = [
+  ["a file path", "hourglass", (s) => (s.notes[0].text = "Saved by lib/plan/save.ts each week."), /^✗ spec: notes\[0\]\.text: a file path/m],
+  ["jargon", "eye", (s) => (s.headline = "Your recipes behind one API."), /^✗ spec: headline: jargon: "api"/m],
+  ["a hot word not in the figure", "ribbon", (s) => (s.hot = "breakfast"), /^✗ spec: hot: "breakfast" must be in a fill region's words/m],
+  ["a fourth note", "hourglass", (s) => s.notes.push({ title: "More", text: "One more note." }), /^✗ spec: notes: 4 notes; use 2 or 3/m],
+  ["a stale facts hash", "warm-start", (s) => (s.facts = "000000000000"), /^✗ facts-hash: spec\.facts is 000000000000 but facts\.json is /m],
+  ["a note that runs into the bottom line", "eye", (s) => (s.notes[1].text = "Plain words that keep going. ".repeat(8).slice(0, 220).replace(/ /g, "")), /^✗ blocks-(apart|inside): /m],
+  ["an accent equal to the ink, so ink reads as hot without data-hot", "hourglass", (s) => (s.accent = "#161616"), /^✗ hot-tagged: .+ is in the accent colour without data-hot/m],
+  [
+    "two overlapping paths",
+    "hourglass",
+    (s) => s.figure.regions.push(fill("pile", { path: "M 300 200 H 540 V 400 H 300 Z" }, ["recipes", "cravings"])),
+    /^✗ regions-apart: regions inputs and pile touch at y \d+/m,
+  ],
+  ["a 30px path", "hourglass", (s) => s.figure.regions.push(fill("sliver", { path: "M 600 760 H 780 V 790 H 600 Z" }, ["recipes", "cravings"])), /^✗ region-size: region sliver has \d rows; it needs at least 4/m],
+  [
+    "one tiny region",
+    "hourglass",
+    (s) => (s.figure.regions = [fill("dot", { ellipse: { cx: 420, cy: 620, rx: 90, ry: 60 } }, ["recipes", "cravings", "leftovers"])]),
+    /^✗ silhouette: the figure covers \d+% of the sheet above the footer; it needs 15%/m,
+  ],
+  [
+    "14 long words in a small path",
+    "hourglass",
+    (s) => (s.figure.regions[1] = fill("outputs", { ellipse: { cx: 420, cy: 760, rx: 200, ry: 70 } }, Array.from({ length: 14 }, (_, i) => `weeknight dinner ${"abcdefghijklmn"[i]}`))),
+    /^✗ words-drawn: region outputs: "weeknight dinner [a-n]" never drawn; shorten the list or enlarge the path/m,
+  ],
+  ["an aside placed on a dots line", "warm-start", (s) => s.figure.texts.push({ role: "aside", id: "stray", text: "Plan once.", x: 200, y: 120, w: 160 }), /^✗ blocks-apart: (stray overlaps the dots line "PLAN"|the dots line "PLAN" overlaps stray)/m],
+  [
+    "a box with a slanted top",
+    "hourglass",
+    (s) => (s.figure.regions[1] = fill("outputs", { polygon: [[100, 640], [740, 600], [740, 860], [100, 860]] }, ["lists", "dinners", "the plan"])),
+    /^✗ row-variety: region outputs is a box; a silhouette changes width along its whole height/m,
+  ],
+  ["a region below the footer", "hourglass", (s) => (s.figure.regions[1].profile.at(-1)[0] = 950), /^✗ path: region outputs reaches 66px below the footer; move it up by 66$/m],
+  [
+    "a text block over a field's foothill",
+    "terrain",
+    (s) => s.figure.texts.push({ role: "paragraph", id: "lid", text: "Plan once and eat well.", x: 40, y: 1140, w: 110 }),
+    /^✗ field-parts: region terrain: part "page frame" \(area:app\) is never drawn; move the text blocks that cover it$/m,
+  ],
+  ["an accent that names no part", "terrain", (s) => (s.figure.regions[0].accent = "area:nowhere"), /^✗ field-parts: region terrain: accent area:nowhere names no part/m],
+  ["a loose poster with no legend", "wave", (s) => (s.figure.texts = s.figure.texts.filter((t) => t.role !== "legend")), /^✗ spec: figure\.texts: 0 legends; use exactly 1$/m],
+  [
+    "a legend without the accent part's name",
+    "river",
+    (s) => (s.figure.texts.find((t) => t.role === "legend").text = "Each stream is a part of Pantry, as thick as its code; streams merge where they use each other."),
+    /^✗ legend: must say what the picture encodes; name the accent part \("the plan"\) and the measure \("merge" or "join" or "flow"\)$/m,
+  ],
+  ["a record line with no commit", "terrain", (s) => delete s.product.commit, /^✗ record: the record line has no commit; set product\.commit to the short hash/m],
+  ["a fits without the field's keyword", "wave", (s) => (s.figure.regions[0].fits = "Pantry as a band of its own parts."), /^✗ fits: region wave: fits must say why a wave matches the product's story; use "travel" or "flow" or "hand" or "move"$/m],
+];
+
+for (const [name, id, mutate, expect] of PLANTED) {
+  const spec = preset(id);
+  mutate(spec);
+  const file = path.join(OUT, "planted.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(r.status === 1 && expect.test(r.stderr), `planted bug (${name}) fails with ${expect}`, `exit ${r.status}\n${r.stderr}`);
+}
+
+{
+  const spec = preset("warm-start");
+  spec.notBuilt = ["a", "b", "c", "d", "e", "f"].map((c) => `${c} weekly summary email to people`);
+  const file = path.join(OUT, "long-not-built.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(r.status === 0 && !/^✗/m.test(r.stderr), "six 32-character not-built items render on their own lines and pass", `exit ${r.status}\n${r.stderr}`);
+}
+
+{
+  const spec = preset("hourglass");
+  spec.figure.regions.push(fill("post", { polygon: [[690, 380], [780, 380], [780, 500], [690, 500]] }, ["recipes", "cravings"]));
+  const file = path.join(OUT, "column.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(/^! thin-region: region post reads as a column; widen it or make it part of the main silhouette/m.test(r.stderr), "a 90px-wide column warns thin-region", `exit ${r.status}\n${r.stderr}`);
+}
+
+// The sketch lays a field out in Node with Commit Mono's fixed advance; the page measures the font. Given the
+// page's own text blocks, both must place every row within 2px.
+const facts = JSON.parse(fs.readFileSync(factsFile, "utf8"));
+for (const id of PRESETS.filter((p) => preset(p).figure.regions.some((r) => r.kind === "field"))) {
+  const spec = preset(id);
+  const page = await renderPage({ html: buildPage(spec, facts), base: path.join(OUT, `${id}-twin`), png: false, pdf: false });
+  const blocks = page.blocks.filter((b) => b.role).map((b) => b.rect);
+  const node = spec.figure.regions.flatMap((r) => fieldItems(spec, r, facts, blocks));
+  const far = node.filter((n, i) => {
+    const r = page.rows[i]?.rect;
+    return !r || Math.abs(r.left - n.x) > 2 || Math.abs(r.top - n.y) > 2 || Math.abs(r.right - (n.x + n.width)) > 2;
   });
-  assert.throws(() => parseState(["nokey"]), /key=value/);
-  console.log("ok   --state values parse");
-} catch (e) {
-  failed++;
-  console.log(`FAIL --state values parse\n       ${e.message}`);
+  result(node.length === page.rows.length && !far.length, `${id}: the sketch and the page place the same ${node.length} rows within 2px`, `node ${node.length} rows, page ${page.rows.length}; first apart: ${JSON.stringify(far[0])} vs ${JSON.stringify(page.rows[node.indexOf(far[0])]?.rect)}`);
 }
 
-// The scanner and the wire tool have their own unit tests.
-const unit = spawnSync(process.execPath, ["--test", path.join(TOOLS, "test", "scan.test.mjs"), path.join(TOOLS, "test", "wire.test.mjs")], { cwd: TOOLS, encoding: "utf8" });
-if (unit.status === 0) console.log(`ok   scan + wire unit tests (${/^# pass (\d+)/m.exec(unit.stdout)?.[1] ?? "?"} pass)`);
-else {
-  failed++;
-  console.log(`FAIL scan + wire unit tests\n${unit.stdout.split("\n").filter((l) => /^\s*not ok|^# (fail|tests)/.test(l)).map((l) => `       ${l.trim()}`).join("\n") || unit.stderr}`);
+const emptyFacts = path.join(OUT, "empty-facts.json");
+vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
+{
+  const r = vyo("compose", emptyFacts, "--out", path.join(OUT, "empty-field.json"));
+  result(r.status === 1 && /^✗ no parts to draw; the scan found no code\. Compose a fill poster instead: vyo compose .+ --from <preset>/m.test(r.stderr) && !fs.existsSync(path.join(OUT, "empty-field.json")), "compose refuses a field when the scan found no code", `exit ${r.status}\n${r.stderr}`);
+}
+{
+  const spec = { ...preset("hourglass"), facts: JSON.parse(fs.readFileSync(emptyFacts, "utf8")).hash };
+  const file = path.join(OUT, "empty.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", emptyFacts);
+  result(r.status === 0 && /^! facts-empty: no application facts/m.test(r.stderr), "an app with no facts still renders, with a warning", `exit ${r.status}\n${r.stderr}`);
 }
 
-// Type-check the three starters against the cursor/canvas shim.
-fs.writeFileSync(path.join(OUT, "tsconfig.json"), JSON.stringify({
-  compilerOptions: {
-    jsx: "react-jsx", strict: true, noEmit: true, target: "es2020", module: "esnext", moduleResolution: "bundler", skipLibCheck: true,
-    typeRoots: [path.join(TOOLS, "node_modules", "@types")],
-    paths: { "cursor/canvas": [path.join(TOOLS, "shim", "canvas.tsx")], "react": [path.join(TOOLS, "node_modules", "@types", "react")], "react/jsx-runtime": [path.join(TOOLS, "node_modules", "@types", "react", "jsx-runtime")] },
-  },
-  files: [cases[0].file, cases[1].file, cases[2].file],
-}));
-try {
-  execFileSync(process.execPath, [path.join(TOOLS, "node_modules", "typescript", "bin", "tsc"), "-p", OUT], { stdio: "pipe" });
-  console.log("ok   starters type-check");
-} catch (e) {
-  failed++;
-  console.log(`FAIL starters type-check\n${e.stdout}`);
-}
-
-console.log(failed ? `\n${failed} failure(s)` : "\nAll checks behave as expected");
-process.exit(failed ? 1 : 0);
+if (pure.status !== 0) console.log("✗ the pure tests failed (see above)");
+console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length} planted bugs caught`);
+process.exit(failed || pure.status !== 0 ? 1 : 0);
