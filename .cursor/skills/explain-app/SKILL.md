@@ -19,11 +19,10 @@ Run commands from this skill's directory. `<repo>` is the app's directory, `<nam
 ## Set up once
 
 ```bash
-npm install --prefix tools
-bash tools/fetch-fonts.sh
+npm install
 ```
 
-For Chromium, run `npx --prefix tools playwright install chromium` or set `VYO_CHROMIUM`.
+For Chromium, run `npx playwright install chromium` or set `VYO_CHROMIUM`.
 
 ## Make the poster
 

@@ -1,0 +1,25 @@
+{
+  "name": "@litterthanlit/vyo",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Explain an app to someone who does not code: scan a repo, compose a poster of its parts, render it to PNG and PDF, and check it.",
+  "bin": { "vyo": "tools/vyo.mjs" },
+  "files": [
+    "SKILL.md",
+    "examples.md",
+    "plain-language-rules.md",
+    "project-context.example.md",
+    "tools/",
+    "!tools/test/",
+    "fonts/",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node tools/test/run.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.56.1"
+  },
+  "engines": { "node": ">=18.3" },
+  "publishConfig": { "access": "public" }
+}

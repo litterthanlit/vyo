@@ -27,15 +27,14 @@ Exit codes: 0 when everything passes (warnings go to stderr as `! ` lines), 1 on
 
 ## Setup
 
-Run these from the skill directory.
+Run these from the package root, the skill directory.
 
 ```bash
-npm install --prefix tools
-bash tools/fetch-fonts.sh               # Commit Mono and Newsreader into tools/fonts/ (not committed)
-npx --prefix tools playwright install chromium   # or set VYO_CHROMIUM=/path/to/chromium
+npm install
+npx playwright install chromium   # or set VYO_CHROMIUM=/path/to/chromium
 ```
 
-Render fails with `run tools/fetch-fonts.sh` when `tools/fonts/` is missing. The masthead uses Inter Display if it is installed, then Inter, then Helvetica or Arial. The tools never download Helvetica.
+The fonts, Commit Mono and Newsreader, are bundled in `fonts/` at the package root under the SIL Open Font License (`fonts/LICENSE.md`). The masthead uses Inter Display if it is installed, then Inter, then Helvetica or Arial. The tools never download Helvetica.
 
 ## The spec
 

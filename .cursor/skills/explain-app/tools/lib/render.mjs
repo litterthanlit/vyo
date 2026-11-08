@@ -11,7 +11,7 @@ import { regionParts, partTies } from "./parts.mjs";
 import { FIELDS } from "./fields/index.mjs";
 
 const TOOLS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-export const FONT_DIR = path.join(TOOLS, "fonts");
+export const FONT_DIR = path.join(TOOLS, "..", "fonts");
 const FONTS = [
   ["Commit Mono", 400, "commit-400.otf", "font/otf"],
   ["Commit Mono", 700, "commit-700.otf", "font/otf"],
@@ -168,7 +168,7 @@ const CHROME = { swiss: footer, loose: record };
 
 function fontFaces() {
   const missing = FONTS.filter(([, , file]) => !fs.existsSync(path.join(FONT_DIR, file)));
-  if (missing.length) throw new Error(`fonts missing in ${FONT_DIR} (${missing.map((f) => f[2]).join(", ")}): run tools/fetch-fonts.sh`);
+  if (missing.length) throw new Error(`fonts missing in ${FONT_DIR} (${missing.map((f) => f[2]).join(", ")}): reinstall @litterthanlit/vyo`);
   return FONTS.map(
     ([family, weight, file, type]) =>
       `@font-face{font-family:"${family}";font-weight:${weight};src:url(data:${type};base64,${fs.readFileSync(path.join(FONT_DIR, file)).toString("base64")})}`,
