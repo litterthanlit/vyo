@@ -1,8 +1,9 @@
 // `vyo sketch`: the figure as ASCII at 20px cells, laid out in Node with the page's own geometry and
 // Commit Mono's fixed advance, so the agent sees rows, coverage, each region's widths and the floor before rendering.
-import { SHEET, GRID, ADVANCE, regionRows, fillRows, dotsLines } from "./geometry.mjs";
+import { SHEET, GRID, regionRows, fillRows, dotsLines, fixedMeasure } from "./geometry.mjs";
 import { hasWord, PLACEHOLDER } from "./spec.mjs";
-import { floorOf, fieldFrame, LINE_HEIGHT, textSize } from "./render.mjs";
+import { floorOf, fieldItems as layoutField, listItems, recordOf } from "./render.mjs";
+import { frameOf, roleOf, textSize, lineHeight, ruleText, recordRect } from "./frame.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { regionParts } from "./parts.mjs";
 import { figureStats, regionStats, SILHOUETTE, REGION, boxMessage, thinMessage } from "./check.mjs";
@@ -11,9 +12,6 @@ const CELL = 20;
 const COLS = SHEET.width / CELL;
 const ROWS = Math.ceil(SHEET.height / CELL);
 const LETTERS = "ABCDEF";
-// Average advance per character, in em, for the proportional faces; the masthead shrinks to its w.
-const EM = { masthead: 0.45, headline: 0.45, display: 0.5 };
-
 function wrap(text, perLine) {
   const lines = [];
   for (const word of text.split(/\s+/)) {
@@ -24,35 +22,26 @@ function wrap(text, perLine) {
   return lines;
 }
 
-/** Where a text block's letters land, estimated: B9's line heights and per-character widths. */
-export function estimateText(t, spec) {
-  const size = textSize(t);
-  const lh = LINE_HEIGHT[t.role](size);
-  let lines;
-  let width;
-  if (t.role === "masthead") {
-    lines = [`${spec.product.name}.`];
-    width = Math.min(t.w, lines[0].length * EM.masthead * size);
-  } else if (t.role === "label") {
-    lines = [t.text];
-    width = Math.min(t.w, t.text.length * (ADVANCE + (t.hot ? 0.18 : 0.12)) * size);
-  } else {
-    const per = t.role === "aside" ? ADVANCE * size : EM[t.role] * size;
-    lines = wrap((t.role === "headline" ? spec.headline : t.text).replace(/\*\*/g, ""), Math.max(1, Math.floor(t.w / per)));
-    width = Math.min(t.w, Math.max(...lines.map((l) => l.length)) * per);
-  }
+/** Where a text block's letters land, estimated from its role's line height and average advance. */
+export function estimateText(t, spec, facts) {
+  const role = roleOf(spec, t);
+  const size = textSize(spec, t);
+  const per = (frameOf(spec) === "swiss" && t.role === "label" && t.hot ? role.em + 0.06 : role.em) * size;
+  const one = (text) => [text];
+  const lines = {
+    name: () => one(frameOf(spec) === "swiss" ? `${spec.product.name}.` : spec.product.name.toUpperCase()),
+    headline: () => wrap(spec.headline, Math.max(1, Math.floor(t.w / per))),
+  }[role.prints]?.() ?? (t.role === "list" ? (facts || !t.parts ? listItems(spec, t, facts) : ["x".repeat(12)]) : t.role === "rule" ? [ruleText(t)] : t.role === "label" ? one(t.text) : wrap(t.text.replace(/\*\*/g, ""), Math.max(1, Math.floor(t.w / per))));
+  const width = Math.min(t.w, Math.max(...lines.map((l) => l.length)) * per);
   const left = t.align === "right" ? t.x + t.w - width : t.align === "center" ? t.x + (t.w - width) / 2 : t.x;
-  return { id: t.id, left, top: t.y, right: left + width, bottom: t.y + lines.length * lh, lines: lines.length };
+  return { id: t.id, left, top: t.y, right: left + width, bottom: t.y + lines.length * lineHeight(spec, t), lines: lines.length };
 }
 
 const placeholder = (list) => !Array.isArray(list) || list.some((w) => typeof w === "string" && w.trim().startsWith(PLACEHOLDER));
 
-/** Commit Mono's fixed advance stands in for the page's measured text. */
-export const fixedMeasure = (text, size) => text.length * ADVANCE * size;
-
 /** A field region's rows as the page lays them out, around the estimated text blocks. */
-export function fieldItems(spec, region, facts, texts = spec.figure.texts.map((t) => estimateText(t, spec))) {
-  return FIELDS[region.field].layout(region, regionParts(region, facts), { ...fieldFrame(spec), blocks: texts, measure: fixedMeasure });
+export function fieldItems(spec, region, facts, texts = spec.figure.texts.map((t) => estimateText(t, spec, facts))) {
+  return layoutField(spec, region, facts, texts);
 }
 
 /**
@@ -64,7 +53,9 @@ export function sketch(spec, facts) {
   const floor = floorOf(spec);
   const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(" "));
   const put = (r, c, ch) => r >= 0 && r < ROWS && c >= 0 && c < COLS && (grid[r][c] = ch);
-  const texts = spec.figure.texts.map((t) => estimateText(t, spec));
+  const loose = frameOf(spec) === "loose";
+  const texts = spec.figure.texts.map((t) => estimateText(t, spec, facts));
+  if (loose) texts.push({ id: "record", ...recordRect(recordOf(spec, facts)) });
   const rowRects = [];
   const dotRects = [];
   const fieldRects = [];
@@ -136,11 +127,11 @@ export function sketch(spec, facts) {
     const label = b.id.slice(0, Math.max(0, c1 - c0 - 1));
     const lr = r1 > r0 + 1 ? r0 + 1 : r0;
     [...label].forEach((ch, i) => put(lr, c0 + 1 + i, ch));
-    if (b.bottom > floor) notes.push(`text ${b.id} reaches ${Math.ceil(b.bottom - floor)}px below the floor`);
+    if (!loose && b.bottom > floor) notes.push(`text ${b.id} reaches ${Math.ceil(b.bottom - floor)}px below the floor`);
   }
 
-  const footRow = Math.floor(floor / CELL);
-  for (let c = 0; c < COLS; c++) put(footRow, c, "=");
+  const footRow = loose ? ROWS - 1 : Math.floor(floor / CELL);
+  if (!loose) for (let c = 0; c < COLS; c++) put(footRow, c, "=");
 
   const s = figureStats([...rowRects, ...fieldRects], dotRects, floor);
   const perRegion = regionStats(rowRects);
@@ -154,7 +145,7 @@ export function sketch(spec, facts) {
     "",
     `regions: ${legend.join(", ")}; · marks hot rows`,
     `texts: ${texts.map((b) => `${b.id} ${Math.round(b.left)},${Math.round(b.top)} to ${Math.round(b.right)},${Math.round(b.bottom)}`).join("; ")}`,
-    `floor: ${floor}`,
+    loose ? "floor: the sheet's bottom edge (loose frame)" : `floor: ${floor}`,
     `${[s.coverage >= SILHOUETTE.coverage, s.height >= SILHOUETTE.height, s.width >= SILHOUETTE.width].every(Boolean) ? "" : "! "}coverage ${Math.round(s.coverage * 100)}% (needs ${Math.round(SILHOUETTE.coverage * 100)}%, ${ok(s.coverage, SILHOUETTE.coverage)}), height ${Math.round(s.height * 100)}% (needs ${Math.round(SILHOUETTE.height * 100)}%, ${ok(s.height, SILHOUETTE.height)}), width ${Math.round(s.width * 100)}% (needs ${Math.round(SILHOUETTE.width * 100)}%, ${ok(s.width, SILHOUETTE.width)})`,
     ...(perRegion.length ? perRegion.map((r) => `region ${r.id}: spread/mean ${r.variety.toFixed(2)} (needs ${REGION.variety}), ${Math.round(r.width)}px across on average (needs ${REGION.width})`) : fieldRects.length ? [] : ["regions: no fill rows"]),
     ...notes.map((n) => `! ${n}`),

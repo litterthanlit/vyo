@@ -110,7 +110,7 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 | `one-region` | ! | The figure is a single fill region with no hot rows and no hot label. A figure with dots, or with more than one region, never trips it |
 | `drawn` | ✗ | The fill script ran to the end: the page raised no error and set `window.drawn` |
 | `fonts` | ✗ | `document.fonts` holds a `FontFace` with status `loaded` for Commit Mono 400, Commit Mono 700 and Newsreader 400 |
-| `masthead-font` | ! | Inter Display or Inter is installed for the product name |
+| `masthead-font` | ! | Inter Display or Inter is installed for the product name. Swiss only |
 | `path` | ✗ | Every outline parses and has a non-empty bounding box inside the sheet and above the footer. The message says `region <id> reaches <n>px below the footer; move it up by <n>` |
 | `rows-fit` | ✗ | Every `.row` has `scrollWidth ≤ clientWidth` and sits inside the 840×1190 sheet |
 | `region-size` | ✗ | Every fill region has at least 4 rows, and every dots region fits. The message names the region. Fields are exempt |
@@ -125,9 +125,10 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 | `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens, `cold` and `cool` included; a field's rows may also take the field's own tokens |
 | `hot-tagged` | ✗ | Anything in the hot colour carries `data-hot` |
 | `copy` | ✗ | The visible words hold no banned term, file path, "01/02/03" marker or middle dot. The masthead and the render-owned footer lines are exempt |
-| `notes` | ✗ | The footer shows every note in `spec.notes` |
-| `band` | ✗ | The footer counts line equals the line built from `bandCounts(facts)` |
-| `headline-lines` | ! | The headline wraps to more than 2 lines |
+| `notes` | ✗ | Swiss: the footer shows exactly the notes in `spec.notes`. Loose: 0 to 2 paragraphs and exactly one legend. Message: `the poster shows <n> paragraphs and <n> legends; use 0 to 2 paragraphs and exactly one legend` |
+| `band` | ✗ | The footer counts line equals the line built from `bandCounts(facts)`. Swiss only |
+| `record` | ✗ | Loose only. The record line is drawn once and reads `<name> at <commit>, <date>. Drawn by Vyo.`. Without `product.commit`: `the record line has no commit; set product.commit to the short hash (vyo compose --repo fills it)` |
+| `headline-lines` | ! | The headline wraps to more than 2 lines. Swiss only |
 
 ## Sketch output
 

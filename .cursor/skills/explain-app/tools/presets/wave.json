@@ -1,5 +1,6 @@
 {
   "version": 3,
+  "frame": "swiss",
   "facts": "000000000000",
   "product": {
     "name": "Pantry",
@@ -9,12 +10,12 @@
   "theme": "light",
   "headline": "A week of dinners, planned in one go.",
   "figure": {
-    "fits": "Pantry as a wave of its own parts, one row per share of its code, with the part that builds the week's plan in the accent.",
     "regions": [
       {
         "kind": "field",
         "id": "wave",
         "field": "wave",
+        "fits": "Pantry as a wave of its own parts, one row per share of its code, with the part that builds the week's plan in the accent.",
         "accent": "area:lib/plan",
         "names": {
           "area:.": "saved recipes",

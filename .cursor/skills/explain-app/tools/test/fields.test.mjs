@@ -8,7 +8,7 @@ import { waveRows, rowsPerPart, WAVE } from "../lib/fields/wave.mjs";
 import { terrainRows, TERRAIN } from "../lib/fields/terrain.mjs";
 import { regionParts } from "../lib/parts.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
-import { fixedMeasure } from "../lib/sketch.mjs";
+import { fixedMeasure } from "../lib/geometry.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const recipe = scanRepo(path.join(HERE, "fixtures", "recipe"));

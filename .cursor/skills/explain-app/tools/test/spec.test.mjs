@@ -67,9 +67,9 @@ test("words and dots lines have limits", () => {
 });
 
 test("texts: one masthead, at most one headline, roles and sizes", () => {
-  rejects((s) => s.figure.texts.splice(5, 1, { role: "masthead", id: "second", x: 10, y: 10, w: 200 }), /^figure\.texts: 2 mastheads; use exactly one/);
+  rejects((s) => s.figure.texts.splice(5, 1, { role: "masthead", id: "second", x: 10, y: 10, w: 200 }), /^figure\.texts: 2 mastheads; use exactly 1/);
   rejects((s) => (s.figure.texts = s.figure.texts.filter((t) => t.role !== "masthead")), /^figure\.texts: 0 mastheads/);
-  rejects((s) => s.figure.texts.splice(5, 1, { role: "headline", id: "again", x: 10, y: 900, w: 200 }), /^figure\.texts: 2 headlines/);
+  rejects((s) => s.figure.texts.splice(5, 1, { role: "headline", id: "again", x: 10, y: 900, w: 200 }), /^figure\.texts: 2 headlines; use 0 to 1/);
   rejects((s) => (s.figure.texts[0].size = 200), /^figure\.texts\[0\]\.size: 48 to 120/);
   rejects((s) => (s.figure.texts[3].hot = true), /^figure\.texts\[3\]\.hot: only a label can be hot/);
   rejects((s) => (s.figure.texts[0].text = "Pantry"), /^figure\.texts\[0\]\.text: the masthead prints product\.name/);
@@ -116,14 +116,15 @@ test("a scaffold is rejected until every placeholder is written: a field by defa
     const spec = scaffoldSpec(facts, { theme: p ? p.theme : "light", date: "2026-10-28", floor: 884, preset: p, unplain: [{ id: "area:lib", name: "Convex" }] });
     const errors = validateSpec(spec);
     const field = p ? [/^hot: still the placeholder/, /still the placeholder; write \d+ to \d+ (nouns|words)/] : [/^figure\.regions\[0\]\.sentence: still the placeholder/, /^figure\.regions\[0\]\.names\["area:lib"\]: still the placeholder/];
-    for (const want of [/^headline: still the placeholder/, /^figure\.fits: still the placeholder/, /^notes\[0\]\.title: still the placeholder/, ...field]) {
+    const fits = p ? /^figure\.fits: still the placeholder/ : /^figure\.regions\[0\]\.fits: still the placeholder/;
+    for (const want of [/^headline: still the placeholder/, fits, /^notes\[0\]\.title: still the placeholder/, ...field]) {
       assert.ok(errors.some((e) => want.test(e)), `${from ?? "no preset"}: expected ${want} in ${JSON.stringify(errors)}`);
     }
     if (p) assert.deepEqual(spec.figure.regions.map((r) => r.profile ?? r.ellipse ?? r.x), p.figure.regions.map((r) => r.profile ?? r.ellipse ?? r.x), "geometry kept");
     else assert.ok(!errors.some((e) => /^hot/.test(e)), "a field scaffold has no hot word to write");
   }
   const terrain = scaffoldSpec(facts, { theme: "dark", date: "2026-10-28", floor: 884, field: "terrain", accent: "area:lib/ai" });
-  assert.deepEqual(terrain.figure.regions, [{ kind: "field", id: "terrain", field: "terrain", accent: "area:lib/ai" }]);
+  assert.deepEqual(terrain.figure.regions.map(({ fits, ...r }) => r), [{ kind: "field", id: "terrain", field: "terrain", accent: "area:lib/ai" }]);
 });
 
 test("isJargon is exact, whole-word tokens", () => {
@@ -153,7 +154,8 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
   const withField = (region) => () => {
     const s = good();
     delete s.hot;
-    s.figure.regions = [{ kind: "field", id: "wave", field: "wave", ...region }];
+    delete s.figure.fits;
+    s.figure.regions = [{ kind: "field", id: "wave", field: "wave", fits: "Pantry's week travels down the page.", ...region }];
     return s;
   };
   assert.deepEqual(validateSpec(withField({ accent: "area:lib/plan", names: { "area:lib": "kitchen" }, sentence: "plan once", every: 4 })()), []);
@@ -171,6 +173,8 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
     [{ words: ["a", "b"] }, /^figure\.regions\[0\]\.words: unknown field$/],
   ];
   for (const [region, re] of cases) rejects(() => {}, re, withField(region));
-  rejects((s) => s.figure.regions.push({ kind: "field", id: "two", field: "terrain" }), /^figure\.regions: at most 1 field region$/, withField({}));
+  rejects((s) => s.figure.regions.push({ kind: "field", id: "two", field: "terrain", fits: "x" }), /^figure\.regions: at most 1 field region$/, withField({}));
+  rejects(() => {}, /^figure\.regions\[0\]\.fits: missing$/, withField({ fits: undefined }));
+  rejects((s) => (s.figure.fits = "A shape."), /^figure\.fits: a field poster says why it fits on its field region/, withField({}));
   assert.deepEqual(errorsOf((s) => (s.hot = "kitchen"), withField({})), [], "a field's hot word is checked on the page, where its part names exist");
 });

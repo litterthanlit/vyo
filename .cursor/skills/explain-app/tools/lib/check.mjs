@@ -2,7 +2,8 @@
 // judge the measurements lib/inspect.js takes in the rendered page.
 import { validateSpec, textProblems, hasWord, geometryKey } from "./spec.mjs";
 import { bandCounts, bandLine } from "./band.mjs";
-import { FONT_FACES, tokensOf, fieldTokensOf } from "./render.mjs";
+import { FONT_FACES, tokensOf, fieldTokensOf, recordText } from "./render.mjs";
+import { frameOf, ROLES } from "./frame.mjs";
 import { partsFromFacts, regionParts, unplainName, sameNames } from "./parts.mjs";
 import { FIELDS } from "./fields/index.mjs";
 
@@ -73,7 +74,8 @@ const pageRegionStats = (page) => regionStats(fillRowsOf(page).map((r) => ({ reg
 
 /**
  * @typedef {{ spec: any, facts: any, presets: Record<string, any>, page?: any }} CheckInput
- * @type {{ id: string, level: "fail" | "warn", stage: "spec" | "page", about: string, run: (i: CheckInput) => string[] }[]}
+ * A check with `frames` runs only on posters in those frames; without, on every poster.
+ * @type {{ id: string, level: "fail" | "warn", stage: "spec" | "page", frames?: ("swiss" | "loose")[], about: string, run: (i: CheckInput) => string[] }[]}
  */
 export const CHECKS = [
   {
@@ -132,7 +134,7 @@ export const CHECKS = [
       ),
   },
   {
-    id: "masthead-font", level: "warn", stage: "page", about: "Inter Display or Inter is installed for the product name",
+    id: "masthead-font", level: "warn", stage: "page", frames: ["swiss"], about: "Inter Display or Inter is installed for the product name",
     run: ({ page }) => (page.inter ? [] : ["neither Inter Display nor Inter is installed; the product name falls back to Helvetica or Arial"]),
   },
   {
@@ -198,10 +200,11 @@ export const CHECKS = [
     },
   },
   {
-    id: "blocks-apart", level: "fail", stage: "page", about: "no two text blocks overlap, rows and dots keep clear of them (a wave's rows may pass behind the figure's texts), and blocks side by side keep 8px apart",
+    id: "blocks-apart", level: "fail", stage: "page", about: "no two text blocks overlap, rows and dots keep clear of them (in the swiss frame a wave's rows may pass behind the figure's texts), and blocks side by side keep 8px apart",
     run: ({ spec, page }) => {
       const blocks = page.blocks.map((b) => ({ ...b, kind: "block" }));
-      const behind = new Set(fieldsOf(spec).filter((r) => FIELDS[r.field].behindTexts).map((r) => r.id));
+      // In the loose frame no type sits on the field, so no row passes behind a text.
+      const behind = new Set(frameOf(spec) === "swiss" ? fieldsOf(spec).filter((r) => FIELDS[r.field].behindTexts).map((r) => r.id) : []);
       const marks = [...page.rows.map((r) => ({ ...r, name: `the row "${r.word}"` })), ...page.dots.map((d) => ({ ...d, name: `the dots line "${d.word}"` }))];
       const out = [];
       const say = (a, b) => out.push(`${a.name} overlaps ${b.name} or sits within 8px of it; shorten one of them`);
@@ -287,14 +290,21 @@ export const CHECKS = [
     },
   },
   {
-    id: "notes", level: "fail", stage: "page", about: "the footer shows the spec's notes",
+    id: "notes", level: "fail", stage: "page", about: "swiss: the footer shows the spec's notes; loose: 0 to 2 paragraphs and exactly one legend",
     run: ({ spec, page }) => {
-      const n = page.blocks.filter((b) => b.name === "note").length;
-      return n === spec.notes.length ? [] : [`the footer shows ${n} notes; the spec has ${spec.notes.length}`];
+      const n = (pred) => page.blocks.filter(pred).length;
+      if (frameOf(spec) === "swiss") {
+        const shown = n((b) => b.name === "note");
+        return shown === spec.notes.length ? [] : [`the footer shows ${shown} notes; the spec has ${spec.notes.length}`];
+      }
+      const [lo, hi] = ROLES.loose.paragraph.count;
+      const paragraphs = n((b) => b.role === "paragraph");
+      const legends = n((b) => b.role === "legend");
+      return paragraphs >= lo && paragraphs <= hi && legends === 1 ? [] : [`the poster shows ${paragraphs} paragraphs and ${legends} legends; use ${lo} to ${hi} paragraphs and exactly one legend`];
     },
   },
   {
-    id: "band", level: "fail", stage: "page", about: "the footer counts match facts.json",
+    id: "band", level: "fail", stage: "page", frames: ["swiss"], about: "the footer counts match facts.json",
     run: ({ facts, page }) => {
       const want = bandLine(bandCounts(facts));
       const got = page.blocks.find((b) => b.name === "counts")?.text ?? "";
@@ -302,7 +312,17 @@ export const CHECKS = [
     },
   },
   {
-    id: "headline-lines", level: "warn", stage: "page", about: "the headline fits in two lines",
+    id: "record", level: "fail", stage: "page", frames: ["loose"], about: "the record line is drawn once, with the commit and the date",
+    run: ({ spec, page }) => {
+      const lines = page.blocks.filter((b) => b.name === "record");
+      if (lines.length !== 1) return [`the poster shows ${lines.length} record lines; it needs exactly one`];
+      if (!spec.product.commit) return ["the record line has no commit; set product.commit to the short hash (vyo compose --repo fills it)"];
+      const want = `${recordText(spec.product)}.`;
+      return lines[0].text === want ? [] : [`the record line reads "${lines[0].text}"; it should read "${want}"`];
+    },
+  },
+  {
+    id: "headline-lines", level: "warn", stage: "page", frames: ["swiss"], about: "the headline fits in two lines",
     run: ({ page }) => {
       const h = page.blocks.find((b) => b.role === "headline");
       return h && h.lines > 2 ? [`the headline runs to ${h.lines} lines; two read best`] : [];
@@ -313,7 +333,8 @@ export const CHECKS = [
 /** Run one stage of the table. Returns `{ id, level, message }` for every finding. */
 export function runChecks(stage, input) {
   const found = [];
-  for (const c of CHECKS.filter((x) => x.stage === stage)) {
+  const frame = frameOf(input.spec);
+  for (const c of CHECKS.filter((x) => x.stage === stage && (!x.frames || x.frames.includes(frame)))) {
     found.push(...c.run(input).map((message) => ({ id: c.id, level: c.level, message })));
     if (c.id === "spec" && found.length) break;
   }

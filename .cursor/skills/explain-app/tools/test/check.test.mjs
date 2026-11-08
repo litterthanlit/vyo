@@ -8,6 +8,7 @@ import { scanRepo } from "../lib/scan/index.mjs";
 
 const region = (id, words, extra = {}) => ({ kind: "fill", id, polygon: [[0, 0], [10, 0], [10, 10]], words, tone: "mid", ...extra });
 const spec = {
+  frame: "swiss",
   theme: "light",
   hot: "leftovers",
   figure: { regions: [region("top", ["leftovers", "recipes"]), region("bottom", ["lists", "dinners"])], texts: [{ role: "masthead", id: "masthead" }] },
@@ -91,7 +92,7 @@ test("one-region warns for a single plain fill region and not when there is an a
 test("preset-copy warns only when every region's geometry is a preset's", () => {
   const p = { figure: { regions: [region("a", ["x", "y"]), region("b", ["x", "y"], { polygon: [[1, 1], [9, 1], [9, 9]] })] } };
   const warn = (regions) => runChecks("spec", { spec: { ...validish, figure: { ...validish.figure, regions } }, facts: { ...facts, hash: validish.facts }, presets: { p } }).filter((f) => f.id === "preset-copy");
-  const validish = JSON.parse(JSON.stringify({ version: 3, facts: "d73b88fe2d4e", product: { name: "Pantry", repo: "recipe", date: "2026-11-07" }, theme: "light", headline: "Dinner.", hot: "x", figure: { fits: "A shape.", regions: [], texts: [{ role: "masthead", id: "masthead", x: 50, y: 36, w: 490 }] }, notes: [{ title: "a", text: "b" }, { title: "c", text: "d" }], notBuilt: [] }));
+  const validish = JSON.parse(JSON.stringify({ version: 3, frame: "swiss", facts: "d73b88fe2d4e", product: { name: "Pantry", repo: "recipe", date: "2026-11-07" }, theme: "light", headline: "Dinner.", hot: "x", figure: { fits: "A shape.", regions: [], texts: [{ role: "masthead", id: "masthead", x: 50, y: 36, w: 490 }] }, notes: [{ title: "a", text: "b" }, { title: "c", text: "d" }], notBuilt: [] }));
   assert.equal(warn([region("mine", ["x", "y"])]).length, 1);
   assert.equal(warn([region("mine", ["x", "y"], { polygon: [[2, 2], [9, 2], [9, 9]] })]).length, 0);
 });
@@ -101,7 +102,7 @@ test("every check has a unique id, a level, a stage and a description", () => {
   for (const c of CHECKS) assert.ok(["fail", "warn"].includes(c.level) && ["spec", "page"].includes(c.stage) && c.about, c.id);
   assert.deepEqual(
     CHECKS.map((c) => c.id).sort(),
-    ["accent-part", "band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "field-parts", "fonts", "headline-lines", "hot-tagged", "masthead-font", "notes", "one-region", "palette", "part-name", "path", "preset-copy", "product-name", "region-size", "regions-apart", "row-variety", "rows-fit", "silhouette", "spec", "thin-region", "words-drawn"],
+    ["accent-part", "band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "field-parts", "fonts", "headline-lines", "hot-tagged", "masthead-font", "notes", "one-region", "palette", "part-name", "path", "preset-copy", "product-name", "record", "region-size", "regions-apart", "row-variety", "rows-fit", "silhouette", "spec", "thin-region", "words-drawn"],
   );
 });
 

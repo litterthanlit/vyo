@@ -3,8 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { hasWord, TEXT_SIZE } from "./spec.mjs";
-import { SHEET } from "./geometry.mjs";
+import { hasWord } from "./spec.mjs";
+import { SHEET, fixedMeasure } from "./geometry.mjs";
+import { frameOf, textSize, lineHeight, ruleText, recordSpot, RECORD } from "./frame.mjs";
 import { bandCounts, bandLine, provenance } from "./band.mjs";
 import { regionParts } from "./parts.mjs";
 import { FIELDS } from "./fields/index.mjs";
@@ -31,6 +32,7 @@ export const fieldTokensOf = (spec) =>
   Object.fromEntries(spec.figure.regions.filter((r) => r.kind === "field").map((r) => [r.id, FIELDS[r.field].tokens(spec.theme)]));
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const hotStop = `<span data-hot data-owner="render" style="color:var(--hot)">.</span>`;
 const json = (v) => JSON.stringify(v).replace(/</g, "\\u003c");
 const line = (s) => {
   const m = /^\*\*([^*]+)\*\*/.exec(s);
@@ -59,7 +61,8 @@ const notBuiltLines = (notBuilt) => (notBuilt.length ? wrapMeta(`Not built yet: 
 const footerHeight = (notes, notBuilt) => FOOT.notes + FOOT.noteLines[notes] * FOOT.noteLine + FOOT.gap + (notBuilt + 1) * FOOT.meta;
 /** The y of the footer's hairline for a notes count and a number of not-built lines: the figure sits above it. */
 export const floorFor = (notes, notBuilt) => SHEET.height - footerHeight(notes, notBuilt) - FOOT.below;
-export const floorOf = (spec) => floorFor(spec.notes.length, notBuiltLines(spec.notBuilt).length);
+/** The y a field's rows stop at: the swiss footer's hairline, or the sheet's bottom edge in the loose frame. */
+export const floorOf = (spec) => (frameOf(spec) === "loose" ? SHEET.height : floorFor(spec.notes.length, notBuiltLines(spec.notBuilt).length));
 export const FLOOR_STEP = FOOT.meta;
 
 function footer(spec, facts) {
@@ -80,43 +83,73 @@ ${counts ? `<div class="t" data-block="counts" data-owner="render" style="left:0
 ${notes}
 ${notBuilt.length ? `<div data-block="notBuilt" data-owner="notBuilt" style="${meta};left:0;top:${lastLine - notBuilt.length * FOOT.meta}px">${notBuilt.map(esc).join("<br>")}</div>` : ""}
 <div data-block="provenance" data-owner="render" style="${meta};left:0;top:${lastLine}px">${esc(provenance(spec.product))}</div>
-<div data-block="credit" data-owner="render" style="${meta};right:0;top:${lastLine}px">Drawn by Vyo<span data-hot data-owner="render" style="color:var(--hot)">.</span></div>
+<div data-block="credit" data-owner="render" style="${meta};right:0;top:${lastLine}px">Drawn by Vyo${hotStop}</div>
 </div>`;
 }
 
-// Line height per text role from its font size: the masthead is 88px at 84, a headline 28px at 22, an aside 18px at 12.
-export const LINE_HEIGHT = {
-  masthead: (s) => Math.round(s * 1.05),
-  headline: (s) => s + 6,
-  display: (s) => s,
-  aside: (s) => Math.round(s * 1.5),
-  label: (s) => Math.round(s * 1.25),
+const SERIF = `font-family:${esc(`"Newsreader", serif`)}`;
+// Per frame, per role: the block's own CSS and what it prints. Sizes and line heights are in lib/frame.mjs.
+const ROLE_PAGE = {
+  swiss: {
+    masthead: { style: `font-weight:700;letter-spacing:-.035em;white-space:nowrap;font-family:${esc(MAST_FONT)}`, body: (spec) => `${esc(spec.product.name)}${hotStop}` },
+    headline: { style: `${SERIF};letter-spacing:-.005em`, body: (spec) => esc(spec.headline) },
+    display: { style: `font-weight:700;letter-spacing:-.025em;font-family:${esc(MAST_FONT)}`, body: (spec, t) => esc(t.text) },
+    aside: { style: "", body: (spec, t) => line(t.text) },
+    label: { style: "letter-spacing:.12em", body: (spec, t) => esc(t.text.toUpperCase()) },
+  },
+  loose: {
+    label: { style: "letter-spacing:.17em;white-space:nowrap", body: (spec) => esc(spec.product.name.toUpperCase()) },
+    headline: { style: `${SERIF};letter-spacing:-.01em`, body: (spec) => esc(spec.headline) },
+    paragraph: { style: SERIF, body: (spec, t) => line(t.text) },
+    legend: { style: SERIF, body: (spec, t) => line(t.text) },
+    list: { style: "white-space:pre", body: (spec, t, facts) => listItems(spec, t, facts).map(esc).join("\n") },
+    rule: { style: "white-space:nowrap;overflow:hidden", body: (spec, t) => esc(ruleText(t)) },
+  },
 };
-export const textSize = (t) => t.size ?? TEXT_SIZE[t.role === "label" && t.hot ? "hotLabel" : t.role][0];
 
-const ROLE_STYLE = {
-  masthead: `font-weight:700;letter-spacing:-.035em;white-space:nowrap;font-family:${esc(MAST_FONT)}`,
-  headline: `font-family:${esc(`"Newsreader", serif`)};letter-spacing:-.005em`,
-  display: `font-weight:700;letter-spacing:-.025em;font-family:${esc(MAST_FONT)}`,
-  aside: "",
-  label: "letter-spacing:.12em",
-};
-
-function textBlock(spec, t) {
-  const size = textSize(t);
-  const hot = t.role === "label" && t.hot;
-  const style = `left:${t.x}px;top:${t.y}px;width:${t.w}px;font-size:${size}px;line-height:${LINE_HEIGHT[t.role](size)}px;text-align:${t.align || "left"};${
-    hot ? "font-weight:700;letter-spacing:.18em;color:var(--hot)" : ROLE_STYLE[t.role]
-  }`;
-  const body = {
-    masthead: () => `${esc(spec.product.name)}<span data-hot data-owner="render" style="color:var(--hot)">.</span>`,
-    headline: () => esc(spec.headline),
-    display: () => esc(t.text),
-    aside: () => line(t.text),
-    label: () => esc(t.text.toUpperCase()),
-  }[t.role]();
-  return `<div class="t" data-block="${esc(t.id)}" data-role="${t.role}" data-owner="figure"${hot ? " data-hot" : ""} style="${style}">${body}</div>`;
+/** A list's lines: its items, or the plain names of the field's parts in tree order. */
+export function listItems(spec, t, facts) {
+  if (!t.parts) return t.items;
+  const field = spec.figure.regions.find((r) => r.kind === "field");
+  return field ? regionParts(field, facts).map((p) => p.name) : [];
 }
+
+function textBlock(spec, t, facts) {
+  const frame = frameOf(spec);
+  const size = textSize(spec, t);
+  const hot = frame === "swiss" && t.role === "label" && t.hot;
+  const { style: own, body } = ROLE_PAGE[frame][t.role];
+  const style = `left:${t.x}px;top:${t.y}px;width:${t.w}px;font-size:${size}px;line-height:${lineHeight(spec, t)}px;text-align:${t.align || "left"};${
+    hot ? "font-weight:700;letter-spacing:.18em;color:var(--hot)" : own
+  }`;
+  return `<div class="t" data-block="${esc(t.id)}" data-role="${t.role}" data-owner="figure"${hot ? " data-hot" : ""} style="${style}">${body(spec, t, facts)}</div>`;
+}
+
+/** The record line's words, without the accent full stop render adds. */
+export const recordText = (product) => `${provenance(product)}. Drawn by Vyo`;
+
+/** The field's rows as Node lays them out with Commit Mono's fixed advance, around `blocks`. */
+export function fieldItems(spec, region, facts, blocks, measure = fixedMeasure) {
+  return FIELDS[region.field].layout(region, regionParts(region, facts), { ...fieldFrame(spec), blocks, measure });
+}
+
+/** Where the record line sits: clear of the field's rows as laid out with no text blocks to dodge. */
+export function recordOf(spec, facts) {
+  const rects = spec.figure.regions
+    .filter((r) => r.kind === "field")
+    .flatMap((r) => fieldItems(spec, r, facts, []))
+    .map((it) => ({ left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + it.height }));
+  const text = `${recordText(spec.product)}.`;
+  return { text, ...recordSpot(text, rects, spec.record) };
+}
+
+function record(spec, facts) {
+  const spot = recordOf(spec, facts);
+  const place = spot.side === "bottom" ? `left:${spot.x}px;top:${spot.y}px` : `left:${spot.x}px;top:${spot.y}px;transform:rotate(-90deg);transform-origin:left top`;
+  return `<div data-block="record" data-owner="render" style="position:absolute;${place};font-size:${RECORD.size}px;line-height:${RECORD.size}px;letter-spacing:${RECORD.spacing}px;color:var(--mid);white-space:nowrap">${esc(recordText(spec.product))}${hotStop}</div>`;
+}
+
+const CHROME = { swiss: footer, loose: record };
 
 function fontFaces() {
   const missing = FONTS.filter(([, , file]) => !fs.existsSync(path.join(FONT_DIR, file)));
@@ -153,7 +186,7 @@ const figureScript = () =>
 
 /** What a field's layout needs from the rest of the poster: the floor, whether the masthead sits on the right, and the theme. */
 export function fieldFrame(spec) {
-  const m = spec.figure.texts.find((t) => t.role === "masthead");
+  const m = frameOf(spec) === "swiss" && spec.figure.texts.find((t) => t.role === "masthead");
   return { floor: floorOf(spec), mirror: !!m && m.x + m.w / 2 > SHEET.width / 2, theme: spec.theme };
 }
 
@@ -179,8 +212,8 @@ html, body { background: var(--paper) }
 /* A field runs on behind the figure's texts: each sits above the rows with a 6px paper outline. */
 [data-role] { z-index: 1; -webkit-text-stroke: 12px var(--paper); paint-order: stroke fill }
 </style><script>${PRELUDE}</script></head><body><div class="sheet">
-${spec.figure.texts.map((t) => textBlock(spec, t)).join("\n")}
-${footer(spec, facts)}
+${spec.figure.texts.map((t) => textBlock(spec, t, facts)).join("\n")}
+${CHROME[frameOf(spec)](spec, facts)}
 </div><script type="application/json" id="figure">${json(figureData(spec, facts))}</script><script type="module">${figureScript()}</script></body></html>`;
 }
 

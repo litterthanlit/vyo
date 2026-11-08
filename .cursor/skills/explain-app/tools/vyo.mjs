@@ -12,7 +12,8 @@ import { showFacts } from "./lib/scan/show.mjs";
 import { scaffoldSpec, validateSpec, THEMES } from "./lib/spec.mjs";
 import { sketch } from "./lib/sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE } from "./lib/geometry.mjs";
-import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, LINE_HEIGHT } from "./lib/render.mjs";
+import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP } from "./lib/render.mjs";
+import { ROLES, FRAMES } from "./lib/frame.mjs";
 import { runChecks } from "./lib/check.mjs";
 import { FIELDS } from "./lib/fields/index.mjs";
 import { partsFromFacts, accentIds, unplainName, sameNames, PART_DEFAULTS } from "./lib/parts.mjs";
@@ -172,8 +173,8 @@ function cmdPresets(argv) {
   for (const [id, p] of Object.entries(presets)) {
     out.push(
       id,
-      `  fits: ${p.figure.fits}`,
-      `  theme: ${p.theme}${p.accent ? ` with accent ${p.accent}` : ""}, ${p.notes.length} notes`,
+      `  fits: ${p.figure.fits ?? p.figure.regions.find((r) => r.kind === "field").fits}`,
+      `  frame: ${p.frame ?? "loose"}, theme: ${p.theme}${p.accent ? ` with accent ${p.accent}` : ""}${p.notes ? `, ${p.notes.length} notes` : ""}`,
       `  regions: ${p.figure.regions.map((r) => `${r.id} (${shapeOf(r)})`).join(", ")}`,
       `  texts: ${p.figure.texts.map((t) => `${t.id} (${t.role}${t.hot ? ", hot" : ""})`).join(", ")}`,
       "",
@@ -192,9 +193,9 @@ function authoringNotes(notes, field) {
     `floor: ${floor}`,
     `  the footer's top for ${notes} notes and a one-line not-built list; each extra not-built line raises it ${FLOOR_STEP}px. Keep every region and text above it.`,
     `  The usual figure band is y 170 to ${floor}.`,
-    `masthead: ${LINE_HEIGHT.masthead(84)}px per line at size 84; it shrinks to fit w.`,
-    `headline: ${LINE_HEIGHT.headline(22)}px per line at size 22; a 224px column wraps it to 2 or 3 lines.`,
-    `aside: ${LINE_HEIGHT.aside(aside)}px per line, ${Math.round(ADVANCE * aside * 10) / 10}px per character at size ${aside}.`,
+    `masthead: ${ROLES.swiss.masthead.lh(84)}px per line at size 84; it shrinks to fit w.`,
+    `headline: ${ROLES.swiss.headline.lh(22)}px per line at size 22; a 224px column wraps it to 2 or 3 lines.`,
+    `aside: ${ROLES.swiss.aside.lh(aside)}px per line, ${Math.round(ADVANCE * aside * 10) / 10}px per character at size ${aside}.`,
     ...(field
       ? [`field: ${field}, ${FIELDS[field].about}. Its rows come from the scan and skip the text blocks; move a text block and the field makes room.`]
       : [

@@ -7,6 +7,8 @@ export const SHAPE_KEYS = ["profile", "ellipse", "polygon", "path"];
 export const GRID = { 11: { pitch: 14, probes: [2, 12] }, 12: { pitch: 16, probes: [3, 13] } };
 // Commit Mono advances 0.6em, so a row's text width is its length times this.
 export const ADVANCE = 0.6;
+/** Commit Mono's fixed advance, standing in for the page's measured text in Node. */
+export const fixedMeasure = (text, size) => text.length * ADVANCE * size;
 const MIN_RUN = 24;
 const TEXT_PAD = 12;
 

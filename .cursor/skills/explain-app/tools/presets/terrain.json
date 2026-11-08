@@ -1,5 +1,6 @@
 {
   "version": 3,
+  "frame": "swiss",
   "facts": "000000000000",
   "product": {
     "name": "Pantry",
@@ -9,12 +10,12 @@
   "theme": "dark",
   "headline": "A week of dinners, planned in one go.",
   "figure": {
-    "fits": "Pantry as a range of peaks, one per part, height by code and width by files, with the parts that plan the week and suggest recipes in orange.",
     "regions": [
       {
         "kind": "field",
         "id": "terrain",
         "field": "terrain",
+        "fits": "Pantry as a range of peaks, one per part, height by code and width by files, with the parts that plan the week and suggest recipes in orange.",
         "accent": "area:lib/*",
         "names": {
           "area:.": "saved recipes",

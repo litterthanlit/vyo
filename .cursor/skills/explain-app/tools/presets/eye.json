@@ -1,5 +1,6 @@
 {
   "version": 3,
+  "frame": "swiss",
   "facts": "000000000000",
   "product": {
     "name": "Pantry",

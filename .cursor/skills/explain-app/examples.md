@@ -45,6 +45,7 @@ Pantry's story is a flow: recipes go in, the week's plan forms, the list goes to
 ```json
 {
   "version": 3,
+  "frame": "swiss",
   "facts": "000000000000",
   "product": {
     "name": "Pantry",
@@ -54,12 +55,12 @@ Pantry's story is a flow: recipes go in, the week's plan forms, the list goes to
   "theme": "light",
   "headline": "A week of dinners, planned in one go.",
   "figure": {
-    "fits": "Pantry as a wave of its own parts, one row per share of its code, with the part that builds the week's plan in the accent.",
     "regions": [
       {
         "kind": "field",
         "id": "wave",
         "field": "wave",
+        "fits": "Pantry as a wave of its own parts, one row per share of its code, with the part that builds the week's plan in the accent.",
         "accent": "area:lib/plan",
         "names": {
           "area:.": "saved recipes",
@@ -130,6 +131,7 @@ Read as a range, Pantry shows that its screens are the biggest part and that a f
 ```json
 {
   "version": 3,
+  "frame": "swiss",
   "facts": "000000000000",
   "product": {
     "name": "Pantry",
@@ -139,12 +141,12 @@ Read as a range, Pantry shows that its screens are the biggest part and that a f
   "theme": "dark",
   "headline": "A week of dinners, planned in one go.",
   "figure": {
-    "fits": "Pantry as a range of peaks, one per part, height by code and width by files, with the parts that plan the week and suggest recipes in orange.",
     "regions": [
       {
         "kind": "field",
         "id": "terrain",
         "field": "terrain",
+        "fits": "Pantry as a range of peaks, one per part, height by code and width by files, with the parts that plan the week and suggest recipes in orange.",
         "accent": "area:lib/*",
         "names": {
           "area:.": "saved recipes",
@@ -329,6 +331,7 @@ Two profile regions meet at a narrow waist, 30px each side of x 420 where `input
 ```json
 {
   "version": 3,
+  "frame": "swiss",
   "facts": "000000000000",
   "product": { "name": "Pantry", "repo": "recipe", "date": "2026-11-07" },
   "theme": "light",
@@ -444,6 +447,7 @@ Three profile regions make one ribbon that runs from top left to bottom right. E
 ```json
 {
   "version": 3,
+  "frame": "swiss",
   "facts": "000000000000",
   "product": { "name": "Pantry", "repo": "recipe", "date": "2026-11-07" },
   "theme": "dark",
@@ -579,6 +583,7 @@ The lids are a profile with a hole, and their tone steps soft, mid, soft down th
 ```json
 {
   "version": 3,
+  "frame": "swiss",
   "facts": "000000000000",
   "product": { "name": "Pantry", "repo": "recipe", "date": "2026-11-07" },
   "theme": "light",
@@ -682,6 +687,7 @@ One dots region spells four words in squares. Its `tones` run cold, cool, ink, h
 ```json
 {
   "version": 3,
+  "frame": "swiss",
   "facts": "000000000000",
   "product": { "name": "Pantry", "repo": "recipe", "date": "2026-11-07" },
   "theme": "light",

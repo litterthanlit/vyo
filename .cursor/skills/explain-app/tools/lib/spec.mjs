@@ -3,6 +3,7 @@ import { isJargon } from "./jargon.mjs";
 import { SHEET, SHAPE_KEYS, parsePath } from "./geometry.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { WAVE } from "./fields/wave.mjs";
+import { ROLES as FRAME_ROLES, FRAMES, frameOf, sizeRange, LIST } from "./frame.mjs";
 
 /**
  * @typedef {"soft" | "mid" | "ink" | "cold" | "cool"} ToneName
@@ -12,21 +13,23 @@ import { WAVE } from "./fields/wave.mjs";
  * @typedef {Shape & { kind: "fill", id: string, holes?: Shape[], words: string[], tone: Tone, caps?: boolean,
  *                     band?: 1 | 2 | 3 | 4, size?: 11 | 12, hot?: boolean }} FillRegion
  * @typedef {{ kind: "dots", id: string, lines: string[], x: number, y: number, cell: number, tones: (ToneName | "hot")[] }} DotsRegion
- * @typedef {{ kind: "field", id: string, field: "wave" | "terrain", accent?: string, names?: Record<string, string>,
+ * @typedef {{ kind: "field", id: string, field: "wave" | "terrain" | "river", fits: string, accent?: string, names?: Record<string, string>,
  *             sentence?: string, every?: number, minShare?: number, maxParts?: number }} FieldRegion  drawn from facts.json at render
- * @typedef {{ role: "masthead" | "headline" | "display" | "aside" | "label", id: string, text?: string, x: number, y: number, w: number,
- *             size?: number, align?: "left" | "right" | "center", hot?: boolean }} Text
+ * @typedef {{ role: string, id: string, text?: string, x: number, y: number, w: number, size?: number,
+ *             align?: "left" | "right" | "center", hot?: boolean, parts?: true, items?: string[] }} Text  roles per frame in lib/frame.mjs
  * @typedef {{
  *   version: 3,
+ *   frame?: "loose" | "swiss",  loose unless it says swiss
  *   facts: string,
  *   product: { name: string, repo: string, commit?: string, date: string },
  *   theme: "light" | "dark",
  *   accent?: string,
  *   headline: string,
  *   hot?: string,  required unless the figure has a field
- *   figure: { fits: string, regions: (FillRegion | DotsRegion | FieldRegion)[], texts: Text[] },
- *   notes: { title: string, text: string }[],
- *   notBuilt: string[],
+ *   figure: { fits?: string, regions: (FillRegion | DotsRegion | FieldRegion)[], texts: Text[] },  fits on the field region when there is one
+ *   record?: "bottom" | "left",  loose only: where the record line goes; the engine picks when absent
+ *   notes?: { title: string, text: string }[],  swiss only
+ *   notBuilt?: string[],  swiss only
  *   audience?: string,
  * }} Spec
  */
@@ -34,29 +37,26 @@ import { WAVE } from "./fields/wave.mjs";
 export const PLACEHOLDER = "…";
 export const LIMITS = {
   name: 24, headline: 72, hot: 24, noteTitle: 24, noteText: 220, notBuilt: 6, notBuiltItem: 32, audience: 40,
-  fits: 160, regions: 6, texts: 6, words: [2, 14], word: 24, lines: [2, 4], line: 5, aside: 160, label: 32, display: 40,
+  fits: 160, regions: 6, texts: 7, words: [2, 14], word: 24, lines: [2, 4], line: 5,
   profile: [3, 24], polygon: [3, 40], holes: 4, path: 4000, fields: 1, partName: 24, sentence: 40, every: [2, 20], minShare: [0, 0.2], maxParts: [2, 24],
 };
 export const TONES = ["soft", "mid", "ink", "cold", "cool"];
 export const DOT_TONES = [...TONES, "hot"];
-export const ROLES = ["masthead", "headline", "display", "aside", "label"];
 export const THEMES = ["light", "dark"];
-// size: [default, min, max] per text role. A hot label is the accent word set large, like the hourglass waist.
-export const TEXT_SIZE = { masthead: [84, 48, 120], headline: [22, 18, 40], display: [56, 32, 64], aside: [12, 10, 14], label: [12, 10, 32], hotLabel: [26, 10, 32] };
-// Block names the footer uses; a figure text cannot take one.
-const RESERVED = ["note", "counts", "notBuilt", "provenance", "credit"];
+// Block names the footer and the record use; a figure text cannot take one.
+const RESERVED = ["note", "counts", "notBuilt", "provenance", "credit", "record"];
 
 // Keys that only some kinds of field take, like the wave's sentence.
 const FIELD_OPTIONS = [...new Set(Object.values(FIELDS).flatMap((f) => f.options))];
 const KEYS = {
-  spec: ["version", "facts", "product", "theme", "accent", "headline", "hot", "figure", "notes", "notBuilt", "audience"],
+  spec: ["version", "frame", "facts", "product", "theme", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience"],
   product: ["name", "repo", "commit", "date"],
   note: ["title", "text"],
   figure: ["fits", "regions", "texts"],
   fill: ["kind", "id", ...SHAPE_KEYS, "holes", "words", "tone", "caps", "band", "size", "hot"],
   dots: ["kind", "id", "lines", "x", "y", "cell", "tones"],
-  field: ["kind", "id", "field", "accent", "names", "minShare", "maxParts", ...FIELD_OPTIONS],
-  text: ["role", "id", "text", "x", "y", "w", "size", "align", "hot"],
+  field: ["kind", "id", "field", "fits", "accent", "names", "minShare", "maxParts", ...FIELD_OPTIONS],
+  text: { swiss: ["role", "id", "text", "x", "y", "w", "size", "align", "hot"], loose: ["role", "id", "text", "x", "y", "w", "size", "align", "parts", "items"] },
   ellipse: ["cx", "cy", "rx", "ry"],
 };
 
@@ -203,6 +203,7 @@ function checkField(f, r, err, copy) {
       }
   }
   if (r.sentence !== undefined) plain(`${f}.sentence`, r.sentence, LIMITS.sentence, "one plain sentence, or remove it");
+  plain(`${f}.fits`, r.fits, LIMITS.fits, "one sentence on why this field matches the product's story");
   const whole = (k) => {
     const [lo, hi] = LIMITS[k];
     if (r[k] !== undefined && !(Number.isInteger(r[k]) && inRange(r[k], lo, hi))) err(`${f}.${k}: a whole number, ${lo} to ${hi}`);
@@ -212,31 +213,53 @@ function checkField(f, r, err, copy) {
   if (r.minShare !== undefined && !inRange(r.minShare, ...LIMITS.minShare)) err(`${f}.minShare: ${LIMITS.minShare[0]} to ${LIMITS.minShare[1]}, a share of the lines`);
 }
 
-function checkText(f, t, err, copy) {
-  if (!ROLES.includes(t.role)) return err(`${f}.role: "${t.role}" is not a role; use ${ROLES.join(", ")}`);
-  const named = t.role !== "masthead" && t.role !== "headline";
-  if (named) {
-    const max = LIMITS[t.role];
+const sentences = (text) => text.split(/[.!?]+(?:\s+|$)/).filter((x) => x.trim()).length;
+
+function checkText(f, t, err, copy, frame) {
+  const roles = FRAME_ROLES[frame];
+  const role = roles[t.role];
+  if (!role) return err(`${f}.role: "${t.role}" is not a role in the ${frame} frame; use ${Object.keys(roles).join(", ")}`);
+  if (role.prints) {
+    if (t.text !== undefined) err(`${f}.text: the ${t.role} prints ${role.prints === "name" ? "product.name" : "the spec's headline"}; leave text out`);
+  } else if (t.role === "list") {
+    if ((t.parts === true) === (t.items !== undefined)) err(`${f}: a list takes parts: true (the field's parts) or items, not both or neither`);
+    if (t.parts !== undefined && t.parts !== true) err(`${f}.parts: true, or leave it out`);
+    if (t.items !== undefined) {
+      if (!Array.isArray(t.items) || t.items.length < 1 || t.items.length > LIST.items || !t.items.every(isStr)) err(`${f}.items: 1 to ${LIST.items} plain names`);
+      else
+        t.items.forEach((w, i) => {
+          if (isPlaceholder(w)) return err(`${f}.items[${i}]: still the placeholder; write it`);
+          if (!w.trim() || w.length > LIST.item) return err(`${f}.items[${i}]: 1 to ${LIST.item} characters`);
+          copy.push([`${f}.items[${i}]`, w]);
+        });
+    }
+    if (t.text !== undefined) err(`${f}.text: a list prints its parts or items; leave text out`);
+  } else if (t.role === "rule") {
+    if (!isStr(t.text) || [...t.text].length !== 1 || !t.text.trim()) err(`${f}.text: one character, repeated across w`);
+  } else {
     if (!isStr(t.text) || !t.text.trim()) err(`${f}.text: missing`);
-    else if (isPlaceholder(t.text)) err(`${f}.text: still the placeholder; write it`);
+    else if (isPlaceholder(t.text)) err(`${f}.text: still the placeholder; write ${t.text.trim().slice(1).trim() || "it"}`);
     else {
-      if (t.text.length > max) err(`${f}.text: ${t.text.length} characters; at most ${max}`);
+      if (t.text.length > role.max) err(`${f}.text: ${t.text.length} characters; at most ${role.max}`);
+      if (role.sentences && sentences(t.text) > role.sentences) err(`${f}.text: ${sentences(t.text)} sentences; at most ${role.sentences}`);
       if (t.text.replace(/^\*\*[^*]+\*\*/, "").includes("**")) err(`${f}.text: **bold** is allowed only at the start`);
       copy.push([`${f}.text`, t.text.replace(/\*\*/g, "")]);
     }
-  } else if (t.text !== undefined) err(`${f}.text: the ${t.role} prints ${t.role === "masthead" ? "product.name" : "the spec's headline"}; leave text out`);
+  }
   if (t.hot !== undefined && (t.role !== "label" || typeof t.hot !== "boolean")) err(`${f}.hot: only a label can be hot`);
   if (!inRange(t.x, 0, SHEET.width) || !inRange(t.y, 0, SHEET.height)) err(`${f}: x must be 0 to ${SHEET.width} and y 0 to ${SHEET.height}`);
   if (!inRange(t.w, 16, SHEET.width)) err(`${f}.w: 16 to ${SHEET.width}`);
-  const [, lo, hi] = TEXT_SIZE[t.role === "label" && t.hot ? "hotLabel" : t.role];
+  const [, lo, hi] = sizeRange({ frame }, t);
   if (t.size !== undefined && !inRange(t.size, lo, hi)) err(`${f}.size: ${lo} to ${hi}`);
   if (t.align !== undefined && !["left", "right", "center"].includes(t.align)) err(`${f}.align: left, right or center`);
 }
 
-function checkFigure(fig, err, copy) {
+function checkFigure(fig, err, copy, frame) {
   if (!isObj(fig)) return err("figure: must be { fits, regions, texts }");
   unknownKeys(fig, KEYS.figure, "figure.", err);
-  if (!isStr(fig.fits) || !fig.fits.trim()) err("figure.fits: missing");
+  if (hasField(fig)) {
+    if (fig.fits !== undefined) err("figure.fits: a field poster says why it fits on its field region; move it to the field's fits");
+  } else if (!isStr(fig.fits) || !fig.fits.trim()) err("figure.fits: missing");
   else if (isPlaceholder(fig.fits)) err("figure.fits: still the placeholder; say what the picture is and why it acts out the main moment");
   else if (fig.fits.length > LIMITS.fits) err(`figure.fits: ${fig.fits.length} characters; at most ${LIMITS.fits}`);
 
@@ -263,18 +286,20 @@ function checkFigure(fig, err, copy) {
     });
 
   if (Array.isArray(fig.regions) && fig.regions.filter((r) => isObj(r) && r.kind === "field").length > LIMITS.fields) err(`figure.regions: at most ${LIMITS.fields} field region`);
+  if (frame === "loose" && Array.isArray(fig.regions) && !hasField(fig)) err("figure.regions: the loose frame draws a field; add a field region, or set frame to swiss for fill and dots figures");
 
   if (!Array.isArray(fig.texts) || fig.texts.length < 1 || fig.texts.length > LIMITS.texts) return err(`figure.texts: 1 to ${LIMITS.texts} texts`);
   fig.texts.forEach((t, i) => {
     const f = `figure.texts[${i}]`;
     if (!isObj(t)) return err(`${f}: must be a text`);
-    unknownKeys(t, KEYS.text, `${f}.`, err);
+    unknownKeys(t, KEYS.text[frame], `${f}.`, err);
     idOk(f, t.id);
-    checkText(f, t, err, copy);
+    checkText(f, t, err, copy, frame);
   });
-  const count = (role) => fig.texts.filter((t) => isObj(t) && t.role === role).length;
-  if (count("masthead") !== 1) err(`figure.texts: ${count("masthead")} mastheads; use exactly one`);
-  if (count("headline") > 1) err(`figure.texts: ${count("headline")} headlines; use at most one`);
+  for (const [role, { count: [lo, hi] }] of Object.entries(FRAME_ROLES[frame])) {
+    const n = fig.texts.filter((t) => isObj(t) && t.role === role).length;
+    if (n < lo || n > hi) err(`figure.texts: ${n} ${role}s; use ${lo === hi ? `exactly ${lo}` : `${lo} to ${hi}`}`);
+  }
 }
 
 /** Does the figure have a field region? */
@@ -302,6 +327,8 @@ export function validateSpec(spec) {
   unknownKeys(spec, KEYS.spec, "", err);
 
   if (spec.version !== 3) err("version: must be 3");
+  if (spec.frame !== undefined && !FRAMES.includes(spec.frame)) err(`frame: "${spec.frame}" is not a frame; use ${FRAMES.join(" or ")}`);
+  const frame = FRAMES.includes(spec.frame) ? spec.frame : "loose";
   if (!isStr(spec.facts) || !/^[0-9a-f]{12}$/.test(spec.facts)) err("facts: must be the 12-character hash from facts.json");
 
   const p = spec.product;
@@ -327,7 +354,7 @@ export function validateSpec(spec) {
   };
   field("headline", spec.headline, LIMITS.headline);
   const before = errors.length;
-  checkFigure(spec.figure, err, copy);
+  checkFigure(spec.figure, err, copy, frame);
   const figureOk = errors.length === before;
 
   // A field's part names come from facts.json, so its hot word, if any, is checked on the page.
@@ -342,21 +369,26 @@ export function validateSpec(spec) {
     }
   }
 
-  if (!Array.isArray(spec.notes)) err("notes: must be a list");
-  else {
-    if (spec.notes.length < 2 || spec.notes.length > 3) err(`notes: ${spec.notes.length} notes; use 2 or 3`);
-    spec.notes.forEach((n, i) => {
-      if (!isObj(n)) return err(`notes[${i}]: must be { title, text }`);
-      unknownKeys(n, KEYS.note, `notes[${i}].`, err);
-      field(`notes[${i}].title`, n.title, LIMITS.noteTitle);
-      field(`notes[${i}].text`, n.text, LIMITS.noteText);
-    });
-  }
-
-  if (!Array.isArray(spec.notBuilt)) err("notBuilt: must be a list (use [] for none)");
-  else {
-    if (spec.notBuilt.length > LIMITS.notBuilt) err(`notBuilt: ${spec.notBuilt.length} items; at most ${LIMITS.notBuilt}`);
-    spec.notBuilt.forEach((x, i) => field(`notBuilt[${i}]`, x, LIMITS.notBuiltItem));
+  if (frame === "loose") {
+    for (const k of ["notes", "notBuilt"]) if (spec[k] !== undefined) err(`${k}: the loose frame has no footer; write paragraphs in figure.texts, or set frame to swiss`);
+    if (spec.record !== undefined && !["bottom", "left"].includes(spec.record)) err('record: "bottom" or "left", or leave it out and the engine picks');
+  } else {
+    if (spec.record !== undefined) err("record: only the loose frame has a record line; the swiss footer prints provenance");
+    if (!Array.isArray(spec.notes)) err("notes: must be a list");
+    else {
+      if (spec.notes.length < 2 || spec.notes.length > 3) err(`notes: ${spec.notes.length} notes; use 2 or 3`);
+      spec.notes.forEach((n, i) => {
+        if (!isObj(n)) return err(`notes[${i}]: must be { title, text }`);
+        unknownKeys(n, KEYS.note, `notes[${i}].`, err);
+        field(`notes[${i}].title`, n.title, LIMITS.noteTitle);
+        field(`notes[${i}].text`, n.text, LIMITS.noteText);
+      });
+    }
+    if (!Array.isArray(spec.notBuilt)) err("notBuilt: must be a list (use [] for none)");
+    else {
+      if (spec.notBuilt.length > LIMITS.notBuilt) err(`notBuilt: ${spec.notBuilt.length} items; at most ${LIMITS.notBuilt}`);
+      spec.notBuilt.forEach((x, i) => field(`notBuilt[${i}]`, x, LIMITS.notBuiltItem));
+    }
   }
   if (spec.audience !== undefined) field("audience", spec.audience, LIMITS.audience);
 
@@ -382,12 +414,12 @@ const hold = (prompt) => `${PLACEHOLDER} ${prompt}`;
 function fieldFigure(field, floor, { accent, unplain }) {
   const at = FIELDS[field].texts(floor);
   return {
-    fits: hold(`what the picture is and why it acts out the main moment, at most ${LIMITS.fits} characters`),
     regions: [
       {
         kind: "field",
         id: field,
         field,
+        fits: hold(`one sentence on why a ${field} matches the product's story, at most ${LIMITS.fits} characters`),
         ...(accent ? { accent } : {}),
         ...(unplain.length ? { names: Object.fromEntries(unplain.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])) } : {}),
         ...(FIELDS[field].options.includes("sentence") ? { sentence: hold(`a sentence woven in every ${WAVE.every}th row, at most ${LIMITS.sentence} characters, or remove it`) } : {}),
@@ -396,7 +428,7 @@ function fieldFigure(field, floor, { accent, unplain }) {
     texts: [
       { role: "masthead", id: "masthead", x: 50, y: 36, w: 490 },
       { role: "headline", id: "headline", ...at.headline },
-      { role: "aside", id: "aside", ...at.aside, text: hold(`one or two sentences on what the field shows, at most ${LIMITS.aside} characters`) },
+      { role: "aside", id: "aside", ...at.aside, text: hold(`one or two sentences on what the field shows, at most ${FRAME_ROLES.swiss.aside.max} characters`) },
     ],
   };
 }
@@ -411,7 +443,7 @@ function blankFigure(fig) {
         ? { ...r, words: [hold(`${r.words.length} nouns in the user's words, like ${r.words.slice(0, 2).map((w) => `"${w}"`).join(", ")}`)] }
         : { ...r, lines: [hold(`${r.lines.length} words of at most ${LIMITS.line} letters, top to bottom`)] },
     ),
-    texts: fig.texts.map((t) => (t.text === undefined ? t : { ...t, text: hold(`at most ${LIMITS[t.role]} characters, like "${t.text}"`) })),
+    texts: fig.texts.map((t) => (t.text === undefined ? t : { ...t, text: hold(`at most ${FRAME_ROLES.swiss[t.role].max} characters, like "${t.text}"`) })),
   };
 }
 
@@ -427,6 +459,7 @@ export function scaffoldSpec(facts, { theme, commit, date, floor, preset, field 
   const notes = preset ? preset.notes.length : 3;
   return {
     version: 3,
+    frame: preset?.frame ?? "swiss",
     facts: facts.hash,
     product: { name: facts.repo.name, repo: facts.repo.name, ...(commit ? { commit } : {}), date },
     theme,
