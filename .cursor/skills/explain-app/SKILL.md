@@ -14,31 +14,33 @@ description: >-
 
 The poster is a field: the codebase drawn from a scan, one row, peak or stream per part, sized by its code. The field fills the sheet, and a few plain words sit in the corners it leaves empty. You choose the field, the accent part, the plain names and the words, and the tools draw, place and check the rest.
 
-Run commands from this skill's directory. `<repo>` is the app's directory, `<name>` its folder name, and `<facts>` is `<repo>/vyo/<name>-facts.json`.
+Run commands from the target repo. `<repo>` is the app's directory, `<name>` its folder name, and `<facts>` is `<repo>/vyo/<name>-facts.json`.
 
 ## Set up once
 
+The tools are the npm package `@litterthanlit/vyo`, with the fonts bundled. Add it to the target repo so `npx vyo` finds it:
+
 ```bash
-npm install
+npm install --save-dev @litterthanlit/vyo
 ```
 
-For Chromium, run `npx playwright install chromium` or set `VYO_CHROMIUM`.
+Without installing it, write `npx -y @litterthanlit/vyo` wherever this file says `npx vyo`. Render needs Chromium: run `npx playwright install chromium` or set `VYO_CHROMIUM` to a Chromium binary. When none starts, render prints the exact command.
 
 ## Make the poster
 
-1. Scan: `node tools/vyo.mjs scan <repo> --out <facts>`.
-2. Summarise: `node tools/vyo.mjs show <facts>`.
-3. List the parts: `node tools/vyo.mjs parts <facts>`. Each line has an id like `area:lib/plan`, its share of the lines, its files and its scanned name. A name followed by `!` needs a plain name.
-4. Read `README*`, `docs/` and `.cursor/skills/explain-app/project-context.md` in the target repo if the owner wrote one. Write the product's name and its story in one sentence: what it does for a person. Every claim must point at the scan, the docs or the code.
+1. Scan: `npx vyo scan <repo> --out <facts>`.
+2. Summarise: `npx vyo show <facts>`.
+3. List the parts: `npx vyo parts <facts>`. Each line has an id like `area:lib/plan`, its share of the lines, its files and its scanned name. A name followed by `!` needs a plain name.
+4. Read `README*`, `docs/` and `project-context.md` beside this file if the owner wrote one. Write the product's name and its story in one sentence: what it does for a person. Every claim must point at the scan, the docs or the code.
 5. Choose the field by the story (see below) and the accent part: the part the story is about. For a river, run `parts <facts> --field river` again, because a river splits the code into finer parts with other ids.
 6. Write the scaffold:
    ```bash
-   node tools/vyo.mjs compose <facts> --field wave --accent area:lib/plan --repo <repo> --out <repo>/vyo/<name>-poster.json
+   npx vyo compose <facts> --field wave --accent area:lib/plan --repo <repo> --out <repo>/vyo/<name>-poster.json
    ```
    `--accent` refuses an id that `parts` did not list. `--repo` gives the record line its commit. Compose finds the corners the field leaves empty, puts the label, headline, legend, a paragraph and the parts list into them, and prints the corners and each text role's size.
 7. Replace every `…` value: the product name, the field's `fits`, the headline, the legend, the paragraph, the names and, for a wave, the `sentence`. Render rejects any placeholder left.
-8. Sketch: `node tools/vyo.mjs sketch <repo>/vyo/<name>-poster.json`. It prints the sheet, the text boxes and the corners. Act on every `!` line. If a corner is cramped, or two text boxes touch, move a block into a corner with room or delete the paragraph. Sketch does not flag two text boxes that overlap, so look at the boxes yourself.
-9. Render: `node tools/vyo.mjs render <repo>/vyo/<name>-poster.json`.
+8. Sketch: `npx vyo sketch <repo>/vyo/<name>-poster.json`. It prints the sheet, the text boxes and the corners. Act on every `!` line. If a corner is cramped, or two text boxes touch, move a block into a corner with room or delete the paragraph. Sketch does not flag two text boxes that overlap, so look at the boxes yourself.
+9. Render: `npx vyo render <repo>/vyo/<name>-poster.json`.
 10. Fix every `✗` line. Render exits 1 until none is left. Weigh every `!` line.
 11. Open the PNG at full size and `<repo>-poster-thumb.png`, the poster at 1/6 scale that `render` writes beside it. The accent part must stand out at thumbnail size, the legend must match what you see, and no name may read as code. If not, change the accent, a name or a block, and go back to step 8.
 12. Reply in chat in the format below.
@@ -82,7 +84,7 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 | `figure.texts` | Exactly one `label` and one `headline` (they print the name and the headline), exactly one `legend`, 0 to 2 `paragraph`, 0 or 1 `list`, 0 or 1 `rule`. Each has `x`, `y`, `w` and optional `size` and `align` |
 | `record` | Optional, `bottom` or `left`, to force the record line's side |
 
-A loose spec has no `notes`, `notBuilt`, `hot` or `figure.fits`. [examples.md](examples.md) has the wave, terrain and river specs in full. [tools/README.md](tools/README.md) lists every check.
+A loose spec has no `notes`, `notBuilt`, `hot` or `figure.fits`. [examples.md](examples.md) has the wave, terrain and river specs in full. The package's `tools/README.md` lists every check.
 
 ## Where output goes
 
@@ -112,4 +114,4 @@ Use it when the owner asks for a masthead and footer, or the repo has no git his
 
 ## Draw your own silhouette
 
-Use this only when the owner asks for a picture, like "draw it as an hourglass", or the scan is empty. It is swiss only. Start with `compose --from <preset>` (`node tools/vyo.mjs presets` lists them), then reshape the geometry until `preset-copy` is gone. [examples.md](examples.md), under "Drawing your own silhouette", has the method, four presets and three invented figures.
+Use this only when the owner asks for a picture, like "draw it as an hourglass", or the scan is empty. It is swiss only. Start with `compose --from <preset>` (`npx vyo presets` lists them), then reshape the geometry until `preset-copy` is gone. [examples.md](examples.md), under "Drawing your own silhouette", has the method, four presets and three invented figures.

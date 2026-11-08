@@ -1,6 +1,6 @@
 # Project context for explain-app
 
-Copy this file into the target app's repo at `.cursor/skills/explain-app/project-context.md` and fill it in. The explain-app skill reads it before it writes the poster, and what you write here wins over what it infers. Leave a section blank to let the skill infer it.
+Copy this file into the target app's repo beside the skill, at `.cursor/skills/explain-app/project-context.md` or `.claude/skills/explain-app/project-context.md` and fill it in. The explain-app skill reads it before it writes the poster, and what you write here wins over what it infers. Leave a section blank to let the skill infer it.
 
 ## Product name (customer-facing)
 

@@ -23,19 +23,21 @@ Shared helpers live in `tools/lib/hash.mjs`: `stableStringify`, `factsHash`, `fn
 
 ## 1. CLI
 
-One dispatcher, `tools/vyo.mjs` (`package.json` bin `vyo`). All commands run from the skill directory.
+One dispatcher, `tools/vyo.mjs`, the bin `vyo` of the npm package `@litterthanlit/vyo`, whose root is the skill directory. Commands run from any directory; paths are relative to it.
 
 ```bash
-node tools/vyo.mjs scan    <repo-dir> --out <dir>/<repo>-facts.json
-node tools/vyo.mjs show    <facts.json>
-node tools/vyo.mjs parts   <facts.json> [--field wave|terrain|river]
-node tools/vyo.mjs presets [<id>]
-node tools/vyo.mjs compose <facts.json> [--frame loose|swiss] [--field wave|terrain|river] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light|dark] [--out <spec.json>] [--force]
-node tools/vyo.mjs sketch  <spec.json> [--facts <facts.json>]
-node tools/vyo.mjs render  <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--paper fit|a4|letter]
-node tools/vyo.mjs check   <spec.json> [--facts <facts.json>]
+vyo init    [--cursor] [--claude] [--codex] [--dir <repo-dir>]
+vyo scan    <repo-dir> --out <dir>/<repo>-facts.json
+vyo show    <facts.json>
+vyo parts   <facts.json> [--field wave|terrain|river]
+vyo presets [<id>]
+vyo compose <facts.json> [--frame loose|swiss] [--field wave|terrain|river] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light|dark] [--out <spec.json>] [--force]
+vyo sketch  <spec.json> [--facts <facts.json>]
+vyo render  <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--paper fit|a4|letter]
+vyo check   <spec.json> [--facts <facts.json>]
 ```
 
+- `init` copies `SKILL.md`, `examples.md`, `plain-language-rules.md` and `project-context.example.md` into `<editor>/skills/explain-app/` of `--dir` (default `.`) for each of `--cursor` (`.cursor`) and `--claude` (`.claude`); with neither flag, for the editor folders the repo has, or both if it has neither. `--codex` writes one block between `<!-- vyo:begin` and `<!-- vyo:end -->` at the end of `AGENTS.md`, pointing at the first skill path, and replaces it on a rerun. It prints `Wrote <path>` per file.
 - `scan` and `show` are the v1 scanner, unchanged. `scan` never writes inside the scanned repo except to `--out`.
 - `parts` prints the parts a field draws with that field's default `minShare` and `maxParts` (§4b; `--field river` uses the river's 0.002 and 24, the others 0.02 and 14): a header line `<repo>: <n> parts, <lines> lines in <files> files (parts under 2% of the lines merge into their parent; at most 14)`, a column header `id  share  lines  files  name`, one line per part in tree order, `  ! looks like a vendor or code name` after each unplain name, `  ! same name as <id>` after each name another part shares, and a closing line on setting `accent` and `names`.
 - `presets` prints, for each preset in `tools/presets/`, its id, its `fits` sentence and a one-line summary of its regions and texts. `presets <id>` prints that preset's `figure` as JSON.
