@@ -16,6 +16,7 @@ import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from 
 import { ROLES, FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
 import { cornersLine } from "./lib/geometry.mjs";
 import { runChecks } from "./lib/check.mjs";
+import { NoBrowser } from "./lib/browser.mjs";
 import { FIELDS } from "./lib/fields/index.mjs";
 import { partsFromFacts, partOptions, regionParts, accentIds, unplainName, sameNames, PART_DEFAULTS } from "./lib/parts.mjs";
 
@@ -384,7 +385,7 @@ export async function main(argv) {
       err(USAGE);
       return 2;
     }
-    if (e instanceof Failure) {
+    if (e instanceof Failure || e instanceof NoBrowser) {
       fail(e.message);
       return 1;
     }

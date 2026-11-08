@@ -15,7 +15,8 @@
     "README.md"
   ],
   "scripts": {
-    "test": "node tools/test/run.mjs"
+    "test": "node tools/test/run.mjs",
+    "postinstall": "node tools/postinstall.mjs"
   },
   "dependencies": {
     "playwright": "^1.56.1"

@@ -52,7 +52,7 @@ node tools/vyo.mjs check   <spec.json> [--facts <facts.json>]
 - `check` does what `render` does in a temporary directory and writes nothing to `--out`.
 - `vyo shapes` no longer exists.
 - Exit codes: 0 ok (warnings on stderr, prefixed `! `), 1 rule error (`✗ ` lines on stderr), 2 usage.
-- `VYO_CHROMIUM` names the Chromium binary when Playwright's own is not installed.
+- `VYO_CHROMIUM` names the Chromium binary when Playwright's own is not installed. When no browser starts, `render` and `check` print `BROWSER_NOTE` from `tools/lib/browser.mjs` (set `VYO_CHROMIUM`, or `npx playwright@<version> install chromium` for the Playwright vyo resolved) and exit 1. Install never downloads a browser: `postinstall` only prints that note.
 - The fonts ship in `fonts/` at the package root. When a file is missing there, `render` and `check` exit 1 with `reinstall @litterthanlit/vyo`.
 
 ---

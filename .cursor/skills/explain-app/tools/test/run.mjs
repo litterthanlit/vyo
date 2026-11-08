@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { buildPage, renderPage } from "../lib/render.mjs";
 import { fieldItems } from "../lib/sketch.mjs";
+import { BROWSER_NOTE } from "../lib/browser.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TOOLS = path.join(HERE, "..");
@@ -156,6 +157,13 @@ vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
   fs.writeFileSync(file, JSON.stringify(spec, null, 2));
   const r = vyo("check", file, "--facts", emptyFacts);
   result(r.status === 0 && /^! facts-empty: no application facts/m.test(r.stderr), "an app with no facts still renders, with a warning", `exit ${r.status}\n${r.stderr}`);
+}
+
+{
+  const file = path.join(OUT, "no-browser.json");
+  fs.writeFileSync(file, JSON.stringify(preset("wave"), null, 2));
+  const r = spawnSync(process.execPath, [VYO, "render", file, "--facts", factsFile], { encoding: "utf8", env: { ...process.env, VYO_CHROMIUM: path.join(OUT, "no-such-chromium") } });
+  result(r.status === 1 && r.stderr === `✗ ${BROWSER_NOTE}\n` && !fs.existsSync(path.join(OUT, "recipe-poster.png")), "render with no browser prints the browser note and exits 1", `exit ${r.status}\n${r.stderr}`);
 }
 
 if (pure.status !== 0) console.log("✗ the pure tests failed (see above)");
