@@ -24,7 +24,7 @@ const rejects = (mutate, re, base) => {
 };
 
 test("every preset is a valid spec", () => {
-  assert.deepEqual(IDS.sort(), ["eye", "hourglass", "ribbon", "terrain", "warm-start", "wave"]);
+  assert.deepEqual(IDS.sort(), ["eye", "hourglass", "ribbon", "river", "terrain", "warm-start", "wave", "wave-swiss"]);
   for (const id of IDS) assert.deepEqual(validateSpec(preset(id)), [], id);
 });
 

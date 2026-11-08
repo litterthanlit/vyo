@@ -45,11 +45,12 @@ Pantry's story is a flow: recipes go in, the week's plan forms, the list goes to
 ```json
 {
   "version": 3,
-  "frame": "swiss",
+  "frame": "loose",
   "facts": "000000000000",
   "product": {
     "name": "Pantry",
     "repo": "recipe",
+    "commit": "04186f4",
     "date": "2026-11-07"
   },
   "theme": "light",
@@ -81,46 +82,41 @@ Pantry's story is a flow: recipes go in, the week's plan forms, the list goes to
     ],
     "texts": [
       {
-        "role": "masthead",
-        "id": "masthead",
-        "x": 50,
-        "y": 36,
-        "w": 490
+        "role": "label",
+        "id": "label",
+        "x": 580,
+        "y": 40,
+        "w": 220,
+        "align": "right"
       },
       {
         "role": "headline",
         "id": "headline",
-        "x": 56,
-        "y": 150,
-        "w": 420
+        "x": 40,
+        "y": 905,
+        "w": 264,
+        "align": "left"
       },
       {
-        "role": "aside",
-        "id": "aside",
-        "x": 56,
-        "y": 764,
+        "role": "legend",
+        "id": "legend",
+        "x": 40,
+        "y": 797,
+        "w": 260,
+        "align": "left",
+        "text": "Every row is a part of Pantry, as many rows as it has code. The black rows are the plan."
+      },
+      {
+        "role": "list",
+        "id": "list",
+        "x": 560,
+        "y": 80,
         "w": 240,
-        "text": "Every row is a part of Pantry, as many rows as it has code. The black rows build the week's plan."
+        "align": "right",
+        "parts": true
       }
     ]
-  },
-  "notes": [
-    {
-      "title": "How it works",
-      "text": "Save the recipes you already cook. Pantry fills the week from them, suggests a few new ones, and builds the shopping list from what the plan needs."
-    },
-    {
-      "title": "Every Monday",
-      "text": "At 8 in the morning Pantry emails you the week's plan, so the first dinner is decided before the day starts."
-    },
-    {
-      "title": "Yours alone",
-      "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can pick up the week on any device."
-    }
-  ],
-  "notBuilt": [
-    "paid plans"
-  ]
+  }
 }
 ```
 
@@ -131,11 +127,12 @@ Read as a range, Pantry shows that its screens are the biggest part and that a f
 ```json
 {
   "version": 3,
-  "frame": "swiss",
+  "frame": "loose",
   "facts": "000000000000",
   "product": {
     "name": "Pantry",
     "repo": "recipe",
+    "commit": "04186f4",
     "date": "2026-11-07"
   },
   "theme": "dark",
@@ -146,8 +143,8 @@ Read as a range, Pantry shows that its screens are the biggest part and that a f
         "kind": "field",
         "id": "terrain",
         "field": "terrain",
-        "fits": "Pantry's story is which parts matter most, so each part stands as a peak as big as its code, with the planning parts in orange.",
-        "accent": "area:lib/*",
+        "fits": "What matters most in Pantry is the plan, so each part stands as a peak as big as its code.",
+        "accent": "area:lib/plan",
         "names": {
           "area:.": "saved recipes",
           "area:app": "page frame",
@@ -166,46 +163,41 @@ Read as a range, Pantry shows that its screens are the biggest part and that a f
     ],
     "texts": [
       {
-        "role": "masthead",
-        "id": "masthead",
-        "x": 50,
-        "y": 36,
-        "w": 490
+        "role": "label",
+        "id": "label",
+        "x": 40,
+        "y": 40,
+        "w": 220,
+        "align": "left"
       },
       {
         "role": "headline",
         "id": "headline",
-        "x": 56,
-        "y": 150,
-        "w": 490
+        "x": 40,
+        "y": 80,
+        "w": 364,
+        "align": "left"
       },
       {
-        "role": "aside",
-        "id": "aside",
-        "x": 594,
-        "y": 64,
-        "w": 190,
-        "text": "Each peak is a part of Pantry: height by its code, width by its files. The orange peaks plan the week and suggest recipes."
+        "role": "legend",
+        "id": "legend",
+        "x": 40,
+        "y": 239,
+        "w": 260,
+        "align": "left",
+        "text": "Every peak is a part of Pantry, as tall as its code and as wide as its files. The orange peak is the plan."
+      },
+      {
+        "role": "list",
+        "id": "list",
+        "x": 560,
+        "y": 40,
+        "w": 240,
+        "align": "right",
+        "parts": true
       }
     ]
-  },
-  "notes": [
-    {
-      "title": "How it works",
-      "text": "Save the recipes you already cook. Pantry fills the week from them, suggests a few new ones, and builds the shopping list from what the plan needs."
-    },
-    {
-      "title": "Every Monday",
-      "text": "At 8 in the morning Pantry emails you the week's plan, so the first dinner is decided before the day starts."
-    },
-    {
-      "title": "Yours alone",
-      "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can pick up the week on any device."
-    }
-  ],
-  "notBuilt": [
-    "paid plans"
-  ]
+  }
 }
 ```
 

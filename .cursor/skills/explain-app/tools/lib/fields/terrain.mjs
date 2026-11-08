@@ -11,6 +11,8 @@ export const TERRAIN = {
   summit: 0.32, // the tallest peak's top, as a share of the floor
   minWidth: 40, // a small part still shows as a foothill
   footRows: 2, // no valley drops below this many rows above the floor
+  // Alpha added to every letter, and to the accent's letters on top: the dark alphas wash out on paper (i-loose).
+  lift: { light: [0.14, 0.5], dark: [0, 0.3] },
 };
 const RIDGE_NORM = 4;
 // Within this depth under the ridge a letter is the rim: ink, brighter.
@@ -68,11 +70,12 @@ export function ridge(parts, floor) {
 }
 
 /** How bright a letter is, as e-terrain shades it: slopes facing left catch the light, the rim and the accent stand out. */
-function shade(slope, depth, hot) {
+function shade(slope, depth, hot, theme) {
+  const [lift, hotLift] = TERRAIN.lift[theme];
   const lit = Math.min(1, Math.max(0, 0.5 + slope * 0.5));
-  let a = 0.42 + 0.5 * lit - Math.min(0.2, depth / 1600);
+  let a = 0.42 + 0.5 * lit - Math.min(0.2, depth / 1600) + lift;
   if (depth < RIM) a += 0.35;
-  if (hot) a += 0.3;
+  if (hot) a += hotLift;
   return Math.round(Math.min(1, Math.max(0.22, a)) * 10) / 10;
 }
 
@@ -94,9 +97,9 @@ function midWord(part, n) {
  * A word in progress runs on past the border into the next part's slope, so no name breaks there.
  * @param {object} region
  * @param {{ id: string, name: string, loc: number, files: number, hot: boolean }[]} parts  in tree order
- * @param {{ floor: number, blocks: { left: number, top: number, right: number, bottom: number }[], measure: (text: string, size: number) => number }} frame
+ * @param {{ floor: number, blocks: { left: number, top: number, right: number, bottom: number }[], measure: (text: string, size: number) => number, theme?: "light" | "dark" }} frame
  */
-export function terrainRows(region, parts, { floor, blocks, measure }) {
+export function terrainRows(region, parts, { floor, blocks, measure, theme = "dark" }) {
   if (!parts.length) return [];
   const { size, pitch, below } = TERRAIN;
   // Rounded to 0.05px so the page's measured advance (4.134 at 6.9px) and the sketch's fixed 4.14 agree.
@@ -167,7 +170,7 @@ export function terrainRows(region, parts, { floor, blocks, measure }) {
       const advance = Math.round((cw * 0.94 + 1.5 * Math.min(Math.abs(slope), 1.6)) * 4) / 4;
       run.push({
         x: px, ch: cycle[k], part, advance, wordEnd: cycle[k] !== " " && cycle[k + 1] === " ",
-        tone: part.hot ? "hot" : depth < RIM ? "ink" : "mid", alpha: shade(slope, depth, part.hot),
+        tone: part.hot ? "hot" : depth < RIM ? "ink" : "mid", alpha: shade(slope, depth, part.hot, theme),
       });
       px += advance;
     }

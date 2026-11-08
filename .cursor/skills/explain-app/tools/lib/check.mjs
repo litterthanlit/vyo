@@ -135,7 +135,8 @@ export const CHECKS = [
         const legend = spec.figure.texts.find((t) => t.role === "legend")?.text ?? "";
         const names = regionParts(r, facts).filter((p) => p.hot).map((p) => p.name);
         const { measure } = FIELDS[r.field];
-        const named = names.some((n) => legend.toLowerCase().includes(n.toLowerCase()));
+        // An accent that names no part is field-parts' to report; the legend still owes the measure.
+        const named = !names.length || names.some((n) => legend.toLowerCase().includes(n.toLowerCase()));
         const measured = measure.every((group) => group.some((w) => startsWord(legend, w)));
         return named && measured ? [] : [legendMessage(names, measure)];
       }),

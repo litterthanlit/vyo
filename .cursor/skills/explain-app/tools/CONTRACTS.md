@@ -28,16 +28,16 @@ One dispatcher, `tools/vyo.mjs` (`package.json` bin `vyo`). All commands run fro
 ```bash
 node tools/vyo.mjs scan    <repo-dir> --out <dir>/<repo>-facts.json
 node tools/vyo.mjs show    <facts.json>
-node tools/vyo.mjs parts   <facts.json>
+node tools/vyo.mjs parts   <facts.json> [--field wave|terrain|river]
 node tools/vyo.mjs presets [<id>]
-node tools/vyo.mjs compose <facts.json> [--field wave|terrain] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light|dark] [--out <spec.json>] [--force]
+node tools/vyo.mjs compose <facts.json> [--frame loose|swiss] [--field wave|terrain|river] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light|dark] [--out <spec.json>] [--force]
 node tools/vyo.mjs sketch  <spec.json> [--facts <facts.json>]
 node tools/vyo.mjs render  <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--paper fit|a4|letter]
 node tools/vyo.mjs check   <spec.json> [--facts <facts.json>]
 ```
 
 - `scan` and `show` are the v1 scanner, unchanged. `scan` never writes inside the scanned repo except to `--out`.
-- `parts` prints the parts a field draws with the default `minShare` and `maxParts` (§4b): a header line `<repo>: <n> parts, <lines> lines in <files> files (parts under 2% of the lines merge into their parent; at most 14)`, a column header `id  share  lines  files  name`, one line per part in tree order, `  ! looks like a vendor or code name` after each unplain name, `  ! same name as <id>` after each name another part shares, and a closing line on setting `accent` and `names`.
+- `parts` prints the parts a field draws with that field's default `minShare` and `maxParts` (§4b; `--field river` uses the river's 0.002 and 24, the others 0.02 and 14): a header line `<repo>: <n> parts, <lines> lines in <files> files (parts under 2% of the lines merge into their parent; at most 14)`, a column header `id  share  lines  files  name`, one line per part in tree order, `  ! looks like a vendor or code name` after each unplain name, `  ! same name as <id>` after each name another part shares, and a closing line on setting `accent` and `names`.
 - `presets` prints, for each preset in `tools/presets/`, its id, its `fits` sentence and a one-line summary of its regions and texts. `presets <id>` prints that preset's `figure` as JSON.
 - `compose` writes a scaffold spec (§3). It fills `facts` from the facts file, `product.name` and `product.repo` from `facts.repo.name`, and `theme` from `--theme`. It refuses to overwrite an existing spec, which may hold the agent's words, unless `--force` is given.
   - Without `--from`: a field figure (§4b). When the facts hold no parts, it writes nothing and exits 1 with `✗ no parts to draw; the scan found no code. Compose a fill poster instead: vyo compose <facts.json> --from <preset> (vyo presets lists them)`. One field region of kind `--field` (default `wave`), id equal to the kind, `accent` from `--accent` (which must name a part), a placeholder in `names` for each part whose scanned name is unplain or shared with another part, and a placeholder `sentence` when the kind takes one. One masthead at (50, 36, w 490), and a headline and aside where the field's registry entry places them. The spec has no `hot`.
@@ -200,6 +200,7 @@ Show, in this order:
 ```ts
 type Spec = {
   version: 3;
+  frame?: "loose" | "swiss";     // default loose. §3b
   facts: string;                 // facts.json `hash`. Render refuses a mismatch (a stale spec)
   product: {
     name: string;                // customer-facing name. compose copies facts.repo.name, and render warns until it differs
@@ -212,7 +213,8 @@ type Spec = {
   headline: string;              // one serif sentence about the outcome, ≤ 72 chars
   hot?: string;                  // one word or two-word phrase, set in the accent. Required unless the figure has a field. See "hot" below
   figure: Figure;
-  notes: { title: string; text: string }[];   // 2 or 3. title ≤ 24 chars, text ≤ 220
+  record?: "bottom" | "left";    // loose only: where the record line goes; unset, render picks (§3b)
+  notes: { title: string; text: string }[];   // swiss only, and required there: 2 or 3. title ≤ 24 chars, text ≤ 220. Loose rejects notes and notBuilt
   notBuilt: string[];            // 0 to 6 plain items of ≤ 32 chars, rendered as "Not built yet: a, b, c". [] renders nothing
   audience?: string;             // optional, ≤ 40 chars
 };
@@ -257,16 +259,17 @@ type Region =
 type FieldRegion = {             // drawn from facts.json at render (§4b); the agent writes no geometry
   kind: "field";
   id: string;
-  field: "wave" | "terrain";     // a key of FIELDS in lib/fields/index.mjs
+  field: "wave" | "terrain" | "river";   // a key of FIELDS in lib/fields/index.mjs
+  fits: string;                  // ≤ 160 chars: why this field matches the product's story. Never drawn. Replaces figure.fits on a field poster (§3b)
   accent?: string;               // a part id, an area id or a glob over part ids ("area:lib/*"). Unset: check warns accent-part
   names?: Record<string, string>;   // part id → plain name, ≤ 24 chars, for parts whose scanned name is a vendor or code name
   sentence?: string;             // wave only: ≤ 40 chars, set in every `every`th row
   every?: number;                // wave only: 2 to 20, default 5
-  minShare?: number;             // 0 to 0.2, default 0.02: parts below this share of lines merge into their parent
-  maxParts?: number;             // 2 to 24, default 14
+  minShare?: number;             // 0 to 0.2, default 0.02 (river 0.002): parts below this share of lines merge into their parent
+  maxParts?: number;             // 2 to 24, default 14 (river 24)
 };
 
-type Text = {
+type Text = {                    // swiss roles below; the loose frame's roles are in §3b
   role: "masthead" | "headline" | "display" | "aside" | "label";
   id: string;
   text?: string;                 // required for display, aside and label. The masthead renders product.name with the accent full stop. The headline renders spec.headline
@@ -333,6 +336,35 @@ Validation lives in `lib/spec.mjs`. It is pure and every error names the field.
 
 ---
 
+## 3b. Frames, legend, fits, record and corners
+
+A spec sits in one of two frames, `frame: "loose" | "swiss"`, default `loose`. `ROLES` in `lib/frame.mjs` is the closed set of text roles per frame, with each role's size, line height, count, limits and what it prints; validation, render, sketch and compose read that one table.
+
+**`swiss`** is the v4 poster, unchanged: masthead, the serif headline, figure texts, a footer hairline with counts, 2 or 3 note columns, the not-built list, provenance and the credit. It takes fill, dots and field figures. Its roles are §3's `Text`.
+
+**`loose`** draws a field (it rejects a figure without one) and nothing else of the swiss frame: no masthead, hairline, counts, notes or footer. The field's floor is the sheet's bottom edge, so the wave runs under the top and bottom edges and the terrain off the left, right and bottom. No field row may come within 8px of a text (`blocks-apart` exempts nothing in this frame). Text roles:
+
+| role | Count | Size (min to max) | Line height | Font | Text |
+|---|---|---|---|---|---|
+| `label` | exactly 1 | 13 (11 to 16) | 1.2 × size | Commit Mono, caps, 0.17em tracking | prints `product.name` in capitals; no `text` |
+| `headline` | exactly 1 | 42 (32 to 48) | 1.06 × size | Newsreader, −0.01em | prints `spec.headline`; no `text`. The only large type |
+| `paragraph` | 0 to 2 | 15 (13 to 17) | 1.4 × size | Newsreader | `text`, ≤ 220 chars, ≤ 2 sentences |
+| `legend` | exactly 1 | 15 (13 to 17) | 1.4 × size | Newsreader | `text`, ≤ 180 chars, ≤ 2 sentences; must name the accent part and the measure (`legend` check) |
+| `list` | 0 or 1 | 13 (11 to 14) | 1.55 × size | Commit Mono, one item per line | `parts: true` (the field's parts' plain names, tree order) or `items` (1 to 16 names, ≤ 24 chars); no `text` |
+| `rule` | 0 or 1 | 13 (11 to 14) | 1 × size | Commit Mono | `text`: one character, repeated across `w` |
+
+A loose text takes `role, id, x, y, w, size?, align?` and `text`, `parts` or `items` as its role says; `hot` is swiss only. Sentences are counted by splitting on `.`, `!` or `?` followed by a space or the end. Validation messages: `figure.texts: <n> <role>s; use exactly <n>` or `use <lo> to <hi>`; `figure.texts[i].role: "<role>" is not a role in the loose frame; use label, headline, paragraph, legend, list, rule`; `notes: the loose frame has no footer; write paragraphs in figure.texts, or set frame to swiss`; `figure.regions: the loose frame draws a field; add a field region, or set frame to swiss for fill and dots figures`.
+
+**Legend** (check `legend`, loose only). Case-folded, the legend contains a hot part's plain name (from `names` or the scanned name), unless the accent names no part (then `field-parts` reports it), and for each measure group of the field one word that starts with a word of the group: wave `code` or `lines`; terrain `code` or `lines`, and `files` or `wide`; river `merge`, `join` or `flow`. Message: `must say what the picture encodes; name the accent part ("<name>") and the measure (<groups>)`, groups written `"code" or "lines", and "files" or "wide"`. The groups are `measure` in the field's registry entry.
+
+**Fits** (check `fits`, every frame). A field region's `fits` is required (≤ 160 chars) and has a word that starts with one of the field's keywords: wave `travel`, `flow`, `hand`, `move`; terrain `big`, `weight`, `matters`, `most`; river `merge`, `join`, `many`, `one`. Message: `region <id>: fits must say why a <field> matches the product's story; use "<k1>" or "<k2>" …`. A field poster's `figure.fits` is rejected: `figure.fits: a field poster says why it fits on its field region; move it to the field's fits`. The keywords are `fits` in the registry entry.
+
+**Record** (loose only). Render writes one line, `<name> at <commit>, <long date>. Drawn by Vyo.`, 10px Commit Mono, 0.3px tracking, `mid`, the last full stop in `hot` with `data-hot`, as `[data-block=record][data-owner=render]`. `recordSpot` in `lib/frame.mjs` places it from the field's rows laid out with no text blocks: at x 40, y 1150 when a box 10px around it is clear; else rotated −90° at x 18, its foot at the lowest y (stepping up 10px from 1160) where the strip x 0 to 38 is clear for its length plus 10px; else at the bottom. `record: "bottom"` or `"left"` forces the side. Check `record`: exactly one record block; `product.commit` set (`the record line has no commit; set product.commit to the short hash (vyo compose --repo fills it)`); the text equals the line above.
+
+**Corners.** `corners(rects)` in `lib/geometry.mjs` marks every 20px cell a field row touches, then for each sheet corner grows a rectangle row by row from the corner, keeping the run of empty cells from the edge. The winner has the largest area with its height counted up to 400px (ties: the larger whole area), among candidates at least 220px wide when there are any. Two corners on one edge whose sizes add past the sheet each give up half the overlap, rounded up to whole cells. A bottom corner's height leaves out the 10px the last cell row hangs past the sheet. Returns `{ "top-left" | "top-right" | "bottom-left" | "bottom-right": { x, y, w, h } }`; an empty corner is `w` or `h` 0. `fieldSpace(spec, facts)` in `lib/render.mjs` lays the field out with no text blocks and returns its row rects, their corners and the centre of the accent part's rows.
+
+**Compose scaffold** (`vyo compose --field <f>`, loose by default). Compose lays the field out, finds the corners and calls `scaffoldPlaces(corners, accentCentre, partCount)` in `lib/frame.mjs`. Within a corner the room is the corner less 40px from the sheet's edges and 16px from the field; a bottom corner's stack ends 60px above the sheet's bottom, over the record. Usable corners have room at least 160 by 60. Assignment, in this order: `label` to the smallest usable corner, `headline` to the largest, `list` to the tallest, `legend` to the one whose centre is nearest the accent centre, `paragraph` to the one with most room left. Each block takes width `min(role width, room)` (label 220, headline 380, list 240, legend 260, paragraph 240) and the height of three quarters of its role's character limit at that width (54 characters for the headline; one line per part for the list). Blocks stack from the corner, 24px apart; right corners align right. A block that does not fit its corner goes to the corner with most room left; `list` and `paragraph` are left out when none has room. The scaffold writes `label`, `headline`, `legend` (placeholder `… what the picture encodes, at most 2 sentences and 180 characters: name "<accent name>" and the measure (<groups>)`), `paragraph` and `list` (`parts: true`), the field region with a `fits` placeholder naming its keywords, and no `notes` or `notBuilt`. Without `--repo` it warns that the record needs a commit.
+
 ## 4. Geometry
 
 The sheet is 840×1190 CSS px with y growing downward. Every number in a figure is sheet px. The footer's top is `1190 − footerHeight − 36` (§5), and everything the agent places must sit above it.
@@ -382,6 +414,8 @@ The sheet is 840×1190 CSS px with y growing downward. Every number in a figure 
 - A field's rows come from its layout module (§4b) with the estimated text blocks and a fixed advance of 0.6 × size per letter. Its `regions:` entry reads `<letter> <id> (<kind>, <n> parts, <rows> rows)`, and `! region <id>: part "<name>" (<part id>) is never drawn` or `! region <id>: accent <accent> names no part` follow the other notes.
 - Under the sheet it prints, in order: `regions:` (letter, id and row count per region), `texts:` (each box's corners), `floor: <y>`, the coverage, height and width (as `silhouette` measures them, each marked ok or too low), and one `region <id>:` line per fill region with its spread over mean and mean width, as `row-variety` and `thin-region` measure them (or `regions: no fill rows`). Notes that start with `! ` follow: a region under 4 rows, a word that may never be drawn, a region or text below the floor, and the `row-variety` and `thin-region` messages.
 
+In the loose frame the sketch draws no `=` line, prints `floor: the sheet's bottom edge (loose frame)` and then one corners line, `corners: top-left at <x>,<y> is <w> by <h>; top-right at …; bottom-left at …; bottom-right at …`, from `corners()` over the field laid out with no text blocks. The record line is among the `texts:` entries as `record <left>,<top> to <right>,<bottom>`.
+
 ### 4.5 Authoring numbers
 
 These are the numbers `compose` prints and SKILL.md teaches.
@@ -414,7 +448,7 @@ The parts hold every non-generated line and file exactly once. `unplainName(name
 
 ### Fields
 
-`FIELDS` in `lib/fields/index.mjs` is `{ [kind]: { about, options, layout, texts } }`. `layout(region, parts, { floor, mirror, theme, blocks, measure })` returns row items `{ x, y, width, height, size, text, spacing, part, word, hot, tone, alpha? }`. `floor` is the footer top, `mirror` is true when the masthead's centre is right of the sheet's middle, `theme` is the spec's, `blocks` are the text blocks' rects and `measure(text, size)` the text width. The page uses canvas measurements and its laid-out blocks; `sketch` uses 0.6 × size per letter and estimated blocks. The advance is rounded to 0.05px, so both place every row within 2px given the same blocks (`test/run.mjs` checks this on the field presets).
+`FIELDS` in `lib/fields/index.mjs` is `{ [kind]: { about, options, parts?, measure, fits, layout, tokens, behindTexts, texts } }`: `parts` overrides the part defaults, `measure` and `fits` are the legend's and fits' words (§3b), `texts` places the swiss frame's texts. `layout(region, parts, { floor, mirror, theme, blocks, measure })` returns row items `{ x, y, width, height, size, text, spacing, part, word, hot, tone, alpha? }`. `floor` is the footer top, `mirror` is true when the masthead's centre is right of the sheet's middle, `theme` is the spec's, `blocks` are the text blocks' rects and `measure(text, size)` the text width. The page uses canvas measurements and its laid-out blocks; `sketch` uses 0.6 × size per letter and estimated blocks. The advance is rounded to 0.05px, so both place every row within 2px given the same blocks (`test/run.mjs` checks this on the field presets).
 
 Both fields set text in Commit Mono 400 at the mockups' 6.9px and keep inside x 0 to 838 and above the floor. Terrain cuts every row around the text blocks padded by 12px (`clearOf` in `lib/geometry.mjs`); the wave runs on behind them. The advance is rounded to 0.05px, since the page measures 4.134px at 6.9px and the sketch assumes 4.14.
 
@@ -434,15 +468,26 @@ Both fields set text in Commit Mono 400 at the mockups' 6.9px and keep inside x 
 - A run starts its part's name from the first letter. A word in progress runs on over a border into the next part's slope; at a foothill's border the run instead ends on its last whole word and the foothill's name starts where the cut word began. A name breaks only where the ridge drops below the row.
 - The advance is `0.94·cw + 1.5·min(|slope|, 1.6)`, rounded to 0.25px. Tone: `hot` for accent parts; `ink` within 9px of the ridge; `mid` elsewhere. Opacity, in steps of 0.1 from 0.22 to 1: `0.42 + 0.5·lit − min(0.2, depth / 1600)`, plus 0.35 at the rim and 0.3 for the accent, where `lit = clamp(0.5 + slope / 2)` so slopes facing left catch the light. A run of letters with one part, tone, opacity and advance is one item, with `alpha` set.
 
+**`river`** (`lib/fields/river.mjs`, after `g-flow/`):
+
+- Parts default to `minShare` 0.002 and `maxParts` 24 (`parts` in the registry entry), so a river shows many streams. `partTies(parts, facts)` in `lib/parts.mjs` counts `facts.imports` between parts (a file's part is the deepest part that is its area or an ancestor; generated files are left out) as `[i, j, count]`; render passes them as `region.ties`.
+- Merge tree: start with one cluster per part; repeatedly join the two clusters with the largest `imports between them / √(loc_a × loc_b)` (average linkage), the one earlier in tree order on top.
+- Thickness: the leaving channel is 0.2 × floor; a part is `loc / (total / (0.2 × floor))` px thick, at least 3.6px, and a part thinner than that draws fewer digits (density `loc-thickness / 3.6`, never under 0.4, so no part vanishes). Streams enter stacked across y 0.2 to 0.78 × floor with 4 to 40px between them, centred; a cluster's centre is its kids' thickness-weighted mean.
+- A cluster of height h (merges below it) starts at `x = −30 + 630 × (0.22 + 0.78 × (h / root height)^0.9)`; the last merge is at x 600 and the channel runs off the right edge. Each ribbon's centre eases (quintic smootherstep) from its start to its slot in its parent.
+- Texture: 5px Commit Mono digits in 3.1px cells on 5px rows. A cell's density is 1 within 60% of the ribbon's half-thickness, falling to 0 at its edge, times the stream's density; the cell draws a digit when `hash(c, q) ≤ density^1.4`, `0` or `1` by `hash(c + 977, q + 31)` (`cellHash`, the same in Node and the page). No part name is ever printed.
+- Tone: the accent part's own stream and 3 rows by 17 cells from x 590 on the channel's centre are `hot` at alpha 1; other leaf streams alternate `ink` and `mid` by part index; merged channels `ink`. Alpha `0.3 + 0.48 × density`, in steps of 0.2. A run is one row's cells of one part, tone and alpha, gaps as spaces.
+
+**Terrain on paper.** The light theme adds 0.14 to every letter's alpha and 0.5 (not 0.3) for the accent, as i-loose did, because the dark alphas wash out on paper (`TERRAIN.lift`).
+
 ### In the page
 
-Render computes each field region's parts and embeds them, with `floor` and `mirror`, in the figure JSON. It concatenates `geometry.mjs`, `fields/wave.mjs`, `fields/terrain.mjs` and `fields/index.mjs` (imports dropped, exports unwrapped) before `fill.js`. Each item becomes a `.row` with `data-region`, `data-part`, `data-word` (the part's name or the sentence) and, for accent parts, `data-hot`, at weight 400 and at the item's `alpha` as opacity.
+Render computes each field region's parts and embeds them, with `floor` and `mirror`, in the figure JSON. It concatenates `geometry.mjs`, `fields/wave.mjs`, `fields/terrain.mjs`, `fields/river.mjs` and `fields/index.mjs` (imports dropped, exports unwrapped) before `fill.js`. Each item becomes a `.row` with `data-region`, `data-part`, `data-word` (the part's name or the sentence) and, for accent parts, `data-hot`, at weight 400 and at the item's `alpha` as opacity.
 
 ---
 
 ## 5. The footer
 
-The footer is one fragment that render builds and places at `top = 1190 − footerHeight − 36`. `footerHeight` grows with the notes count and with each line the not-built list wraps to. That top is the figure's floor (§4.5). With the current footer constants and a one-line not-built list, it is 884 for 3 notes and 920 for 2. Top to bottom:
+Swiss frame only; the loose frame has the record line instead (§3b). The footer is one fragment that render builds and places at `top = 1190 − footerHeight − 36`. `footerHeight` grows with the notes count and with each line the not-built list wraps to. That top is the figure's floor (§4.5). With the current footer constants and a one-line not-built list, it is 884 for 3 notes and 920 for 2. Top to bottom:
 
 1. A hairline rule.
 2. The counts line, in the soft ink colour.
@@ -530,7 +575,7 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 | `data-word` | Fill | The source word, as written in the spec, on every `.row`; on a field row, the part's name or the sentence. Read by `words-drawn` and `copy` |
 | `data-part` | Fill | The part id on every field row. Read by `field-parts` |
 | `data-hot` | Render on the two full stops. Fill on hot rows, the hot dots line and a hot label | This element is meant to be in the hot colour. Anything in that colour without it fails `hot-tagged` |
-| `data-block` | Fill for every text, with the text's `id`. Render for the footer blocks | A text block to measure for overlap and bounds, and to cut out of the rows |
+| `data-block` | Fill for every text, with the text's `id`. Render for the footer blocks and the loose frame's `record` | A text block to measure for overlap and bounds, and to cut out of the rows |
 | `window.drawn` | Fill | Set to `true` after the fonts load and every region and text is laid out. Render waits for it before the screenshot, the PDF and the checks |
 
 The sheet is 840×1190 CSS px. The PNG is rendered at a device scale factor of 2.

@@ -122,7 +122,7 @@ function cmdScan(argv) {
   return 0;
 }
 
-const pct = (n) => `${Math.round(n * 100)}%`;
+const pct = (n) => `${n > 0 && n < 0.01 ? Math.round(n * 1000) / 10 : Math.round(n * 100)}%`;
 
 function cmdParts(argv) {
   const { pos, opt } = args(argv, { field: { type: "string" } }, 1);

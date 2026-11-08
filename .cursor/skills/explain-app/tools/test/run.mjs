@@ -84,10 +84,19 @@ const PLANTED = [
   [
     "a text block over a field's foothill",
     "terrain",
-    (s) => s.figure.texts.push({ role: "aside", id: "lid", text: "Plan once. Plan once. Plan once.", x: 40, y: 820, w: 100 }),
+    (s) => s.figure.texts.push({ role: "paragraph", id: "lid", text: "Plan once and eat well.", x: 40, y: 1140, w: 110 }),
     /^✗ field-parts: region terrain: part "page frame" \(area:app\) is never drawn; move the text blocks that cover it$/m,
   ],
   ["an accent that names no part", "terrain", (s) => (s.figure.regions[0].accent = "area:nowhere"), /^✗ field-parts: region terrain: accent area:nowhere names no part/m],
+  ["a loose poster with no legend", "wave", (s) => (s.figure.texts = s.figure.texts.filter((t) => t.role !== "legend")), /^✗ spec: figure\.texts: 0 legends; use exactly 1$/m],
+  [
+    "a legend without the accent part's name",
+    "river",
+    (s) => (s.figure.texts.find((t) => t.role === "legend").text = "Each stream is a part of Pantry, as thick as its code; streams merge where they use each other."),
+    /^✗ legend: must say what the picture encodes; name the accent part \("the plan"\) and the measure \("merge" or "join" or "flow"\)$/m,
+  ],
+  ["a record line with no commit", "terrain", (s) => delete s.product.commit, /^✗ record: the record line has no commit; set product\.commit to the short hash/m],
+  ["a fits without the field's keyword", "wave", (s) => (s.figure.regions[0].fits = "Pantry as a band of its own parts."), /^✗ fits: region wave: fits must say why a wave matches the product's story; use "travel" or "flow" or "hand" or "move"$/m],
 ];
 
 for (const [name, id, mutate, expect] of PLANTED) {
