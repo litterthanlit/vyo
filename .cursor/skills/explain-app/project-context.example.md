@@ -24,10 +24,15 @@ Copy this file into the target app's repo at `.cursor/skills/explain-app/project
 <!-- The one word, or two-word phrase, that matters most. It is set in the accent colour.
      It must be one of the words in the picture. e.g. "leftovers" -->
 
+## Frame preference
+
+<!-- loose | swiss. Loose (the default) lets the field fill the sheet with a few words in its corners.
+     Swiss adds a masthead and a footer with counts, notes and the not-built list. -->
+
 ## Field preference
 
-<!-- wave | terrain. Wave for a story of flow or hand-off, terrain for what is big and what matters.
-     Leave blank to let the skill choose. -->
+<!-- wave | terrain | river. Wave for a story of flow or hand-off, terrain for what is big and what
+     matters, river for many things merging into one. Leave blank to let the skill choose. -->
 
 ## Accent part
 
@@ -50,7 +55,8 @@ Copy this file into the target app's repo at `.cursor/skills/explain-app/project
 
 ## Features that are not built yet
 
-<!-- Features the code has that users cannot use yet. They go in the poster's "Not built yet" line.
+<!-- Features the code has that users cannot use yet. They go in the chat reply, and in the
+     "Not built yet" line on a swiss poster.
      e.g. Stripe code exists but there is no checkout screen -->
 
 ## Additional context

@@ -1,12 +1,12 @@
 # Plain language rules
 
-These rules cover every word you write into the poster spec: the headline, the part names, the woven sentence, the region words, the texts, the notes and `notBuilt`. Render checks the banned terms and file paths for you. The rest is your judgment.
+These rules cover every word you write into the poster spec: the headline, the legend, the field's `fits`, the paragraphs, the part names, the woven sentence, the region words, the texts, the notes and `notBuilt`. Render checks the banned terms and file paths for you. The rest is your judgment.
 
 ## Principles
 
 1. **Outcomes first.** "Dinner is decided before Monday starts" comes before anything about how the app is built.
 2. **The user's words.** Describe what people see, do and get, in the words they use for it.
-3. **Honest status.** Only what a user can do today goes in the figure and the notes. Everything else goes in `notBuilt`.
+3. **Honest status.** Only what a user can do today goes in the figure, the paragraphs and the notes. Everything else goes in `notBuilt` or the chat reply.
 4. **One idea per sentence.** Short sentences, no nested clauses.
 5. **Replace, never define.** The poster has no glossary. If a term needs explaining, use a plainer word.
 
@@ -37,7 +37,7 @@ Render rejects any word in the first column, in any visible text. Use the second
 | modules | "parts of the app" |
 | repository | "project", or the product name |
 | repo | "project", or the product name |
-| commit | Leave it out. The footer already names the version |
+| commit | Leave it out. The record line or the footer already names the version |
 | commits | Leave it out |
 | pr | Leave it out |
 | mvp | "what's live now" |
@@ -83,9 +83,22 @@ Region words build the picture, so each one must make sense on its own to someon
 - Plain and calm. No exclamation marks, no superlatives, no questions.
 - At most 72 characters, so it stays on two lines or fewer.
 
-## Voice for the notes
+## Voice for the legend and the fits sentence
 
-Each note is a short title and two or three sentences. The notes say what the picture cannot.
+The legend is the poster's key. It tells a stranger how to read the picture in one or two sentences.
+
+- **Say what one mark is, then what it measures.** "Every peak is a part of Pantry, as tall as its code and as wide as its files."
+- **Name the accent part by its plain name and its colour on the poster.** "The orange peak is the plan." On a light wave the accent rows are black, so say "black".
+- **Use only the measure words a person already knows.** "Code", "lines" and "files" for size, "wide" and "tall" for shape, "merge", "join" and "flow" for a river. Never "share", "LOC", "module" or a percentage.
+
+The `fits` sentence is never drawn. You quote it in the chat reply, so write it for the owner.
+
+- **Start from the story, then name the field's move.** "Pantry merges many saved recipes into one week, so every part of its code joins one river."
+- **Use the field's own word.** A wave travels or moves, a terrain shows what matters most, a river merges many into one. The `fits` check looks for it.
+
+## Voice for the paragraphs and the notes
+
+A loose poster has 0 to 2 paragraphs, and a swiss poster has 2 or 3 notes, each a short title and two or three sentences. Both say what the picture cannot.
 
 - **How it works.** The steps a user takes, as actions: "Save the recipes you cook. Pantry fills the week from them."
 - **Proof.** Something real and dated, if the docs have one: a recorded run, a first customer, a test the user can repeat. If there is no proof, use the column for what happens on its own ("Every Monday at 8, the plan arrives by email").
@@ -97,8 +110,8 @@ Write "you" for the user and the product name for the app. Never "the system" or
 
 | Where it goes | When |
 |---|---|
-| Figure, headline and notes | A user can do it in the app today |
-| `notBuilt` | The code has it, but no screen lets a user use it yet. A payment library with no checkout screen. An email job with no way to turn it on |
+| Figure, headline, legend, paragraphs and notes | A user can do it in the app today |
+| `notBuilt` on a swiss poster, the chat reply on a loose one | The code has it, but no screen lets a user use it yet. A payment library with no checkout screen. An email job with no way to turn it on |
 | Nowhere | It is planned but not in the code |
 
 Never describe a `notBuilt` item as something a user can do. One honest gap builds more trust than a full list of claims.

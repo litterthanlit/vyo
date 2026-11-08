@@ -16,31 +16,29 @@
 
 ## Choosing the field for three products
 
-Write the product's story in one sentence. If it moves something from one place to another, take wave. If it is about which parts carry the product, take terrain. Then run `vyo parts` and put the accent on the part the story is about.
+Write the product's story in one sentence. If it moves something from one place to another, take wave. If it is about which parts carry the product, take terrain. If many things merge into one, take river. Then run `vyo parts` with that field and put the accent on the part the story is about.
 
 | Product | Story | Field | Accent part | Plain names |
 |---|---|---|---|---|
 | Pantry, a meal planner | Your recipes go in, one week of dinners comes out, and the list goes to the shop | wave | `area:lib/plan`, the part that builds the week | Two parts scan as "Plan". Call `area:components/plan` "week view" and `area:lib/plan` "the plan" |
 | Tally, a review inbox for small shops | Of all the parts, the one that picks today's review is the product | terrain | the part that ranks reviews | A scanned name like `RANKER2` is flagged. Call it "today's pick" |
-| Hypher, project memory for coding agents | A handoff leaves one agent and the next agent picks it up | wave | `area:packages/hypher-cli/src`, the command that saves and resumes | `area:hypher-web/convex` is flagged as "Convex", a vendor. Call it "server". Two parts both scan as "Inner workings", so give each its own name |
+| Hypher, project memory for coding agents | Saves from many agent sessions merge into one project note that the next agent reads | river | `area:hypher-web/convex`, where saves land and merge into the note | `parts --field river` flags it as "Convex", a vendor. Call it "server". Three parts scan as "Main app", so give each its own name. "Oauth" is not flagged but reads as code, so call it "sign-in" |
 
-Tally is made up. Pantry is the `recipe` test fixture, and Hypher's parts come from `explorations/2026-11-07-abstract-fields/hypher-facts.json`.
+Tally is made up. Pantry is the `recipe` test fixture. Hypher's parts come from `explorations/2026-11-07-abstract-fields/hypher-facts.json`, and a river splits them finer than a wave or a terrain does, so its ids differ.
 
 ## The fields, as full specs for Pantry
 
-Pantry is the `recipe` test fixture. It has 6 screens (recipes, a recipe, a new recipe, the weekly plan, settings, home), recipes with ingredients, a weekly plan, a shopping list, AI suggestions, and a weekly email every Monday at 8. It has payment code but no checkout screen, so each spec puts "paid plans" in `notBuilt`.
+Pantry is the `recipe` test fixture. It has 6 screens (recipes, a recipe, a new recipe, the weekly plan, settings, home), recipes with ingredients, a weekly plan, a shopping list, AI suggestions, and a weekly email every Monday at 8. It has payment code but no checkout screen, so the chat reply lists "paid plans" as not built.
 
-Each block below is the preset file in `tools/presets/`. `compose --field <id>` writes the same shape with placeholders. The `facts` value is a placeholder: yours is the hash from your own scan, and `compose` writes it. The fixture is not a git repo, so `product` has no `commit`. Both specs name every part, not only the flagged ones, because the scanned names repeat ("Plan", "Recipes", "Main app").
+Each block below is the preset file in `tools/presets/`. `compose --field <id>` writes the same shape with placeholders and its own text positions. The `facts` value is a placeholder: yours is the hash from your own scan, and `compose` writes it. The commit is made up, since the fixture is not a git repo. Each spec names every part, not only the flagged ones, because the scanned names repeat ("Plan", "Recipes", "Main app").
 
-Render writes the counts line from the scan. Never type it:
-
-```
-6 screens, 3 kinds of request, 4 kinds of saved record, 3 outside services (email, payments, sign-in), 1 AI model, runs 1 job on its own
-```
+The legend names the accent part as the poster colours it. On a light wave the accent rows are black. On dark, and on a terrain or river, they are orange.
 
 ### wave
 
-Pantry's story is a flow: recipes go in, the week's plan forms, the list goes to the shop. The wave carries that flow down the page, and the accent on `area:lib/plan` lights the rows where the plan is built.
+Pantry's story is a flow: recipes go in, the week's plan forms, the list goes to the shop. The wave carries that flow down the page, and the accent on `area:lib/plan` marks the rows where the plan is built.
+
+The legend names "the plan" and the measure "code". The fits sentence passes with "moves" and "travels".
 
 ```json
 {
@@ -119,10 +117,11 @@ Pantry's story is a flow: recipes go in, the week's plan forms, the list goes to
   }
 }
 ```
-
 ### terrain
 
-Read as a range, Pantry shows that its screens are the biggest part and that a few small parts do the planning. The accent is a glob, `area:lib/*`, so the plan, the suggestions and the recipe book all stand out as one ridge.
+Read as a range, Pantry shows that its screens are the biggest part and that the plan is a small peak that carries the product.
+
+The legend names "the plan" and both measures, "code" and "files". The fits sentence passes with "matters" and "most".
 
 ```json
 {
@@ -200,23 +199,198 @@ Read as a range, Pantry shows that its screens are the biggest part and that a f
   }
 }
 ```
+### river
 
+Pantry takes many saved recipes and makes one week from them. Every part enters as a stream, and the plan is the stream lit in orange.
+
+The legend names "the plan" and the measure "merge". The fits sentence passes with "merges", "many", "joins" and "one". A river prints no part names, so a paragraph says what the product does.
+
+```json
+{
+  "version": 3,
+  "frame": "loose",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "river",
+        "field": "river",
+        "fits": "Pantry merges many saved recipes into one week, so every part of its code joins one river.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      {
+        "role": "label",
+        "id": "label",
+        "x": 40,
+        "y": 40,
+        "w": 220,
+        "align": "left"
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 40,
+        "y": 995,
+        "w": 364,
+        "align": "left"
+      },
+      {
+        "role": "legend",
+        "id": "legend",
+        "x": 540,
+        "y": 1046,
+        "w": 260,
+        "align": "right",
+        "text": "Each stream is a part of Pantry, as thick as its code; streams merge where they use each other. The orange stream is the plan."
+      },
+      {
+        "role": "paragraph",
+        "id": "paragraph",
+        "x": 560,
+        "y": 40,
+        "w": 240,
+        "align": "right",
+        "text": "Save the recipes you already cook. Pantry fills the week from them and builds the shopping list."
+      }
+    ]
+  }
+}
+```
 ## Sample chat reply
 
 ```markdown
 Pantry plans a week of dinners from the recipes you already cook, then turns the plan into a shopping list and emails it every Monday.
 
-I drew Pantry as a wave of its own parts, one row per share of its code, from saved recipes at the top to the recipe book at the bottom. The rows that build the week's plan are in orange, because the plan is what Pantry is for.
+I drew Pantry as a wave with the plan as the accent, because "Pantry's story is a week that moves from saved recipes to dinners, so a band of its code travels down the page."
+
+The legend reads: "Every row is a part of Pantry, as many rows as it has code. The black rows are the plan."
 
 - PNG: /Users/<you>/code/pantry/vyo/recipe-poster.png
 - PDF: /Users/<you>/code/pantry/vyo/recipe-poster.pdf
 
-Gaps: the code has payments, but there is no checkout screen, so the poster lists "paid plans" under "Not built yet". Add `vyo/` to `.gitignore` unless you want to commit the poster.
+Gaps: the code has payments, but there is no checkout screen, so paid plans are not built yet. Add `vyo/` to `.gitignore` unless you want to commit the poster.
+```
+
+## Swiss frame
+
+Use it when the owner asks for a masthead and footer, or the repo has no git history. `compose --field wave --frame swiss` writes this shape. The aside does the legend's job, and the footer holds the notes, the not-built list and the counts line that render writes from the scan. Never type the counts:
+
+```
+6 screens, 3 kinds of request, 4 kinds of saved record, 3 outside services (email, payments, sign-in), 1 AI model, runs 1 job on its own
+```
+
+### wave-swiss
+
+```json
+{
+  "version": 3,
+  "frame": "swiss",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "date": "2026-11-07"
+  },
+  "theme": "light",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "wave",
+        "field": "wave",
+        "fits": "Pantry's story is a week that moves from saved recipes to dinners, so a band of its code travels down the page.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "sentence": "dinner, decided"
+      }
+    ],
+    "texts": [
+      {
+        "role": "masthead",
+        "id": "masthead",
+        "x": 50,
+        "y": 36,
+        "w": 490
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 56,
+        "y": 150,
+        "w": 420
+      },
+      {
+        "role": "aside",
+        "id": "aside",
+        "x": 56,
+        "y": 764,
+        "w": 240,
+        "text": "Every row is a part of Pantry, as many rows as it has code. The black rows build the week's plan."
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "How it works",
+      "text": "Save the recipes you already cook. Pantry fills the week from them, suggests a few new ones, and builds the shopping list from what the plan needs."
+    },
+    {
+      "title": "Every Monday",
+      "text": "At 8 in the morning Pantry emails you the week's plan, so the first dinner is decided before the day starts."
+    },
+    {
+      "title": "Yours alone",
+      "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can pick up the week on any device."
+    }
+  ],
+  "notBuilt": [
+    "paid plans"
+  ]
+}
 ```
 
 ## Drawing your own silhouette
 
-Use this path when the owner asks for a picture, or the scan is empty. You invent one silhouette that acts out the product's main moment and describe it as fill regions and texts. Start from `compose --from <preset>`, then sketch, render and check as for a field.
+Use this path when the owner asks for a picture, or the scan is empty. You invent one silhouette that acts out the product's main moment and describe it as fill regions and texts. Fill figures sit in the swiss frame, with its masthead and footer. Start from `compose --from <preset>`, then sketch, render and check as for a field.
 
 ### Find the shape
 
@@ -312,7 +486,7 @@ Write the main moment as one sentence. Find its verb. The verb gives the shape.
 
 ### The fill presets, as full specs for Pantry
 
-Pantry is the same fixture as above. `node tools/vyo.mjs presets` lists these four beside wave and terrain. `compose --from <id>` copies one with its words replaced by placeholders. A poster that keeps a preset's geometry unchanged gets the `preset-copy` warning, so use them to learn from or to bend, not to ship as they are.
+Pantry is the same fixture as above. `node tools/vyo.mjs presets` lists these four beside wave, terrain, river and wave-swiss. `compose --from <id>` copies one with its words replaced by placeholders. A poster that keeps a preset's geometry unchanged gets the `preset-copy` warning, so use them to learn from or to bend, not to ship as they are.
 
 Each block below is the preset file in `tools/presets/`, with the same words and geometry. Only the layout of the number lists is tighter.
 
