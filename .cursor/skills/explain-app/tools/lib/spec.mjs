@@ -419,7 +419,7 @@ function fieldFigure(field, floor, { accent, unplain }) {
         kind: "field",
         id: field,
         field,
-        fits: hold(`one sentence on why a ${field} matches the product's story, at most ${LIMITS.fits} characters`),
+        fits: hold(`one sentence on why a ${field} matches the product's story, with ${FIELDS[field].fits.map((w) => `"${w}"`).join(" or ")}, at most ${LIMITS.fits} characters`),
         ...(accent ? { accent } : {}),
         ...(unplain.length ? { names: Object.fromEntries(unplain.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])) } : {}),
         ...(FIELDS[field].options.includes("sentence") ? { sentence: hold(`a sentence woven in every ${WAVE.every}th row, at most ${LIMITS.sentence} characters, or remove it`) } : {}),

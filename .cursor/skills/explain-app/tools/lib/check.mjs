@@ -23,6 +23,12 @@ const fillRowsOf = (page) => {
   const fills = new Set(page.regions.filter((r) => r.kind === "fill").map((r) => r.id));
   return page.rows.filter((r) => fills.has(r.region));
 };
+// A keyword counts when a word starts with it, case-folded: "travels" has "travel", "hand-off" has "hand".
+const startsWord = (text, word) => new RegExp(`(^|[^\\p{L}\\p{N}])${word}`, "iu").test(text);
+const anyOf = (words) => words.map((w) => `"${w}"`).join(" or ");
+/** The legend's message: the accent part's plain name and the field's measure words. */
+export const legendMessage = (names, measure) =>
+  `must say what the picture encodes; name the accent part (${names.length ? names.map((n) => `"${n}"`).join(" or ") : "set an accent first"}) and the measure (${measure.map(anyOf).join(", and ")})`;
 const linesOf = (facts) => Object.values(facts.files).reduce((s, f) => s + (f.gen ? 0 : f.loc), 0);
 const union = (rects) => rects.reduce((u, r) => ({ left: Math.min(u.left, r.left), top: Math.min(u.top, r.top), right: Math.max(u.right, r.right), bottom: Math.max(u.bottom, r.bottom) }), { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
 
@@ -121,6 +127,25 @@ export const CHECKS = [
   {
     id: "accent-part", level: "warn", stage: "spec", about: "every field sets an accent part",
     run: ({ spec }) => fieldsOf(spec).filter((r) => r.accent === undefined).map((r) => `no accent part in region ${r.id}; set accent to the id of the part the poster is about (vyo parts lists them)`),
+  },
+  {
+    id: "legend", level: "fail", stage: "spec", frames: ["loose"], about: "the legend names the accent part and the field's measure, so the picture reads as this project",
+    run: ({ spec, facts }) =>
+      fieldsOf(spec).flatMap((r) => {
+        const legend = spec.figure.texts.find((t) => t.role === "legend")?.text ?? "";
+        const names = regionParts(r, facts).filter((p) => p.hot).map((p) => p.name);
+        const { measure } = FIELDS[r.field];
+        const named = names.some((n) => legend.toLowerCase().includes(n.toLowerCase()));
+        const measured = measure.every((group) => group.some((w) => startsWord(legend, w)));
+        return named && measured ? [] : [legendMessage(names, measure)];
+      }),
+  },
+  {
+    id: "fits", level: "fail", stage: "spec", about: "a field's fits says why this field matches the product's story, in one of the field's keywords",
+    run: ({ spec }) =>
+      fieldsOf(spec)
+        .filter((r) => !FIELDS[r.field].fits.some((w) => startsWord(r.fits, w)))
+        .map((r) => `region ${r.id}: fits must say why a ${r.field} matches the product's story; use ${anyOf(FIELDS[r.field].fits)}`),
   },
   {
     id: "drawn", level: "fail", stage: "page", about: "the figure script ran to the end",

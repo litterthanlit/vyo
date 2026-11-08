@@ -60,7 +60,7 @@ Pantry's story is a flow: recipes go in, the week's plan forms, the list goes to
         "kind": "field",
         "id": "wave",
         "field": "wave",
-        "fits": "Pantry as a wave of its own parts, one row per share of its code, with the part that builds the week's plan in the accent.",
+        "fits": "Pantry's story is a week that moves from saved recipes to dinners, so a band of its code travels down the page.",
         "accent": "area:lib/plan",
         "names": {
           "area:.": "saved recipes",
@@ -146,7 +146,7 @@ Read as a range, Pantry shows that its screens are the biggest part and that a f
         "kind": "field",
         "id": "terrain",
         "field": "terrain",
-        "fits": "Pantry as a range of peaks, one per part, height by code and width by files, with the parts that plan the week and suggest recipes in orange.",
+        "fits": "Pantry's story is which parts matter most, so each part stands as a peak as big as its code, with the planning parts in orange.",
         "accent": "area:lib/*",
         "names": {
           "area:.": "saved recipes",

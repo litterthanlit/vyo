@@ -8,6 +8,9 @@ export const FIELDS = {
   wave: {
     about: "rows of part names bent into one band from the top edge to the floor, one row per share of lines",
     options: ["sentence", "every"],
+    // What a legend must name: one word from each group. Why a wave fits: one of these in the field's fits.
+    measure: [["code", "lines"]],
+    fits: ["travel", "flow", "hand", "move"],
     layout: waveRows,
     // Colour tokens of the field's own, on top of the theme's, for its rows only.
     tokens: (theme) => WAVE_TONES[theme].tokens,
@@ -19,6 +22,8 @@ export const FIELDS = {
   terrain: {
     about: "one peak per part, height by lines and width by files, in rows of the names of the slopes",
     options: [],
+    measure: [["code", "lines"], ["files", "wide"]],
+    fits: ["big", "weight", "matters", "most"],
     layout: terrainRows,
     tokens: () => ({}),
     behindTexts: false,

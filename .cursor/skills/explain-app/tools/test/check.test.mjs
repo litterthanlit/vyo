@@ -102,7 +102,7 @@ test("every check has a unique id, a level, a stage and a description", () => {
   for (const c of CHECKS) assert.ok(["fail", "warn"].includes(c.level) && ["spec", "page"].includes(c.stage) && c.about, c.id);
   assert.deepEqual(
     CHECKS.map((c) => c.id).sort(),
-    ["accent-part", "band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "field-parts", "fonts", "headline-lines", "hot-tagged", "masthead-font", "notes", "one-region", "palette", "part-name", "path", "preset-copy", "product-name", "record", "region-size", "regions-apart", "row-variety", "rows-fit", "silhouette", "spec", "thin-region", "words-drawn"],
+    ["accent-part", "band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "field-parts", "fits", "fonts", "headline-lines", "hot-tagged", "legend", "masthead-font", "notes", "one-region", "palette", "part-name", "path", "preset-copy", "product-name", "record", "region-size", "regions-apart", "row-variety", "rows-fit", "silhouette", "spec", "thin-region", "words-drawn"],
   );
 });
 
@@ -158,4 +158,41 @@ test("part-name warns for vendor names, stray names and two parts with one name;
   assert.deepEqual(run(field({ accent: "area:web", names: { "area:convex": "server", "area:gone": "old" } })).map((f) => f.message), ["names has area:gone, which is not a part of region wave; vyo parts lists the part ids"]);
   assert.deepEqual(run(field({ accent: undefined, names: { "area:convex": "server" } })).map((f) => [f.id, f.message]), [["accent-part", "no accent part in region wave; set accent to the id of the part the poster is about (vyo parts lists them)"]]);
   assert.deepEqual(run(field({ accent: "area:web", names: { "area:convex": "Web" } })).map((f) => [f.level, f.message]), [["warn", 'parts area:convex and area:web are all called "Web"; give each a plain name of its own in names']]);
+});
+
+const loose = (legend, region = {}) => ({
+  version: 3, facts: recipe.hash, product: { name: "Pantry", repo: "recipe", commit: "04186f4", date: "2026-11-07" }, theme: "light", headline: "Dinner, decided.",
+  figure: {
+    regions: [field({ fits: "Pantry's week travels from recipes to dinners.", names: { "area:lib/plan": "the plan" }, ...region })],
+    texts: [{ role: "label", id: "label", x: 600, y: 40, w: 200 }, { role: "headline", id: "headline", x: 400, y: 80, w: 400 }, { role: "legend", id: "legend", x: 40, y: 800, w: 240, text: legend }],
+  },
+});
+const specFindings = (s, id) => runChecks("spec", { spec: s, facts: recipe, presets: {} }).filter((f) => f.id === id).map((f) => f.message);
+
+test("legend: a loose field poster's legend names the accent part and the field's measure", () => {
+  assert.deepEqual(specFindings(loose("Each row is a part, as many rows as it has code. The dark rows are the plan."), "spec"), []);
+  assert.deepEqual(specFindings(loose("Each row is a part, as many rows as it has code. The dark rows are the plan."), "legend"), []);
+  const msg = 'must say what the picture encodes; name the accent part ("the plan") and the measure ("code" or "lines")';
+  assert.deepEqual(specFindings(loose("Each row is a part, as many rows as it has code."), "legend"), [msg], "no accent name");
+  assert.deepEqual(specFindings(loose("Each row is a part. The dark rows are the plan."), "legend"), [msg], "no measure");
+  const terrain = specFindings(loose("Each peak is a part, as tall as its code. The orange peak is the plan.", { field: "terrain", fits: "The parts that matter most stand tallest." }), "legend");
+  assert.deepEqual(terrain, ['must say what the picture encodes; name the accent part ("the plan") and the measure ("code" or "lines", and "files" or "wide")'], "a terrain also says files or wide");
+  assert.deepEqual(specFindings({ ...loose("x"), frame: "swiss" }, "legend"), [], "a swiss poster has no legend to check");
+});
+
+test("fits: a field's fits uses one of the field's keywords, as the start of a word", () => {
+  assert.deepEqual(specFindings(loose("The plan, in code."), "fits"), []);
+  assert.deepEqual(specFindings(loose("The plan, in code.", { fits: "It hands the week on." }), "fits"), [], '"hands" starts with "hand"');
+  assert.deepEqual(specFindings(loose("The plan, in code.", { fits: "A band of colour across the page." }), "fits"), ['region wave: fits must say why a wave matches the product\'s story; use "travel" or "flow" or "hand" or "move"']);
+  assert.deepEqual(specFindings(loose("The plan, in code.", { field: "terrain", fits: "Pantry's week travels." }), "fits").length, 1, "a terrain needs its own keywords");
+});
+
+test("record: a loose poster draws one record line with the commit and the date", () => {
+  const s = loose("x");
+  const want = "Pantry at 04186f4, 7 November 2026. Drawn by Vyo.";
+  const run = (blocks, spec = s) => runChecks("page", { spec, facts: recipe, page: page({ blocks }) }).filter((f) => f.id === "record").map((f) => f.message);
+  assert.deepEqual(run([{ name: "record", text: want, rect: rect(40, 1150, 340, 1160) }]), []);
+  assert.deepEqual(run([]), ["the poster shows 0 record lines; it needs exactly one"]);
+  assert.deepEqual(run([{ name: "record", text: "Pantry, 7 November 2026. Drawn by Vyo.", rect: rect(40, 1150, 340, 1160) }], { ...s, product: { ...s.product, commit: undefined } }), ["the record line has no commit; set product.commit to the short hash (vyo compose --repo fills it)"]);
+  assert.ok(!runChecks("page", { spec: { ...s, frame: "swiss", notes: [] }, facts: recipe, page: page({ blocks: [] }) }).some((f) => f.id === "record"), "swiss has no record line");
 });
