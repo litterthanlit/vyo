@@ -6,7 +6,8 @@ import { fileURLToPath } from "node:url";
 import { FIELDS } from "../lib/fields/index.mjs";
 import { waveRows, rowsPerPart, WAVE } from "../lib/fields/wave.mjs";
 import { terrainRows, TERRAIN } from "../lib/fields/terrain.mjs";
-import { regionParts } from "../lib/parts.mjs";
+import { riverRows, mergeTree, RIVER } from "../lib/fields/river.mjs";
+import { regionParts, partTies } from "../lib/parts.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
 import { fixedMeasure } from "../lib/geometry.mjs";
 
@@ -19,7 +20,8 @@ const frame = (over = {}) => ({ floor: 900, mirror: false, blocks: [masthead, as
 const touches = (it, b, pad) => it.x < b.right + pad && it.x + it.width > b.left - pad && it.y < b.bottom + pad && it.y + it.height > b.top - pad;
 
 test("the registry names each field once, with its layout and the options only it takes", () => {
-  assert.deepEqual(Object.keys(FIELDS), ["wave", "terrain"]);
+  assert.deepEqual(Object.keys(FIELDS), ["wave", "terrain", "river"]);
+  assert.deepEqual(FIELDS.river.options, []);
   assert.deepEqual(FIELDS.wave.options, ["sentence", "every"]);
   assert.deepEqual(FIELDS.terrain.options, []);
 });
@@ -118,4 +120,30 @@ test("terrain: a name starts whole at each run and never breaks where the next p
     return r.text.trim().length >= Math.min(...words.map((w) => w.length)) && !words.includes(tail);
   });
   assert.deepEqual(broken.map((r) => `${r.text.slice(-12)} | ${runs[runs.indexOf(r) + 1].text.slice(0, 8)}`), []);
+});
+
+test("river: digits only, every part a stream from the left edge, one channel off the right, the accent's stream and the last merge in the accent", () => {
+  const region = { field: "river", accent: "area:hypher-web/shared" };
+  const parts = regionParts(region, hypher);
+  assert.equal(parts.length, 21, "the river's own part defaults draw more, smaller parts than the wave's 13");
+  const ties = partTies(parts, hypher);
+  assert.ok(ties.length > 10 && ties.every(([i, j, n]) => i < j && n > 0));
+  const items = riverRows({ ...region, ties }, parts, frame({ floor: 1190, blocks: [] }));
+  assert.ok(items.every((it) => /^[01 ]+$/.test(it.text) && it.text.trim() === it.text), "binary digits only, no part names");
+  for (const p of parts) assert.ok(items.some((i) => i.part === p.id), `${p.id} has digits`);
+  for (const it of items) assert.ok(it.x >= 0 && it.x + it.width <= 840 && it.y >= 0 && it.y + it.height <= 1190, `run at ${it.x},${it.y} on the sheet`);
+  for (const it of items) assert.ok(Math.abs(it.y / RIVER.pitch - Math.round(it.y / RIVER.pitch)) < 1e-9, "rows on the 5px grid");
+  assert.ok(items.some((it) => it.x < 4), "streams enter at the left edge");
+  assert.ok(items.some((it) => it.x + it.width > 830), "the channel leaves the right edge");
+  const hot = items.filter((i) => i.hot);
+  assert.ok(hot.some((i) => i.part === "area:hypher-web/shared" && i.x < 300), "the accent part's stream is hot");
+  assert.ok(hot.some((i) => i.x >= RIVER.last - RIVER.accent.back - 4), "and so is a short run at the last merge");
+  assert.ok(items.filter((i) => !i.hot).every((i) => ["ink", "mid"].includes(i.tone)));
+});
+
+test("river: parts tied by imports merge before parts that are not", () => {
+  const parts = [{ loc: 100 }, { loc: 100 }, { loc: 100 }];
+  const root = mergeTree(parts, [[0, 2, 9]]);
+  const first = root.kids.find((k) => !k.leaf);
+  assert.deepEqual(first.members, [0, 2]);
 });

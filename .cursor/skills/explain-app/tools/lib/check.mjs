@@ -4,7 +4,7 @@ import { validateSpec, textProblems, hasWord, geometryKey } from "./spec.mjs";
 import { bandCounts, bandLine } from "./band.mjs";
 import { FONT_FACES, tokensOf, fieldTokensOf, recordText } from "./render.mjs";
 import { frameOf, ROLES } from "./frame.mjs";
-import { partsFromFacts, regionParts, unplainName, sameNames } from "./parts.mjs";
+import { partsFromFacts, partOptions, regionParts, unplainName, sameNames } from "./parts.mjs";
 import { FIELDS } from "./fields/index.mjs";
 
 const rgb = (hex) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(", ")})`;
@@ -116,7 +116,7 @@ export const CHECKS = [
     id: "part-name", level: "warn", stage: "spec", about: "every part a field draws has a plain name of its own, and every name in names belongs to a part",
     run: ({ spec, facts }) =>
       fieldsOf(spec).flatMap((r) => {
-        const parts = partsFromFacts(facts, r);
+        const parts = partsFromFacts(facts, partOptions(r));
         return [
           ...parts.filter((p) => unplainName(p.name)).map((p) => `part "${p.name}" (${p.id}) looks like a vendor or code name; add a plain name in names`),
           ...Object.keys(r.names ?? {}).filter((id) => !parts.some((p) => p.id === id)).map((id) => `names has ${id}, which is not a part of region ${r.id}; vyo parts lists the part ids`),

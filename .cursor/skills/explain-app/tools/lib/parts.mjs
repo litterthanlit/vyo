@@ -1,6 +1,7 @@
 // The parts a field draws: the scan's areas cut down to a handful, sized by lines and files. Pure.
 import { VENDORS } from "./scan/detect-services.mjs";
 import { matchGlob } from "./scan/glob.mjs";
+import { FIELDS } from "./fields/index.mjs";
 
 export const PART_DEFAULTS = { minShare: 0.02, maxParts: 14 };
 const ROOT = "area:.";
@@ -101,9 +102,38 @@ export function accentIds(parts, accent) {
   return new Set();
 }
 
+/** A region's part options: its field's defaults, then its own. */
+export const partOptions = (region) => ({ ...FIELDS[region.field]?.parts, ...region });
+
+/** The part that holds `area`: the deepest part that is the area itself or one of its ancestors. */
+function partOfArea(ids, area) {
+  for (let segs = segmentsOf(area); ; segs = segs.slice(0, -1)) {
+    if (ids.has(idOf(segs))) return idOf(segs);
+    if (!segs.length) return null;
+  }
+}
+
+/**
+ * How many imports join each pair of parts, as [i, j, count] with i < j, indexes into `parts`.
+ * @param {{ id: string }[]} parts
+ * @param {{ files: Record<string, { area: string, gen?: number }>, imports?: [string, string][] }} facts
+ */
+export function partTies(parts, facts) {
+  const ids = new Set(parts.map((p) => p.id));
+  const index = new Map(parts.map((p, i) => [p.id, i]));
+  const of = (file) => (facts.files[file] && !facts.files[file].gen ? index.get(partOfArea(ids, facts.files[file].area)) : undefined);
+  const ties = new Map();
+  for (const [a, b] of facts.imports ?? []) {
+    const [i, j] = [of(a), of(b)].sort((x, y) => x - y);
+    if (i === undefined || j === undefined || i === j) continue;
+    ties.set(`${i} ${j}`, (ties.get(`${i} ${j}`) ?? 0) + 1);
+  }
+  return [...ties].map(([k, n]) => [...k.split(" ").map(Number), n]);
+}
+
 /** The parts of one field region, each marked hot when the region's accent names it. */
 export function regionParts(region, facts) {
-  const parts = partsFromFacts(facts, region);
+  const parts = partsFromFacts(facts, partOptions(region));
   const hot = accentIds(parts, region.accent);
   return parts.map((p) => ({ ...p, hot: hot.has(p.id) }));
 }

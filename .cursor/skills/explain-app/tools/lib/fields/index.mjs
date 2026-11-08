@@ -1,8 +1,9 @@
-// The field registry: each kind of field, the region keys only it takes, its layout, and where `compose`
-// places the texts so the field has room. Render inlines this file after wave.mjs and terrain.mjs, so the
-// page and `vyo sketch` look fields up in the same table.
+// The field registry: each kind of field, the region keys only it takes, its part defaults, its layout, the
+// words its legend and fits must use, and where `compose` places the swiss frame's texts so the field has room.
+// Render inlines this file after the field modules, so the page and `vyo sketch` look fields up in the same table.
 import { waveRows, WAVE_TONES } from "./wave.mjs";
 import { terrainRows } from "./terrain.mjs";
+import { riverRows } from "./river.mjs";
 
 export const FIELDS = {
   wave: {
@@ -29,5 +30,18 @@ export const FIELDS = {
     behindTexts: false,
     // The range fills the lower two thirds; the sky above holds the words.
     texts: () => ({ headline: { x: 56, y: 150, w: 490 }, aside: { x: 594, y: 64, w: 190 } }),
+  },
+  river: {
+    about: "one stream of 0s and 1s per part from the left edge, as thick as its share of lines, merging by imports into one channel off the right edge",
+    options: [],
+    // More, smaller parts than the other fields: a river reads as many streams.
+    parts: { minShare: 0.002, maxParts: 24 },
+    measure: [["merge", "join", "flow"]],
+    fits: ["merge", "join", "many", "one"],
+    layout: riverRows,
+    tokens: () => ({}),
+    behindTexts: true,
+    // The streams fill the middle band; the words sit above and below it.
+    texts: (floor) => ({ headline: { x: 56, y: 150, w: 490 }, aside: { x: 56, y: floor - 120, w: 270 } }),
   },
 };

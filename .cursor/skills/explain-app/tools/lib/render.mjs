@@ -7,7 +7,7 @@ import { hasWord } from "./spec.mjs";
 import { SHEET, fixedMeasure } from "./geometry.mjs";
 import { frameOf, textSize, lineHeight, ruleText, recordSpot, RECORD } from "./frame.mjs";
 import { bandCounts, bandLine, provenance } from "./band.mjs";
-import { regionParts } from "./parts.mjs";
+import { regionParts, partTies } from "./parts.mjs";
 import { FIELDS } from "./fields/index.mjs";
 
 const TOOLS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -130,7 +130,14 @@ export const recordText = (product) => `${provenance(product)}. Drawn by Vyo`;
 
 /** The field's rows as Node lays them out with Commit Mono's fixed advance, around `blocks`. */
 export function fieldItems(spec, region, facts, blocks, measure = fixedMeasure) {
-  return FIELDS[region.field].layout(region, regionParts(region, facts), { ...fieldFrame(spec), blocks, measure });
+  const r = fieldInput(region, facts);
+  return FIELDS[region.field].layout(r, r.parts, { ...fieldFrame(spec), blocks, measure });
+}
+
+/** A field region as its layout reads it: with its parts and the imports that tie them, both from facts.json. */
+function fieldInput(region, facts) {
+  const parts = regionParts(region, facts);
+  return { ...region, parts, ties: partTies(parts, facts) };
 }
 
 /** Where the record line sits: clear of the field's rows as laid out with no text blocks to dodge. */
@@ -178,7 +185,7 @@ window.fitWidth = (el, max) => {
 // The page lays out the figure with the same geometry and field modules `vyo sketch` runs in Node,
 // concatenated into one script: their imports are each other, so they are dropped.
 const LIB = path.join(TOOLS, "lib");
-const PAGE_MODULES = ["geometry.mjs", "fields/wave.mjs", "fields/terrain.mjs", "fields/index.mjs"];
+const PAGE_MODULES = ["geometry.mjs", "fields/wave.mjs", "fields/terrain.mjs", "fields/river.mjs", "fields/index.mjs"];
 const figureScript = () =>
   [...PAGE_MODULES.map((f) => fs.readFileSync(path.join(LIB, f), "utf8").replace(/^import .*\n/gm, "").replace(/^export /gm, "")), fs.readFileSync(path.join(LIB, "fill.js"), "utf8")]
     .join("\n")
@@ -192,7 +199,7 @@ export function fieldFrame(spec) {
 
 /** The figure as the page reads it: field regions carry their parts, computed from facts.json. */
 const figureData = (spec, facts) => ({
-  regions: spec.figure.regions.map((r) => (r.kind === "field" ? { ...r, parts: regionParts(r, facts) } : r)),
+  regions: spec.figure.regions.map((r) => (r.kind === "field" ? fieldInput(r, facts) : r)),
   hot: spec.hot ?? null,
   ...fieldFrame(spec),
 });
