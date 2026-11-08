@@ -43,6 +43,9 @@ for (const id of PRESETS) {
   fs.writeFileSync(specFile, JSON.stringify(preset(id), null, 2));
   const r = vyo("render", specFile, "--facts", factsFile);
   result(r.status === 0 && /^PASS$/m.test(r.stdout) && !/^✗/m.test(r.stderr), `preset ${id} renders and passes every check`, r.stdout + r.stderr);
+  const thumb = path.join(dir, "recipe-poster-thumb.png");
+  const wh = fs.existsSync(thumb) ? [fs.readFileSync(thumb).readUInt32BE(16), fs.readFileSync(thumb).readUInt32BE(20)] : [];
+  result(wh[0] === 280 && wh[1] === 396 && r.stdout.includes(thumb), `preset ${id} writes a 280x396 thumb and prints it`, `${wh}\n${r.stdout}`);
 }
 
 const fill = (id, shape, words, extra = {}) => ({ kind: "fill", id, ...shape, words, tone: "mid", ...extra });

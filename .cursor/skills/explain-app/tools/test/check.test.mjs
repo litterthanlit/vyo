@@ -152,8 +152,11 @@ test("a field poster without a hot word passes words-drawn; with one, the word m
 
 test("part-name warns for vendor names, stray names and two parts with one name; accent-part warns when no accent is set", () => {
   const hypher = { facts: [{ id: "area:.", kind: "area", name: "Hypher", meta: { leaf: false } }, { id: "area:convex", kind: "area", name: "Convex", meta: { leaf: true } }, { id: "area:web", kind: "area", name: "Web", meta: { leaf: true } }], files: { "convex/a.ts": { area: "area:convex", loc: 50 }, "web/a.ts": { area: "area:web", loc: 50 } } };
-  const run = (region) =>
-    CHECKS.filter((c) => ["part-name", "accent-part"].includes(c.id)).flatMap((c) => c.run({ spec: { figure: { regions: [region] } }, facts: hypher }).map((message) => ({ id: c.id, level: c.level, message })));
+  const runAll = (region) =>
+    CHECKS.filter((c) => ["part-name", "accent-part"].includes(c.id)).flatMap((c) => c.run({ spec: { product: { name: "Hypher" }, figure: { regions: [region] } }, facts: hypher }).map((message) => ({ id: c.id, level: c.level, message })));
+  const run = (region) => runAll(region).filter((f) => !/keeps its scanned name|product name/.test(f.message));
+  assert.deepEqual(runAll(field({ accent: "area:web", names: { "area:convex": "server" } })).map((f) => f.message), ['part "Web" (area:web) keeps its scanned name; give every part a plain lowercase name in names']);
+  assert.deepEqual(runAll(field({ accent: "area:web", names: { "area:convex": "server", "area:web": "Hypher web" } })).map((f) => f.message), ['part "Hypher web" (area:web) is or contains the product name; give it a plain name in names']);
   assert.deepEqual(run(field({ accent: "area:web" })).map((f) => [f.id, f.level, f.message]), [["part-name", "warn", 'part "Convex" (area:convex) looks like a vendor or code name; add a plain name in names']]);
   assert.deepEqual(run(field({ accent: "area:web", names: { "area:convex": "server", "area:gone": "old" } })).map((f) => f.message), ["names has area:gone, which is not a part of region wave; vyo parts lists the part ids"]);
   assert.deepEqual(run(field({ accent: undefined, names: { "area:convex": "server" } })).map((f) => [f.id, f.message]), [["accent-part", "no accent part in region wave; set accent to the id of the part the poster is about (vyo parts lists them)"]]);

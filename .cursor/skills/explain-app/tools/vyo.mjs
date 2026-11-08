@@ -346,7 +346,9 @@ async function cmdRender(argv) {
   const outDir = opt.out ?? path.dirname(pos[0]);
   const code = await poster(pos[0], opt, outDir, { png: !opt["no-png"], pdf: !opt["no-pdf"], paper: opt.paper });
   const repo = readJson(pos[0], "poster spec").product.repo;
-  const made = ["html", ...(opt["no-png"] ? [] : ["png"]), ...(opt["no-pdf"] ? [] : ["pdf"])].map((x) => path.join(outDir, `${repo}-poster.${x}`)).filter(fs.existsSync);
+  const made = ["html", ...(opt["no-png"] ? [] : ["png", "thumb"]), ...(opt["no-pdf"] ? [] : ["pdf"])]
+    .map((x) => path.join(outDir, x === "thumb" ? `${repo}-poster-thumb.png` : `${repo}-poster.${x}`))
+    .filter(fs.existsSync);
   if (made.length) process.stdout.write(`${code ? "Wrote, with failures" : "Wrote"}: ${made.join(", ")}\n`);
   if (!code) process.stdout.write("PASS\n");
   return code;

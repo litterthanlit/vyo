@@ -57,7 +57,7 @@ test("names override the scanned name by part id", () => {
 });
 
 test("vendor, all-caps and numbered names are unplain; plain names are not", () => {
-  for (const n of ["Convex", "Stripe", "STRIPE", "OpenAI", "Web2", "next-auth GitHub"]) assert.ok(unplainName(n), n);
+  for (const n of ["Convex", "Stripe", "STRIPE", "OpenAI", "Web2", "next-auth GitHub", "Oauth", "Mcp", "Webhook", "Cron"]) assert.ok(unplainName(n), n);
   for (const n of ["Shared parts", "Emails", "Screen pieces", "AI features", "Plan", "sign-in"]) assert.ok(!unplainName(n), n);
 });
 

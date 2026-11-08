@@ -130,6 +130,13 @@ export function sketch(spec, facts) {
     if (!loose && b.bottom > floor) notes.push(`text ${b.id} reaches ${Math.ceil(b.bottom - floor)}px below the floor`);
   }
 
+  for (let i = 0; i < texts.length; i++) {
+    for (const b of texts.slice(i + 1)) {
+      const a = texts[i];
+      if (a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5) notes.push(`text blocks "${a.id}" and "${b.id}" overlap; move one (render fails blocks-apart)`);
+    }
+  }
+
   const footRow = loose ? ROWS - 1 : Math.floor(floor / CELL);
   if (!loose) for (let c = 0; c < COLS; c++) put(footRow, c, "=");
 

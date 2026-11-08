@@ -18,11 +18,13 @@ function treeOrder(a, b) {
   return x.length - y.length;
 }
 
+const CODE_WORDS = new Set(["oauth", "mcp", "api", "sdk", "cli", "jwt", "sso", "webhook", "cron", "auth"]);
+
 /** All caps, a company name, or one word ending in a digit: a name that says who or which, not what. */
 export function unplainName(name) {
   const words = name.toLowerCase().split(/\s+/).filter(Boolean);
   if (/[A-Z]{2}/.test(name) && name === name.toUpperCase()) return true;
-  if (VENDORS.has(words.join("-")) || words.some((w) => VENDORS.has(w))) return true;
+  if (CODE_WORDS.has(words.join("")) || VENDORS.has(words.join("")) || VENDORS.has(words.join("-")) || words.some((w) => VENDORS.has(w))) return true;
   return words.length === 1 && /\d$/.test(words[0]);
 }
 

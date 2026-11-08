@@ -111,7 +111,7 @@ const ROLE_PAGE = {
 export function listItems(spec, t, facts) {
   if (!t.parts) return t.items;
   const field = spec.figure.regions.find((r) => r.kind === "field");
-  return field ? regionParts(field, facts).map((p) => p.name) : [];
+  return field ? regionParts(field, facts).map((p) => p.name.toLowerCase()) : [];
 }
 
 function textBlock(spec, t, facts) {
@@ -250,6 +250,19 @@ function chromium() {
   return chromium.launch(process.env.VYO_CHROMIUM ? { executablePath: process.env.VYO_CHROMIUM } : {});
 }
 
+/** The poster at 1/6 scale (140x198 CSS px, 2x): the size at which the accent part must still stand out. */
+export const THUMB = { width: 140, height: 198 };
+async function writeThumb(browser, shot, file) {
+  const page = await browser.newPage({ viewport: THUMB, deviceScaleFactor: 2 });
+  try {
+    await page.setContent(`<body style="margin:0"><img width="${THUMB.width}" height="${THUMB.height}" style="display:block" src="data:image/png;base64,${shot.toString("base64")}">`);
+    await page.waitForFunction(() => document.images[0].complete);
+    await page.screenshot({ path: file });
+  } finally {
+    await page.close();
+  }
+}
+
 /**
  * Write <base>.html, then render it: PNG at 2x and PDF unless turned off. Returns the page measurements.
  * @param {{ html: string, base: string, png?: boolean, pdf?: boolean, paper?: string }} o
@@ -266,7 +279,10 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
     await page.waitForFunction(() => window.drawn === true, null, { timeout: 15000 }).catch(() => {});
     const report = await page.evaluate(`(${fs.readFileSync(path.join(TOOLS, "lib", "inspect.js"), "utf8").replace(/^\/\/.*\n/, "")})()`);
     report.errors = errors;
-    if (png) await page.locator(".sheet").screenshot({ path: `${base}.png` });
+    if (png) {
+      const shot = await page.locator(".sheet").screenshot({ path: `${base}.png` });
+      await writeThumb(browser, shot, `${base}-thumb.png`);
+    }
     if (pdf) {
       await page.emulateMedia({ media: "screen" });
       await page.pdf({ path: `${base}.pdf`, printBackground: true, ...PAPER[paper]() });

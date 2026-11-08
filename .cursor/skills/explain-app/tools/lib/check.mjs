@@ -14,6 +14,7 @@ const grow = (r, x, y) => ({ left: r.left - x, right: r.right + x, top: r.top - 
 // Side by side, two things need 8px between them: rects that share a horizontal band are inflated by 4px each.
 const crowd = (a, b) => (sameBand(a, b) ? overlap(grow(a, 4, 4), grow(b, 4, 4)) : overlap(a, b));
 const inside = (r, s) => r.left >= s.left - 0.5 && r.top >= s.top - 0.5 && r.right <= s.right + 0.5 && r.bottom <= s.bottom + 0.5;
+const hasProduct = (name, spec) => !!spec.product?.name && name.toLowerCase().includes(spec.product.name.toLowerCase());
 const round = (n) => Math.round(n);
 const pct = (n) => `${Math.round(n * 100)}%`;
 const fillIds = (spec) => spec.figure.regions.filter((r) => r.kind === "fill").map((r) => r.id);
@@ -119,6 +120,8 @@ export const CHECKS = [
         const parts = partsFromFacts(facts, partOptions(r));
         return [
           ...parts.filter((p) => unplainName(p.name)).map((p) => `part "${p.name}" (${p.id}) looks like a vendor or code name; add a plain name in names`),
+          ...parts.filter((p) => !unplainName(p.name) && hasProduct(p.name, spec)).map((p) => `part "${p.name}" (${p.id}) is or contains the product name; give it a plain name in names`),
+          ...parts.filter((p) => !unplainName(p.name) && !(r.names ?? {})[p.id] && !hasProduct(p.name, spec)).map((p) => `part "${p.name}" (${p.id}) keeps its scanned name; give every part a plain lowercase name in names`),
           ...Object.keys(r.names ?? {}).filter((id) => !parts.some((p) => p.id === id)).map((id) => `names has ${id}, which is not a part of region ${r.id}; vyo parts lists the part ids`),
           ...sameNames(parts).map((g) => `parts ${g.map((p) => p.id).join(" and ")} are all called "${g[0].name}"; give each a plain name of its own in names`),
         ];
