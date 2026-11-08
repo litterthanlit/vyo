@@ -1,7 +1,6 @@
 // spec + facts -> one self-contained HTML page, then PNG (2x) and PDF through Playwright.
 import fs from "node:fs";
 import path from "node:path";
-import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { hasWord } from "./spec.mjs";
 import { SHEET, fixedMeasure, corners } from "./geometry.mjs";
@@ -9,9 +8,10 @@ import { frameOf, textSize, lineHeight, ruleText, recordSpot, RECORD } from "./f
 import { bandCounts, bandLine, provenance } from "./band.mjs";
 import { regionParts, partTies } from "./parts.mjs";
 import { FIELDS } from "./fields/index.mjs";
+import { launchChromium } from "./browser.mjs";
 
 const TOOLS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-export const FONT_DIR = path.join(TOOLS, "fonts");
+export const FONT_DIR = path.join(TOOLS, "..", "fonts");
 const FONTS = [
   ["Commit Mono", 400, "commit-400.otf", "font/otf"],
   ["Commit Mono", 700, "commit-700.otf", "font/otf"],
@@ -168,7 +168,7 @@ const CHROME = { swiss: footer, loose: record };
 
 function fontFaces() {
   const missing = FONTS.filter(([, , file]) => !fs.existsSync(path.join(FONT_DIR, file)));
-  if (missing.length) throw new Error(`fonts missing in ${FONT_DIR} (${missing.map((f) => f[2]).join(", ")}): run tools/fetch-fonts.sh`);
+  if (missing.length) throw new Error(`fonts missing in ${FONT_DIR} (${missing.map((f) => f[2]).join(", ")}): reinstall @litterthanlit/vyo`);
   return FONTS.map(
     ([family, weight, file, type]) =>
       `@font-face{font-family:"${family}";font-weight:${weight};src:url(data:${type};base64,${fs.readFileSync(path.join(FONT_DIR, file)).toString("base64")})}`,
@@ -245,11 +245,6 @@ function paged(format, w, h) {
 }
 export const PAPERS = Object.keys(PAPER);
 
-function chromium() {
-  const { chromium } = createRequire(import.meta.url)("playwright");
-  return chromium.launch(process.env.VYO_CHROMIUM ? { executablePath: process.env.VYO_CHROMIUM } : {});
-}
-
 /** The poster at 1/6 scale (140x198 CSS px, 2x): the size at which the accent part must still stand out. */
 export const THUMB = { width: 140, height: 198 };
 async function writeThumb(browser, shot, file) {
@@ -270,7 +265,7 @@ async function writeThumb(browser, shot, file) {
 export async function renderPage({ html, base, png = true, pdf = true, paper = "fit" }) {
   fs.mkdirSync(path.dirname(base), { recursive: true });
   fs.writeFileSync(`${base}.html`, html);
-  const browser = await chromium();
+  const browser = await launchChromium();
   try {
     const page = await browser.newPage({ viewport: SHEET, deviceScaleFactor: 2 });
     const errors = [];

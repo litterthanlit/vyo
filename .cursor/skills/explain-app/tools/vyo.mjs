@@ -16,10 +16,13 @@ import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from 
 import { ROLES, FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
 import { cornersLine } from "./lib/geometry.mjs";
 import { runChecks } from "./lib/check.mjs";
+import { NoBrowser } from "./lib/browser.mjs";
+import { init, chooseEditors, EDITORS } from "./lib/init.mjs";
 import { FIELDS } from "./lib/fields/index.mjs";
 import { partsFromFacts, partOptions, regionParts, accentIds, unplainName, sameNames, PART_DEFAULTS } from "./lib/parts.mjs";
 
 const USAGE = `Usage:
+  vyo init    [--cursor] [--claude] [--codex] [--dir <repo-dir>]
   vyo scan    <repo-dir> --out <dir>/<repo>-facts.json
   vyo show    <facts.json>
   vyo presets [<id>]
@@ -366,7 +369,16 @@ async function cmdCheck(argv) {
   }
 }
 
-const COMMANDS = { scan: cmdScan, show: cmdShow, parts: cmdParts, presets: cmdPresets, compose: cmdCompose, sketch: cmdSketch, render: cmdRender, check: cmdCheck };
+function cmdInit(argv) {
+  const { opt } = args(argv, { cursor: { type: "boolean" }, claude: { type: "boolean" }, codex: { type: "boolean" }, dir: { type: "string", default: "." } }, 0);
+  const repo = path.resolve(opt.dir);
+  if (!fs.existsSync(repo) || !fs.statSync(repo).isDirectory()) throw new Failure(`${opt.dir} is not a directory`);
+  const editors = chooseEditors(repo, Object.keys(EDITORS).filter((e) => opt[e]));
+  for (const f of init(repo, { editors, codex: !!opt.codex })) process.stdout.write(`Wrote ${path.join(repo, f)}\n`);
+  return 0;
+}
+
+const COMMANDS = { init: cmdInit, scan: cmdScan, show: cmdShow, parts: cmdParts, presets: cmdPresets, compose: cmdCompose, sketch: cmdSketch, render: cmdRender, check: cmdCheck };
 
 export async function main(argv) {
   const [cmd, ...rest] = argv;
@@ -384,7 +396,7 @@ export async function main(argv) {
       err(USAGE);
       return 2;
     }
-    if (e instanceof Failure) {
+    if (e instanceof Failure || e instanceof NoBrowser) {
       fail(e.message);
       return 1;
     }

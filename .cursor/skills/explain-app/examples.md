@@ -30,7 +30,7 @@ Tally is made up. Pantry is the `recipe` test fixture. Hypher's parts come from 
 
 Pantry is the `recipe` test fixture. It has 6 screens (recipes, a recipe, a new recipe, the weekly plan, settings, home), recipes with ingredients, a weekly plan, a shopping list, AI suggestions, and a weekly email every Monday at 8. It has payment code but no checkout screen, so the chat reply lists "paid plans" as not built.
 
-Each block below is the preset file in `tools/presets/`. `compose --field <id>` writes the same shape with placeholders and its own text positions. The `facts` value is a placeholder: yours is the hash from your own scan, and `compose` writes it. The commit is made up, since the fixture is not a git repo. Each spec names every part, not only the flagged ones, because the scanned names repeat ("Plan", "Recipes", "Main app").
+Each block below is the preset file in the package's `tools/presets/`. `compose --field <id>` writes the same shape with placeholders and its own text positions. The `facts` value is a placeholder: yours is the hash from your own scan, and `compose` writes it. The commit is made up, since the fixture is not a git repo. Each spec names every part, not only the flagged ones, because the scanned names repeat ("Plan", "Recipes", "Main app").
 
 The legend names the accent part as the poster colours it. On a light wave the accent rows are black. On dark, and on a terrain or river, they are orange.
 
@@ -486,9 +486,9 @@ Write the main moment as one sentence. Find its verb. The verb gives the shape.
 
 ### The fill presets, as full specs for Pantry
 
-Pantry is the same fixture as above. `node tools/vyo.mjs presets` lists these four beside wave, terrain, river and wave-swiss. `compose --from <id>` copies one with its words replaced by placeholders. A poster that keeps a preset's geometry unchanged gets the `preset-copy` warning, so use them to learn from or to bend, not to ship as they are.
+Pantry is the same fixture as above. `npx vyo presets` lists these four beside wave, terrain, river and wave-swiss. `compose --from <id>` copies one with its words replaced by placeholders. A poster that keeps a preset's geometry unchanged gets the `preset-copy` warning, so use them to learn from or to bend, not to ship as they are.
 
-Each block below is the preset file in `tools/presets/`, with the same words and geometry. Only the layout of the number lists is tighter.
+Each block below is the preset file in the package's `tools/presets/`, with the same words and geometry. Only the layout of the number lists is tighter.
 
 #### hourglass
 

@@ -1,21 +1,22 @@
 # explain-app poster tools
 
-`vyo` reads a repo, writes a scaffold spec for a poster, sketches the agent's figure as text, and renders the filled spec to HTML, PNG and PDF. The contract between the pieces is [CONTRACTS.md](CONTRACTS.md).
+`vyo` reads a repo, writes a scaffold spec for a poster, sketches the agent's figure as text, and renders the filled spec to HTML, PNG and PDF. The contract between the pieces is [CONTRACTS.md](CONTRACTS.md). The package README for users is [../README.md](../README.md).
 
 ## Commands
 
-Run them from the skill directory.
+Run them from the target repo as `npx vyo …` once `@litterthanlit/vyo` is a dev dependency, or as `npx -y @litterthanlit/vyo …` without installing it. Paths are relative to the working directory.
 
 | Command | What it does |
 |---|---|
-| `node tools/vyo.mjs scan <repo-dir> --out <dir>/<repo>-facts.json` | Reads the repo and writes `facts.json`. Never writes inside the repo except to `--out` |
-| `node tools/vyo.mjs show <facts.json>` | Prints a plain summary of the facts |
-| `node tools/vyo.mjs parts <facts.json> [--field wave\|terrain\|river]` | Prints the parts a field draws, with that field's part defaults: id, share of lines, lines, files and scanned name, with `! looks like a vendor or code name` after each unplain name and `! same name as <id>` after each name another part shares |
-| `node tools/vyo.mjs presets [<id>]` | Lists the presets with id, `fits`, and a summary of regions and texts. With an id, prints that preset's figure as JSON |
-| `node tools/vyo.mjs compose <facts.json> [--frame loose\|swiss] [--field wave\|terrain\|river] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light\|dark] [--out <spec.json>] [--force]` | Writes a scaffold spec. Without `--from`, the figure is a field, in the loose frame unless `--frame swiss`; loose prints the corners the field leaves. Refuses to overwrite an existing spec unless `--force` is given |
-| `node tools/vyo.mjs sketch <spec.json> [--facts <facts.json>]` | Prints the sheet as ASCII, with coverage, each fill region's width spread and mean width, and the floor; a loose spec also gets the field's four empty corners. A figure with a field reads the facts. Needs no browser |
-| `node tools/vyo.mjs render <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--paper fit\|a4\|letter]` | Validates the spec, writes HTML, a 2× PNG and a PDF, then runs every check |
-| `node tools/vyo.mjs check <spec.json> [--facts <facts.json>]` | Runs the same validation and checks in a temporary directory. Writes nothing to `--out` |
+| `vyo init [--cursor] [--claude] [--codex] [--dir <repo-dir>]` | Copies `SKILL.md` and its three docs into `.cursor/skills/explain-app/` and/or `.claude/skills/explain-app/` of the repo (default `.`; the editor folders it has, or both if it has neither). `--codex` adds one marked block to `AGENTS.md` that points at the skill. A rerun overwrites the same files and replaces the block. Prints each path it wrote |
+| `vyo scan <repo-dir> --out <dir>/<repo>-facts.json` | Reads the repo and writes `facts.json`. Never writes inside the repo except to `--out` |
+| `vyo show <facts.json>` | Prints a plain summary of the facts |
+| `vyo parts <facts.json> [--field wave\|terrain\|river]` | Prints the parts a field draws, with that field's part defaults: id, share of lines, lines, files and scanned name, with `! looks like a vendor or code name` after each unplain name and `! same name as <id>` after each name another part shares |
+| `vyo presets [<id>]` | Lists the presets with id, `fits`, and a summary of regions and texts. With an id, prints that preset's figure as JSON |
+| `vyo compose <facts.json> [--frame loose\|swiss] [--field wave\|terrain\|river] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light\|dark] [--out <spec.json>] [--force]` | Writes a scaffold spec. Without `--from`, the figure is a field, in the loose frame unless `--frame swiss`; loose prints the corners the field leaves. Refuses to overwrite an existing spec unless `--force` is given |
+| `vyo sketch <spec.json> [--facts <facts.json>]` | Prints the sheet as ASCII, with coverage, each fill region's width spread and mean width, and the floor; a loose spec also gets the field's four empty corners. A figure with a field reads the facts. Needs no browser |
+| `vyo render <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--paper fit\|a4\|letter]` | Validates the spec, writes HTML, a 2× PNG and a PDF, then runs every check |
+| `vyo check <spec.json> [--facts <facts.json>]` | Runs the same validation and checks in a temporary directory. Writes nothing to `--out` |
 
 Exit codes: 0 when everything passes (warnings go to stderr as `! ` lines), 1 on any rule error (`✗ ` lines on stderr), 2 on a usage error.
 
@@ -27,15 +28,14 @@ Exit codes: 0 when everything passes (warnings go to stderr as `! ` lines), 1 on
 
 ## Setup
 
-Run these from the skill directory.
+To work on the tools, run these from the package root, the skill directory.
 
 ```bash
-npm install --prefix tools
-bash tools/fetch-fonts.sh               # Commit Mono and Newsreader into tools/fonts/ (not committed)
-npx --prefix tools playwright install chromium   # or set VYO_CHROMIUM=/path/to/chromium
+npm install
+npx playwright install chromium   # or set VYO_CHROMIUM=/path/to/chromium
 ```
 
-Render fails with `run tools/fetch-fonts.sh` when `tools/fonts/` is missing. The masthead uses Inter Display if it is installed, then Inter, then Helvetica or Arial. The tools never download Helvetica.
+The fonts, Commit Mono and Newsreader, are bundled in `fonts/` at the package root under the SIL Open Font License (`fonts/LICENSE.md`). The masthead uses Inter Display if it is installed, then Inter, then Helvetica or Arial. The tools never download Helvetica.
 
 ## The spec
 
@@ -179,10 +179,10 @@ Under the sheet it prints `regions:`, `texts:` and `floor:` lines (in the loose 
 ## Tests
 
 ```bash
-cd tools && npm test
+npm test
 ```
 
-`npm test` runs `node test/run.mjs`. Browser tests need Chromium: set `VYO_CHROMIUM` (in this environment, `/opt/pw-browsers/chromium`). The rendered PNGs go to `test/.out/`, which git ignores, so a person can look at them.
+`npm test`, from the package root, runs `node tools/test/run.mjs`; its last step packs the package, installs the tarball into a fresh project and makes a poster from there. Browser tests need Chromium: set `VYO_CHROMIUM` (in this environment, `/opt/pw-browsers/chromium`). The rendered PNGs go to `tools/test/.out/`, which git ignores, so a person can look at them.
 
 - **Pure tests.** The scanner, the counts line for the `recipe` fixture, the banned-term table in `plain-language-rules.md` against `lib/jargon.mjs`, and spec validation. The parts of the recipe fixture and of `explorations/2026-11-07-abstract-fields/hypher-facts.json` hold every line, merge as the rules say and resolve accents; the wave and terrain layouts give every part a row and keep their shape, and terrain clears the text blocks. Validation accepts the eight presets, checks the frames' roles and counts, checks field keys, and rejects an unknown region kind, a path that does not parse, a polygon with two points, two mastheads, a `hot` found in no region, words with jargon, and 7 regions.
 - **Browser tests.** Every preset (the four fill presets and `wave-swiss` in the swiss frame; `wave`, `terrain` and `river` in the loose frame) renders against a fresh scan of `test/fixtures/recipe` and passes. For each field preset, the sketch's rows and the page's rows match within 2px. Planted bugs fail with their check: a text block over a terrain's foothill and an accent that names no part (`field-parts`), a loose poster with no legend (`spec`), a legend without the accent part's name (`legend`), a record line with no commit (`record`), a fits without the field's keyword (`fits`), two overlapping outlines (`regions-apart`), a 30px outline (`region-size`), one tiny region (`silhouette`), a box with a slanted top (`row-variety`), a 90px column (`thin-region`, a warning), 14 long words in a small outline (`words-drawn`), an aside placed on a row (`blocks-apart`), an outline below the footer (`path`), and the v2 bugs that still apply: jargon, a file path, an untagged hot word, four notes, and a long not-built list that passes.

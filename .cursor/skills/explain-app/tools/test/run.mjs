@@ -1,4 +1,4 @@
-// npm test: the pure tests, then every preset rendered and checked, then the planted bugs.
+// npm test: the pure tests, then every preset rendered and checked, then the planted bugs, then the packed package installed and run.
 // Posters land in test/.out/<preset>/ for a human to look at.
 import fs from "node:fs";
 import path from "node:path";
@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { buildPage, renderPage } from "../lib/render.mjs";
 import { fieldItems } from "../lib/sketch.mjs";
+import { BROWSER_NOTE } from "../lib/browser.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TOOLS = path.join(HERE, "..");
@@ -13,7 +14,7 @@ const OUT = path.join(HERE, ".out");
 const VYO = path.join(TOOLS, "vyo.mjs");
 const PRESETS = fs.readdirSync(path.join(TOOLS, "presets")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
 
-const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "docs"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
+const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "docs", "init"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
@@ -158,6 +159,17 @@ vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
   result(r.status === 0 && /^! facts-empty: no application facts/m.test(r.stderr), "an app with no facts still renders, with a warning", `exit ${r.status}\n${r.stderr}`);
 }
 
-if (pure.status !== 0) console.log("✗ the pure tests failed (see above)");
+{
+  const file = path.join(OUT, "no-browser.json");
+  fs.writeFileSync(file, JSON.stringify(preset("wave"), null, 2));
+  const r = spawnSync(process.execPath, [VYO, "render", file, "--facts", factsFile], { encoding: "utf8", env: { ...process.env, VYO_CHROMIUM: path.join(OUT, "no-such-chromium") } });
+  result(r.status === 1 && r.stderr === `✗ ${BROWSER_NOTE}\n` && !fs.existsSync(path.join(OUT, "recipe-poster.png")), "render with no browser prints the browser note and exits 1", `exit ${r.status}\n${r.stderr}`);
+}
+
 console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length} planted bugs caught`);
-process.exit(failed || pure.status !== 0 ? 1 : 0);
+
+const pack = spawnSync(process.execPath, ["--test", path.join(HERE, "pack.test.mjs")], { stdio: "inherit" });
+
+if (pure.status !== 0) console.log("✗ the pure tests failed (see above)");
+if (pack.status !== 0) console.log("✗ the pack test failed (see above)");
+process.exit(failed || pure.status !== 0 || pack.status !== 0 ? 1 : 0);
