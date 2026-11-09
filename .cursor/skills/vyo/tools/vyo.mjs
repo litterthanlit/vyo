@@ -12,7 +12,7 @@ import { showFacts } from "./lib/scan/show.mjs";
 import { scaffoldSpec, validateSpec, THEMES } from "./lib/spec.mjs";
 import { sketch } from "./lib/sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE, SHEETS, sheetOf } from "./lib/geometry.mjs";
-import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
+import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, figureSpace } from "./lib/render.mjs";
 import { ROLES, FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
 import { cornersLine } from "./lib/geometry.mjs";
 import { runChecks } from "./lib/check.mjs";
@@ -284,7 +284,7 @@ function cmdCompose(argv) {
     // Lay the field out on its own sheet, then fill the corners it leaves.
     const draft = scaffoldSpec(facts, { ...o, places: {} });
     const region = draft.figure.regions[0];
-    space = fieldSpace(draft, facts);
+    space = figureSpace(draft, facts);
     o.accentNames = regionParts(region, facts).filter((p) => p.hot).map((p) => p.name);
     o.places = scaffoldPlaces(space.corners, space.accent, parts.length, sheetOf(draft));
   }

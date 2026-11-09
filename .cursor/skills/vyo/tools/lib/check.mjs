@@ -30,6 +30,8 @@ const anyOf = (words) => words.map((w) => `"${w}"`).join(" or ");
 /** The legend's message: the accent part's plain name and the field's measure words. */
 export const legendMessage = (names, measure) =>
   `must say what the picture encodes; name the accent part (${names.length ? names.map((n) => `"${n}"`).join(" or ") : "set an accent first"}) and the measure (${measure.map(anyOf).join(", and ")})`;
+/** A drawn figure has no parts or measure, so its legend owes the hot word. */
+export const shapeLegendMessage = (hot) => `must say in one or two sentences what the picture shows, and name the hot word ("${hot}")`;
 const linesOf = (facts) => Object.values(facts.files).reduce((s, f) => s + (f.gen ? 0 : f.loc), 0);
 const union = (rects) => rects.reduce((u, r) => ({ left: Math.min(u.left, r.left), top: Math.min(u.top, r.top), right: Math.max(u.right, r.right), bottom: Math.max(u.bottom, r.bottom) }), { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
 
@@ -132,17 +134,19 @@ export const CHECKS = [
     run: ({ spec }) => fieldsOf(spec).filter((r) => r.accent === undefined).map((r) => `no accent part in region ${r.id}; set accent to the id of the part the poster is about (vyo parts lists them)`),
   },
   {
-    id: "legend", level: "fail", stage: "spec", frames: ["loose"], about: "the legend names the accent part and the field's measure, so the picture reads as this project",
-    run: ({ spec, facts }) =>
-      fieldsOf(spec).flatMap((r) => {
-        const legend = spec.figure.texts.find((t) => t.role === "legend")?.text ?? "";
+    id: "legend", level: "fail", stage: "spec", frames: ["loose"], about: "the legend names the accent part and the field's measure, or a drawn figure's hot word, so the picture reads as this project",
+    run: ({ spec, facts }) => {
+      const legend = spec.figure.texts.find((t) => t.role === "legend")?.text ?? "";
+      if (!fieldsOf(spec).length) return hasWord(legend, spec.hot) ? [] : [shapeLegendMessage(spec.hot)];
+      return fieldsOf(spec).flatMap((r) => {
         const names = regionParts(r, facts).filter((p) => p.hot).map((p) => p.name);
         const { measure } = FIELDS[r.field];
         // An accent that names no part is field-parts' to report; the legend still owes the measure.
         const named = !names.length || names.some((n) => legend.toLowerCase().includes(n.toLowerCase()));
         const measured = measure.every((group) => group.some((w) => startsWord(legend, w)));
         return named && measured ? [] : [legendMessage(names, measure)];
-      }),
+      });
+    },
   },
   {
     id: "fits", level: "fail", stage: "spec", about: "a field's fits says why this field matches the product's story, in one of the field's keywords",

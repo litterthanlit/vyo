@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CHECKS, runChecks } from "../lib/check.mjs";
@@ -181,6 +182,18 @@ test("legend: a loose field poster's legend names the accent part and the field'
   const terrain = specFindings(loose("Each peak is a part, as tall as its code. The orange peak is the plan.", { field: "terrain", fits: "The parts that matter most stand tallest." }), "legend");
   assert.deepEqual(terrain, ['must say what the picture encodes; name the accent part ("the plan") and the measure ("code" or "lines", and "files" or "wide")'], "a terrain also says files or wide");
   assert.deepEqual(specFindings({ ...loose("x"), frame: "swiss" }, "legend"), [], "a swiss poster has no legend to check");
+});
+
+test("legend: a loose drawn figure's legend names the hot word as a whole word", () => {
+  const lens = { ...JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures", "loose-lens.json"), "utf8")), facts: recipe.hash };
+  const withLegend = (text) => ({ ...lens, figure: { ...lens.figure, texts: lens.figure.texts.map((t) => (t.role === "legend" ? { ...t, text } : t)) } });
+  assert.deepEqual(specFindings(lens, "spec"), []);
+  assert.deepEqual(specFindings(lens, "legend"), []);
+  const msg = 'must say in one or two sentences what the picture shows, and name the hot word ("tonight")';
+  assert.deepEqual(specFindings(withLegend("The rim and handle are every recipe Pantry holds."), "legend"), [msg]);
+  assert.deepEqual(specFindings(withLegend("Under the glass is tonightly news."), "legend"), [msg], "a longer word does not count");
+  assert.deepEqual(specFindings(withLegend("Under the glass is Tonight."), "legend"), [], "case-folded");
+  assert.deepEqual(specFindings(lens, "fits"), [], "a drawn figure's fits is checked by spec alone");
 });
 
 test("fits: a field's fits uses one of the field's keywords, as the start of a word", () => {

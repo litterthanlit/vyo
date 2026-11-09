@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { hasWord } from "./spec.mjs";
-import { SHEET, sheetOf, fixedMeasure, corners } from "./geometry.mjs";
+import { SHEET, sheetOf, fixedMeasure, corners, regionRows, dotsLines, GRID } from "./geometry.mjs";
 import { frameOf, textSize, lineHeight, ruleText, recordSpot, RECORD } from "./frame.mjs";
 import { bandCounts, bandLine, provenance } from "./band.mjs";
 import { regionParts, partTies } from "./parts.mjs";
@@ -140,22 +140,30 @@ function fieldInput(region, facts) {
   return { ...region, parts, ties: partTies(parts, facts) };
 }
 
+/** Each row a region draws, laid out with no text blocks to dodge, as `{ x, y, width, height, hot }`. A fill row counts its whole run, whatever its words. */
+function regionMarks(spec, region, facts) {
+  if (region.kind === "field") return fieldItems(spec, region, facts, []);
+  if (region.kind === "dots") return dotsLines(region).map((ln, i) => ({ ...ln, hot: region.tones[i] === "hot" }));
+  const { pitch } = GRID[region.size || 12];
+  return regionRows(region, []).flatMap((row) => row.runs.map(([l, r]) => ({ x: l, y: row.y, width: r - l, height: pitch, hot: !!region.hot })));
+}
+
 /**
- * The room a field leaves: its rows laid out with no text blocks to dodge, the empty corners around them, and
- * the centre of the accent part's rows (of all rows when nothing is hot). Compose, sketch and the record read it.
+ * The room a figure leaves: its rows laid out with no text blocks to dodge, the empty corners around them, and
+ * the centre of the accent rows (of all rows when nothing is hot). Compose, sketch and the record read it.
  */
-export function fieldSpace(spec, facts) {
-  const items = spec.figure.regions.filter((r) => r.kind === "field").flatMap((r) => fieldItems(spec, r, facts, []));
+export function figureSpace(spec, facts) {
+  const items = spec.figure.regions.flatMap((r) => regionMarks(spec, r, facts));
   const rects = items.map((it) => ({ left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + it.height }));
   const hot = items.some((it) => it.hot) ? items.filter((it) => it.hot) : items;
   const mean = (f) => hot.reduce((s, it) => s + f(it), 0) / (hot.length || 1);
   return { rects, corners: corners(rects, sheetOf(spec)), accent: { x: mean((it) => it.x + it.width / 2), y: mean((it) => it.y + it.height / 2) } };
 }
 
-/** Where the record line sits: clear of the field's rows. */
+/** Where the record line sits: clear of the figure's rows. */
 export function recordOf(spec, facts) {
   const text = `${recordText(spec.product)}.`;
-  return { text, ...recordSpot(text, fieldSpace(spec, facts).rects, spec.record, sheetOf(spec)) };
+  return { text, ...recordSpot(text, figureSpace(spec, facts).rects, spec.record, sheetOf(spec)) };
 }
 
 function record(spec, facts) {

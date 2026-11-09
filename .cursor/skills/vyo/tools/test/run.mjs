@@ -177,6 +177,28 @@ for (const field of ["wave", "terrain", "river"]) {
   result(page.sheet.bottom === 1050 && node.length === page.rows.length && !far.length, `${field} on 4:5: the sketch and the page place the same ${node.length} rows within 2px on an 840x1050 sheet`, `sheet ${JSON.stringify(page.sheet)}; node ${node.length} rows, page ${page.rows.length}; first apart: ${JSON.stringify(far[0])}`);
 }
 
+// A shape the agent draws, in the loose frame: the fixture lens on both sheets.
+const lens = (sheet) => ({ ...JSON.parse(fs.readFileSync(path.join(HERE, "fixtures", "loose-lens.json"), "utf8")), facts: hash, ...(sheet ? { sheet } : {}) });
+for (const sheet of [undefined, "4:5"]) {
+  const name = `loose lens on the ${sheet ?? "poster"} sheet`;
+  const dir = path.join(OUT, `lens-${sheet === "4:5" ? "4x5" : "poster"}`);
+  fs.mkdirSync(dir, { recursive: true });
+  const specFile = path.join(dir, "recipe-poster.json");
+  fs.writeFileSync(specFile, JSON.stringify(lens(sheet), null, 2));
+  const r = vyo("render", specFile, "--facts", factsFile);
+  result(r.status === 0 && /^PASS$/m.test(r.stdout) && !/^✗/m.test(r.stderr), `${name} renders and passes every check`, r.stdout + r.stderr);
+  const png = pngSize(path.join(dir, "recipe-poster.png"));
+  result(png[0] === 1680 && png[1] === (sheet ? 2100 : 2380), `${name} writes a ${sheet ? "1680x2100" : "1680x2380"} PNG`, `png ${png}`);
+}
+{
+  const spec = lens("4:5");
+  spec.figure.texts.find((t) => t.role === "legend").text = "The rim and handle are every recipe Pantry holds. Under the glass is the one dinner it picks.";
+  const file = path.join(OUT, "planted.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(r.status === 1 && /^✗ legend: must say in one or two sentences what the picture shows, and name the hot word \("tonight"\)$/m.test(r.stderr), "planted bug (a loose shape's legend without the hot word) fails legend", `exit ${r.status}\n${r.stderr}`);
+}
+
 {
   const r = vyo("compose", factsFile, "--sheet", "4:5", "--from", "hourglass", "--out", path.join(OUT, "sheet-from.json"));
   result(r.status === 2 && /^--from hourglass is drawn for the poster sheet; --sheet sizes a field poster/m.test(r.stderr), "compose refuses --sheet beside --from", `exit ${r.status}\n${r.stderr}`);
