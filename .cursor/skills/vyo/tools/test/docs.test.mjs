@@ -37,4 +37,6 @@ test("every spec example in examples.md validates against a fresh scan of the re
   const blocks = [...read("..", "examples.md").matchAll(/```json\n([\s\S]*?)```/g)].map((m) => JSON.parse(m[1])).filter((s) => s.figure && s.version);
   assert.ok(blocks.length >= 1, "at least one full spec example");
   for (const spec of blocks) assert.deepEqual(validateSpec({ ...spec, facts: facts.hash }), [], spec.figure.fits);
+  const lens = JSON.parse(read("test", "fixtures", "loose-lens.json"));
+  assert.ok(blocks.some((s) => JSON.stringify(s) === JSON.stringify(lens)), "examples.md shows the loose lens the browser tests render, unchanged");
 });

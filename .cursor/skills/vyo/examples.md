@@ -390,7 +390,7 @@ Use it when the owner asks for a masthead and footer, or the repo has no git his
 
 ## Drawing your own silhouette
 
-Use this path when the owner asks for a picture, or the scan is empty. You invent one silhouette that acts out the product's main moment and describe it as fill regions and texts. Fill figures sit in the swiss frame, with its masthead and footer. Start from `compose --from <preset>`, then sketch, render and check as for a field.
+Use this path when the owner asks for a picture, or the scan is empty. You invent one silhouette that acts out the product's main moment and describe it as fill regions and texts. By default it sits in the loose frame, like a field: start from `compose <facts> --shape`, with `--sheet 4:5` for a feed, replace the placeholder ellipse, then sketch, render and check as for a field. "A loose lens" below is a full spec. For a masthead and footer, use the swiss frame: start from `compose --from <preset>`; the presets and the three invented pictures at the end are swiss.
 
 ### Find the shape
 
@@ -435,13 +435,13 @@ The words:
 
 ### Describe the regions
 
-The sheet is 840 by 1190 px and y grows downward. A figure has `fits` (at most 160 characters), 1 to 6 `regions` and 1 to 6 `texts`.
+The sheet is 840 by 1190 px, or 840 by 1050 with `sheet: "4:5"` in the loose frame, and y grows downward. A figure has `fits` (at most 160 characters), 1 to 6 `regions` and 1 to 7 `texts`.
 
 A fill region has `kind: "fill"`, `id`, one geometry, `words` (2 to 14, at most 24 characters each) and `tone`. Options: `holes` (shapes to cut out), `band` (1 to 4 rows per word), `size` (11 or 12), `caps`, and `hot` (every row in the accent). Geometry, by preference: `profile`, 3 to 24 stops `[y, cx, halfWidth]` with y increasing; `ellipse` `{ cx, cy, rx, ry }`; `polygon`, 3 to 40 `[x, y]` points for hard corners; `path`, an SVG path.
 
 A dots region spells 2 to 4 words of at most 5 letters in squares: `kind: "dots"`, `id`, `lines`, `x`, `y`, `cell` (px per square), and `tones`, one per line, which may include `hot`. A dots line is 29 squares wide and 7 tall, with lines 9 squares apart.
 
-A text has `role` (`masthead`, `headline`, `display`, `aside` or `label`), `id`, `x`, `y`, `w`, and optional `size`, `align` (`left`, `right` or `center`) and `hot`. Asides, displays and labels need `text`. One masthead prints the product name, shrunk to fit `w`. At most one headline prints `spec.headline`. A `display` is a bold sans line of at most 40 characters A label with `hot: true` is set in the accent, uppercase and tracked. Default sizes: masthead 84 (48 to 120), headline 22 (18 to 40), display 56 (32 to 64), aside 12 (10 to 14), label 12 (10 to 32), hot label 26. No region or text may use the ids `note`, `counts`, `notBuilt`, `provenance` or `credit`.
+In the loose frame the texts are the field poster's: one `label`, one `headline`, one `legend` that names the hot word, 0 to 2 `paragraph`, and an optional `list` of `items` or a `rule`. In the swiss frame a text has `role` (`masthead`, `headline`, `display`, `aside` or `label`), `id`, `x`, `y`, `w`, and optional `size`, `align` (`left`, `right` or `center`) and `hot`. Asides, displays and labels need `text`. One masthead prints the product name, shrunk to fit `w`. At most one headline prints `spec.headline`. A `display` is a bold sans line of at most 40 characters A label with `hot: true` is set in the accent, uppercase and tracked. Default sizes: masthead 84 (48 to 120), headline 22 (18 to 40), display 56 (32 to 64), aside 12 (10 to 14), label 12 (10 to 32), hot label 26. No region or text may use the ids `note`, `counts`, `notBuilt`, `provenance` or `credit`.
 
 Rows are 16px tall, 14px at size 11, on a sheet-wide grid. The tool skips any part of a row within 12px of a text and drops runs under 24px. A fill region needs 4 rows or more.
 
@@ -458,9 +458,53 @@ Six worked profiles for a band from y 180 to 860. Each passed `silhouette` and `
 
 A figure with no fill region (dots only) skips `row-variety`, `thin-region` and `one-region`.
 
+### A loose lens
+
+Pantry reads every recipe you own, then picks one dinner. The verb is "reads, then focuses", so the picture is a magnifying glass: one outline for the rim and handle, with the glass cut out as a hole and filled by a second, hot region. It fits the poster sheet and 4:5 alike; add `"sheet": "4:5"` for a feed. The texts sit in the corners `vyo sketch` printed, and the legend names the hot word, "tonight".
+
+```json
+{
+  "version": 3,
+  "frame": "loose",
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "commit": "04186f4", "date": "2026-11-07" },
+  "theme": "light",
+  "headline": "It reads every recipe you own, then shows the one that matters.",
+  "hot": "tonight",
+  "figure": {
+    "fits": "A magnifying glass: the rim and handle are every recipe Pantry holds, and the glass is the one dinner it brings up close.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "rim",
+        "path": "M 565.2 662.9 L 761.8 828.2 A 52 52 0 0 1 688.2 901.8 L 522.9 705.2 A 262 262 0 1 1 565.2 662.9 Z",
+        "holes": [{ "ellipse": { "cx": 360, "cy": 500, "rx": 182, "ry": 182 } }],
+        "words": ["recipes", "cravings", "leftovers", "the pantry", "the freezer", "last week"],
+        "tone": ["mid", "ink"],
+        "size": 11
+      },
+      {
+        "kind": "fill",
+        "id": "glass",
+        "ellipse": { "cx": 360, "cy": 500, "rx": 158, "ry": 158 },
+        "words": ["tonight", "the dinner that fits"],
+        "tone": "ink",
+        "hot": true
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 620, "y": 40, "w": 180, "align": "right" },
+      { "role": "headline", "id": "headline", "x": 40, "y": 40, "w": 520 },
+      { "role": "paragraph", "id": "paragraph", "x": 650, "y": 240, "w": 150, "align": "right", "text": "Pantry reads every recipe and every shelf. Then it picks one dinner for tonight." },
+      { "role": "legend", "id": "legend", "x": 40, "y": 800, "w": 380, "text": "The rim and handle are every recipe Pantry holds. Under the glass, in orange, is tonight: the one dinner it picks." }
+    ]
+  }
+}
+```
+
 ### Fill the spec
 
-`compose` fills `version`, `facts`, `product`, `theme` (`light` or `dark`) and a placeholder `figure`, which render rejects.
+`compose` fills `version`, `facts`, `product`, `theme` (`light` or `dark`) and a placeholder `figure`, which render rejects. The `notes` and `notBuilt` rows below are swiss only; a loose shape writes paragraphs instead.
 
 | Field | What it is |
 |---|---|

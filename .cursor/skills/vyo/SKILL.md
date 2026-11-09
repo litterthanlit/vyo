@@ -85,7 +85,7 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 | `figure.texts` | Exactly one `label` and one `headline` (they print the name and the headline), exactly one `legend`, 0 to 2 `paragraph`, 0 or 1 `list`, 0 or 1 `rule`. Each has `x`, `y`, `w` and optional `size` and `align` |
 | `record` | Optional, `bottom` or `left`, to force the record line's side |
 
-A loose spec has no `notes`, `notBuilt`, `hot` or `figure.fits`. [examples.md](examples.md) has the wave, terrain and river specs in full. The package's `tools/README.md` lists every check.
+A loose field spec has no `notes`, `notBuilt`, `hot` or `figure.fits`. [examples.md](examples.md) has the wave, terrain and river specs in full. The package's `tools/README.md` lists every check.
 
 ## Where output goes
 
@@ -115,4 +115,12 @@ Use it when the owner asks for a masthead and footer, or the repo has no git his
 
 ## Draw your own silhouette
 
-Use this only when the owner asks for a picture, like "draw it as an hourglass", or the scan is empty. It is swiss only. Start with `compose --from <preset>` (`npx vyo presets` lists them), then reshape the geometry until `preset-copy` is gone. [examples.md](examples.md), under "Drawing your own silhouette", has the method, four presets and three invented figures.
+Use this only when the owner asks for a picture, like "draw it as a magnifying glass", or the scan is empty. The loose frame is the default here too:
+
+```bash
+npx vyo compose <facts> --shape --repo <repo> --out <repo>/vyo/<name>-poster.json
+```
+
+Add `--sheet 4:5` for X or any other feed. Compose writes one placeholder ellipse. Replace it with your outline, in sheet coordinates: a `profile`, `ellipse`, `polygon` or `path`, with `holes`, in up to 6 fill or dots regions. Set `hot` to a word of a region. Write `figure.fits`, at most 160 characters, on what the picture is and why it acts out the main moment. The legend says what the picture shows and names the hot word. A list takes `items`, not `parts`. Sketch, then move the texts into the corners it prints.
+
+For a masthead and footer, use the swiss frame: start with `compose --from <preset>` (`npx vyo presets` lists them), then reshape the geometry until `preset-copy` is gone. [examples.md](examples.md), under "Drawing your own silhouette", has the method, a loose lens, four presets and three invented figures.

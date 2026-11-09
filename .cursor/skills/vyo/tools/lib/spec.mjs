@@ -343,7 +343,7 @@ export function validateSpec(spec) {
   const frame = FRAMES.includes(spec.frame) ? spec.frame : "loose";
   const known = spec.sheet === undefined || Object.hasOwn(SHEETS, spec.sheet);
   if (!known) err(`sheet: "${spec.sheet}" is not a sheet; use ${Object.keys(SHEETS).join(" or ")}`);
-  else if (frame === "swiss" && (spec.sheet ?? "poster") !== "poster") err("sheet: the swiss frame is drawn for the poster sheet; leave sheet out, or draw a field in the loose frame");
+  else if (frame === "swiss" && (spec.sheet ?? "poster") !== "poster") err("sheet: the swiss frame is drawn for the poster sheet; leave sheet out, or set frame to loose");
   const sheet = known ? SHEETS[spec.sheet ?? "poster"] : SHEET;
   if (!isStr(spec.facts) || !/^[0-9a-f]{12}$/.test(spec.facts)) err("facts: must be the 12-character hash from facts.json");
 
