@@ -1,0 +1,99 @@
+{
+  "version": 3,
+  "frame": "loose",
+  "sheet": "4:5",
+  "facts": "f44d21ba54fb",
+  "product": {
+    "name": "Vyo",
+    "repo": "tools",
+    "commit": "c9f4d09",
+    "date": "2026-11-09"
+  },
+  "theme": "light",
+  "headline": "Your project as a poster, in words anyone can read.",
+  "hot": "plain",
+  "figure": {
+    "fits": "A sieve: jargon, file paths and crowded text stay caught in the bowl, and only plain words fall through its holes as grains below.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "rim",
+        "path": "M 48 232 L 600 232 L 700 108 A 70 70 0 0 1 826 150 L 760 288 L 48 288 A 28 28 0 0 1 48 232 Z",
+        "words": [
+          "the check",
+          "each word"
+        ],
+        "tone": "ink"
+      },
+      {
+        "kind": "fill",
+        "id": "bowl",
+        "path": "M 44 304 L 716 304 A 336 350 0 0 1 44 304 Z",
+        "holes": [
+          {
+            "path": "M 196 430 A 64 64 0 1 0 324 430 A 64 64 0 1 0 196 430 Z M 436 430 A 64 64 0 1 0 564 430 A 64 64 0 1 0 436 430 Z M 322 570 A 58 58 0 1 0 438 570 A 58 58 0 1 0 322 570 Z"
+          }
+        ],
+        "words": [
+          "jargon",
+          "file paths",
+          "code names",
+          "overlaps",
+          "crowded text",
+          "step numbers"
+        ],
+        "tone": "ink"
+      },
+      {
+        "kind": "dots",
+        "id": "grains",
+        "lines": [
+          "plain",
+          "words"
+        ],
+        "x": 220.5,
+        "y": 712,
+        "cell": 11,
+        "tones": [
+          "hot",
+          "ink"
+        ]
+      }
+    ],
+    "texts": [
+      {
+        "role": "label",
+        "id": "label",
+        "x": 620,
+        "y": 40,
+        "w": 180,
+        "align": "right"
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 40,
+        "y": 40,
+        "w": 520
+      },
+      {
+        "role": "legend",
+        "id": "legend",
+        "x": 570,
+        "y": 680,
+        "w": 230,
+        "align": "right",
+        "text": "The sieve is the check Vyo runs on every word. Jargon and file paths stay in the bowl, and only plain words fall through."
+      },
+      {
+        "role": "paragraph",
+        "id": "paragraph",
+        "x": 580,
+        "y": 816,
+        "w": 220,
+        "align": "right",
+        "text": "Vyo reads your project and draws it as a picture. When a word is caught, it names what to fix."
+      }
+    ]
+  }
+}
