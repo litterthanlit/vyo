@@ -1,0 +1,67 @@
+{
+  "version": 3,
+  "frame": "loose",
+  "facts": "cdacae19da2a",
+  "product": {
+    "name": "Vyo",
+    "repo": "tools",
+    "commit": "b1a46ee",
+    "date": "2026-11-09"
+  },
+  "theme": "light",
+  "headline": "Hand your app, as one page, to someone who doesn't code.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "wave",
+        "field": "wave",
+        "fits": "Vyo hands an app from its code to a person who does not code, so a band of its own code travels down the page.",
+        "accent": "area:lib",
+        "names": {
+          "area:.": "the command",
+          "area:lib": "drawing and checking",
+          "area:lib/fields": "the shapes",
+          "area:lib/scan": "the reader"
+        },
+        "sentence": "from code to a person"
+      }
+    ],
+    "texts": [
+      {
+        "role": "label",
+        "id": "label",
+        "x": 40,
+        "y": 1114,
+        "w": 220,
+        "align": "left"
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 536,
+        "y": 40,
+        "w": 264,
+        "align": "right"
+      },
+      {
+        "role": "legend",
+        "id": "legend",
+        "x": 40,
+        "y": 1006,
+        "w": 260,
+        "align": "left",
+        "text": "Every row is a part of Vyo, as many rows as it has code. The black rows are drawing and checking."
+      },
+      {
+        "role": "paragraph",
+        "id": "paragraph",
+        "x": 40,
+        "y": 877,
+        "w": 240,
+        "align": "left",
+        "text": "Vyo reads a project and draws its parts as one poster. It refuses words that read as jargon, so anyone can follow the page."
+      }
+    ]
+  }
+}
