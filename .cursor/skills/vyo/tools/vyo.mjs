@@ -11,7 +11,7 @@ import { scanRepoDetailed } from "./lib/scan/index.mjs";
 import { showFacts } from "./lib/scan/show.mjs";
 import { scaffoldSpec, validateSpec, THEMES } from "./lib/spec.mjs";
 import { sketch } from "./lib/sketch.mjs";
-import { SHAPE_KEYS, GRID, ADVANCE } from "./lib/geometry.mjs";
+import { SHAPE_KEYS, GRID, ADVANCE, sheetOf } from "./lib/geometry.mjs";
 import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
 import { ROLES, FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
 import { cornersLine } from "./lib/geometry.mjs";
@@ -281,7 +281,7 @@ function cmdCompose(argv) {
     const region = draft.figure.regions[0];
     space = fieldSpace(draft, facts);
     o.accentNames = regionParts(region, facts).filter((p) => p.hot).map((p) => p.name);
-    o.places = scaffoldPlaces(space.corners, space.accent, parts.length);
+    o.places = scaffoldPlaces(space.corners, space.accent, parts.length, sheetOf(draft));
   }
   fs.writeFileSync(out, JSON.stringify(scaffoldSpec(facts, o), null, 2) + "\n");
   const from = preset ? `the ${opt.from} preset's geometry and its words taken out` : `a ${field} field of ${parts.length} parts${opt.accent ? ` with ${opt.accent} in the accent` : ""}`;
@@ -334,7 +334,7 @@ async function poster(specFile, opt, outDir, files) {
   } catch (e) {
     throw new Failure(e.message);
   }
-  const page = await renderPage({ html, base, ...files });
+  const page = await renderPage({ html, base, sheet: sheetOf(spec), ...files });
   const failed = report(runChecks("page", { ...input, page }));
   return failed ? 1 : 0;
 }

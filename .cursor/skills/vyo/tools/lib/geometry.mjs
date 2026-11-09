@@ -1,7 +1,15 @@
 // A figure's geometry and the rows of words that fill it. Pure and DOM-free: render inlines this
 // file into the page and `vyo sketch` imports it, so the sketch and the poster lay out the same rows.
 
-export const SHEET = { width: 840, height: 1190 };
+// Every sheet is 840 wide, so the fields' x constants hold on each; only the height varies.
+export const SHEETS = {
+  poster: { width: 840, height: 1190 },
+  "4:5": { width: 840, height: 1050 },
+};
+// The swiss frame and the fill presets are drawn in absolute coordinates for this sheet alone.
+export const SHEET = SHEETS.poster;
+/** The sheet a spec is drawn on. */
+export const sheetOf = (spec) => SHEETS[spec.sheet ?? "poster"];
 export const SHAPE_KEYS = ["profile", "ellipse", "polygon", "path"];
 // Row pitch and the two heights a row samples, per font size. A row is inside where both are.
 export const GRID = { 11: { pitch: 14, probes: [2, 12] }, 12: { pitch: 16, probes: [3, 13] } };
@@ -335,12 +343,13 @@ export const CORNERS = ["top-left", "top-right", "bottom-left", "bottom-right"];
  * counted up to CORNER_MAX_H, among those at least CORNER_MIN_W wide when there are any. Two corners that
  * overlap along an edge split the overlap evenly.
  * @param {{ left: number, top: number, right: number, bottom: number }[]} rects
+ * @param {{ width: number, height: number }} sheet
  * @returns {Record<"top-left" | "top-right" | "bottom-left" | "bottom-right", { x: number, y: number, w: number, h: number }>}
  */
-export function corners(rects) {
+export function corners(rects, sheet) {
   const C = CORNER_CELL;
-  const cols = Math.ceil(SHEET.width / C);
-  const rows = Math.ceil(SHEET.height / C);
+  const cols = Math.ceil(sheet.width / C);
+  const rows = Math.ceil(sheet.height / C);
   const taken = Array.from({ length: rows }, () => new Uint8Array(cols));
   for (const r of rects) {
     for (let q = Math.max(0, Math.floor(r.top / C)); q < Math.min(rows, Math.ceil(r.bottom / C)); q++)
@@ -364,13 +373,13 @@ export function corners(rects) {
       if (run * C >= CORNER_MIN_W && score(here) > score(wide)) wide = here;
     }
     if (wide.cols) best = wide;
-    const w = Math.min(SHEET.width, best.cols * C);
+    const w = Math.min(sheet.width, best.cols * C);
     // The bottom row of cells hangs past the sheet's edge, which is not a whole number of cells.
-    const h = Math.max(0, Math.min(SHEET.height, best.rows * C - (vert === "bottom" ? rows * C - SHEET.height : 0)));
+    const h = Math.max(0, Math.min(sheet.height, best.rows * C - (vert === "bottom" ? rows * C - sheet.height : 0)));
     out[name] = { w, h };
   }
   const split = (a, b, size) => {
-    const over = out[a][size] + out[b][size] - (size === "w" ? SHEET.width : SHEET.height);
+    const over = out[a][size] + out[b][size] - (size === "w" ? sheet.width : sheet.height);
     if (over <= 0 || !out[a][size === "w" ? "h" : "w"] || !out[b][size === "w" ? "h" : "w"]) return;
     const cut = Math.ceil(over / 2 / C) * C;
     out[a][size] = Math.max(0, out[a][size] - cut);
@@ -382,7 +391,7 @@ export function corners(rects) {
   split("top-right", "bottom-right", "h");
   for (const name of CORNERS) {
     const { w, h } = out[name];
-    out[name] = { x: name.endsWith("left") ? 0 : SHEET.width - w, y: name.startsWith("top") ? 0 : SHEET.height - h, w, h };
+    out[name] = { x: name.endsWith("left") ? 0 : sheet.width - w, y: name.startsWith("top") ? 0 : sheet.height - h, w, h };
   }
   return out;
 }

@@ -1,7 +1,7 @@
 // The wave field: rows of part names, as many per part as its share of lines, bent into one band that enters
 // at the top behind the masthead, swings across and leaves through the floor. Pure: render inlines it,
 // `vyo sketch` imports it.
-import { SHEET, clearOf } from "../geometry.mjs";
+import { clearOf } from "../geometry.mjs";
 
 // f-wave-paper's numbers: 6.9px letters on 7.9px rows from the top edge to the floor, about 110 rows above
 // a 900px floor. That density is what reads as a band at a sixth of the size.
@@ -37,9 +37,9 @@ export function rowsPerPart(parts, n) {
   return got.map((g) => g + 1);
 }
 
-/** The band's centre and half-width at height y: f-wave-paper's path, a smoothstep diagonal plus a damped sine. */
-export function wavePath(y) {
-  const u = Math.min(1, Math.max(0, (y + 14) / SHEET.height));
+/** The band's centre and half-width at height y on a sheet this tall: f-wave-paper's path, a smoothstep diagonal plus a damped sine. */
+export function wavePath(y, height) {
+  const u = Math.min(1, Math.max(0, (y + 14) / height));
   const centre = 130 + 560 * (u * u * (3 - 2 * u) * 0.6 + u * 0.4) + 95 * Math.sin(6.4 * u + 0.4) * (1 - 0.5 * u);
   return { centre, half: 150 + 40 * Math.abs(Math.cos(6.4 * u + 0.4)) };
 }
@@ -49,16 +49,16 @@ export function wavePath(y) {
  * text blocks, as in f-wave-paper: render gives each block a paper halo, so no row is cut around them.
  * @param {{ sentence?: string, every?: number }} region
  * @param {{ id: string, name: string, loc: number, hot: boolean }[]} parts  in tree order
- * @param {{ floor: number, mirror: boolean, theme?: "light" | "dark", measure: (text: string, size: number) => number }} frame
+ * @param {{ sheet: { width: number, height: number }, floor: number, mirror: boolean, theme?: "light" | "dark", measure: (text: string, size: number) => number }} frame
  */
-export function waveRows(region, parts, { floor, mirror, theme = "light", measure }) {
+export function waveRows(region, parts, { sheet, floor, mirror, theme = "light", measure }) {
   const { size, pitch } = WAVE;
   const every = region.every ?? WAVE.every;
   const slots = Array.from({ length: Math.floor(floor / pitch) }, (_, i) => {
     const y = Math.round(i * pitch * 10) / 10;
-    const { centre: cx, half } = wavePath(y);
-    const centre = mirror ? SHEET.width - cx : cx;
-    return { y, half, runs: clearOf([[Math.max(0, centre - half), Math.min(SHEET.width - 2, centre + half)]], y, pitch, []) };
+    const { centre: cx, half } = wavePath(y, sheet.height);
+    const centre = mirror ? sheet.width - cx : cx;
+    return { y, half, runs: clearOf([[Math.max(0, centre - half), Math.min(sheet.width - 2, centre + half)]], y, pitch, []) };
   });
   const counts = rowsPerPart(parts, slots.length);
   // Fewer rows than parts: the last parts go undrawn, and the field-parts check names them.

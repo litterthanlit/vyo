@@ -9,14 +9,14 @@ import { terrainRows, TERRAIN } from "../lib/fields/terrain.mjs";
 import { riverRows, mergeTree, RIVER } from "../lib/fields/river.mjs";
 import { regionParts, partTies } from "../lib/parts.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
-import { fixedMeasure } from "../lib/geometry.mjs";
+import { fixedMeasure, SHEET } from "../lib/geometry.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const recipe = scanRepo(path.join(HERE, "fixtures", "recipe"));
 const hypher = JSON.parse(fs.readFileSync(path.join(HERE, "..", "..", "..", "..", "..", "explorations", "2026-11-07-abstract-fields", "hypher-facts.json"), "utf8"));
 const masthead = { left: 44, top: 36, right: 397, bottom: 154 };
 const aside = { left: 56, top: 760, right: 294, bottom: 832 };
-const frame = (over = {}) => ({ floor: 900, mirror: false, blocks: [masthead, aside], measure: fixedMeasure, ...over });
+const frame = (over = {}) => ({ sheet: SHEET, floor: 900, mirror: false, blocks: [masthead, aside], measure: fixedMeasure, ...over });
 const touches = (it, b, pad) => it.x < b.right + pad && it.x + it.width > b.left - pad && it.y < b.bottom + pad && it.y + it.height > b.top - pad;
 
 test("the registry names each field once, with its layout and the options only it takes", () => {

@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { buildPage, renderPage } from "../lib/render.mjs";
 import { fieldItems } from "../lib/sketch.mjs";
+import { sheetOf } from "../lib/geometry.mjs";
 import { BROWSER_NOTE } from "../lib/browser.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -135,7 +136,7 @@ for (const [name, id, mutate, expect] of PLANTED) {
 const facts = JSON.parse(fs.readFileSync(factsFile, "utf8"));
 for (const id of PRESETS.filter((p) => preset(p).figure.regions.some((r) => r.kind === "field"))) {
   const spec = preset(id);
-  const page = await renderPage({ html: buildPage(spec, facts), base: path.join(OUT, `${id}-twin`), png: false, pdf: false });
+  const page = await renderPage({ html: buildPage(spec, facts), base: path.join(OUT, `${id}-twin`), sheet: sheetOf(spec), png: false, pdf: false });
   const blocks = page.blocks.filter((b) => b.role).map((b) => b.rect);
   const node = spec.figure.regions.flatMap((r) => fieldItems(spec, r, facts, blocks));
   const far = node.filter((n, i) => {

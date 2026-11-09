@@ -1,6 +1,6 @@
 // The frames a poster can sit in, and each frame's text roles: a closed set per frame. Spec validation,
 // render, sketch and compose read the same table. Pure.
-import { SHEET, ADVANCE, CORNERS } from "./geometry.mjs";
+import { ADVANCE, CORNERS } from "./geometry.mjs";
 
 /**
  * A text role: its size as [default, min, max] in px, line height from size, how many a figure holds,
@@ -54,20 +54,21 @@ const hit = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom &
  * up the left edge at the lowest clear run, else back on the bottom. `side` forces one.
  * @param {string} text
  * @param {{ left: number, top: number, right: number, bottom: number }[]} rects  the field's rows
- * @param {"bottom" | "left"} [side]
+ * @param {"bottom" | "left" | undefined} side
+ * @param {{ width: number, height: number }} sheet
  * @returns {{ side: "bottom" | "left", x: number, y: number, w: number }}  for "left", y is where the line starts, at its bottom
  */
-export function recordSpot(text, rects, side) {
+export function recordSpot(text, rects, side, sheet) {
   const w = recordWidth(text);
   const { size, inset, bottom, left, gap } = RECORD;
-  const flat = { side: "bottom", x: inset, y: SHEET.height - bottom - size, w };
+  const flat = { side: "bottom", x: inset, y: sheet.height - bottom - size, w };
   const flatBox = { left: flat.x - gap, top: flat.y - gap, right: flat.x + w + gap, bottom: flat.y + size + gap };
   if (side === "bottom" || (!side && !rects.some((r) => hit(r, flatBox)))) return flat;
-  for (let y = SHEET.height - bottom; y - w >= inset; y -= size) {
+  for (let y = sheet.height - bottom; y - w >= inset; y -= size) {
     const box = { left: 0, top: y - w - gap, right: left + size + gap, bottom: y + gap };
     if (!rects.some((r) => hit(r, box))) return { side: "left", x: left, y, w };
   }
-  return side === "left" ? { side: "left", x: left, y: SHEET.height - bottom, w } : flat;
+  return side === "left" ? { side: "left", x: left, y: sheet.height - bottom, w } : flat;
 }
 
 /** The record's rect on the sheet. */
@@ -90,9 +91,10 @@ const BLOCKS = { label: { w: 220 }, headline: { w: 380, chars: 54 }, list: { w: 
  * @param {ReturnType<import("./geometry.mjs").corners>} corners
  * @param {{ x: number, y: number }} accent  the centre of the accent part's rows, or of all rows
  * @param {number} listLines  how many parts the list prints
+ * @param {{ width: number, height: number }} sheet
  * @returns {Record<string, { x: number, y: number, w: number, align: "left" | "right" }>}
  */
-export function scaffoldPlaces(corners, accent, listLines) {
+export function scaffoldPlaces(corners, accent, listLines, sheet) {
   const { inset, gap, between, bottomEnd, minW, minH } = SCAFFOLD;
   const room = Object.fromEntries(
     CORNERS.map((n) => {
@@ -128,9 +130,9 @@ export function scaffoldPlaces(corners, accent, listLines) {
     const top = r.name.startsWith("top");
     const right = r.name.endsWith("right");
     const offset = r.used + (r.used ? between : 0);
-    const y = top ? inset + offset : SHEET.height - bottomEnd - offset - height;
+    const y = top ? inset + offset : sheet.height - bottomEnd - offset - height;
     r.used = offset + height;
-    out[role] = { x: right ? SHEET.width - inset - w : inset, y: Math.round(y), w: Math.round(w), align: right ? "right" : "left" };
+    out[role] = { x: right ? sheet.width - inset - w : inset, y: Math.round(y), w: Math.round(w), align: right ? "right" : "left" };
   }
   return out;
 }

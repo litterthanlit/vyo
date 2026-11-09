@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { hasWord } from "./spec.mjs";
-import { SHEET, fixedMeasure, corners } from "./geometry.mjs";
+import { SHEET, sheetOf, fixedMeasure, corners } from "./geometry.mjs";
 import { frameOf, textSize, lineHeight, ruleText, recordSpot, RECORD } from "./frame.mjs";
 import { bandCounts, bandLine, provenance } from "./band.mjs";
 import { regionParts, partTies } from "./parts.mjs";
@@ -59,10 +59,10 @@ function wrapMeta(text) {
 
 const notBuiltLines = (notBuilt) => (notBuilt.length ? wrapMeta(`Not built yet: ${notBuilt.join(", ")}`) : []);
 const footerHeight = (notes, notBuilt) => FOOT.notes + FOOT.noteLines[notes] * FOOT.noteLine + FOOT.gap + (notBuilt + 1) * FOOT.meta;
-/** The y of the footer's hairline for a notes count and a number of not-built lines: the figure sits above it. */
+/** The y of the swiss footer's hairline for a notes count and a number of not-built lines: the figure sits above it. */
 export const floorFor = (notes, notBuilt) => SHEET.height - footerHeight(notes, notBuilt) - FOOT.below;
 /** The y a field's rows stop at: the swiss footer's hairline, or the sheet's bottom edge in the loose frame. */
-export const floorOf = (spec) => (frameOf(spec) === "loose" ? SHEET.height : floorFor(spec.notes.length, notBuiltLines(spec.notBuilt).length));
+export const floorOf = (spec) => (frameOf(spec) === "loose" ? sheetOf(spec).height : floorFor(spec.notes.length, notBuiltLines(spec.notBuilt).length));
 export const FLOOR_STEP = FOOT.meta;
 
 function footer(spec, facts) {
@@ -149,13 +149,13 @@ export function fieldSpace(spec, facts) {
   const rects = items.map((it) => ({ left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + it.height }));
   const hot = items.some((it) => it.hot) ? items.filter((it) => it.hot) : items;
   const mean = (f) => hot.reduce((s, it) => s + f(it), 0) / (hot.length || 1);
-  return { rects, corners: corners(rects), accent: { x: mean((it) => it.x + it.width / 2), y: mean((it) => it.y + it.height / 2) } };
+  return { rects, corners: corners(rects, sheetOf(spec)), accent: { x: mean((it) => it.x + it.width / 2), y: mean((it) => it.y + it.height / 2) } };
 }
 
 /** Where the record line sits: clear of the field's rows. */
 export function recordOf(spec, facts) {
   const text = `${recordText(spec.product)}.`;
-  return { text, ...recordSpot(text, fieldSpace(spec, facts).rects, spec.record) };
+  return { text, ...recordSpot(text, fieldSpace(spec, facts).rects, spec.record, sheetOf(spec)) };
 }
 
 function record(spec, facts) {
@@ -199,10 +199,11 @@ const figureScript = () =>
     .join("\n")
     .replace(/<\/script/gi, "<\\/script");
 
-/** What a field's layout needs from the rest of the poster: the floor, whether the masthead sits on the right, and the theme. */
+/** What a field's layout needs from the rest of the poster: the sheet, the floor, whether the masthead sits on the right, and the theme. */
 export function fieldFrame(spec) {
+  const sheet = sheetOf(spec);
   const m = frameOf(spec) === "swiss" && spec.figure.texts.find((t) => t.role === "masthead");
-  return { floor: floorOf(spec), mirror: !!m && m.x + m.w / 2 > SHEET.width / 2, theme: spec.theme };
+  return { sheet, floor: floorOf(spec), mirror: !!m && m.x + m.w / 2 > sheet.width / 2, theme: spec.theme };
 }
 
 /** The figure as the page reads it: field regions carry their parts, computed from facts.json. */
@@ -214,13 +215,14 @@ const figureData = (spec, facts) => ({
 
 /** The poster as one HTML string. Throws when the fonts are missing. */
 export function buildPage(spec, facts) {
+  const sheet = sheetOf(spec);
   const vars = Object.entries(Object.assign({}, ...Object.values(fieldTokensOf(spec)), tokensOf(spec))).map(([k, v]) => `--${k}:${v}`).join(";");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(spec.product.name)} poster</title><style>
 ${fontFaces()}
 * { box-sizing: border-box; margin: 0; padding: 0 }
 :root { ${vars} }
 html, body { background: var(--paper) }
-.sheet { position: relative; width: ${SHEET.width}px; height: ${SHEET.height}px; overflow: hidden; background: var(--paper); color: var(--ink); font-family: "Commit Mono", monospace }
+.sheet { position: relative; width: ${sheet.width}px; height: ${sheet.height}px; overflow: hidden; background: var(--paper); color: var(--ink); font-family: "Commit Mono", monospace }
 .row { position: absolute; white-space: nowrap; overflow: hidden }
 .dots { position: absolute }
 .t { position: absolute; font-size: 12px; line-height: 18px }
@@ -233,24 +235,25 @@ ${CHROME[frameOf(spec)](spec, facts)}
 }
 
 const PAPER = {
-  fit: () => ({ width: `${SHEET.width}px`, height: `${SHEET.height}px` }),
-  a4: () => paged("A4", 794, 1122),
-  letter: () => paged("Letter", 816, 1055),
+  fit: (sheet) => ({ width: `${sheet.width}px`, height: `${sheet.height}px` }),
+  a4: (sheet) => paged("A4", 794, 1122, sheet),
+  letter: (sheet) => paged("Letter", 816, 1055, sheet),
 };
-function paged(format, w, h) {
-  const scale = Math.min(w / SHEET.width, h / SHEET.height);
-  const x = Math.floor((w - SHEET.width * scale) / 2);
-  const y = Math.floor((h - SHEET.height * scale) / 2);
+function paged(format, w, h, sheet) {
+  const scale = Math.min(w / sheet.width, h / sheet.height);
+  const x = Math.floor((w - sheet.width * scale) / 2);
+  const y = Math.floor((h - sheet.height * scale) / 2);
   return { format, scale, margin: { left: `${x}px`, right: "0px", top: `${y}px`, bottom: "0px" } };
 }
 export const PAPERS = Object.keys(PAPER);
 
-/** The poster at 1/6 scale (140x198 CSS px, 2x): the size at which the accent part must still stand out. */
-export const THUMB = { width: 140, height: 198 };
-async function writeThumb(browser, shot, file) {
-  const page = await browser.newPage({ viewport: THUMB, deviceScaleFactor: 2 });
+/** The poster at 1/6 scale (140x198 CSS px for the poster sheet, at 2x): the size at which the accent part must still stand out. */
+const thumbOf = (sheet) => ({ width: sheet.width / 6, height: Math.round(sheet.height / 6) });
+async function writeThumb(browser, shot, file, sheet) {
+  const thumb = thumbOf(sheet);
+  const page = await browser.newPage({ viewport: thumb, deviceScaleFactor: 2 });
   try {
-    await page.setContent(`<body style="margin:0"><img width="${THUMB.width}" height="${THUMB.height}" style="display:block" src="data:image/png;base64,${shot.toString("base64")}">`);
+    await page.setContent(`<body style="margin:0"><img width="${thumb.width}" height="${thumb.height}" style="display:block" src="data:image/png;base64,${shot.toString("base64")}">`);
     await page.waitForFunction(() => document.images[0].complete);
     await page.screenshot({ path: file });
   } finally {
@@ -260,14 +263,14 @@ async function writeThumb(browser, shot, file) {
 
 /**
  * Write <base>.html, then render it: PNG at 2x and PDF unless turned off. Returns the page measurements.
- * @param {{ html: string, base: string, png?: boolean, pdf?: boolean, paper?: string }} o
+ * @param {{ html: string, base: string, sheet: { width: number, height: number }, png?: boolean, pdf?: boolean, paper?: string }} o
  */
-export async function renderPage({ html, base, png = true, pdf = true, paper = "fit" }) {
+export async function renderPage({ html, base, sheet, png = true, pdf = true, paper = "fit" }) {
   fs.mkdirSync(path.dirname(base), { recursive: true });
   fs.writeFileSync(`${base}.html`, html);
   const browser = await launchChromium();
   try {
-    const page = await browser.newPage({ viewport: SHEET, deviceScaleFactor: 2 });
+    const page = await browser.newPage({ viewport: sheet, deviceScaleFactor: 2 });
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.setContent(html, { waitUntil: "load" });
@@ -276,11 +279,11 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
     report.errors = errors;
     if (png) {
       const shot = await page.locator(".sheet").screenshot({ path: `${base}.png` });
-      await writeThumb(browser, shot, `${base}-thumb.png`);
+      await writeThumb(browser, shot, `${base}-thumb.png`, sheet);
     }
     if (pdf) {
       await page.emulateMedia({ media: "screen" });
-      await page.pdf({ path: `${base}.pdf`, printBackground: true, ...PAPER[paper]() });
+      await page.pdf({ path: `${base}.pdf`, printBackground: true, ...PAPER[paper](sheet) });
     }
     return report;
   } finally {

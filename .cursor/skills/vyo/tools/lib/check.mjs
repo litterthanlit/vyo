@@ -39,15 +39,15 @@ const spreadOf = (widths) => {
   return { mean, spread: sd / mean };
 };
 
-/** The coverage numbers `silhouette` judges; `vyo sketch` prints the same from its estimate. */
-export function figureStats(rowRects, dotRects, floor) {
+/** The coverage numbers `silhouette` judges on a sheet this wide; `vyo sketch` prints the same from its estimate. */
+export function figureStats(rowRects, dotRects, floor, width) {
   const all = [...rowRects, ...dotRects];
   const area = all.reduce((s, r) => s + (r.right - r.left) * (r.bottom - r.top), 0);
   const u = union(all);
   return {
-    coverage: area / (840 * floor),
+    coverage: area / (width * floor),
     height: all.length ? (u.bottom - u.top) / floor : 0,
-    width: all.length ? (u.right - u.left) / 840 : 0,
+    width: all.length ? (u.right - u.left) / width : 0,
   };
 }
 export const SILHOUETTE = { coverage: 0.15, height: 0.55, width: 0.6 };
@@ -251,7 +251,7 @@ export const CHECKS = [
   {
     id: "silhouette", level: "fail", stage: "page", about: "the figure covers 15% of the sheet above the footer and spans 55% of its height and 60% of its width",
     run: ({ page }) => {
-      const s = figureStats(page.rows.map((r) => r.rect), page.dots.map((d) => d.rect), page.footerTop);
+      const s = figureStats(page.rows.map((r) => r.rect), page.dots.map((d) => d.rect), page.footerTop, page.sheet.right - page.sheet.left);
       const out = [];
       if (s.coverage < SILHOUETTE.coverage) out.push(`the figure covers ${pct(s.coverage)} of the sheet above the footer; it needs ${pct(SILHOUETTE.coverage)}, so enlarge the shapes`);
       if (s.height < SILHOUETTE.height) out.push(`the figure spans ${pct(s.height)} of the height above the footer; it needs ${pct(SILHOUETTE.height)}`);

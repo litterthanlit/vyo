@@ -1,6 +1,6 @@
 // `vyo sketch`: the figure as ASCII at 20px cells, laid out in Node with the page's own geometry and
 // Commit Mono's fixed advance, so the agent sees rows, coverage, each region's widths and the floor before rendering.
-import { SHEET, GRID, regionRows, fillRows, dotsLines, fixedMeasure, cornersLine } from "./geometry.mjs";
+import { sheetOf, GRID, regionRows, fillRows, dotsLines, fixedMeasure, cornersLine } from "./geometry.mjs";
 import { hasWord, PLACEHOLDER } from "./spec.mjs";
 import { floorOf, fieldItems as layoutField, listItems, recordOf, fieldSpace } from "./render.mjs";
 import { frameOf, roleOf, textSize, lineHeight, ruleText, recordRect } from "./frame.mjs";
@@ -9,8 +9,6 @@ import { regionParts } from "./parts.mjs";
 import { figureStats, regionStats, SILHOUETTE, REGION, boxMessage, thinMessage } from "./check.mjs";
 
 const CELL = 20;
-const COLS = SHEET.width / CELL;
-const ROWS = Math.ceil(SHEET.height / CELL);
 const LETTERS = "ABCDEF";
 function wrap(text, perLine) {
   const lines = [];
@@ -50,6 +48,9 @@ export function fieldItems(spec, region, facts, texts = spec.figure.texts.map((t
  * @returns {string}
  */
 export function sketch(spec, facts) {
+  const sheet = sheetOf(spec);
+  const COLS = sheet.width / CELL;
+  const ROWS = Math.ceil(sheet.height / CELL);
   const floor = floorOf(spec);
   const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(" "));
   const put = (r, c, ch) => r >= 0 && r < ROWS && c >= 0 && c < COLS && (grid[r][c] = ch);
@@ -140,7 +141,7 @@ export function sketch(spec, facts) {
   const footRow = loose ? ROWS - 1 : Math.floor(floor / CELL);
   if (!loose) for (let c = 0; c < COLS; c++) put(footRow, c, "=");
 
-  const s = figureStats([...rowRects, ...fieldRects], dotRects, floor);
+  const s = figureStats([...rowRects, ...fieldRects], dotRects, floor, sheet.width);
   const perRegion = regionStats(rowRects);
   for (const r of perRegion) {
     if (r.variety < REGION.variety) notes.push(boxMessage(r));
