@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { validateSpec, textProblems, hasWord, scaffoldSpec } from "../lib/spec.mjs";
 import { BANNED, isJargon } from "../lib/jargon.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
+import { sheetOf } from "../lib/geometry.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PRESETS = path.join(HERE, "..", "presets");
@@ -35,6 +36,20 @@ test("unknown keys are rejected at every level", () => {
   rejects((s) => (s.figure.regions[0].colour = "x"), /^figure\.regions\[0\]\.colour: unknown field/);
   rejects((s) => (s.figure.texts[0].bold = true), /^figure\.texts\[0\]\.bold: unknown field/);
   rejects((s) => (s.notes[0].icon = "x"), /^notes\[0\]\.icon: unknown field/);
+});
+
+test("a spec's sheet: the poster unless it says 4:5, which the swiss frame refuses, and every coordinate on that sheet", () => {
+  assert.deepEqual(sheetOf({}), { width: 840, height: 1190 });
+  assert.deepEqual(sheetOf({ sheet: "poster" }), { width: 840, height: 1190 });
+  assert.deepEqual(sheetOf({ sheet: "4:5" }), { width: 840, height: 1050 });
+  const wave = () => preset("wave");
+  assert.deepEqual(errorsOf((s) => (s.sheet = "4:5"), wave), []);
+  rejects((s) => (s.sheet = "square"), /^sheet: "square" is not a sheet; use poster or 4:5$/, wave);
+  rejects((s) => (s.sheet = "4:5"), /^sheet: the swiss frame is drawn for the poster sheet/);
+  assert.deepEqual(errorsOf((s) => (s.sheet = "poster")), [], "the swiss frame takes the poster sheet by name");
+  const low = (s) => (s.figure.texts.find((t) => t.role === "headline").y = 1100);
+  assert.deepEqual(errorsOf(low, wave), [], "y 1100 is on the poster sheet");
+  rejects((s) => ((s.sheet = "4:5"), low(s)), /^figure\.texts\[\d\]: x must be 0 to 840 and y 0 to 1050$/, wave);
 });
 
 test("regions: kind, geometry and counts", () => {

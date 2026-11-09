@@ -146,6 +146,47 @@ for (const id of PRESETS.filter((p) => preset(p).figure.regions.some((r) => r.ki
   result(node.length === page.rows.length && !far.length, `${id}: the sketch and the page place the same ${node.length} rows within 2px`, `node ${node.length} rows, page ${page.rows.length}; first apart: ${JSON.stringify(far[0])} vs ${JSON.stringify(page.rows[node.indexOf(far[0])]?.rect)}`);
 }
 
+// A 4:5 poster per field: compose places the texts on the shorter sheet, the field preset's words go into them.
+const pngSize = (file) => (fs.existsSync(file) ? [fs.readFileSync(file).readUInt32BE(16), fs.readFileSync(file).readUInt32BE(20)] : []);
+for (const field of ["wave", "terrain", "river"]) {
+  const dir = path.join(OUT, `${field}-4x5`);
+  const scaffold = path.join(dir, "scaffold.json");
+  const words = preset(field);
+  const c = vyo("compose", factsFile, "--sheet", "4:5", "--field", field, "--accent", "area:lib/plan", "--theme", words.theme, "--out", scaffold);
+  const placed = c.status === 0 ? JSON.parse(fs.readFileSync(scaffold, "utf8")) : { figure: { texts: [] } };
+  const own = Object.fromEntries(words.figure.texts.map((t) => [t.role, t]));
+  const spec = {
+    ...words,
+    sheet: placed.sheet,
+    figure: { ...words.figure, texts: placed.figure.texts.filter((t) => own[t.role]).map(({ role, x, y, w, align }) => ({ ...own[role], x, y, w, align })) },
+  };
+  const specFile = path.join(dir, "recipe-poster.json");
+  fs.writeFileSync(specFile, JSON.stringify(spec, null, 2));
+  const r = vyo("render", specFile, "--facts", factsFile);
+  result(c.status === 0 && placed.sheet === "4:5" && r.status === 0 && /^PASS$/m.test(r.stdout) && !/^✗/m.test(r.stderr), `${field} on the 4:5 sheet renders and passes every check`, c.stderr + r.stdout + r.stderr);
+  const png = pngSize(path.join(dir, "recipe-poster.png"));
+  const thumb = pngSize(path.join(dir, "recipe-poster-thumb.png"));
+  result(png[0] === 1680 && png[1] === 2100 && thumb[0] === 280 && thumb[1] === 350, `${field} on 4:5 writes a 1680x2100 PNG and a 280x350 thumb`, `png ${png}, thumb ${thumb}`);
+  const page = await renderPage({ html: buildPage(spec, facts), base: path.join(dir, "twin"), sheet: sheetOf(spec), png: false, pdf: false });
+  const blocks = page.blocks.filter((b) => b.role).map((b) => b.rect);
+  const node = spec.figure.regions.flatMap((reg) => fieldItems(spec, reg, facts, blocks));
+  const far = node.filter((n, i) => {
+    const q = page.rows[i]?.rect;
+    return !q || Math.abs(q.left - n.x) > 2 || Math.abs(q.top - n.y) > 2 || Math.abs(q.right - (n.x + n.width)) > 2;
+  });
+  result(page.sheet.bottom === 1050 && node.length === page.rows.length && !far.length, `${field} on 4:5: the sketch and the page place the same ${node.length} rows within 2px on an 840x1050 sheet`, `sheet ${JSON.stringify(page.sheet)}; node ${node.length} rows, page ${page.rows.length}; first apart: ${JSON.stringify(far[0])}`);
+}
+
+{
+  const r = vyo("compose", factsFile, "--sheet", "4:5", "--from", "hourglass", "--out", path.join(OUT, "sheet-from.json"));
+  result(r.status === 2 && /^--from hourglass is drawn for the poster sheet; --sheet sizes a field poster/m.test(r.stderr), "compose refuses --sheet beside --from", `exit ${r.status}\n${r.stderr}`);
+}
+
+for (const id of ["wave", "terrain", "hourglass"]) {
+  const spec = preset(id);
+  result(buildPage(spec, facts) === buildPage({ ...spec, sheet: "poster" }, facts), `${id}: a spec with no sheet builds the same page as "sheet": "poster"`, "the pages differ");
+}
+
 const emptyFacts = path.join(OUT, "empty-facts.json");
 vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
 {
