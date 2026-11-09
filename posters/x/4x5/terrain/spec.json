@@ -1,0 +1,67 @@
+{
+  "version": 3,
+  "frame": "loose",
+  "sheet": "4:5",
+  "facts": "d28ebc6eadf3",
+  "product": {
+    "name": "Vyo",
+    "repo": "tools",
+    "commit": "9d792a7",
+    "date": "2026-11-09"
+  },
+  "theme": "dark",
+  "headline": "Your app's code, drawn as one poster anyone can read.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "terrain",
+        "field": "terrain",
+        "fits": "Most of Vyo is the reader that works out what an app is made of, so the biggest peak is the part that matters most.",
+        "accent": "area:lib/scan",
+        "names": {
+          "area:.": "the command",
+          "area:lib": "drawing and checking",
+          "area:lib/fields": "the shapes",
+          "area:lib/scan": "the reader"
+        }
+      }
+    ],
+    "texts": [
+      {
+        "role": "label",
+        "id": "label",
+        "x": 40,
+        "y": 40,
+        "w": 220,
+        "align": "left"
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 40,
+        "y": 80,
+        "w": 364,
+        "align": "left"
+      },
+      {
+        "role": "legend",
+        "id": "legend",
+        "x": 540,
+        "y": 40,
+        "w": 260,
+        "align": "right",
+        "text": "Every peak is a part of Vyo, as tall as its code and as wide as its files. The orange peak is the reader."
+      },
+      {
+        "role": "paragraph",
+        "id": "paragraph",
+        "x": 560,
+        "y": 148,
+        "w": 240,
+        "align": "right",
+        "text": "Vyo reads an app and draws it as one poster, then checks the words around it for jargon."
+      }
+    ]
+  }
+}

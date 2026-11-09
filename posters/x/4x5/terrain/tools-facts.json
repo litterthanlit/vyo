@@ -1,0 +1,665 @@
+{
+ "empty": false,
+ "facts": [
+  {
+   "files": [],
+   "id": "area:.",
+   "kind": "area",
+   "loc": 6369,
+   "meta": {
+    "fileCount": 42,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Tools"
+  },
+  {
+   "files": [],
+   "id": "area:lib",
+   "kind": "area",
+   "loc": 5975,
+   "meta": {
+    "fileCount": 40,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Inner workings"
+  },
+  {
+   "files": [],
+   "id": "area:lib/fields",
+   "kind": "area",
+   "loc": 470,
+   "meta": {
+    "fileCount": 4,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Fields"
+  },
+  {
+   "files": [],
+   "id": "area:lib/scan",
+   "kind": "area",
+   "loc": 3269,
+   "meta": {
+    "fileCount": 22,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Scan"
+  },
+  {
+   "files": [],
+   "id": "job:/api/cron/weekly-plan",
+   "kind": "job",
+   "meta": {
+    "package": ".",
+    "schedule": "0 8 * * 1"
+   },
+   "name": "Weekly plan"
+  }
+ ],
+ "files": {
+  "lib/band.mjs": {
+   "area": "area:lib",
+   "loc": 38
+  },
+  "lib/browser.mjs": {
+   "area": "area:lib",
+   "loc": 19
+  },
+  "lib/check.mjs": {
+   "area": "area:lib",
+   "loc": 365
+  },
+  "lib/fields/index.mjs": {
+   "area": "area:lib/fields",
+   "loc": 46
+  },
+  "lib/fields/river.mjs": {
+   "area": "area:lib/fields",
+   "loc": 175
+  },
+  "lib/fields/terrain.mjs": {
+   "area": "area:lib/fields",
+   "loc": 173
+  },
+  "lib/fields/wave.mjs": {
+   "area": "area:lib/fields",
+   "loc": 76
+  },
+  "lib/fill.js": {
+   "area": "area:lib",
+   "loc": 128
+  },
+  "lib/frame.mjs": {
+   "area": "area:lib",
+   "loc": 128
+  },
+  "lib/geometry.mjs": {
+   "area": "area:lib",
+   "loc": 376
+  },
+  "lib/hash.mjs": {
+   "area": "area:lib",
+   "loc": 34
+  },
+  "lib/init.mjs": {
+   "area": "area:lib",
+   "loc": 50
+  },
+  "lib/inspect.js": {
+   "area": "area:lib",
+   "loc": 59
+  },
+  "lib/jargon.mjs": {
+   "area": "area:lib",
+   "loc": 22
+  },
+  "lib/parts.mjs": {
+   "area": "area:lib",
+   "loc": 126
+  },
+  "lib/render.mjs": {
+   "area": "area:lib",
+   "loc": 266
+  },
+  "lib/scan/areas.mjs": {
+   "area": "area:lib/scan",
+   "loc": 136
+  },
+  "lib/scan/detect-http.mjs": {
+   "area": "area:lib/scan",
+   "loc": 243
+  },
+  "lib/scan/detect-jobs.mjs": {
+   "area": "area:lib/scan",
+   "loc": 111
+  },
+  "lib/scan/detect-python.mjs": {
+   "area": "area:lib/scan",
+   "loc": 213
+  },
+  "lib/scan/detect-routes.mjs": {
+   "area": "area:lib/scan",
+   "loc": 225
+  },
+  "lib/scan/detect-services.mjs": {
+   "area": "area:lib/scan",
+   "loc": 175
+  },
+  "lib/scan/detect-tables.mjs": {
+   "area": "area:lib/scan",
+   "loc": 165
+  },
+  "lib/scan/draft.mjs": {
+   "area": "area:lib/scan",
+   "loc": 133
+  },
+  "lib/scan/facts.mjs": {
+   "area": "area:lib/scan",
+   "loc": 99
+  },
+  "lib/scan/files.mjs": {
+   "area": "area:lib/scan",
+   "loc": 158
+  },
+  "lib/scan/glob.mjs": {
+   "area": "area:lib/scan",
+   "loc": 35
+  },
+  "lib/scan/imports.mjs": {
+   "area": "area:lib/scan",
+   "loc": 337
+  },
+  "lib/scan/index.mjs": {
+   "area": "area:lib/scan",
+   "loc": 150
+  },
+  "lib/scan/kit.mjs": {
+   "area": "area:lib/scan",
+   "loc": 26
+  },
+  "lib/scan/names.mjs": {
+   "area": "area:lib/scan",
+   "loc": 170
+  },
+  "lib/scan/packages.mjs": {
+   "area": "area:lib/scan",
+   "loc": 158
+  },
+  "lib/scan/pyutil.mjs": {
+   "area": "area:lib/scan",
+   "loc": 109
+  },
+  "lib/scan/routes.mjs": {
+   "area": "area:lib/scan",
+   "loc": 65
+  },
+  "lib/scan/show.mjs": {
+   "area": "area:lib/scan",
+   "loc": 118
+  },
+  "lib/scan/tokenize.mjs": {
+   "area": "area:lib/scan",
+   "loc": 249
+  },
+  "lib/scan/uses.mjs": {
+   "area": "area:lib/scan",
+   "loc": 129
+  },
+  "lib/scan/util.mjs": {
+   "area": "area:lib/scan",
+   "loc": 65
+  },
+  "lib/sketch.mjs": {
+   "area": "area:lib",
+   "loc": 152
+  },
+  "lib/spec.mjs": {
+   "area": "area:lib",
+   "loc": 473
+  },
+  "postinstall.mjs": {
+   "area": "area:.",
+   "loc": 2
+  },
+  "vyo.mjs": {
+   "area": "area:.",
+   "loc": 392
+  }
+ },
+ "hash": "d28ebc6eadf3",
+ "imports": [
+  [
+   "lib/check.mjs",
+   "lib/band.mjs"
+  ],
+  [
+   "lib/check.mjs",
+   "lib/fields/index.mjs"
+  ],
+  [
+   "lib/check.mjs",
+   "lib/frame.mjs"
+  ],
+  [
+   "lib/check.mjs",
+   "lib/parts.mjs"
+  ],
+  [
+   "lib/check.mjs",
+   "lib/render.mjs"
+  ],
+  [
+   "lib/check.mjs",
+   "lib/spec.mjs"
+  ],
+  [
+   "lib/fields/index.mjs",
+   "lib/fields/river.mjs"
+  ],
+  [
+   "lib/fields/index.mjs",
+   "lib/fields/terrain.mjs"
+  ],
+  [
+   "lib/fields/index.mjs",
+   "lib/fields/wave.mjs"
+  ],
+  [
+   "lib/fields/river.mjs",
+   "lib/geometry.mjs"
+  ],
+  [
+   "lib/fields/terrain.mjs",
+   "lib/geometry.mjs"
+  ],
+  [
+   "lib/fields/wave.mjs",
+   "lib/geometry.mjs"
+  ],
+  [
+   "lib/frame.mjs",
+   "lib/geometry.mjs"
+  ],
+  [
+   "lib/parts.mjs",
+   "lib/fields/index.mjs"
+  ],
+  [
+   "lib/parts.mjs",
+   "lib/scan/detect-services.mjs"
+  ],
+  [
+   "lib/parts.mjs",
+   "lib/scan/glob.mjs"
+  ],
+  [
+   "lib/render.mjs",
+   "lib/band.mjs"
+  ],
+  [
+   "lib/render.mjs",
+   "lib/browser.mjs"
+  ],
+  [
+   "lib/render.mjs",
+   "lib/fields/index.mjs"
+  ],
+  [
+   "lib/render.mjs",
+   "lib/frame.mjs"
+  ],
+  [
+   "lib/render.mjs",
+   "lib/geometry.mjs"
+  ],
+  [
+   "lib/render.mjs",
+   "lib/parts.mjs"
+  ],
+  [
+   "lib/render.mjs",
+   "lib/spec.mjs"
+  ],
+  [
+   "lib/scan/areas.mjs",
+   "lib/scan/names.mjs"
+  ],
+  [
+   "lib/scan/areas.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/detect-http.mjs",
+   "lib/scan/files.mjs"
+  ],
+  [
+   "lib/scan/detect-http.mjs",
+   "lib/scan/names.mjs"
+  ],
+  [
+   "lib/scan/detect-http.mjs",
+   "lib/scan/routes.mjs"
+  ],
+  [
+   "lib/scan/detect-http.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/detect-jobs.mjs",
+   "lib/scan/files.mjs"
+  ],
+  [
+   "lib/scan/detect-jobs.mjs",
+   "lib/scan/names.mjs"
+  ],
+  [
+   "lib/scan/detect-jobs.mjs",
+   "lib/scan/pyutil.mjs"
+  ],
+  [
+   "lib/scan/detect-jobs.mjs",
+   "lib/scan/routes.mjs"
+  ],
+  [
+   "lib/scan/detect-jobs.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/detect-python.mjs",
+   "lib/scan/names.mjs"
+  ],
+  [
+   "lib/scan/detect-python.mjs",
+   "lib/scan/pyutil.mjs"
+  ],
+  [
+   "lib/scan/detect-python.mjs",
+   "lib/scan/routes.mjs"
+  ],
+  [
+   "lib/scan/detect-python.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/detect-routes.mjs",
+   "lib/scan/facts.mjs"
+  ],
+  [
+   "lib/scan/detect-routes.mjs",
+   "lib/scan/files.mjs"
+  ],
+  [
+   "lib/scan/detect-routes.mjs",
+   "lib/scan/names.mjs"
+  ],
+  [
+   "lib/scan/detect-routes.mjs",
+   "lib/scan/routes.mjs"
+  ],
+  [
+   "lib/scan/detect-routes.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/detect-services.mjs",
+   "lib/scan/imports.mjs"
+  ],
+  [
+   "lib/scan/detect-services.mjs",
+   "lib/scan/names.mjs"
+  ],
+  [
+   "lib/scan/detect-services.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/detect-tables.mjs",
+   "lib/scan/names.mjs"
+  ],
+  [
+   "lib/scan/detect-tables.mjs",
+   "lib/scan/pyutil.mjs"
+  ],
+  [
+   "lib/scan/detect-tables.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/draft.mjs",
+   "lib/scan/names.mjs"
+  ],
+  [
+   "lib/scan/draft.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/facts.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/files.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/imports.mjs",
+   "lib/scan/files.mjs"
+  ],
+  [
+   "lib/scan/imports.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/hash.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/areas.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/detect-http.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/detect-jobs.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/detect-python.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/detect-routes.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/detect-services.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/detect-tables.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/facts.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/files.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/imports.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/kit.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/packages.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/tokenize.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/uses.mjs"
+  ],
+  [
+   "lib/scan/index.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/kit.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/packages.mjs",
+   "lib/scan/files.mjs"
+  ],
+  [
+   "lib/scan/packages.mjs",
+   "lib/scan/tokenize.mjs"
+  ],
+  [
+   "lib/scan/packages.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/show.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/scan/uses.mjs",
+   "lib/scan/files.mjs"
+  ],
+  [
+   "lib/scan/uses.mjs",
+   "lib/scan/routes.mjs"
+  ],
+  [
+   "lib/scan/uses.mjs",
+   "lib/scan/util.mjs"
+  ],
+  [
+   "lib/sketch.mjs",
+   "lib/check.mjs"
+  ],
+  [
+   "lib/sketch.mjs",
+   "lib/fields/index.mjs"
+  ],
+  [
+   "lib/sketch.mjs",
+   "lib/frame.mjs"
+  ],
+  [
+   "lib/sketch.mjs",
+   "lib/geometry.mjs"
+  ],
+  [
+   "lib/sketch.mjs",
+   "lib/parts.mjs"
+  ],
+  [
+   "lib/sketch.mjs",
+   "lib/render.mjs"
+  ],
+  [
+   "lib/sketch.mjs",
+   "lib/spec.mjs"
+  ],
+  [
+   "lib/spec.mjs",
+   "lib/fields/index.mjs"
+  ],
+  [
+   "lib/spec.mjs",
+   "lib/fields/wave.mjs"
+  ],
+  [
+   "lib/spec.mjs",
+   "lib/frame.mjs"
+  ],
+  [
+   "lib/spec.mjs",
+   "lib/geometry.mjs"
+  ],
+  [
+   "lib/spec.mjs",
+   "lib/jargon.mjs"
+  ],
+  [
+   "postinstall.mjs",
+   "lib/browser.mjs"
+  ],
+  [
+   "vyo.mjs",
+   "lib/browser.mjs"
+  ],
+  [
+   "vyo.mjs",
+   "lib/check.mjs"
+  ],
+  [
+   "vyo.mjs",
+   "lib/fields/index.mjs"
+  ],
+  [
+   "vyo.mjs",
+   "lib/frame.mjs"
+  ],
+  [
+   "vyo.mjs",
+   "lib/geometry.mjs"
+  ],
+  [
+   "vyo.mjs",
+   "lib/hash.mjs"
+  ],
+  [
+   "vyo.mjs",
+   "lib/init.mjs"
+  ],
+  [
+   "vyo.mjs",
+   "lib/parts.mjs"
+  ],
+  [
+   "vyo.mjs",
+   "lib/render.mjs"
+  ],
+  [
+   "vyo.mjs",
+   "lib/scan/index.mjs"
+  ],
+  [
+   "vyo.mjs",
+   "lib/scan/show.mjs"
+  ],
+  [
+   "vyo.mjs",
+   "lib/sketch.mjs"
+  ],
+  [
+   "vyo.mjs",
+   "lib/spec.mjs"
+  ]
+ ],
+ "repo": {
+  "name": "tools",
+  "packages": [
+   "."
+  ]
+ },
+ "unresolved": {},
+ "uses": [],
+ "version": 1
+}
