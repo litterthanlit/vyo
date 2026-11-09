@@ -234,8 +234,12 @@ html, body { background: var(--paper) }
 .row { position: absolute; white-space: nowrap; overflow: hidden }
 .dots { position: absolute }
 .t { position: absolute; font-size: 12px; line-height: 18px }
-/* A field runs on behind the figure's texts: each sits above the rows with a 6px paper outline. */
-[data-role] { z-index: 1; -webkit-text-stroke: 12px var(--paper); paint-order: stroke fill }
+/* A field runs on behind the figure's texts: each sits above the rows with a 6px paper outline. The outline is a
+   stroked copy of the block (.halo, made by fill.js) under every glyph; stroked on the block itself, each line's
+   outline would paint over the descenders of the line above. */
+.halo { z-index: 1; color: var(--paper) !important; -webkit-text-stroke: 12px var(--paper) }
+.halo * { color: inherit !important }
+[data-role] { z-index: 2 }
 </style><script>${PRELUDE}</script></head><body><div class="sheet">
 ${spec.figure.texts.map((t) => textBlock(spec, t, facts)).join("\n")}
 ${CHROME[frameOf(spec)](spec, facts)}

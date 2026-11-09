@@ -124,6 +124,13 @@ function drawDots(S, region) {
   await window.fontsReady;
   const S = document.querySelector(".sheet");
   for (const m of S.querySelectorAll("[data-role=masthead]")) window.fitWidth(m, parseFloat(m.style.width));
+  for (const b of S.querySelectorAll("[data-role]")) {
+    const halo = b.cloneNode(true);
+    for (const a of ["data-block", "data-role", "data-owner", "data-hot"]) halo.removeAttribute(a);
+    halo.classList.add("halo");
+    halo.setAttribute("aria-hidden", "true");
+    b.before(halo);
+  }
   const origin = S.getBoundingClientRect();
   const blocks = [...S.querySelectorAll("[data-role]")].map((b) => {
     const range = document.createRange();

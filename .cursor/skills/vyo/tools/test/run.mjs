@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { buildPage, renderPage } from "../lib/render.mjs";
 import { fieldItems, fillItems } from "../lib/sketch.mjs";
 import { sheetOf } from "../lib/geometry.mjs";
-import { BROWSER_NOTE } from "../lib/browser.mjs";
+import { BROWSER_NOTE, launchChromium } from "../lib/browser.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TOOLS = path.join(HERE, "..");
@@ -201,6 +201,47 @@ for (const sheet of [undefined, "4:5"]) {
       return !q || q.region !== n.region || Math.abs(q.rect.top - n.y) > 2 || Math.abs((q.rect.left + q.rect.right) / 2 - (n.x + n.width / 2)) > 2;
     });
     result(node.length > 0 && node.length === page.rows.length && !far.length, `${name}${layout}: the sketch and the page place the same ${node.length} rows within 2px`, `node ${node.length} rows, page ${page.rows.length}; first apart: ${JSON.stringify(far[0])} vs ${JSON.stringify(page.rows[node.indexOf(far[0])]?.rect)}`);
+  }
+}
+// The sieve poster's legend: at this width the "y" of "every" hangs into the reach of the next line's paper halo.
+// Its descender must print whole, as it does with no halo at all.
+{
+  const legend = { role: "legend", id: "legend", x: 570, y: 680, w: 230, align: "right", text: "The sieve is the check Vyo runs on every word. Jargon and file paths stay in the bowl, and only plain words fall through." };
+  const spec = { ...lens("4:5"), figure: { ...lens("4:5").figure, texts: lens("4:5").figure.texts.map((t) => (t.role === "legend" ? legend : t)) } };
+  const browser = await launchChromium();
+  try {
+    const page = await browser.newPage({ viewport: sheetOf(spec), deviceScaleFactor: 2 });
+    await page.setContent(buildPage(spec, facts), { waitUntil: "load" });
+    await page.waitForFunction(() => window.drawn === true);
+    const clip = await page.evaluate(() => {
+      const text = document.querySelector("[data-block=legend]").firstChild;
+      const range = document.createRange();
+      range.setStart(text, text.data.indexOf("every"));
+      range.setEnd(text, text.data.indexOf("every") + 5);
+      const r = range.getBoundingClientRect();
+      return { x: r.left, y: r.top + (r.height * 2) / 3, width: r.width, height: r.height / 3 };
+    });
+    const ink = async () => {
+      const png = await page.screenshot({ clip });
+      return page.evaluate(async (src) => {
+        const img = new Image();
+        img.src = src;
+        await img.decode();
+        const c = Object.assign(document.createElement("canvas"), { width: img.width, height: img.height });
+        c.getContext("2d").drawImage(img, 0, 0);
+        const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+        const paper = getComputedStyle(document.querySelector(".sheet")).backgroundColor.match(/\d+/g).map(Number);
+        let n = 0;
+        for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - paper[0]) + Math.abs(d[i + 1] - paper[1]) + Math.abs(d[i + 2] - paper[2]) > 120) n++;
+        return n;
+      }, `data:image/png;base64,${png.toString("base64")}`);
+    };
+    const haloed = await ink();
+    await page.addStyleTag({ content: "* { -webkit-text-stroke: 0 !important }" });
+    const bare = await ink();
+    result(bare > 0 && haloed === bare, `a loose legend's halo leaves the descender of "every" whole`, `${haloed} ink px under the baseline with the halo, ${bare} without`);
+  } finally {
+    await browser.close();
   }
 }
 {
