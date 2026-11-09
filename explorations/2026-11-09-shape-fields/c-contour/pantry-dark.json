@@ -1,0 +1,34 @@
+{
+  "facts": "pantry-facts.json",
+  "product": "Pantry",
+  "commit": "04186f4",
+  "date": "2026-11-07",
+  "theme": "dark",
+  "headline": "A week of dinners, planned in one go.",
+  "legend": "Every ring is a part of Pantry, as many rings as it has code. The orange rings are the plan.",
+  "accent": "area:lib/plan",
+  "names": {
+    "area:.": "saved recipes",
+    "area:app": "page frame",
+    "area:app/(app)": "screens",
+    "area:app/api": "requests",
+    "area:components": "screen pieces",
+    "area:components/plan": "week view",
+    "area:components/recipes": "recipe cards",
+    "area:components/ui": "buttons",
+    "area:lib": "accounts and email",
+    "area:lib/ai": "suggestions",
+    "area:lib/plan": "the plan",
+    "area:lib/recipes": "recipe book"
+  },
+  "rings": { "gap": 7, "size": 6.6, "order": 1 },
+  "shape": {
+    "view": [100, 130],
+    "ops": [
+      { "add": "rect", "at": [22, 0], "size": [56, 13], "round": 4 },
+      { "add": "rect", "at": [28, 16], "size": [44, 10] },
+      { "add": "rect", "at": [6, 22], "size": [88, 108], "round": 26 },
+      { "cut": "rect", "at": [20, 60], "size": [60, 36], "round": 4 }
+    ]
+  }
+}
