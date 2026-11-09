@@ -1,0 +1,166 @@
+{
+  "version": 3,
+  "frame": "swiss",
+  "facts": "5a250f366ee4",
+  "product": {
+    "name": "Vyo",
+    "repo": "tools",
+    "commit": "7300309",
+    "date": "2026-11-09"
+  },
+  "theme": "light",
+  "headline": "Your whole project, folded into one page.",
+  "hot": "page",
+  "figure": {
+    "fits": "A strip of paper folded like a fan opens down the sheet and lies flat as one page, the way Vyo folds every file into one poster.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "folds",
+        "tone": [
+          "soft",
+          "mid",
+          "ink"
+        ],
+        "path": "M340 176L450 176L601 240L402 240ZM392 256L605 256L485 320L248 320ZM244 336L488 336L663 416L386 416ZM377 432L659 432L491 496L193 496ZM183 512L500 512L710 568L270 568Z",
+        "words": [
+          "your files",
+          "folders",
+          "the readme",
+          "every line",
+          "the scan",
+          "plain names",
+          "word lists",
+          "the checks",
+          "the sketch",
+          "fonts"
+        ]
+      },
+      {
+        "kind": "fill",
+        "id": "sheet",
+        "tone": "ink",
+        "hot": true,
+        "polygon": [
+          [
+            128,
+            625
+          ],
+          [
+            723,
+            552
+          ],
+          [
+            734,
+            642
+          ],
+          [
+            604,
+            809
+          ],
+          [
+            157,
+            864
+          ]
+        ],
+        "holes": [
+          {
+            "polygon": [
+              [
+                752,
+                619
+              ],
+              [
+                586,
+                831
+              ],
+              [
+                563,
+                643
+              ]
+            ]
+          }
+        ],
+        "words": [
+          "page",
+          "one picture",
+          "plain words"
+        ]
+      },
+      {
+        "kind": "fill",
+        "id": "flap",
+        "tone": "ink",
+        "size": 11,
+        "polygon": [
+          [
+            724,
+            643
+          ],
+          [
+            602,
+            799
+          ],
+          [
+            585,
+            660
+          ]
+        ],
+        "words": [
+          "png",
+          "pdf"
+        ]
+      }
+    ],
+    "texts": [
+      {
+        "role": "masthead",
+        "id": "masthead",
+        "x": 50,
+        "y": 36,
+        "w": 300
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 560,
+        "y": 64,
+        "w": 224
+      },
+      {
+        "role": "aside",
+        "id": "many",
+        "text": "**Many files.** Vyo reads the folders of a project and counts what it finds.",
+        "x": 56,
+        "y": 200,
+        "w": 200
+      },
+      {
+        "role": "aside",
+        "id": "one",
+        "text": "**One page.** A picture of the parts, with words a stranger can follow.",
+        "x": 640,
+        "y": 468,
+        "w": 150
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "How it works",
+      "text": "Point Vyo at a project. It reads the files, draws the parts as one picture, and checks the words around it."
+    },
+    {
+      "title": "Checked before you send",
+      "text": "Vyo turns away jargon, file paths, leftover placeholder text and words that run into the picture, so the page reads clean."
+    },
+    {
+      "title": "What you get",
+      "text": "A PNG and a PDF of the same page, ready to send to a client, a colleague or a friend."
+    }
+  ],
+  "notBuilt": [
+    "this frame on a 4:5 sheet",
+    "any file but a PNG or a PDF"
+  ]
+}

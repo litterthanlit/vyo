@@ -1,0 +1,81 @@
+{
+  "version": 3,
+  "frame": "swiss",
+  "facts": "5a250f366ee4",
+  "product": {
+    "name": "Vyo",
+    "repo": "tools",
+    "commit": "7300309",
+    "date": "2026-11-09"
+  },
+  "theme": "light",
+  "headline": "It reads your whole project, then shows the one part that matters.",
+  "hot": "reader",
+  "figure": {
+    "fits": "A magnifying glass: the rim and handle are everything Vyo reads in a project, and the glass is the one part it brings up close.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "rim",
+        "path": "M 565.2 622.9 L 761.8 788.2 A 52 52 0 0 1 688.2 861.8 L 522.9 665.2 A 262 262 0 1 1 565.2 622.9 Z",
+        "holes": [
+          { "ellipse": { "cx": 360, "cy": 460, "rx": 182, "ry": 182 } }
+        ],
+        "words": [
+          "every file",
+          "every folder",
+          "every line",
+          "the readme",
+          "the docs",
+          "last change"
+        ],
+        "tone": ["mid", "ink"],
+        "size": 11
+      },
+      {
+        "kind": "fill",
+        "id": "glass",
+        "ellipse": { "cx": 360, "cy": 460, "rx": 158, "ry": 158 },
+        "words": ["reader", "the part that matters"],
+        "tone": "ink",
+        "size": 12,
+        "hot": true
+      }
+    ],
+    "texts": [
+      { "role": "masthead", "id": "masthead", "x": 56, "y": 36, "w": 300 },
+      { "role": "headline", "id": "headline", "x": 440, "y": 48, "w": 344, "size": 24 },
+      {
+        "role": "aside",
+        "id": "glass-note",
+        "text": "**Under the glass:** the reader, the biggest part of Vyo. It goes through every file before anything is drawn.",
+        "x": 644,
+        "y": 330,
+        "w": 140
+      },
+      {
+        "role": "aside",
+        "id": "rim-note",
+        "text": "The rim is everything Vyo reads. The glass is the one part it brings up close.",
+        "x": 56,
+        "y": 760,
+        "w": 260
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "What it reads",
+      "text": "Vyo goes through every file and folder in a project and counts its lines. It finds the screens, the saved records and the outside services the code uses."
+    },
+    {
+      "title": "What it brings close",
+      "text": "You choose the one part the project is about. Vyo draws it in the accent colour, so it is the first thing a person sees."
+    },
+    {
+      "title": "What you get",
+      "text": "A poster as a PNG and a PDF. Before it writes them, Vyo checks the words for jargon, file paths and text that runs into the picture."
+    }
+  ],
+  "notBuilt": ["this frame at feed size", "any format but PNG and PDF"]
+}

@@ -1,0 +1,114 @@
+{
+  "version": 3,
+  "frame": "swiss",
+  "facts": "5a250f366ee4",
+  "product": {
+    "name": "Vyo",
+    "repo": "tools",
+    "commit": "7300309",
+    "date": "2026-11-09"
+  },
+  "theme": "light",
+  "headline": "Your project as a poster, in words anyone can read.",
+  "hot": "plain",
+  "figure": {
+    "fits": "A sieve: jargon, file paths and crowded text stay caught in the bowl, and only plain words fall through its holes as grains below.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "rim",
+        "path": "M 112 234 L 600 234 L 788 150 Q 822 138 824 172 Q 824 202 804 212 L 690 282 L 112 282 Z",
+        "words": [
+          "the check",
+          "each word"
+        ],
+        "tone": "ink"
+      },
+      {
+        "kind": "fill",
+        "id": "bowl",
+        "path": "M 130 296 L 630 296 A 250 246 0 0 1 130 296 Z",
+        "holes": [
+          {
+            "path": "M 238 339 L 322 339 L 322 389 L 238 389 Z M 438 339 L 522 339 L 522 389 L 438 389 Z M 338 427 L 422 427 L 422 477 L 338 477 Z"
+          }
+        ],
+        "words": [
+          "jargon",
+          "file paths",
+          "code names",
+          "overlaps",
+          "crowded text",
+          "step numbers"
+        ],
+        "tone": "ink"
+      },
+      {
+        "kind": "dots",
+        "id": "grains",
+        "lines": [
+          "plain",
+          "words"
+        ],
+        "x": 177,
+        "y": 628,
+        "cell": 14,
+        "tones": [
+          "hot",
+          "ink"
+        ]
+      }
+    ],
+    "texts": [
+      {
+        "role": "masthead",
+        "id": "masthead",
+        "x": 50,
+        "y": 36,
+        "w": 490
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 524,
+        "y": 64,
+        "w": 260
+      },
+      {
+        "role": "aside",
+        "id": "caught",
+        "text": "**Caught.** Jargon, file paths and text that runs into the picture stay in the sieve.",
+        "x": 56,
+        "y": 556,
+        "w": 200
+      },
+      {
+        "role": "aside",
+        "id": "through",
+        "text": "**Through.** Only plain words reach the poster.",
+        "x": 604,
+        "y": 640,
+        "w": 180,
+        "align": "right"
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "How it works",
+      "text": "Vyo reads your project and draws its parts as a picture. It checks every word around the picture, then writes a PNG and a PDF."
+    },
+    {
+      "title": "What stays out",
+      "text": "Jargon, file paths and text that runs into the picture fail the check. Vyo names what to fix, and the check keeps failing until nothing is caught."
+    },
+    {
+      "title": "Reading the picture",
+      "text": "The bowl holds what the check catches. What falls through is what reaches your poster, in plain words anyone can read."
+    }
+  ],
+  "notBuilt": [
+    "this layout on the 4:5 sheet",
+    "a river for small projects"
+  ]
+}
