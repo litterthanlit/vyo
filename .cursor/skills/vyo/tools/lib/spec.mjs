@@ -136,8 +136,17 @@ function checkShape(where, s, err, sheet) {
   }
 }
 
+/**
+ * The outline `compose --shape` writes: an ellipse in the middle of the sheet, just large enough to pass
+ * `silhouette`, so the texts compose places around it sit where a real figure leaves room. Validation refuses
+ * it until the agent draws its own.
+ */
+export const placeholderShape = (sheet) => ({ ellipse: { cx: sheet.width / 2, cy: Math.round(sheet.height / 2), rx: 260, ry: Math.round(sheet.height * 0.3) } });
+const isPlaceholderShape = (r) => isObj(r.ellipse) && Object.values(SHEETS).some((s) => JSON.stringify(placeholderShape(s).ellipse) === JSON.stringify(r.ellipse));
+
 function checkFill(f, r, err, sheet) {
   checkShape(f, r, err, sheet);
+  if (isPlaceholderShape(r)) err(`${f}.ellipse: still the placeholder; draw your picture's outline as a profile, ellipse, polygon or path`);
   if (r.holes !== undefined) {
     if (!Array.isArray(r.holes) || r.holes.length > LIMITS.holes) err(`${f}.holes: a list of at most ${LIMITS.holes} shapes`);
     else
@@ -465,11 +474,33 @@ function looseFigure(field, { accent, accentNames, unplain, places }) {
   };
 }
 
+const FITS_HOLD = hold(`what the picture is and why it acts out the main moment, at most ${LIMITS.fits} characters`);
+
+/**
+ * The loose figure `compose --shape` writes: one placeholder outline for the agent to replace with its own, and
+ * the label, headline, legend and paragraph in `places`. No list: a drawn figure has no parts to list.
+ * @param {{ width: number, height: number }} sheet
+ * @param {Record<string, object>} places
+ */
+function shapeFigure(sheet, places) {
+  const L = FRAME_ROLES.loose;
+  return {
+    fits: FITS_HOLD,
+    regions: [{ kind: "fill", id: "shape", ...placeholderShape(sheet), words: [hold(`${LIMITS.words[0]} to ${LIMITS.words[1]} nouns in the user's words`)], tone: "mid" }],
+    texts: [
+      { role: "label", id: "label", ...places.label },
+      { role: "headline", id: "headline", ...places.headline },
+      { role: "legend", id: "legend", ...places.legend, text: hold(`what the picture shows, at most 2 sentences and ${L.legend.max} characters, naming the hot word`) },
+      ...(places.paragraph ? [{ role: "paragraph", id: "paragraph", ...places.paragraph, text: hold(`what the product does for its user, at most 2 sentences and ${L.paragraph.max} characters, or remove it`) }] : []),
+    ],
+  };
+}
+
 /** A preset's figure with every word replaced by a placeholder and its geometry kept. */
 function blankFigure(fig) {
   return {
     ...fig,
-    fits: hold(`what the picture is and why it acts out the main moment, at most ${LIMITS.fits} characters`),
+    fits: FITS_HOLD,
     regions: fig.regions.map((r) =>
       r.kind === "fill"
         ? { ...r, words: [hold(`${r.words.length} nouns in the user's words, like ${r.words.slice(0, 2).map((w) => `"${w}"`).join(", ")}`)] }
@@ -481,17 +512,25 @@ function blankFigure(fig) {
 
 /**
  * The spec `compose` writes: everything known filled in, every word the agent must write a placeholder.
- * Without a preset, the figure is a field: in the loose frame its texts sit in `places`, in the swiss frame
- * where the field's registry entry puts them, above a footer of notes.
+ * With `shape`, the figure is a loose placeholder outline the agent replaces. Otherwise it is a field: in the
+ * loose frame its texts sit in `places`, in the swiss frame where the field's registry entry puts them, above a
+ * footer of notes.
  * @param {{ hash: string, repo: { name: string } }} facts
  * @param {{ frame?: "loose" | "swiss", sheet?: keyof typeof SHEETS, theme: "light" | "dark", commit?: string, date: string, floor: number, preset?: Spec,
- *           field?: keyof typeof FIELDS, accent?: string, accentNames?: string[], unplain?: { id: string, name: string }[],
+ *           shape?: boolean, field?: keyof typeof FIELDS, accent?: string, accentNames?: string[], unplain?: { id: string, name: string }[],
  *           places?: Record<string, object> }} o
  * @returns {Spec}
  */
-export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", sheet, theme, commit, date, floor, field = "wave", accent, accentNames = [], unplain = [], places }) {
+export function scaffoldSpec(facts, { preset, shape = false, frame = preset?.frame ?? "loose", sheet, theme, commit, date, floor, field = "wave", accent, accentNames = [], unplain = [], places }) {
   const loose = frame === "loose";
   const notes = preset ? preset.notes.length : 3;
+  const figure = preset
+    ? blankFigure(preset.figure)
+    : shape
+      ? shapeFigure(SHEETS[sheet ?? "poster"], places)
+      : loose
+        ? looseFigure(field, { accent, accentNames, unplain, places })
+        : fieldFigure(field, floor, { accent, unplain });
   return {
     version: 3,
     frame,
@@ -502,7 +541,8 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
     ...(preset?.accent ? { accent: preset.accent } : {}),
     headline: hold(`one plain sentence about the outcome, at most ${LIMITS.headline} characters`),
     ...(preset ? { hot: hold("the one word set in the accent colour: a word of a fill region, a dots line or a hot label") } : {}),
-    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, accentNames, unplain, places }) : fieldFigure(field, floor, { accent, unplain }),
+    ...(shape ? { hot: hold("the one word set in the accent colour: a word of a fill region or a dots line, which the legend names too") } : {}),
+    figure,
     ...(loose
       ? {}
       : {

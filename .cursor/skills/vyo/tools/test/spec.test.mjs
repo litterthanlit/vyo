@@ -227,6 +227,25 @@ test("a loose shape: fill regions and no field validate on both sheets, with hot
   rejects((s) => (s.figure.regions[1].ellipse.cy = 1100), /^figure\.regions\[1\]\.ellipse: cx must be 0 to 840 and cy 0 to 1050$/, () => ({ ...lens(), sheet: "4:5" }));
 });
 
+test("a loose shape scaffold: one placeholder outline, hot and fits to write, no list, and the outline refused until it is redrawn", () => {
+  const facts = scanRepo(path.join(HERE, "fixtures", "recipe"));
+  const at = (x, y) => ({ x, y, w: 240, align: "left" });
+  const places = { label: at(40, 40), headline: at(400, 40), legend: at(40, 900), paragraph: at(560, 900) };
+  const spec = scaffoldSpec(facts, { shape: true, sheet: "4:5", theme: "light", commit: "04186f4", date: "2026-11-07", floor: 1050, places });
+  assert.equal(spec.frame, "loose");
+  assert.equal(spec.sheet, "4:5");
+  assert.deepEqual(spec.figure.regions.map((r) => [r.kind, r.ellipse]), [["fill", { cx: 420, cy: 525, rx: 260, ry: 315 }]]);
+  assert.deepEqual(spec.figure.texts.map((t) => t.role), ["label", "headline", "legend", "paragraph"]);
+  const errors = validateSpec(spec);
+  for (const want of ["hot: still the placeholder; write it", "figure.fits: still the placeholder; say what the picture is and why it acts out the main moment", "figure.regions[0].ellipse: still the placeholder; draw your picture's outline as a profile, ellipse, polygon or path", "figure.texts[2].text: still the placeholder; write what the picture shows, at most 2 sentences and 180 characters, naming the hot word"]) {
+    assert.ok(errors.includes(want), `${want} in ${JSON.stringify(errors)}`);
+  }
+  assert.ok(!errors.some((e) => /^(notes|notBuilt|figure\.regions:)/.test(e)), JSON.stringify(errors));
+  const poster = scaffoldSpec(facts, { shape: true, theme: "light", date: "2026-11-07", floor: 1190, places });
+  rejects(() => {}, /^figure\.regions\[0\]\.ellipse: still the placeholder/, () => ({ ...lens(), figure: { ...lens().figure, regions: [{ ...lens().figure.regions[1], ellipse: poster.figure.regions[0].ellipse }] } }));
+  assert.ok(!validateSpec({ ...lens(), figure: { ...lens().figure, regions: [{ ...lens().figure.regions[1], ellipse: { ...poster.figure.regions[0].ellipse, rx: 259 } }] } }).some((e) => /still the placeholder/.test(e)), "a redrawn ellipse is the agent's");
+});
+
 test("a loose figure with no region is refused, naming both kinds", () => {
   rejects((s) => (s.figure.regions = []), /^figure\.regions: 1 to 6 regions: a field region, or fill regions you draw$/, lens);
 });

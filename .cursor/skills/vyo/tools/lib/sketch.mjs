@@ -43,6 +43,18 @@ export function fieldItems(spec, region, facts, texts = spec.figure.texts.map((t
 }
 
 /**
+ * A fill region's rows as the page lays them out around `blocks`, with Commit Mono's fixed advance; placeholder
+ * words count as one 10-letter word. Returns the rows, the words placed and each placed row.
+ */
+export function fillItems(spec, region, blocks) {
+  const words = placeholder(region.words) ? ["xxxxxxxxxx"] : region.words;
+  const size = region.size || 12;
+  const rows = regionRows(region, blocks);
+  const items = fillRows({ ...region, words }, rows, { measure: (s) => fixedMeasure(s, size), isHot: (w) => !!spec.hot && hasWord(w, spec.hot) });
+  return { rows, words, items };
+}
+
+/**
  * The sketch of a spec whose figure geometry is valid; placeholder words count as one 10-letter word.
  * A figure with a field needs the facts its parts come from.
  * @returns {string}
@@ -55,8 +67,8 @@ export function sketch(spec, facts) {
   const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(" "));
   const put = (r, c, ch) => r >= 0 && r < ROWS && c >= 0 && c < COLS && (grid[r][c] = ch);
   const loose = frameOf(spec) === "loose";
-  const texts = spec.figure.texts.map((t) => estimateText(t, spec, facts));
-  if (loose) texts.push({ id: "record", ...recordRect(recordOf(spec, facts)) });
+  const blocks = spec.figure.texts.map((t) => estimateText(t, spec, facts));
+  const texts = loose ? [...blocks, { id: "record", ...recordRect(recordOf(spec, facts)) }] : blocks;
   const rowRects = [];
   const dotRects = [];
   const fieldRects = [];
@@ -91,11 +103,8 @@ export function sketch(spec, facts) {
       continue;
     }
     const mark = LETTERS[letter++];
-    const words = placeholder(region.words) ? ["xxxxxxxxxx"] : region.words;
-    const size = region.size || 12;
-    const rows = regionRows(region, texts);
-    const items = fillRows({ ...region, words }, rows, { measure: (s) => fixedMeasure(s, size), isHot: (w) => !!spec.hot && hasWord(w, spec.hot) });
-    const pitch = GRID[size].pitch;
+    const { rows, words, items } = fillItems(spec, region, blocks);
+    const pitch = GRID[region.size || 12].pitch;
     for (const it of items) {
       const rect = { left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + pitch };
       rowRects.push({ ...rect, region: region.id });

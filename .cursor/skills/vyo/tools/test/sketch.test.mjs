@@ -62,6 +62,22 @@ test("a loose sketch: no footer line, the record among the texts, and the four c
   assert.match(out, /^corners: top-left at 0,0 is \d+ by \d+; top-right at \d+,0 is \d+ by \d+; bottom-left at 0,\d+ is \d+ by \d+; bottom-right at \d+,\d+ is \d+ by \d+$/m);
 });
 
+test("a loose shape sketches with no facts: its rows, the record clear of them, and the corners the shape leaves", () => {
+  const lens = JSON.parse(fs.readFileSync(path.join(HERE, "fixtures", "loose-lens.json"), "utf8"));
+  for (const [sheet, bottom] of [[undefined, 1190], ["4:5", 1050]]) {
+    const out = sketch({ ...lens, ...(sheet ? { sheet } : {}) });
+    const grid = out.split("\n\nregions:")[0].split("\n");
+    assert.equal(grid.length, Math.ceil(bottom / 20), `the whole ${bottom}px sheet, no footer`);
+    assert.match(out, /^regions: A rim \(\d+ rows\), B glass \(\d+ rows\); · marks hot rows$/m);
+    assert.match(out, new RegExp(`; record 40,${bottom - 40} to \\d+,${bottom - 30}$`, "m"), "the record along the bottom edge");
+    assert.match(out, /^corners: top-left at 0,0 is \d+ by \d+; top-right at \d+,0 is \d+ by \d+; bottom-left at 0,\d+ is \d+ by \d+; bottom-right at \d+,\d+ is \d+ by \d+$/m);
+    assert.match(out, /^coverage \d+% \(needs 15%, ok\), height \d+% \(needs 55%, ok\), width \d+% \(needs 60%, ok\)$/m);
+    assert.doesNotMatch(out, /^! /m);
+  }
+  const [, h] = /top-left at 0,0 is (\d+) by (\d+)/.exec(sketch({ ...lens, sheet: "4:5" })).slice(1).map(Number);
+  assert.ok(h <= 240, `the top-left corner stops above the rim's first row near y 238, not halfway down an empty sheet (${h})`);
+});
+
 test("a box with a slanted top is a box, and a 90px column reads as a column", () => {
   const spec = preset("hourglass");
   spec.figure.regions[1] = { kind: "fill", id: "slab", polygon: [[100, 600], [500, 560], [500, 860], [100, 860]], words: ["lists", "dinners"], tone: "ink" };

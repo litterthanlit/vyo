@@ -5,7 +5,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { buildPage, renderPage } from "../lib/render.mjs";
-import { fieldItems } from "../lib/sketch.mjs";
+import { fieldItems, fillItems } from "../lib/sketch.mjs";
 import { sheetOf } from "../lib/geometry.mjs";
 import { BROWSER_NOTE } from "../lib/browser.mjs";
 
@@ -189,6 +189,41 @@ for (const sheet of [undefined, "4:5"]) {
   result(r.status === 0 && /^PASS$/m.test(r.stdout) && !/^✗/m.test(r.stderr), `${name} renders and passes every check`, r.stdout + r.stderr);
   const png = pngSize(path.join(dir, "recipe-poster.png"));
   result(png[0] === 1680 && png[1] === (sheet ? 2100 : 2380), `${name} writes a ${sheet ? "1680x2100" : "1680x2380"} PNG`, `png ${png}`);
+  // Once as drawn, once with the paragraph on the rim, so the rows must dodge a text block. A row whose run is
+  // exactly twice its word's width spreads in Node and centres on the page, where the font measures a hair wider;
+  // both share a centre, so fill rows compare by centre.
+  for (const [layout, spec] of [["", lens(sheet)], [" with a text on the rim", { ...lens(sheet), figure: { ...lens(sheet).figure, texts: lens(sheet).figure.texts.map((t) => (t.role === "paragraph" ? { ...t, x: 520, y: 420, align: "left" } : t)) } }]]) {
+    const page = await renderPage({ html: buildPage(spec, facts), base: path.join(dir, "twin"), sheet: sheetOf(spec), png: false, pdf: false });
+    const blocks = page.blocks.filter((b) => b.role).map((b) => b.rect);
+    const node = spec.figure.regions.flatMap((reg) => fillItems(spec, reg, blocks).items.map((it) => ({ ...it, region: reg.id })));
+    const far = node.filter((n, i) => {
+      const q = page.rows[i];
+      return !q || q.region !== n.region || Math.abs(q.rect.top - n.y) > 2 || Math.abs((q.rect.left + q.rect.right) / 2 - (n.x + n.width / 2)) > 2;
+    });
+    result(node.length > 0 && node.length === page.rows.length && !far.length, `${name}${layout}: the sketch and the page place the same ${node.length} rows within 2px`, `node ${node.length} rows, page ${page.rows.length}; first apart: ${JSON.stringify(far[0])} vs ${JSON.stringify(page.rows[node.indexOf(far[0])]?.rect)}`);
+  }
+}
+{
+  const scaffold = path.join(OUT, "shape-scaffold.json");
+  const c = vyo("compose", factsFile, "--shape", "--sheet", "4:5", "--out", scaffold);
+  const s = c.status === 0 ? JSON.parse(fs.readFileSync(scaffold, "utf8")) : {};
+  const sk = vyo("sketch", scaffold);
+  const r = vyo("check", scaffold, "--facts", factsFile);
+  result(
+    c.status === 0 && s.frame === "loose" && s.sheet === "4:5" && sk.status === 0 && /^corners: top-left at 0,0 /m.test(sk.stdout) && r.status === 1 && /^✗ spec: figure\.regions\[0\]\.ellipse: still the placeholder/m.test(r.stderr),
+    "compose --shape --sheet 4:5 writes a loose scaffold that sketches with its corners and is refused while its outline is the placeholder",
+    c.stderr + sk.stdout + sk.stderr + r.stderr,
+  );
+}
+for (const [flags, expect] of [
+  [["--field", "terrain"], /^--shape starts a figure you draw; --field and --accent make a field poster and --from starts from a preset/m],
+  [["--accent", "area:lib/plan"], /^--shape starts a figure you draw/m],
+  [["--from", "hourglass"], /^--shape starts a figure you draw/m],
+  [["--frame", "swiss"], /^--shape is for the loose frame; a swiss shape starts from a preset with --from$/m],
+]) {
+  const out = path.join(OUT, "shape-refused.json");
+  const r = vyo("compose", factsFile, "--shape", ...flags, "--out", out);
+  result(r.status === 2 && expect.test(r.stderr) && !fs.existsSync(out), `compose refuses --shape beside ${flags[0]}`, `exit ${r.status}\n${r.stderr}`);
 }
 {
   const spec = lens("4:5");
@@ -201,7 +236,7 @@ for (const sheet of [undefined, "4:5"]) {
 
 {
   const r = vyo("compose", factsFile, "--sheet", "4:5", "--from", "hourglass", "--out", path.join(OUT, "sheet-from.json"));
-  result(r.status === 2 && /^--from hourglass is drawn for the poster sheet; --sheet sizes a field poster/m.test(r.stderr), "compose refuses --sheet beside --from", `exit ${r.status}\n${r.stderr}`);
+  result(r.status === 2 && /^--from hourglass is drawn for the poster sheet; --sheet sizes a loose poster/m.test(r.stderr), "compose refuses --sheet beside --from", `exit ${r.status}\n${r.stderr}`);
 }
 
 for (const id of ["wave", "terrain", "hourglass"]) {

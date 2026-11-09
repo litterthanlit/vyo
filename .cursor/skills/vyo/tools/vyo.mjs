@@ -9,11 +9,11 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 import { stableStringify, factsHash } from "./lib/hash.mjs";
 import { scanRepoDetailed } from "./lib/scan/index.mjs";
 import { showFacts } from "./lib/scan/show.mjs";
-import { scaffoldSpec, validateSpec, THEMES } from "./lib/spec.mjs";
+import { scaffoldSpec, validateSpec, THEMES, LIMITS } from "./lib/spec.mjs";
 import { sketch } from "./lib/sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE, SHEETS, sheetOf } from "./lib/geometry.mjs";
 import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, figureSpace } from "./lib/render.mjs";
-import { ROLES, FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
+import { ROLES, FRAMES, LIST, scaffoldPlaces } from "./lib/frame.mjs";
 import { cornersLine } from "./lib/geometry.mjs";
 import { runChecks } from "./lib/check.mjs";
 import { NoBrowser } from "./lib/browser.mjs";
@@ -27,7 +27,7 @@ const USAGE = `Usage:
   vyo show    <facts.json>
   vyo presets [<id>]
   vyo parts   <facts.json> [--field ${Object.keys(FIELDS).join("|")}]
-  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--sheet ${Object.keys(SHEETS).join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
+  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--sheet ${Object.keys(SHEETS).join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--shape] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
   vyo sketch  <spec.json> [--facts <facts.json>]
   vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--paper ${PAPERS.join("|")}]
   vyo check   <spec.json> [--facts <facts.json>]
@@ -212,19 +212,28 @@ function authoringNotes(notes, field) {
 }
 
 /** The numbers an agent places the loose frame's texts by, printed by compose. */
-function looseNotes(field, space) {
+function looseNotes(field, space, sheet) {
   const L = ROLES.loose;
   const at = (r) => `${L[r].size[0]}px (${L[r].size[1]} to ${L[r].size[2]}), ${L[r].lh(L[r].size[0])}px per line`;
+  const figure = field
+    ? [
+        `field: ${field}, ${FIELDS[field].about}. It runs to every edge it reaches; no text sits on it.`,
+        cornersLine(space.corners),
+        "  Compose put the headline in the largest corner, the label in the smallest, the list in the tallest and the legend nearest the accent part. Move them within the corners; vyo sketch prints the corners again.",
+      ]
+    : [
+        `shape: replace the placeholder ellipse with your picture's outline on the ${sheet.width} by ${sheet.height} sheet, as a profile, ellipse, polygon or path with holes, in up to ${LIMITS.regions} fill or dots regions. Rows are ${GRID[12].pitch}px apart at size 12, ${GRID[11].pitch}px at size 11.`,
+        "  Pick a silhouette a person would name at thumbnail size and that acts out the main moment; hearts, circles and plain boxes are the defaults to avoid.",
+        "  Compose put the texts around the placeholder. Once you draw, vyo sketch prints the corners your shape leaves; move the texts into them.",
+      ];
   return [
-    `field: ${field}, ${FIELDS[field].about}. It runs to every edge it reaches; no text sits on it.`,
-    cornersLine(space.corners),
-    "  Compose put the headline in the largest corner, the label in the smallest, the list in the tallest and the legend nearest the accent part. Move them within the corners; vyo sketch prints the corners again.",
+    ...figure,
     `label ${at("label")}: the product name in capitals.`,
-    `headline ${at("headline")}: the only large type, ragged on the side that faces the field (align right in a right corner).`,
+    `headline ${at("headline")}: the only large type, ragged on the side that faces the ${field ? "field" : "picture"} (align right in a right corner).`,
     `paragraph ${at("paragraph")}: 0 to 2 of them, at most 2 sentences and ${L.paragraph.max} characters each.`,
-    `legend ${at("legend")}: exactly one, at most 2 sentences and ${L.legend.max} characters, naming the accent part and the measure.`,
-    `list ${at("list")}: parts: true prints the parts' plain names, one per line. rule ${at("rule")}: one character repeated across w.`,
-    "record: render writes it at the bottom edge, or up the left edge when the field covers the bottom; set record to bottom or left to choose.",
+    `legend ${at("legend")}: exactly one, at most 2 sentences and ${L.legend.max} characters, ${field ? "naming the accent part and the measure" : "saying what the picture shows and naming the hot word"}.`,
+    `list ${at("list")}: ${field ? "parts: true prints the parts' plain names" : `items prints up to ${LIST.items} plain names`}, one per line. rule ${at("rule")}: one character repeated across w.`,
+    `record: render writes it at the bottom edge, or up the left edge when the ${field ? "field" : "figure"} covers the bottom; set record to bottom or left to choose.`,
   ];
 }
 
@@ -239,23 +248,27 @@ function git(dir, format) {
 function cmdCompose(argv) {
   const { pos, opt } = args(
     argv,
-    { frame: { type: "string" }, sheet: { type: "string" }, field: { type: "string" }, accent: { type: "string" }, from: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } },
+    { frame: { type: "string" }, sheet: { type: "string" }, shape: { type: "boolean" }, field: { type: "string" }, accent: { type: "string" }, from: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } },
     1,
   );
+  if (opt.shape && (opt.field !== undefined || opt.accent !== undefined || opt.from !== undefined)) {
+    throw new Usage("--shape starts a figure you draw; --field and --accent make a field poster and --from starts from a preset. Pass one or the other");
+  }
+  if (opt.shape && opt.frame === "swiss") throw new Usage("--shape is for the loose frame; a swiss shape starts from a preset with --from");
   const presets = loadPresets();
   const preset = opt.from === undefined ? undefined : presets[opt.from];
   if (opt.from !== undefined && !preset) throw new Usage(`--from ${opt.from} is not a preset; one of ${Object.keys(presets).join(", ")}`);
   const fieldPreset = preset?.figure.regions.find((r) => r.kind === "field");
   if (fieldPreset) throw new Usage(`--from ${opt.from} is a field preset, drawn from its own scan; use --field ${fieldPreset.field}`);
   if (preset && (opt.field !== undefined || opt.accent !== undefined)) throw new Usage("--field and --accent make a field poster; --from starts from a fill preset. Pass one or the other");
-  const field = preset ? undefined : (opt.field ?? "wave");
+  const field = preset || opt.shape ? undefined : (opt.field ?? "wave");
   if (field && !FIELDS[field]) throw new Usage(`--field ${field} is not a field; use ${Object.keys(FIELDS).join(" or ")}`);
   const frame = opt.frame ?? preset?.frame ?? "loose";
   if (!FRAMES.includes(frame)) throw new Usage(`--frame ${frame} is not a frame; use ${FRAMES.join(" or ")}`);
-  if (preset && frame !== preset.frame) throw new Usage(`--from ${opt.from} is a ${preset.frame} preset; the loose frame draws a field, so use --field`);
+  if (preset && frame !== preset.frame) throw new Usage(`--from ${opt.from} is a ${preset.frame} preset; for a loose poster, use --field or --shape`);
   if (opt.sheet !== undefined) {
     if (!Object.hasOwn(SHEETS, opt.sheet)) throw new Usage(`--sheet ${opt.sheet} is not a sheet; use ${Object.keys(SHEETS).join(" or ")}`);
-    if (preset) throw new Usage(`--from ${opt.from} is drawn for the poster sheet; --sheet sizes a field poster. Pass one or the other`);
+    if (preset) throw new Usage(`--from ${opt.from} is drawn for the poster sheet; --sheet sizes a loose poster. Pass one or the other`);
     if (frame === "swiss" && opt.sheet !== "poster") throw new Usage(`--sheet ${opt.sheet} is for the loose frame; the swiss frame is drawn for the poster sheet`);
   }
   const theme = opt.theme ?? preset?.theme ?? "light";
@@ -278,22 +291,25 @@ function cmdCompose(argv) {
   const twins = new Set(sameNames(parts).flat());
   const unplain = parts.filter((p) => unplainName(p.name) || twins.has(p));
   const notes = preset ? preset.notes.length : 3;
-  const o = { frame, sheet: opt.sheet, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, unplain };
+  const o = { frame, sheet: opt.sheet, theme, commit, date, floor: floorFor(notes, 1), preset, shape: !!opt.shape, field, accent: opt.accent, unplain };
   let space;
   if (frame === "loose") {
-    // Lay the field out on its own sheet, then fill the corners it leaves.
+    // Lay the figure out on its own sheet, then fill the corners it leaves.
     const draft = scaffoldSpec(facts, { ...o, places: {} });
-    const region = draft.figure.regions[0];
     space = figureSpace(draft, facts);
-    o.accentNames = regionParts(region, facts).filter((p) => p.hot).map((p) => p.name);
-    o.places = scaffoldPlaces(space.corners, space.accent, parts.length, sheetOf(draft));
+    o.accentNames = field ? regionParts(draft.figure.regions[0], facts).filter((p) => p.hot).map((p) => p.name) : [];
+    o.places = scaffoldPlaces(space.corners, space.accent, field ? parts.length : 0, sheetOf(draft));
   }
   fs.writeFileSync(out, JSON.stringify(scaffoldSpec(facts, o), null, 2) + "\n");
-  const from = preset ? `the ${opt.from} preset's geometry and its words taken out` : `a ${field} field of ${parts.length} parts${opt.accent ? ` with ${opt.accent} in the accent` : ""}`;
+  const from = preset
+    ? `the ${opt.from} preset's geometry and its words taken out`
+    : field
+      ? `a ${field} field of ${parts.length} parts${opt.accent ? ` with ${opt.accent} in the accent` : ""}`
+      : "a placeholder outline for you to replace with your own";
   const lines = [
     `Wrote ${out}: a scaffold with ${from}. Replace every "…" value, then run vyo sketch ${out}, adjust, sketch again, then vyo render ${out}`,
     ...(field ? [`vyo parts ${pos[0]}${field === "wave" ? "" : ` --field ${field}`} lists the parts: pick the accent by its id${unplain.length ? ` and name the ${unplain.length} flagged part${unplain.length === 1 ? "" : "s"} in names` : ""}.`] : []),
-    ...(frame === "loose" ? looseNotes(field, space) : authoringNotes(notes, field)),
+    ...(frame === "loose" ? looseNotes(field, space, sheetOf({ sheet: opt.sheet })) : authoringNotes(notes, field)),
   ];
   process.stdout.write(lines.join("\n") + "\n");
   return 0;

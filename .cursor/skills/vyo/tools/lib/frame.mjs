@@ -90,7 +90,7 @@ const BLOCKS = { label: { w: 220 }, headline: { w: 380, chars: 54 }, list: { w: 
  * room left; the list and the paragraph are dropped when none has room, the others are placed anyway.
  * @param {ReturnType<import("./geometry.mjs").corners>} corners
  * @param {{ x: number, y: number }} accent  the centre of the accent part's rows, or of all rows
- * @param {number} listLines  how many parts the list prints
+ * @param {number} listLines  how many parts the list prints; 0 places no list
  * @param {{ width: number, height: number }} sheet
  * @returns {Record<string, { x: number, y: number, w: number, align: "left" | "right" }>}
  */
@@ -118,6 +118,7 @@ export function scaffoldPlaces(corners, accent, listLines, sheet) {
   };
   const out = {};
   for (const [role, b] of Object.entries(BLOCKS)) {
+    if (role === "list" && !listLines) continue;
     const { size: [size], lh, em } = ROLES.loose[role];
     const widthIn = (r) => Math.max(minW / 2, Math.min(b.w, r.w));
     const heightIn = (r) => lh(size) * (role === "list" ? listLines : b.chars ? Math.ceil(b.chars / Math.floor(widthIn(r) / (em * size))) : 1);
