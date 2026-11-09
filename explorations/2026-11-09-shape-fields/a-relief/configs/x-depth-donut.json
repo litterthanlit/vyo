@@ -1,0 +1,31 @@
+{
+  "facts": "../pantry-facts.json",
+  "product": "Pantry",
+  "commit": "04186f4",
+  "date": "2026-11-09",
+  "theme": "dark",
+  "headline": "A week of dinners, planned in one go.",
+  "legend": "Every shell is a part of Pantry, as thick as its code. The orange shell is the plan.",
+  "accent": "area:lib/plan",
+  "names": {
+    "area:.": "saved recipes",
+    "area:app": "page frame",
+    "area:app/(app)": "screens",
+    "area:app/api": "requests",
+    "area:components": "screen pieces",
+    "area:components/plan": "week view",
+    "area:components/recipes": "recipe cards",
+    "area:components/ui": "buttons",
+    "area:lib": "accounts and email",
+    "area:lib/ai": "suggestions",
+    "area:lib/plan": "the plan",
+    "area:lib/recipes": "recipe book"
+  },
+  "shape": {
+    "parts": [{ "circle": [0, 0, 100] }, { "capsule": [-60, 120, 60, 120], "r": 30 }, { "circle": [0, 0, 40], "op": "cut" }],
+    "fit": { "box": [120, 330, 600, 800] },
+    "bevel": 0.6,
+    "tilt": 20,
+    "strata": { "by": "depth" }
+  }
+}
