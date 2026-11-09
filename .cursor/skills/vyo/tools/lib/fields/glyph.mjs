@@ -55,7 +55,8 @@ export function letterOf(region, pose) {
 
 function stampLetter(mask, letter, floor, pose) {
   const rows = BITMAP[letter] || BITMAP.A;
-  const share = pose.identity ? 0.68 : 0.55 + pose.rnd() * 0.25;
+  // 0.75 of the floor, so a narrow mark such as P still spans 60% of the sheet.
+  const share = pose.identity ? 0.75 : 0.55 + pose.rnd() * 0.25;
   const cell = (share * floor) / rows.length;
   const gw = 8 * cell;
   const gh = rows.length * cell;

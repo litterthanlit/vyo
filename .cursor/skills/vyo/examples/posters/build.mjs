@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Render the poster gallery from the signal presets and the extra specs in this folder.
+// Render the eight new field posters (and two resolve GIFs) into this folder.
+// Earlier gallery files stay on disk; they are not in this list.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -9,7 +10,6 @@ import { fileURLToPath } from "node:url";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SKILL = path.resolve(HERE, "../..");
 const TOOLS = path.join(SKILL, "tools");
-const PRESETS = path.join(TOOLS, "presets");
 const VYO = path.join(TOOLS, "vyo.mjs");
 const FIXTURE = path.join(TOOLS, "test", "fixtures", "recipe");
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-gallery-"));
@@ -40,15 +40,17 @@ const writeSpec = (name, spec) => {
 fs.mkdirSync(HERE, { recursive: true });
 run([VYO, "scan", FIXTURE, "--out", FACTS]);
 
+const readPoster = (name) => JSON.parse(fs.readFileSync(path.join(HERE, `${name}.json`), "utf8"));
+
 const posters = [
-  ["signal-wave", JSON.parse(fs.readFileSync(path.join(PRESETS, "signal-wave.json"), "utf8")), false],
-  ["signal-paper", JSON.parse(fs.readFileSync(path.join(PRESETS, "signal-paper.json"), "utf8")), false],
-  ["radial", JSON.parse(fs.readFileSync(path.join(PRESETS, "radial.json"), "utf8")), false],
-  ["sphere", JSON.parse(fs.readFileSync(path.join(PRESETS, "sphere.json"), "utf8")), false],
-  ["density", JSON.parse(fs.readFileSync(path.join(HERE, "density.json"), "utf8")), false],
-  ["signal-river", JSON.parse(fs.readFileSync(path.join(HERE, "signal-river.json"), "utf8")), false],
-  ["routes", JSON.parse(fs.readFileSync(path.join(HERE, "routes.json"), "utf8")), true],
-  ["wipe", JSON.parse(fs.readFileSync(path.join(HERE, "wipe.json"), "utf8")), true],
+  ["scatter", readPoster("scatter"), false],
+  ["shatter", readPoster("shatter"), true],
+  ["glyph", readPoster("glyph"), false],
+  ["bleed", readPoster("bleed"), false],
+  ["bands", readPoster("bands"), false],
+  ["spiral", readPoster("spiral"), true],
+  ["contour", readPoster("contour"), false],
+  ["trace", readPoster("trace"), false],
 ];
 
 for (const [name, spec, gif] of posters) {

@@ -1261,3 +1261,11 @@ Rendered posters for Pantry, the `recipe` fixture, live in `examples/posters/` o
 | `signal-river.png` | River on charcoal, lime merge |
 | `routes.gif` / `routes.mp4` | Hairlines, nodes travelling |
 | `wipe.gif` / `wipe.mp4` | Highlighter wipe on paper |
+| `scatter.png` | Charcoal scatter, clouds of type, lime accent |
+| `shatter.png` / `shatter.gif` | Paper shatter grid, resolve GIF |
+| `glyph.png` | Charcoal letter P |
+| `bleed.png` | Paper bleed, form off the right edge |
+| `bands.png` | Swiss bands, stacked bars |
+| `spiral.png` / `spiral.gif` | Charcoal coil, resolve GIF |
+| `contour.png` | Charcoal contour rings |
+| `trace.png` | Dark loose trace of a keyhole |
