@@ -1,6 +1,7 @@
 // The terrain field: one peak per part, as tall as its share of lines and as wide as its share of files,
 // left to right in tree order; rows of the names of the slopes they cross. Pure, like wave.mjs.
 import { SHEET, clearOf } from "../geometry.mjs";
+import { relayout } from "./chords.mjs";
 
 // e-terrain's numbers: 6.9px letters on 7.6px rows.
 export const TERRAIN = {
@@ -99,8 +100,10 @@ function midWord(part, n) {
  * @param {{ id: string, name: string, loc: number, files: number, hot: boolean }[]} parts  in tree order
  * @param {{ floor: number, blocks: { left: number, top: number, right: number, bottom: number }[], measure: (text: string, size: number) => number, theme?: "light" | "dark" }} frame
  */
-export function terrainRows(region, parts, { floor, blocks, measure, theme = "dark" }) {
+export function terrainRows(region, parts, opts) {
+  if (region.seed) return relayout(region, parts, opts, terrainRows, { size: TERRAIN.size, pitch: TERRAIN.pitch, behindTexts: false });
   if (!parts.length) return [];
+  const { floor, blocks, measure, theme = "dark" } = opts;
   const { size, pitch, below } = TERRAIN;
   // Rounded to 0.05px so the page's measured advance (4.134 at 6.9px) and the sketch's fixed 4.14 agree.
   const cw = Math.round(measure("M", size) * 20) / 20;

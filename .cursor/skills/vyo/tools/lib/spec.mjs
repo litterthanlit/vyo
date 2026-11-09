@@ -13,8 +13,8 @@ import { ROLES as FRAME_ROLES, FRAMES, RECORD_FRAMES, frameOf, sizeRange, LIST }
  * @typedef {Shape & { kind: "fill", id: string, holes?: Shape[], words: string[], tone: Tone, caps?: boolean,
  *                     band?: 1 | 2 | 3 | 4, size?: 7 | 8 | 9 | 10 | 11 | 12, hot?: boolean }} FillRegion
  * @typedef {{ kind: "dots", id: string, lines: string[], x: number, y: number, cell: number, tones: (ToneName | "hot")[] }} DotsRegion
- * @typedef {{ kind: "field", id: string, field: "wave" | "terrain" | "river", fits: string, accent?: string, names?: Record<string, string>,
- *             sentence?: string, every?: number, minShare?: number, maxParts?: number }} FieldRegion  drawn from facts.json at render
+ * @typedef {{ kind: "field", id: string, field: keyof typeof FIELDS, fits: string, accent?: string, names?: Record<string, string>,
+ *             sentence?: string, every?: number, seed?: number, letter?: string, mask?: string, minShare?: number, maxParts?: number }} FieldRegion  drawn from facts.json at render
  * @typedef {{ role: string, id: string, text?: string, x: number, y: number, w: number, size?: number,
  *             align?: "left" | "right" | "center", hot?: boolean, parts?: true, items?: string[] }} Text  roles per frame in lib/frame.mjs
  * @typedef {{
@@ -238,6 +238,9 @@ function checkField(f, r, err, copy) {
       }
   }
   if (r.sentence !== undefined) plain(`${f}.sentence`, r.sentence, LIMITS.sentence, "one plain sentence, or remove it");
+  if (r.seed !== undefined && !(Number.isInteger(r.seed) && inRange(r.seed, 0, 2147483647))) err(`${f}.seed: a whole number, 0 to 2147483647`);
+  if (r.letter !== undefined && kind.options.includes("letter") && !/^[A-Z0-9]$/.test(r.letter)) err(`${f}.letter: one character A to Z or 0 to 9`);
+  if (r.mask !== undefined && kind.options.includes("mask") && !(isStr(r.mask) && r.mask.trim())) err(`${f}.mask: a path to a PNG`);
   plain(`${f}.fits`, r.fits, LIMITS.fits, "one sentence on why this field matches the product's story");
   const whole = (k) => {
     const [lo, hi] = LIMITS[k];
@@ -465,10 +468,10 @@ const hold = (prompt) => `${PLACEHOLDER} ${prompt}`;
  * @param {number} floor
  * @param {{ accent?: string, unplain: { id: string, name: string }[] }} o
  */
-function fieldFigure(field, floor, { accent, unplain }) {
+function fieldFigure(field, floor, { accent, unplain, seed, letter }) {
   const at = FIELDS[field].texts(floor);
   return {
-    regions: [fieldRegion(field, { accent, unplain })],
+    regions: [fieldRegion(field, { accent, unplain, seed, letter })],
     texts: [
       { role: "masthead", id: "masthead", x: 50, y: 36, w: 490 },
       { role: "headline", id: "headline", ...at.headline },
@@ -480,13 +483,15 @@ function fieldFigure(field, floor, { accent, unplain }) {
 const quoted = (words) => words.map((w) => `"${w}"`).join(" or ");
 
 /** The field region a scaffold starts from, in either frame. */
-function fieldRegion(field, { accent, unplain }) {
+function fieldRegion(field, { accent, unplain, seed, letter }) {
   return {
     kind: "field",
     id: field,
     field,
     fits: hold(`one sentence on why a ${field} matches the product's story, with ${quoted(FIELDS[field].fits)}, at most ${LIMITS.fits} characters`),
     ...(accent ? { accent } : {}),
+    ...(seed !== undefined ? { seed } : {}),
+    ...(letter ? { letter } : {}),
     ...(unplain.length ? { names: Object.fromEntries(unplain.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])) } : {}),
     ...(FIELDS[field].options.includes("sentence") ? { sentence: hold(`a sentence woven in every ${WAVE.every}th row, at most ${LIMITS.sentence} characters, or remove it`) } : {}),
   };
@@ -497,11 +502,11 @@ function fieldRegion(field, { accent, unplain }) {
  * the corners the field leaves empty (`places`, from lib/frame.mjs). The legend's placeholder spells out its rule.
  * @param {{ accent?: string, accentNames: string[], unplain: { id: string, name: string }[], places: Record<string, object> }} o
  */
-function looseFigure(field, { accent, accentNames, unplain, places }) {
+function looseFigure(field, { accent, accentNames, unplain, places, seed, letter }) {
   const name = accentNames.length ? quoted(accentNames) : "the accent part";
   const measure = FIELDS[field].measure.map(quoted).join(", and ");
   return {
-    regions: [fieldRegion(field, { accent, unplain })],
+    regions: [fieldRegion(field, { accent, unplain, seed, letter })],
     texts: [
       { role: "label", id: "label", ...places.label },
       { role: "headline", id: "headline", ...places.headline },
@@ -536,7 +541,8 @@ function blankFigure(fig) {
  *           places?: Record<string, object> }} o
  * @returns {Spec}
  */
-export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", theme, commit, date, floor, field = "wave", accent, accentNames = [], unplain = [], places }) {
+export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", theme, commit, date, floor, field, accent, accentNames = [], unplain = [], places, seed, letter }) {
+  if (!preset && !field) throw new Error("scaffoldSpec needs a field");
   const loose = RECORD_FRAMES.includes(frame);
   const notes = preset ? preset.notes.length : 3;
   return {
@@ -548,7 +554,7 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
     ...(preset?.accent ? { accent: preset.accent } : {}),
     headline: hold(`one plain sentence about the outcome, at most ${LIMITS.headline} characters`),
     ...(preset ? { hot: hold("the one word set in the accent colour: a word of a fill region, a dots line or a hot label") } : {}),
-    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, accentNames, unplain, places }) : fieldFigure(field, floor, { accent, unplain }),
+    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, accentNames, unplain, places, seed, letter }) : fieldFigure(field, floor, { accent, unplain, seed, letter }),
     ...(loose
       ? {}
       : {

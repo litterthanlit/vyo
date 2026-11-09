@@ -2,6 +2,7 @@
 // Pure: render inlines it, `vyo sketch` imports it.
 import { SHEET, clearOf } from "../geometry.mjs";
 import { rowsPerPart, repeatTo, toneSet, depthTone } from "./wave.mjs";
+import { relayout } from "./chords.mjs";
 
 export const SPHERE = { size: 4.6, pitch: 5.2, cols: 3, rows: 5, pad: 18 };
 
@@ -11,7 +12,9 @@ export const SPHERE = { size: 4.6, pitch: 5.2, cols: 3, rows: 5, pad: 18 };
  * @param {{ id: string, name: string, loc: number, hot: boolean }[]} parts
  * @param {{ floor: number, theme?: string, frame?: string, measure: (text: string, size: number) => number }} o
  */
-export function sphereRows(region, parts, { floor, theme = "light", frame, measure }) {
+export function sphereRows(region, parts, opts) {
+  if (region.seed) return relayout(region, parts, opts, sphereRows, { size: SPHERE.size, pitch: SPHERE.pitch, behindTexts: true });
+  const { floor, theme = "light", frame, measure } = opts;
   const { size, pitch, cols, rows: nRows, pad } = SPHERE;
   const cellW = (SHEET.width - pad * 2) / cols;
   const cellH = (floor - pad * 2) / nRows;

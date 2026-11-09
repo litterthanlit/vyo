@@ -2,6 +2,7 @@
 // at the top behind the masthead, swings across and leaves through the floor. Pure: render inlines it,
 // `vyo sketch` imports it.
 import { SHEET, clearOf } from "../geometry.mjs";
+import { relayout } from "./chords.mjs";
 
 // f-wave-paper's numbers: 6.9px letters on 7.9px rows from the top edge to the floor, about 110 rows above
 // a 900px floor. That density is what reads as a band at a sixth of the size.
@@ -57,7 +58,9 @@ export function wavePath(y) {
  * @param {{ id: string, name: string, loc: number, hot: boolean }[]} parts  in tree order
  * @param {{ floor: number, mirror: boolean, theme?: "light" | "dark", frame?: string, measure: (text: string, size: number) => number }} frame
  */
-export function waveRows(region, parts, { floor, mirror, theme = "light", frame, measure }) {
+export function waveRows(region, parts, opts) {
+  if (region.seed) return relayout(region, parts, opts, waveRows, { size: WAVE.size, pitch: WAVE.pitch, behindTexts: true });
+  const { floor, mirror, theme = "light", frame, measure } = opts;
   const { size, pitch } = WAVE;
   const every = region.every ?? WAVE.every;
   const slots = Array.from({ length: Math.floor(floor / pitch) }, (_, i) => {

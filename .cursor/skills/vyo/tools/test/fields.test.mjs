@@ -9,6 +9,16 @@ import { terrainRows, TERRAIN } from "../lib/fields/terrain.mjs";
 import { riverRows, mergeTree, RIVER } from "../lib/fields/river.mjs";
 import { radialRows, RADIAL } from "../lib/fields/radial.mjs";
 import { sphereRows, SPHERE } from "../lib/fields/sphere.mjs";
+import { scatterRows } from "../lib/fields/scatter.mjs";
+import { shatterRows } from "../lib/fields/shatter.mjs";
+import { glyphRows } from "../lib/fields/glyph.mjs";
+import { bleedRows } from "../lib/fields/bleed.mjs";
+import { bandsRows } from "../lib/fields/bands.mjs";
+import { spiralRows } from "../lib/fields/spiral.mjs";
+import { contourRows } from "../lib/fields/contour.mjs";
+import { traceRows } from "../lib/fields/trace.mjs";
+import { encodePng, traceChords } from "../lib/fields/png.mjs";
+import { PAGE_MODULES } from "../lib/render.mjs";
 import { regionParts, partTies } from "../lib/parts.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
 import { fixedMeasure } from "../lib/geometry.mjs";
@@ -22,10 +32,22 @@ const frame = (over = {}) => ({ floor: 900, mirror: false, blocks: [masthead, as
 const touches = (it, b, pad) => it.x < b.right + pad && it.x + it.width > b.left - pad && it.y < b.bottom + pad && it.y + it.height > b.top - pad;
 
 test("the registry names each field once, with its layout and the options only it takes", () => {
-  assert.deepEqual(Object.keys(FIELDS), ["wave", "terrain", "river", "radial", "sphere"]);
-  assert.deepEqual(FIELDS.river.options, []);
-  assert.deepEqual(FIELDS.wave.options, ["sentence", "every"]);
-  assert.deepEqual(FIELDS.terrain.options, []);
+  assert.deepEqual(Object.keys(FIELDS), ["wave", "terrain", "river", "radial", "sphere", "scatter", "shatter", "glyph", "bleed", "bands", "spiral", "contour", "trace"]);
+  assert.deepEqual(FIELDS.river.options, ["seed"]);
+  assert.deepEqual(FIELDS.wave.options, ["sentence", "every", "seed"]);
+  assert.deepEqual(FIELDS.terrain.options, ["seed"]);
+  assert.deepEqual(FIELDS.glyph.options, ["letter", "seed"]);
+  assert.deepEqual(FIELDS.trace.options, ["mask", "seed"]);
+});
+
+test("every field module except the PNG reader is inlined into the page", () => {
+  const dir = path.join(HERE, "..", "lib", "fields");
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".mjs") && f !== "png.mjs");
+  for (const f of files) assert.ok(PAGE_MODULES.includes(`fields/${f}`), f);
+  assert.equal(PAGE_MODULES.indexOf("fields/pose.mjs") < PAGE_MODULES.indexOf("fields/wave.mjs"), true);
+  assert.equal(PAGE_MODULES.indexOf("fields/wave.mjs") < PAGE_MODULES.indexOf("fields/chords.mjs"), true);
+  assert.equal(PAGE_MODULES.indexOf("fields/chords.mjs") < PAGE_MODULES.indexOf("fields/index.mjs"), true);
+  assert.ok(!PAGE_MODULES.includes("fields/png.mjs"));
 });
 
 for (const [name, facts] of [["recipe", recipe], ["hypher", hypher]]) {
@@ -176,4 +198,150 @@ test("sphere: a grid of ellipses, every part drawn, flattening down the page", (
   };
   assert.ok(tall(top) > tall(bot), `lower cells flatten (${tall(top)} vs ${tall(bot)})`);
   assert.ok(items.some((i) => i.hot), "the accent part is hot");
+});
+
+const recipeParts = () => regionParts({ accent: "area:lib/plan" }, recipe);
+const open = (over = {}) => frame({ floor: 1000, blocks: [], ...over });
+const byY = (items) => {
+  const map = new Map();
+  for (const it of items) {
+    const row = map.get(it.y) ?? [];
+    row.push(it);
+    map.set(it.y, row);
+  }
+  return [...map.values()];
+};
+const sig = (items) => {
+  const n = items.length || 1;
+  return [items.length, Math.round(items.reduce((s, i) => s + i.x, 0) / n), Math.round(items.reduce((s, i) => s + i.y, 0) / n)];
+};
+const onSheet = (items, floor) => {
+  assert.ok(items.length > 0, "draws something");
+  for (const it of items) assert.ok(it.x >= 0 && it.x + it.width <= 839 && it.y >= 0 && it.y + it.height <= floor + 0.01, `run at ${it.x},${it.y} on the sheet`);
+};
+
+test("seed 0 is the identity pose, and a non-zero seed is reproducible and different", () => {
+  const parts = recipeParts();
+  const plain = waveRows({}, parts, open());
+  const zero = waveRows({ seed: 0 }, parts, open());
+  assert.deepEqual(plain, zero, "omitted and 0 draw the same rows");
+  assert.equal(plain[0].y, 0);
+  assert.ok(plain[0].x < 200, "the unposed band still enters on the left");
+  const once = waveRows({ seed: 1 }, parts, open());
+  const twice = waveRows({ seed: 1 }, parts, open());
+  assert.deepEqual(once, twice);
+  assert.notDeepEqual(sig(once), sig(waveRows({ seed: 2 }, parts, open())));
+  assert.notDeepEqual(sig(once), sig(plain));
+  const clouds = scatterRows({}, parts, open());
+  assert.deepEqual(clouds, scatterRows({ seed: 0 }, parts, open()));
+  assert.deepEqual(scatterRows({ seed: 4 }, parts, open()), scatterRows({ seed: 4 }, parts, open()));
+  assert.notDeepEqual(sig(scatterRows({ seed: 1 }, parts, open())), sig(scatterRows({ seed: 2 }, parts, open())));
+});
+
+test("scatter: clouds with gaps, every part drawn, the accent hot", () => {
+  const parts = recipeParts();
+  const items = scatterRows({}, parts, open());
+  onSheet(items, 1000);
+  for (const p of parts) assert.ok(items.some((i) => i.part === p.id), p.id);
+  assert.ok(items.some((i) => i.hot));
+  const gapped = byY(items).filter((row) => {
+    const xs = [...row].sort((a, b) => a.x - b.x);
+    return xs.slice(1).some((it, i) => it.x - (xs[i].x + xs[i].width) > 80);
+  });
+  assert.ok(gapped.length > 0, "some rows have a wide gap between clouds");
+});
+
+test("shatter: disjoint cells, not one band", () => {
+  const parts = recipeParts();
+  const items = shatterRows({}, parts, open());
+  onSheet(items, 1000);
+  for (const p of parts) assert.ok(items.some((i) => i.part === p.id), p.id);
+  assert.ok(items.some((i) => i.hot));
+  const parent = items.map((_, i) => i);
+  const find = (i) => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  const near = (a, b) => a.x < b.x + b.width + 6 && b.x < a.x + a.width + 6 && a.y < b.y + b.height + 6 && b.y < a.y + a.height + 6;
+  for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) if (near(items[i], items[j])) parent[find(i)] = find(j);
+  const clusters = new Set(items.map((_, i) => find(i)));
+  assert.ok(clusters.size >= 8, `broken into ${clusters.size} clusters`);
+});
+
+test("glyph: a letter with a counter, every part drawn", () => {
+  const parts = recipeParts();
+  for (const letter of ["A", "8", "0", "P"]) {
+    const items = glyphRows({ letter }, parts, open());
+    onSheet(items, 1000);
+    for (const p of parts) assert.ok(items.some((i) => i.part === p.id), `${letter} ${p.id}`);
+    const split = byY(items).filter((row) => row.length >= 2);
+    assert.ok(split.length >= 4, `${letter} has a hole or crotch`);
+    const minX = Math.min(...items.map((i) => i.x));
+    const maxX = Math.max(...items.map((i) => i.x + i.width));
+    const minY = Math.min(...items.map((i) => i.y));
+    const maxY = Math.max(...items.map((i) => i.y + i.height));
+    assert.ok(maxY - minY > (maxX - minX) * 0.7, `${letter} reads as a tall mark`);
+  }
+  assert.ok(glyphRows({ letter: "A" }, parts, open()).some((i) => i.hot));
+});
+
+test("bleed: the form leaves the sheet, and its mass sits near an edge", () => {
+  const parts = recipeParts();
+  const items = bleedRows({}, parts, open());
+  onSheet(items, 1000);
+  for (const p of parts) assert.ok(items.some((i) => i.part === p.id), p.id);
+  assert.ok(items.some((i) => i.hot));
+  assert.ok(items.some((i) => i.x < 2 || i.x + i.width > 838));
+  const com = items.reduce((s, i) => s + i.x + i.width / 2, 0) / items.length;
+  assert.ok(com > 520, `centre of mass near the right edge (${Math.round(com)})`);
+});
+
+test("bands: bars with empty rows between them, edges not one shared curve", () => {
+  const parts = recipeParts();
+  const items = bandsRows({}, parts, open());
+  onSheet(items, 1000);
+  for (const p of parts) assert.ok(items.some((i) => i.part === p.id), p.id);
+  assert.ok(items.some((i) => i.hot));
+  const ys = [...new Set(items.map((i) => i.y))].sort((a, b) => a - b);
+  const gap = Math.max(...ys.slice(1).map((y, i) => y - ys[i]));
+  assert.ok(gap > 14, `empty rows between bars (largest step ${gap})`);
+  const lefts = byY(items).map((row) => Math.min(...row.map((i) => i.x)));
+  const unique = new Set(lefts.map((x) => Math.round(x / 8)));
+  assert.ok(unique.size >= 4, "left edges stagger");
+});
+
+test("spiral: a coil, several arms on one row", () => {
+  const parts = recipeParts();
+  const items = spiralRows({}, parts, open());
+  onSheet(items, 1000);
+  for (const p of parts) assert.ok(items.some((i) => i.part === p.id), p.id);
+  assert.ok(items.some((i) => i.hot));
+  const arms = Math.max(...byY(items).map((row) => row.length));
+  assert.ok(arms >= 3, `a row crosses ${arms} arms`);
+});
+
+test("contour: nested rings, several runs on one row", () => {
+  const parts = recipeParts();
+  const items = contourRows({}, parts, open());
+  onSheet(items, 1000);
+  for (const p of parts) assert.ok(items.some((i) => i.part === p.id), p.id);
+  assert.ok(items.some((i) => i.hot));
+  const rings = Math.max(...byY(items).map((row) => row.length));
+  assert.ok(rings >= 4, `a row crosses ${rings} ring edges`);
+});
+
+test("trace: chords follow the PNG, not the whole sheet", () => {
+  const parts = recipeParts();
+  const png = encodePng(32, 32, Buffer.from(Array.from({ length: 32 * 32 }, (_, i) => (i % 32 < 16 ? [0, 0, 0, 255] : [255, 255, 255, 255])).flat()));
+  const file = path.join(HERE, ".trace-mask.png");
+  fs.writeFileSync(file, png);
+  try {
+    const traced = traceChords({ mask: file, seed: 0 }, 1000, false);
+    const items = traceRows({ chords: traced.chords, pitch: traced.pitch }, parts, open());
+    onSheet(items, 1000);
+    for (const p of parts) assert.ok(items.some((i) => i.part === p.id), p.id);
+    assert.ok(items.some((i) => i.hot));
+    const right = Math.max(...items.map((i) => i.x + i.width));
+    const left = Math.min(...items.map((i) => i.x));
+    assert.ok(left < 20 && right < 460, `fills the dark half (${left} to ${right})`);
+  } finally {
+    fs.rmSync(file, { force: true });
+  }
 });

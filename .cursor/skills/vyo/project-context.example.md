@@ -32,9 +32,9 @@ Copy this file into the target app's repo beside the skill, at `.cursor/skills/v
 
 ## Field preference
 
-<!-- wave | terrain | river | radial | sphere. Wave for a story of flow or hand-off, terrain for what is big and what
-     matters, river for many things merging into one, radial when it spreads from a centre, sphere when a round
-     flattens. Leave blank to let the skill choose. -->
+<!-- wave | terrain | river | radial | sphere | scatter | shatter | glyph | bleed | bands | spiral | contour | trace.
+     Wave is not the fallback. Leave blank and the skill picks an unused primitive (vyo shapes), never wave
+     unless you write it here. -->
 
 ## Accent part
 

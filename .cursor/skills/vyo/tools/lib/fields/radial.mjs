@@ -2,6 +2,7 @@
 // vanishing point. Pure: render inlines it, `vyo sketch` imports it.
 import { SHEET, clearOf } from "../geometry.mjs";
 import { rowsPerPart, repeatTo, toneSet, depthTone } from "./wave.mjs";
+import { relayout } from "./chords.mjs";
 
 export const RADIAL = { size: 5.6, pitch: 6.4 };
 
@@ -11,7 +12,9 @@ export const RADIAL = { size: 5.6, pitch: 6.4 };
  * @param {{ id: string, name: string, loc: number, hot: boolean }[]} parts
  * @param {{ floor: number, theme?: string, frame?: string, measure: (text: string, size: number) => number }} o
  */
-export function radialRows(region, parts, { floor, theme = "light", frame, measure }) {
+export function radialRows(region, parts, opts) {
+  if (region.seed) return relayout(region, parts, opts, radialRows, { size: RADIAL.size, pitch: RADIAL.pitch, behindTexts: true });
+  const { floor, theme = "light", frame, measure } = opts;
   const { size, pitch } = RADIAL;
   const cx = SHEET.width * 0.5;
   const apex = 36;

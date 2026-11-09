@@ -2,6 +2,7 @@
 // merging pairwise by how many imports tie them, into one channel that leaves the right edge. Ported from
 // g-flow. Pure, like wave.mjs: render inlines it, `vyo sketch` imports it.
 import { SHEET } from "../geometry.mjs";
+import { relayout } from "./chords.mjs";
 
 // g-flow's numbers: 5px digits in 3.1px cells on 5px rows; streams start off the left edge and the last merge
 // is at x 600. The channel that leaves is `trunk` of the sheet's height; the streams enter across `span` of it.
@@ -118,8 +119,10 @@ const ease = (t) => {
  * @param {{ id: string, name: string, loc: number, hot: boolean }[]} parts  in tree order
  * @param {{ floor: number, measure: (text: string, size: number) => number }} frame
  */
-export function riverRows(region, parts, { floor, measure }) {
+export function riverRows(region, parts, opts) {
+  if (region.seed) return relayout(region, parts, opts, riverRows, { size: RIVER.size, pitch: RIVER.pitch, behindTexts: true, digits: true });
   if (!parts.length) return [];
+  const { floor, measure } = opts;
   const { size, cell, pitch, core, gamma, accent, last } = RIVER;
   const { ribbons: ribs, exit } = ribbons(parts, region.ties ?? [], floor);
   const cols = Math.floor((SHEET.width - 2) / cell);

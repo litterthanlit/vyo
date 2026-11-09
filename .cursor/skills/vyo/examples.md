@@ -14,9 +14,60 @@
 **A picture in mind**
 > Draw my codebase as an hourglass: everything my users throw at it, squeezed into one plan.
 
-## Choosing the field for three products
+## Choosing the field
 
-Write the product's story in one sentence. If it moves something from one place to another, take wave. If it is about which parts carry the product, take terrain. If many things merge into one, take river. If it spreads from a centre, take radial. If a round matters, take sphere. Then run `vyo parts` with that field and put the accent on the part the story is about. For a high-contrast poster, set `frame: "signal"`.
+Write the product's story in one sentence, then pick the silhouette that acts it out. Do not start from wave. Run `vyo shapes` and take a primitive that has not been used in the last few posters; a new shape beats a familiar one. `compose` without `--field` does the same and will not pick wave. Pass `--field` only when the story clearly matches.
+
+| Field | When to use it | Keywords |
+|---|---|---|
+| wave | Something moves or is handed on | travel, flow, hand, move |
+| terrain | What is big is what matters | big, weight, matters, most |
+| river | Many things merge into one | merge, join, many, one |
+| radial | It spreads from a centre | spread, out, from, centre, center |
+| sphere | A round flattens or folds | curve, round, fold, flat |
+| scatter | Parts sit apart, like dust | scatter, speck, cloud, dust |
+| shatter | A grid breaks or splits | break, grid, split, apart |
+| glyph | The story is a letter or a mark | letter, mark, sign, name |
+| bleed | The form is cropped off the sheet | crop, bleed, edge, off |
+| bands | Layers, stacked | stack, band, bar, layer |
+| spiral | It turns | spin, coil, spiral, turn |
+| contour | Levels, a ridge, a map | contour, level, map, ridge |
+| trace | The silhouette comes from an image | trace, mask, image, from |
+
+Then run `vyo parts` with that field and put the accent on the part the story is about. For a high-contrast poster, set `frame: "signal"`.
+
+A scatter with a seed, the short form. `seed` 0 would leave the clouds where the field draws them with no seed; any other seed moves them:
+
+```json
+{
+  "version": 3,
+  "frame": "signal",
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "commit": "04186f4", "date": "2026-11-07" },
+  "theme": "dark",
+  "accent": "#C8FF00",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "scatter",
+        "field": "scatter",
+        "seed": 3,
+        "fits": "Saved recipes sit apart like dust, so Pantry's code scatters in clouds.",
+        "accent": "area:lib/plan"
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 40, "y": 40, "w": 220 },
+      { "role": "headline", "id": "headline", "x": 40, "y": 72, "w": 420, "size": 48 },
+      { "role": "legend", "id": "legend", "x": 40, "y": 980, "w": 320, "text": "Every speck is a part of Pantry, as many as its code. The bright specks are the plan." }
+    ]
+  }
+}
+```
+
+## Three products
 
 | Product | Story | Field | Accent part | Plain names |
 |---|---|---|---|---|

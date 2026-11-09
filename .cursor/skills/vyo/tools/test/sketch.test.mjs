@@ -44,7 +44,7 @@ test("dots draw as #, and a figure with no fill rows says so", () => {
 test("the compose scaffold is a field that sketches from the facts with no warnings", async () => {
   const { scanRepo } = await import("../lib/scan/index.mjs");
   const facts = scanRepo(path.join(HERE, "fixtures", "recipe"));
-  const spec = scaffoldSpec(facts, { frame: "swiss", theme: "light", date: "2026-11-07", floor: 884, accent: "area:lib/plan" });
+  const spec = scaffoldSpec(facts, { frame: "swiss", theme: "light", date: "2026-11-07", floor: 884, field: "wave", accent: "area:lib/plan" });
   const out = sketch(spec, facts);
   assert.match(out, /^regions: A wave \(wave, 12 parts, \d+ rows\); · marks hot rows$/m);
   assert.doesNotMatch(out, /^! /m);

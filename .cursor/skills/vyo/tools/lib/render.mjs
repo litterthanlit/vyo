@@ -10,6 +10,7 @@ import { frameOf, hasRecord, textSize, lineHeight, ruleText, recordSpot, RECORD 
 import { bandCounts, bandLine, provenance } from "./band.mjs";
 import { regionParts, partTies } from "./parts.mjs";
 import { FIELDS } from "./fields/index.mjs";
+import { traceChords } from "./fields/png.mjs";
 import { launchChromium } from "./browser.mjs";
 
 const TOOLS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -149,14 +150,18 @@ export const recordText = (product) => `${provenance(product)}. Drawn by Vyo`;
 
 /** The field's rows as Node lays them out with Commit Mono's fixed advance, around `blocks`. */
 export function fieldItems(spec, region, facts, blocks, measure = fixedMeasure) {
-  const r = fieldInput(region, facts);
+  const r = fieldInput(region, facts, spec);
   return FIELDS[region.field].layout(r, r.parts, { ...fieldFrame(spec), blocks, measure });
 }
 
-/** A field region as its layout reads it: with its parts and the imports that tie them, both from facts.json. */
-function fieldInput(region, facts) {
+/** A field region as its layout reads it: parts, import ties, and for a trace the chords of its PNG. */
+function fieldInput(region, facts, spec) {
   const parts = regionParts(region, facts);
-  return { ...region, parts, ties: partTies(parts, facts) };
+  const base = { ...region, parts, ties: partTies(parts, facts) };
+  if (region.field !== "trace") return base;
+  const frame = spec ? fieldFrame(spec) : { floor: 1190, mirror: false };
+  const traced = traceChords(region, frame.floor, frame.mirror);
+  return { ...base, chords: traced.chords, pitch: traced.pitch };
 }
 
 /**
@@ -212,7 +217,15 @@ window.fitWidth = (el, max) => {
 // The page lays out the figure with the same geometry and field modules `vyo sketch` runs in Node,
 // concatenated into one script: their imports are each other, so they are dropped.
 const LIB = path.join(TOOLS, "lib");
-const PAGE_MODULES = ["geometry.mjs", "fields/wave.mjs", "fields/terrain.mjs", "fields/river.mjs", "fields/radial.mjs", "fields/sphere.mjs", "fields/index.mjs"];
+const FIELD_DIR = path.join(LIB, "fields");
+// pose, wave and chords first: the other fields call them. png.mjs stays out; it reads files.
+const FIELD_FIRST = ["pose.mjs", "wave.mjs", "chords.mjs"];
+const FIELD_SKIP = new Set([...FIELD_FIRST, "index.mjs", "png.mjs"]);
+const fieldModules = () => {
+  const rest = fs.readdirSync(FIELD_DIR).filter((f) => f.endsWith(".mjs") && !FIELD_SKIP.has(f)).sort();
+  return [...FIELD_FIRST, ...rest, "index.mjs"].map((f) => `fields/${f}`);
+};
+export const PAGE_MODULES = ["geometry.mjs", ...fieldModules()];
 const figureScript = () =>
   [...PAGE_MODULES.map((f) => fs.readFileSync(path.join(LIB, f), "utf8").replace(/^import .*\n/gm, "").replace(/^export /gm, "")), fs.readFileSync(path.join(LIB, "fill.js"), "utf8")]
     .join("\n")
@@ -226,7 +239,7 @@ export function fieldFrame(spec) {
 
 /** The figure as the page reads it: field regions carry their parts, computed from facts.json. */
 const figureData = (spec, facts) => ({
-  regions: spec.figure.regions.map((r) => (r.kind === "field" ? fieldInput(r, facts) : r.kind === "routes" ? routeData(r) : r)),
+  regions: spec.figure.regions.map((r) => (r.kind === "field" ? fieldInput(r, facts, spec) : r.kind === "routes" ? routeData(r) : r)),
   hot: spec.hot ?? null,
   motion: spec.motion ?? null,
   ...fieldFrame(spec),

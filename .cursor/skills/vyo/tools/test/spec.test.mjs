@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateSpec, textProblems, hasWord, scaffoldSpec } from "../lib/spec.mjs";
+import { FIELDS } from "../lib/fields/index.mjs";
 import { BANNED, isJargon } from "../lib/jargon.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
 
@@ -24,7 +25,7 @@ const rejects = (mutate, re, base) => {
 };
 
 test("every preset is a valid spec", () => {
-  assert.deepEqual(IDS.sort(), ["eye", "hourglass", "radial", "ribbon", "river", "signal-paper", "signal-wave", "sphere", "terrain", "warm-start", "wave", "wave-swiss"]);
+  assert.deepEqual(IDS.sort(), ["bleed", "eye", "glyph", "hourglass", "radial", "ribbon", "river", "scatter", "signal-paper", "signal-wave", "sphere", "spiral", "terrain", "warm-start", "wave", "wave-swiss"]);
   for (const id of IDS) assert.deepEqual(validateSpec(preset(id)), [], id);
 });
 
@@ -113,7 +114,7 @@ test("a scaffold is rejected until every placeholder is written: a field by defa
   const fillPresets = IDS.filter((id) => !preset(id).figure.regions.some((r) => r.kind === "field"));
   for (const from of [undefined, ...fillPresets]) {
     const p = from && preset(from);
-    const spec = scaffoldSpec(facts, { frame: "swiss", theme: p ? p.theme : "light", date: "2026-10-28", floor: 884, preset: p, unplain: [{ id: "area:lib", name: "Convex" }] });
+    const spec = scaffoldSpec(facts, { frame: "swiss", theme: p ? p.theme : "light", date: "2026-10-28", floor: 884, preset: p, field: p ? undefined : "wave", unplain: [{ id: "area:lib", name: "Convex" }] });
     const errors = validateSpec(spec);
     const field = p ? [/^hot: still the placeholder/, /still the placeholder; write \d+ to \d+ (nouns|words)/] : [/^figure\.regions\[0\]\.sentence: still the placeholder/, /^figure\.regions\[0\]\.names\["area:lib"\]: still the placeholder/];
     const fits = p ? /^figure\.fits: still the placeholder/ : /^figure\.regions\[0\]\.fits: still the placeholder/;
@@ -159,9 +160,13 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
     return s;
   };
   assert.deepEqual(validateSpec(withField({ accent: "area:lib/plan", names: { "area:lib": "kitchen" }, sentence: "plan once", every: 4 })()), []);
+  assert.deepEqual(validateSpec(withField({ seed: 0 })()), []);
+  assert.deepEqual(validateSpec(withField({ seed: 2147483647 })()), []);
+  assert.deepEqual(validateSpec(withField({ field: "glyph", letter: "Q" })()), []);
+  assert.deepEqual(validateSpec(withField({ field: "trace", mask: "masks/trace.png" })()), []);
   assert.deepEqual(validateSpec(withField({ field: "terrain" })()), [], "accent and hot are optional");
   const cases = [
-    [{ field: "lake" }, /^figure\.regions\[0\]\.field: "lake" is not a field; use wave or terrain or river or radial or sphere$/],
+    [{ field: "lake" }, new RegExp(`^figure\\.regions\\[0\\]\\.field: "lake" is not a field; use ${Object.keys(FIELDS).join(" or ")}$`)],
     [{ field: "terrain", sentence: "plan once" }, /^figure\.regions\[0\]\.sentence: a terrain field has no sentence; only wave takes it$/],
     [{ accent: "lib/plan" }, /^figure\.regions\[0\]\.accent: an area id like "area:lib\/plan"/],
     [{ names: { "area:lib": "the API" } }, /^figure\.regions\[0\]\.names\["area:lib"\]: jargon: "api"/],
@@ -170,6 +175,14 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
     [{ every: 1 }, /^figure\.regions\[0\]\.every: a whole number, 2 to 20$/],
     [{ maxParts: 40 }, /maxParts: a whole number, 2 to 24/],
     [{ minShare: 0.5 }, /minShare: 0 to 0\.2/],
+    [{ seed: -1 }, /seed: a whole number, 0 to 2147483647/],
+    [{ seed: 1.5 }, /seed: a whole number, 0 to 2147483647/],
+    [{ seed: 2147483648 }, /seed: a whole number, 0 to 2147483647/],
+    [{ letter: "A" }, /letter: a wave field has no letter; only glyph takes it/],
+    [{ mask: "mark.png" }, /mask: a wave field has no mask; only trace takes it/],
+    [{ field: "glyph", letter: "a" }, /letter: one character A to Z or 0 to 9/],
+    [{ field: "glyph", letter: "AA" }, /letter: one character A to Z or 0 to 9/],
+    [{ field: "trace", mask: "  " }, /mask: a path to a PNG/],
     [{ words: ["a", "b"] }, /^figure\.regions\[0\]\.words: unknown field$/],
   ];
   for (const [region, re] of cases) rejects(() => {}, re, withField(region));

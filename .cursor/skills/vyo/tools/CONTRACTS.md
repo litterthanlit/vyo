@@ -29,9 +29,10 @@ One dispatcher, `tools/vyo.mjs`, the bin `vyo` of the npm package `@litterthanli
 vyo init    [--cursor] [--claude] [--codex] [--dir <repo-dir>]
 vyo scan    <repo-dir> --out <dir>/<repo>-facts.json
 vyo show    <facts.json>
-vyo parts   <facts.json> [--field wave|terrain|river|radial|sphere]
+vyo parts   <facts.json> [--field wave|terrain|river|radial|sphere|scatter|shatter|glyph|bleed|bands|spiral|contour|trace]
+vyo shapes  [--log <file>]
 vyo presets [<id>]
-vyo compose <facts.json> [--frame loose|swiss|signal] [--field wave|terrain|river|radial|sphere] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light|dark] [--out <spec.json>] [--force]
+vyo compose <facts.json> [--frame loose|swiss|signal] [--field wave|terrain|river|radial|sphere|scatter|shatter|glyph|bleed|bands|spiral|contour|trace] [--seed <n>] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light|dark] [--out <spec.json>] [--shapes-log <file>] [--force]
 vyo sketch  <spec.json> [--facts <facts.json>]
 vyo render  <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--gif] [--paper fit|a4|letter]
 vyo check   <spec.json> [--facts <facts.json>]
@@ -42,7 +43,7 @@ vyo check   <spec.json> [--facts <facts.json>]
 - `parts` prints the parts a field draws with that field's default `minShare` and `maxParts` (§4b; `--field river` uses the river's 0.002 and 24, the others 0.02 and 14): a header line `<repo>: <n> parts, <lines> lines in <files> files (parts under 2% of the lines merge into their parent; at most 14)`, a column header `id  share  lines  files  name`, one line per part in tree order, `  ! looks like a vendor or code name` after each unplain name, `  ! same name as <id>` after each name another part shares, and a closing line on setting `accent` and `names`.
 - `presets` prints, for each preset in `tools/presets/`, its id, its `fits` sentence and a one-line summary of its regions and texts. `presets <id>` prints that preset's `figure` as JSON.
 - `compose` writes a scaffold spec (§3). It fills `facts` from the facts file, `product.name` and `product.repo` from `facts.repo.name`, and `theme` from `--theme`. It refuses to overwrite an existing spec, which may hold the agent's words, unless `--force` is given.
-  - Without `--from`: a field figure (§4b), in the loose frame unless `--frame swiss` or `signal`. When the facts hold no parts, it writes nothing and exits 1 with `✗ no parts to draw; the scan found no code. Compose a fill poster instead: vyo compose <facts.json> --from <preset> (vyo presets lists them)`. One field region of kind `--field` (default `wave`), id equal to the kind, `accent` from `--accent` (which must name a part), a placeholder in `names` for each part whose scanned name is unplain or shared with another part, and a placeholder `sentence` when the kind takes one. In the loose and signal frames it lays the field out, finds the empty corners, and places `label`, `headline`, `legend`, a `paragraph` and a `list` of the parts into them (§3b); it writes no notes. The spec has no `hot`.
+  - Without `--from`: a field figure (§4b), in the loose frame unless `--frame swiss` or `signal`. When the facts hold no parts, it writes nothing and exits 1 with `✗ no parts to draw; the scan found no code. Compose a fill poster instead: vyo compose <facts.json> --from <preset> (vyo presets lists them)`. One field region of kind `--field`. With no `--field`, compose picks a registered field other than `wave`: one absent from the recent log if any remain, otherwise the least recently used non-wave field, and prints `picked <field> (avoided recent: …)`. It never defaults to wave. It writes `seed` (`--seed`, or `(parseInt(facts.hash.slice(0, 8), 16) % 2147483646) + 1`; `--seed 0` is the identity) and, for a glyph, `letter` from the first A–Z or 0–9 of the repo name. The region id equals the kind, `accent` comes from `--accent` (which must name a part), a placeholder goes in `names` for each part whose scanned name is unplain or shared with another part, and a placeholder `sentence` when the kind takes one. After a successful write it appends the field to `<dirname of --out>/recent-shapes.json` (`--shapes-log` overrides the path), newest last, keeping 8. `--from` does not record. In the loose and signal frames it lays the field out, finds the empty corners, and places `label`, `headline`, `legend`, a `paragraph` and a `list` of the parts into them (§3b); it writes no notes. The spec has no `hot`.
   - With `--from <preset>`: a fill preset's figure with its geometry kept and every word replaced by a placeholder. A field preset is refused with `--from <id> is a field preset, drawn from its own scan; use --field <kind>`, and `--field` or `--accent` beside `--from` is a usage error.
   - Validation rejects placeholders, so a scaffold cannot render.
   - Loose frame: it prints the corners the field leaves and one line per text role, and warns when there is no `--repo`, since the record line needs the commit. A field scaffold adds `vyo parts <facts.json> lists the parts: pick the accent by its id and name the <n> flagged parts in names.`; a preset scaffold adds the `rows` line and the silhouette advice.
@@ -52,7 +53,7 @@ vyo check   <spec.json> [--facts <facts.json>]
 - `sketch` validates the spec and prints the sheet as ASCII (§4.4). A figure with a field reads the facts, from `--facts` or `<repo>-facts.json` beside the spec as `render` does. It needs no browser.
 - `render` validates the spec, builds the HTML, writes a PNG at 2× and a PDF, then runs every check (§6). Default `--facts` is `<repo>-facts.json` beside the spec, where `<repo>` is `product.repo`. Default `--out` is the spec's directory. Outputs: `<repo>-poster.html`, `<repo>-poster.png`, `<repo>-poster-thumb.png` (the poster at 1/6 scale, 140×198 CSS px at 2×, written with the PNG), `<repo>-poster.pdf`. `--gif` also writes `<repo>-poster.gif` (560px wide, 48 colours) and `<repo>-poster.mp4` (840px); the spec must have `motion: { kind: nodes|resolve|wipe, frames, fps }`. The HTML embeds its fonts as base64 data URIs.
 - `check` does what `render` does in a temporary directory and writes nothing to `--out`.
-- `vyo shapes` no longer exists.
+- `shapes` lists every registered field: name, its one-line `about`, and `last used N ago` or `never`. `--log` or `--shapes-log` names the recent file; otherwise `./recent-shapes.json`.
 - Exit codes: 0 ok (warnings on stderr, prefixed `! `), 1 rule error (`✗ ` lines on stderr), 2 usage.
 - `VYO_CHROMIUM` names the Chromium binary when Playwright's own is not installed. When no browser starts, `render` and `check` print `BROWSER_NOTE` from `tools/lib/browser.mjs` (set `VYO_CHROMIUM`, or `npx playwright@<version> install chromium` for the Playwright vyo resolved) and exit 1. Install never downloads a browser: `postinstall` only prints that note.
 - The fonts ship in `fonts/` at the package root. When a file is missing there, `render` and `check` exit 1 with `reinstall @litterthanlit/vyo`.
@@ -269,12 +270,15 @@ type Region =
 type FieldRegion = {             // drawn from facts.json at render (§4b); the agent writes no geometry
   kind: "field";
   id: string;
-  field: "wave" | "terrain" | "river" | "radial" | "sphere";   // a key of FIELDS in lib/fields/index.mjs
+  field: "wave" | "terrain" | "river" | "radial" | "sphere" | "scatter" | "shatter" | "glyph" | "bleed" | "bands" | "spiral" | "contour" | "trace";   // a key of FIELDS in lib/fields/index.mjs
   fits: string;                  // ≤ 160 chars: why this field matches the product's story. Never drawn. Replaces figure.fits on a field poster (§3b)
   accent?: string;               // a part id, an area id or a glob over part ids ("area:lib/*"). Unset: check warns accent-part
   names?: Record<string, string>;   // part id → plain name, ≤ 24 chars, for parts whose scanned name is a vendor or code name
   sentence?: string;             // wave only: ≤ 40 chars, set in every `every`th row
   every?: number;                // wave only: 2 to 20, default 5
+  seed?: number;                 // 0 to 2147483647. Omitted or 0 is the identity pose
+  letter?: string;               // glyph only: one of A–Z or 0–9
+  mask?: string;                 // trace only: PNG path, absolute or relative to the working directory. Omitted: the bundled sample
   minShare?: number;             // 0 to 0.2, default 0.02 (river 0.002): parts below this share of lines merge into their parent
   maxParts?: number;             // 2 to 24, default 14 (river 24)
 };
@@ -301,7 +305,7 @@ Validation lives in `lib/spec.mjs`. It is pure and every error names the field.
 - Region and text ids are lowercase letters, digits and dashes, at most 24, unique across regions and texts. `note`, `counts`, `notBuilt`, `provenance` and `credit` are footer block names and are rejected.
 - `**bold**` markup is allowed only at the start of an aside. It renders as `<b>`.
 - **`hot`** matches case-folded, as a whole word (`hasWord`), against a word of some fill region, a dots line, or the `text` of a label with `hot: true`. It may also stand alone when some region has `hot: true`. When the figure has a field, `hot` is optional, and a given `hot` is checked on the page only (`words-drawn`), since part names come from the facts.
-- A field region takes only the keys of its kind: `sentence` and `every` on a `terrain` fail with `a terrain field has no sentence; only wave takes it`. `accent` and the keys of `names` start with `area:`. `names` values and `sentence` follow the copy rules below.
+- A field region takes only the keys of its kind: `sentence` and `every` on a `terrain` fail with `a terrain field has no sentence; only wave takes it`. `letter` is glyph only (one A–Z or 0–9); `mask` is trace only. `seed` is a whole number from 0 to 2147483647. `accent` and the keys of `names` start with `area:`. `names` values and `sentence` follow the copy rules below. `mask` is a path and is not copy.
 - Every visible string passes `isJargon` from `lib/jargon.mjs` (exact tokens, whole word, case-folded).
 - No file paths: no `/`-containing token with an extension, no `src/`, no `lib/`, no `.tsx` and the like.
 - No "01/02/03" style markers and no middle-dot meta strings.
@@ -493,11 +497,29 @@ Both fields set text in Commit Mono 400 at the mockups' 6.9px and keep inside x 
 
 **`sphere`** (`lib/fields/sphere.mjs`): a 3×5 grid of type-built ellipses that flatten down the page, one cell per share of lines. Size and pitch as radial.
 
+**`scatter`** (`lib/fields/scatter.mjs`): 5 to 12 ellipses of type, jittered across the sheet, with gaps between the clouds. Seed 0 draws eight fixed clouds.
+
+**`shatter`** (`lib/fields/shatter.mjs`): a regular grid of cells. A fault line shifts the cells on one side along the fault, and about 10 to 25 percent of the cells are dropped.
+
+**`glyph`** (`lib/fields/glyph.mjs`): one built-in 8×12 letter, scaled to about 55 to 80 percent of the sheet height and filled with type. `letter` is one of A–Z or 0–9; the default is A.
+
+**`bleed`** (`lib/fields/bleed.mjs`): one large ellipse whose centre is off the sheet. Only the intersection with the sheet is filled.
+
+**`bands`** (`lib/fields/bands.mjs`): 6 to 12 horizontal bars with gaps between them. Widths follow part shares; the left edges stagger.
+
+**`spiral`** (`lib/fields/spiral.mjs`): a thick stroke along an Archimedean spiral `r = a + bθ`, scanned into horizontal chords. Not a sine.
+
+**`contour`** (`lib/fields/contour.mjs`): two to four Gaussian hills and four to seven thick iso-bands, nested rings rather than a wave.
+
+**`trace`** (`lib/fields/trace.mjs`): a PNG mask. `fieldInput` decodes it in Node (`lib/fields/png.mjs`, not inlined) and attaches chords. Dark pixels fill, unless the seed inverts them. A missing `mask` uses `tools/presets/masks/trace.png`.
+
+Every field takes `seed`. Omitted or 0 is the identity. A non-zero seed is mulberry32 and poses the silhouette: crop, scale, anchor, mirror, a small rotation in mask space rescanned to horizontal chords, density, and an optional circular void. The new fields also move their own parameters (cloud count, fault, letter, and so on). The masthead's mirror is not applied twice.
+
 **Terrain on paper.** The light theme adds 0.14 to every letter's alpha and 0.5 (not 0.3) for the accent, as i-loose did, because the dark alphas wash out on paper (`TERRAIN.lift`). Signal themes skip the navy lift and use charcoal or cream.
 
 ### In the page
 
-Render computes each field region's parts and embeds them, with `floor` and `mirror`, in the figure JSON. It concatenates `geometry.mjs`, `fields/wave.mjs`, `fields/terrain.mjs`, `fields/river.mjs`, `fields/radial.mjs`, `fields/sphere.mjs` and `fields/index.mjs` (imports dropped, exports unwrapped) before `fill.js`. Each item becomes a `.row` with `data-region`, `data-part`, `data-word` (the part's name or the sentence) and, for accent parts, `data-hot`, at weight 400 and at the item's `alpha` as opacity.
+Render computes each field region's parts and embeds them, with `floor` and `mirror`, in the figure JSON. A trace region also gets its chords there, because the page cannot read a file. It concatenates `geometry.mjs`, then `fields/pose.mjs`, `fields/wave.mjs`, `fields/chords.mjs`, the other `fields/*.mjs` except `png.mjs` and `index.mjs`, then `fields/index.mjs` (imports dropped, exports unwrapped) before `fill.js`. Each item becomes a `.row` with `data-region`, `data-part`, `data-word` (the part's name or the sentence) and, for accent parts, `data-hot`, at weight 400 and at the item's `alpha` as opacity.
 
 ---
 
