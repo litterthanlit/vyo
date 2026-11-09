@@ -1,6 +1,6 @@
 // The poster spec: the one file the agent writes. Pure validation, no I/O, no text measuring.
 import { isJargon } from "./jargon.mjs";
-import { SHEET, SHAPE_KEYS, parsePath } from "./geometry.mjs";
+import { SHEET, SHEETS, SHAPE_KEYS, parsePath } from "./geometry.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { WAVE } from "./fields/wave.mjs";
 import { ROLES as FRAME_ROLES, FRAMES, frameOf, sizeRange, LIST } from "./frame.mjs";
@@ -20,6 +20,7 @@ import { ROLES as FRAME_ROLES, FRAMES, frameOf, sizeRange, LIST } from "./frame.
  * @typedef {{
  *   version: 3,
  *   frame?: "loose" | "swiss",  loose unless it says swiss
+ *   sheet?: "poster" | "4:5",  840 by 1190 unless it says 4:5 (840 by 1050); loose only
  *   facts: string,
  *   product: { name: string, repo: string, commit?: string, date: string },
  *   theme: "light" | "dark",
@@ -49,7 +50,7 @@ const RESERVED = ["note", "counts", "notBuilt", "provenance", "credit", "record"
 // Keys that only some kinds of field take, like the wave's sentence.
 const FIELD_OPTIONS = [...new Set(Object.values(FIELDS).flatMap((f) => f.options))];
 const KEYS = {
-  spec: ["version", "frame", "facts", "product", "theme", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience"],
+  spec: ["version", "frame", "sheet", "facts", "product", "theme", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience"],
   product: ["name", "repo", "commit", "date"],
   note: ["title", "text"],
   figure: ["fits", "regions", "texts"],
@@ -97,8 +98,8 @@ function unknownKeys(obj, allowed, where, err) {
 
 const toneOk = (t) => (isStr(t) ? TONES.includes(t) : Array.isArray(t) && t.length >= 2 && t.length <= 3 && t.every((x) => TONES.includes(x)));
 
-/** Rules for one shape: exactly one of profile, ellipse, polygon or path, its numbers in range. */
-function checkShape(where, s, err) {
+/** Rules for one shape: exactly one of profile, ellipse, polygon or path, its numbers in range on the sheet. */
+function checkShape(where, s, err, sheet) {
   const given = SHAPE_KEYS.filter((k) => s[k] !== undefined);
   if (given.length !== 1) return err(`${where}: give exactly one of ${SHAPE_KEYS.join(", ")} (found ${given.length ? given.join(", ") : "none"})`);
   const [kind] = given;
@@ -110,22 +111,22 @@ function checkShape(where, s, err) {
     v.forEach((stop, i) => {
       if (!Array.isArray(stop) || stop.length !== 3 || !stop.every(isNum)) return err(`${f}[${i}]: must be [y, cx, halfWidth]`);
       const [y, cx, hw] = stop;
-      if (!inRange(y, 0, SHEET.height) || !inRange(cx, 0, SHEET.width)) err(`${f}[${i}]: y must be 0 to ${SHEET.height} and cx 0 to ${SHEET.width}`);
-      if (!inRange(hw, 0, SHEET.width / 2)) err(`${f}[${i}]: halfWidth must be 0 to ${SHEET.width / 2}`);
+      if (!inRange(y, 0, sheet.height) || !inRange(cx, 0, sheet.width)) err(`${f}[${i}]: y must be 0 to ${sheet.height} and cx 0 to ${sheet.width}`);
+      if (!inRange(hw, 0, sheet.width / 2)) err(`${f}[${i}]: halfWidth must be 0 to ${sheet.width / 2}`);
       if (i > 0 && Array.isArray(v[i - 1]) && isNum(v[i - 1][0]) && !(y > v[i - 1][0])) err(`${f}[${i}]: y must be greater than the stop before`);
     });
     if (v.every((st) => Array.isArray(st) && st[2] === 0)) err(`${f}: every halfWidth is 0`);
   } else if (kind === "ellipse") {
     if (!isObj(v)) return err(`${f}: must be { cx, cy, rx, ry }`);
     unknownKeys(v, KEYS.ellipse, `${f}.`, err);
-    if (!inRange(v.cx, 0, SHEET.width) || !inRange(v.cy, 0, SHEET.height)) err(`${f}: cx must be 0 to ${SHEET.width} and cy 0 to ${SHEET.height}`);
-    if (!inRange(v.rx, 1, SHEET.width) || !inRange(v.ry, 1, SHEET.height)) err(`${f}: rx and ry must be 1 to ${SHEET.width}`);
+    if (!inRange(v.cx, 0, sheet.width) || !inRange(v.cy, 0, sheet.height)) err(`${f}: cx must be 0 to ${sheet.width} and cy 0 to ${sheet.height}`);
+    if (!inRange(v.rx, 1, sheet.width) || !inRange(v.ry, 1, sheet.height)) err(`${f}: rx and ry must be 1 to ${sheet.width}`);
   } else if (kind === "polygon") {
     const [lo, hi] = LIMITS.polygon;
     if (!Array.isArray(v) || v.length < lo || v.length > hi) return err(`${f}: ${lo} to ${hi} points of [x, y]`);
     v.forEach((p, i) => {
       if (!Array.isArray(p) || p.length !== 2 || !p.every(isNum)) return err(`${f}[${i}]: must be [x, y]`);
-      if (!inRange(p[0], 0, SHEET.width) || !inRange(p[1], 0, SHEET.height)) err(`${f}[${i}]: must be inside the ${SHEET.width} by ${SHEET.height} sheet`);
+      if (!inRange(p[0], 0, sheet.width) || !inRange(p[1], 0, sheet.height)) err(`${f}[${i}]: must be inside the ${sheet.width} by ${sheet.height} sheet`);
     });
   } else {
     if (!isStr(v) || !v.trim()) return err(`${f}: must be an SVG path string`);
@@ -135,15 +136,15 @@ function checkShape(where, s, err) {
   }
 }
 
-function checkFill(f, r, err) {
-  checkShape(f, r, err);
+function checkFill(f, r, err, sheet) {
+  checkShape(f, r, err, sheet);
   if (r.holes !== undefined) {
     if (!Array.isArray(r.holes) || r.holes.length > LIMITS.holes) err(`${f}.holes: a list of at most ${LIMITS.holes} shapes`);
     else
       r.holes.forEach((h, i) => {
         if (!isObj(h)) return err(`${f}.holes[${i}]: must be { profile }, { ellipse }, { polygon } or { path }`);
         unknownKeys(h, SHAPE_KEYS, `${f}.holes[${i}].`, err);
-        checkShape(`${f}.holes[${i}]`, h, err);
+        checkShape(`${f}.holes[${i}]`, h, err, sheet);
       });
   }
   const [lo, hi] = LIMITS.words;
@@ -163,7 +164,7 @@ function checkFill(f, r, err) {
   if (r.size !== undefined && ![11, 12].includes(r.size)) err(`${f}.size: 11 or 12`);
 }
 
-function checkDots(f, r, err) {
+function checkDots(f, r, err, sheet) {
   const [lo, hi] = LIMITS.lines;
   if (!Array.isArray(r.lines) || !r.lines.every(isStr)) err(`${f}.lines: must be a list of words`);
   else if (r.lines.some(isPlaceholder)) err(`${f}.lines: still the placeholder; write ${lo} to ${hi} words of at most ${LIMITS.line} letters`);
@@ -177,7 +178,7 @@ function checkDots(f, r, err) {
       err(`${f}.tones: one of ${DOT_TONES.join(", ")} per line (${r.lines.length})`);
     }
   }
-  if (!inRange(r.x, 0, SHEET.width) || !inRange(r.y, 0, SHEET.height)) err(`${f}: x must be 0 to ${SHEET.width} and y 0 to ${SHEET.height}`);
+  if (!inRange(r.x, 0, sheet.width) || !inRange(r.y, 0, sheet.height)) err(`${f}: x must be 0 to ${sheet.width} and y 0 to ${sheet.height}`);
   if (!Number.isInteger(r.cell) || r.cell < 8 || r.cell > 32) err(`${f}.cell: a whole number of px, 8 to 32`);
 }
 
@@ -215,7 +216,7 @@ function checkField(f, r, err, copy) {
 
 const sentences = (text) => text.split(/[.!?]+(?:\s+|$)/).filter((x) => x.trim()).length;
 
-function checkText(f, t, err, copy, frame) {
+function checkText(f, t, err, copy, frame, sheet) {
   const roles = FRAME_ROLES[frame];
   const role = roles[t.role];
   if (!role) return err(`${f}.role: "${t.role}" is not a role in the ${frame} frame; use ${Object.keys(roles).join(", ")}`);
@@ -247,14 +248,14 @@ function checkText(f, t, err, copy, frame) {
     }
   }
   if (t.hot !== undefined && (t.role !== "label" || typeof t.hot !== "boolean")) err(`${f}.hot: only a label can be hot`);
-  if (!inRange(t.x, 0, SHEET.width) || !inRange(t.y, 0, SHEET.height)) err(`${f}: x must be 0 to ${SHEET.width} and y 0 to ${SHEET.height}`);
-  if (!inRange(t.w, 16, SHEET.width)) err(`${f}.w: 16 to ${SHEET.width}`);
+  if (!inRange(t.x, 0, sheet.width) || !inRange(t.y, 0, sheet.height)) err(`${f}: x must be 0 to ${sheet.width} and y 0 to ${sheet.height}`);
+  if (!inRange(t.w, 16, sheet.width)) err(`${f}.w: 16 to ${sheet.width}`);
   const [, lo, hi] = sizeRange({ frame }, t);
   if (t.size !== undefined && !inRange(t.size, lo, hi)) err(`${f}.size: ${lo} to ${hi}`);
   if (t.align !== undefined && !["left", "right", "center"].includes(t.align)) err(`${f}.align: left, right or center`);
 }
 
-function checkFigure(fig, err, copy, frame) {
+function checkFigure(fig, err, copy, frame, sheet) {
   if (!isObj(fig)) return err("figure: must be { fits, regions, texts }");
   unknownKeys(fig, KEYS.figure, "figure.", err);
   if (hasField(fig)) {
@@ -279,8 +280,8 @@ function checkFigure(fig, err, copy, frame) {
       if (!["fill", "dots", "field"].includes(r.kind)) return err(`${f}.kind: "${r.kind}" is not a region kind; use field, fill or dots`);
       unknownKeys(r, KEYS[r.kind], `${f}.`, err);
       idOk(f, r.id);
-      if (r.kind === "fill") checkFill(f, r, err);
-      else if (r.kind === "dots") checkDots(f, r, err);
+      if (r.kind === "fill") checkFill(f, r, err, sheet);
+      else if (r.kind === "dots") checkDots(f, r, err, sheet);
       else checkField(f, r, err, copy);
       for (const [k, list] of [["words", r.words], ["lines", r.lines]]) if (Array.isArray(list) && !list.some(isPlaceholder)) list.forEach((w, j) => isStr(w) && copy.push([`${f}.${k}[${j}]`, w]));
     });
@@ -294,7 +295,7 @@ function checkFigure(fig, err, copy, frame) {
     if (!isObj(t)) return err(`${f}: must be a text`);
     unknownKeys(t, KEYS.text[frame], `${f}.`, err);
     idOk(f, t.id);
-    checkText(f, t, err, copy, frame);
+    checkText(f, t, err, copy, frame, sheet);
   });
   for (const [role, { count: [lo, hi] }] of Object.entries(FRAME_ROLES[frame])) {
     const n = fig.texts.filter((t) => isObj(t) && t.role === role).length;
@@ -329,6 +330,10 @@ export function validateSpec(spec) {
   if (spec.version !== 3) err("version: must be 3");
   if (spec.frame !== undefined && !FRAMES.includes(spec.frame)) err(`frame: "${spec.frame}" is not a frame; use ${FRAMES.join(" or ")}`);
   const frame = FRAMES.includes(spec.frame) ? spec.frame : "loose";
+  const known = spec.sheet === undefined || Object.hasOwn(SHEETS, spec.sheet);
+  if (!known) err(`sheet: "${spec.sheet}" is not a sheet; use ${Object.keys(SHEETS).join(" or ")}`);
+  else if (frame === "swiss" && (spec.sheet ?? "poster") !== "poster") err("sheet: the swiss frame is drawn for the poster sheet; leave sheet out, or draw a field in the loose frame");
+  const sheet = known ? SHEETS[spec.sheet ?? "poster"] : SHEET;
   if (!isStr(spec.facts) || !/^[0-9a-f]{12}$/.test(spec.facts)) err("facts: must be the 12-character hash from facts.json");
 
   const p = spec.product;
@@ -354,7 +359,7 @@ export function validateSpec(spec) {
   };
   field("headline", spec.headline, LIMITS.headline);
   const before = errors.length;
-  checkFigure(spec.figure, err, copy, frame);
+  checkFigure(spec.figure, err, copy, frame, sheet);
   const figureOk = errors.length === before;
 
   // A field's part names come from facts.json, so its hot word, if any, is checked on the page.
@@ -477,17 +482,18 @@ function blankFigure(fig) {
  * Without a preset, the figure is a field: in the loose frame its texts sit in `places`, in the swiss frame
  * where the field's registry entry puts them, above a footer of notes.
  * @param {{ hash: string, repo: { name: string } }} facts
- * @param {{ frame?: "loose" | "swiss", theme: "light" | "dark", commit?: string, date: string, floor: number, preset?: Spec,
+ * @param {{ frame?: "loose" | "swiss", sheet?: keyof typeof SHEETS, theme: "light" | "dark", commit?: string, date: string, floor: number, preset?: Spec,
  *           field?: keyof typeof FIELDS, accent?: string, accentNames?: string[], unplain?: { id: string, name: string }[],
  *           places?: Record<string, object> }} o
  * @returns {Spec}
  */
-export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", theme, commit, date, floor, field = "wave", accent, accentNames = [], unplain = [], places }) {
+export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", sheet, theme, commit, date, floor, field = "wave", accent, accentNames = [], unplain = [], places }) {
   const loose = frame === "loose";
   const notes = preset ? preset.notes.length : 3;
   return {
     version: 3,
     frame,
+    ...(sheet ? { sheet } : {}),
     facts: facts.hash,
     product: { name: facts.repo.name, repo: facts.repo.name, ...(commit ? { commit } : {}), date },
     theme,

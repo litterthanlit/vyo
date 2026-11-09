@@ -11,7 +11,7 @@ import { scanRepoDetailed } from "./lib/scan/index.mjs";
 import { showFacts } from "./lib/scan/show.mjs";
 import { scaffoldSpec, validateSpec, THEMES } from "./lib/spec.mjs";
 import { sketch } from "./lib/sketch.mjs";
-import { SHAPE_KEYS, GRID, ADVANCE, sheetOf } from "./lib/geometry.mjs";
+import { SHAPE_KEYS, GRID, ADVANCE, SHEETS, sheetOf } from "./lib/geometry.mjs";
 import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
 import { ROLES, FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
 import { cornersLine } from "./lib/geometry.mjs";
@@ -27,7 +27,7 @@ const USAGE = `Usage:
   vyo show    <facts.json>
   vyo presets [<id>]
   vyo parts   <facts.json> [--field ${Object.keys(FIELDS).join("|")}]
-  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
+  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--sheet ${Object.keys(SHEETS).join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
   vyo sketch  <spec.json> [--facts <facts.json>]
   vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--paper ${PAPERS.join("|")}]
   vyo check   <spec.json> [--facts <facts.json>]
@@ -239,7 +239,7 @@ function git(dir, format) {
 function cmdCompose(argv) {
   const { pos, opt } = args(
     argv,
-    { frame: { type: "string" }, field: { type: "string" }, accent: { type: "string" }, from: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } },
+    { frame: { type: "string" }, sheet: { type: "string" }, field: { type: "string" }, accent: { type: "string" }, from: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } },
     1,
   );
   const presets = loadPresets();
@@ -253,6 +253,11 @@ function cmdCompose(argv) {
   const frame = opt.frame ?? preset?.frame ?? "loose";
   if (!FRAMES.includes(frame)) throw new Usage(`--frame ${frame} is not a frame; use ${FRAMES.join(" or ")}`);
   if (preset && frame !== preset.frame) throw new Usage(`--from ${opt.from} is a ${preset.frame} preset; the loose frame draws a field, so use --field`);
+  if (opt.sheet !== undefined) {
+    if (!Object.hasOwn(SHEETS, opt.sheet)) throw new Usage(`--sheet ${opt.sheet} is not a sheet; use ${Object.keys(SHEETS).join(" or ")}`);
+    if (preset) throw new Usage(`--from ${opt.from} is drawn for the poster sheet; --sheet sizes a field poster. Pass one or the other`);
+    if (frame === "swiss" && opt.sheet !== "poster") throw new Usage(`--sheet ${opt.sheet} is for the loose frame; the swiss frame is drawn for the poster sheet`);
+  }
   const theme = opt.theme ?? preset?.theme ?? "light";
   if (!THEMES.includes(theme)) throw new Usage(`--theme ${theme} is not a theme; use ${THEMES.join(" or ")}`);
   const facts = readFacts(pos[0]);
@@ -273,7 +278,7 @@ function cmdCompose(argv) {
   const twins = new Set(sameNames(parts).flat());
   const unplain = parts.filter((p) => unplainName(p.name) || twins.has(p));
   const notes = preset ? preset.notes.length : 3;
-  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, unplain };
+  const o = { frame, sheet: opt.sheet, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, unplain };
   let space;
   if (frame === "loose") {
     // Lay the field out on its own sheet, then fill the corners it leaves.
@@ -305,8 +310,8 @@ function factsFor(specFile, spec, opt) {
 function cmdSketch(argv) {
   const { pos, opt } = args(argv, { facts: { type: "string" } }, 1);
   const spec = readJson(pos[0], "poster spec");
-  // Placeholder words and copy rules wait for render; the sketch needs the geometry, the texts and the notes count.
-  const blocking = validateSpec(spec).filter((e) => /^(figure\.(regions|texts)|figure:|notes:|version|product)/.test(e) && !/still the placeholder|: (jargon|a file path|a "01|a middle dot)/.test(e));
+  // Placeholder words and copy rules wait for render; the sketch needs the sheet, the geometry, the texts and the notes count.
+  const blocking = validateSpec(spec).filter((e) => /^(sheet|figure\.(regions|texts)|figure:|notes:|version|product)/.test(e) && !/still the placeholder|: (jargon|a file path|a "01|a middle dot)/.test(e));
   if (blocking.length) {
     for (const e of blocking) fail(`spec: ${e}`);
     return 1;
