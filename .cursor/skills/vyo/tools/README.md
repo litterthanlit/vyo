@@ -13,7 +13,7 @@ Run them from the target repo as `npx vyo …` once `@litterthanlit/vyo` is a de
 | `vyo show <facts.json>` | Prints a plain summary of the facts |
 | `vyo parts <facts.json> [--field wave\|terrain\|river]` | Prints the parts a field draws, with that field's part defaults: id, share of lines, lines, files and scanned name, with `! looks like a vendor or code name` after each unplain name and `! same name as <id>` after each name another part shares |
 | `vyo presets [<id>]` | Lists the presets with id, `fits`, and a summary of regions and texts. With an id, prints that preset's figure as JSON |
-| `vyo compose <facts.json> [--frame loose\|swiss] [--field wave\|terrain\|river] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light\|dark] [--out <spec.json>] [--force]` | Writes a scaffold spec. Without `--from`, the figure is a field, in the loose frame unless `--frame swiss`; loose prints the corners the field leaves. Refuses to overwrite an existing spec unless `--force` is given |
+| `vyo compose <facts.json> [--frame loose\|swiss] [--sheet poster\|4:5] [--field wave\|terrain\|river] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light\|dark] [--out <spec.json>] [--force]` | Writes a scaffold spec. Without `--from`, the figure is a field, in the loose frame unless `--frame swiss`; loose prints the corners the field leaves. `--sheet 4:5` writes `sheet` and places the texts in the corners of the 840 by 1050 sheet; it is refused beside `--from` and with `--frame swiss`. Refuses to overwrite an existing spec unless `--force` is given |
 | `vyo sketch <spec.json> [--facts <facts.json>]` | Prints the sheet as ASCII, with coverage, each fill region's width spread and mean width, and the floor; a loose spec also gets the field's four empty corners. A figure with a field reads the facts. Needs no browser |
 | `vyo render <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--paper fit\|a4\|letter]` | Validates the spec, writes HTML, a 2× PNG and a PDF, then runs every check |
 | `vyo check <spec.json> [--facts <facts.json>]` | Runs the same validation and checks in a temporary directory. Writes nothing to `--out` |
@@ -41,7 +41,7 @@ The fonts, Commit Mono and Newsreader, are bundled in `fonts/` at the package ro
 
 The spec, `<repo>-poster.json`, is the only file the agent edits. `compose` fills `version`, `facts`, `product` and `theme`. The agent writes `figure`, `headline`, `hot` (optional when the figure has a field), `notes` and `notBuilt`, may set `accent` and `audience`, and replaces `product.name` with the customer-facing name. The full type and validation rules are in [CONTRACTS.md §3](CONTRACTS.md#3-the-spec). Every preset as a full spec, and three invented figures, are in [examples.md](../examples.md).
 
-A spec has a `frame`, `loose` (the default) or `swiss`; see [Frames](#frames). A figure has 1 to 6 regions and 1 to 7 texts, and a `fits` sentence (at most 160 characters, printed by `presets`, never drawn): on the field region when the figure has a field, else on the figure.
+A spec has a `frame`, `loose` (the default) or `swiss`; see [Frames](#frames). A loose spec may set `sheet` to `4:5`, the portrait ratio feeds like X show without cropping: the sheet is 840 by 1050 instead of the default `poster`, 840 by 1190. Every coordinate must be on the spec's sheet, the field's floor is its bottom edge, and the PNG, the thumbnail (1/6 scale, 140 by 175 for 4:5) and `--paper` follow its size. The swiss frame and the fill presets are drawn for `poster` only. A figure has 1 to 6 regions and 1 to 7 texts, and a `fits` sentence (at most 160 characters, printed by `presets`, never drawn): on the field region when the figure has a field, else on the figure.
 
 - A **field region** draws the repo itself: its rows come from the parts of `facts.json` at render time, and the agent picks only the field, the accent part and plain names. At most one per figure. See [Fields](#fields).
 - A **fill region** is an outline that the tool fills with rows of the region's `words`, 2 to 14 of them, each at most 24 characters.
@@ -142,7 +142,7 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 | `fonts` | ✗ | `document.fonts` holds a `FontFace` with status `loaded` for Commit Mono 400, Commit Mono 700 and Newsreader 400 |
 | `masthead-font` | ! | Inter Display or Inter is installed for the product name. Swiss only |
 | `path` | ✗ | Every outline parses and has a non-empty bounding box inside the sheet and above the footer. The message says `region <id> reaches <n>px below the footer; move it up by <n>` |
-| `rows-fit` | ✗ | Every `.row` has `scrollWidth ≤ clientWidth` and sits inside the 840×1190 sheet |
+| `rows-fit` | ✗ | Every `.row` has `scrollWidth ≤ clientWidth` and sits inside the spec's sheet |
 | `region-size` | ✗ | Every fill region has at least 4 rows, and every dots region fits. The message names the region. Fields are exempt |
 | `regions-apart` | ✗ | No row of one region comes within 4px, horizontally, of a row of another region at the same y |
 | `words-drawn` | ✗ | Every word of every fill region is drawn at least once, and the hot word, when the spec has one, is drawn in the accent. The message says `region <id>: "<word>" never drawn; shorten the list or enlarge the path` |

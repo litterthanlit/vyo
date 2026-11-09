@@ -37,7 +37,7 @@ Without installing it, write `npx -y @litterthanlit/vyo` wherever this file says
    ```bash
    npx vyo compose <facts> --field wave --accent area:lib/plan --repo <repo> --out <repo>/vyo/<name>-poster.json
    ```
-   `--accent` refuses an id that `parts` did not list. `--repo` gives the record line its commit. Compose finds the corners the field leaves empty, puts the label, headline, legend, a paragraph and the parts list into them, and prints the corners and each text role's size.
+   `--accent` refuses an id that `parts` did not list. `--repo` gives the record line its commit. When the poster is for X or any other feed, add `--sheet 4:5`: 4:5 is the portrait ratio feeds like X show without cropping, and the default sheet is taller. Compose finds the corners the field leaves empty, puts the label, headline, legend, a paragraph and the parts list into them, and prints the corners and each text role's size.
 7. Replace every `…` value: the product name, the field's `fits`, the headline, the legend, the paragraph, the names and, for a wave, the `sentence`. Render rejects any placeholder left.
 8. Sketch: `npx vyo sketch <repo>/vyo/<name>-poster.json`. It prints the sheet, the text boxes and the corners. Act on every `!` line. If a corner is cramped, or two text boxes touch, move a block into a corner with room or delete the paragraph. Sketch does not flag two text boxes that overlap, so look at the boxes yourself.
 9. Render: `npx vyo render <repo>/vyo/<name>-poster.json`.
@@ -75,6 +75,7 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 |---|---|
 | `product.name` | The customer-facing name. `product-name` warns while it is the folder name |
 | `product.commit` | The short hash. `compose --repo` fills it, and the record line needs it |
+| `sheet` | Optional. `poster` (840 by 1190, the default) or `4:5` (840 by 1050). `compose --sheet` writes it and places the texts for that sheet. Every `x` and `y` must be on it. The swiss frame takes only `poster` |
 | `headline` | At most 72 characters |
 | region `field` | `wave`, `terrain` or `river`. One field per figure |
 | region `fits` | Why this field matches the story, with its keyword, at most 160 characters |

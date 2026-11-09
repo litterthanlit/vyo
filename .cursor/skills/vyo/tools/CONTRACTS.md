@@ -31,7 +31,7 @@ vyo scan    <repo-dir> --out <dir>/<repo>-facts.json
 vyo show    <facts.json>
 vyo parts   <facts.json> [--field wave|terrain|river]
 vyo presets [<id>]
-vyo compose <facts.json> [--frame loose|swiss] [--field wave|terrain|river] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light|dark] [--out <spec.json>] [--force]
+vyo compose <facts.json> [--frame loose|swiss] [--sheet poster|4:5] [--field wave|terrain|river] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light|dark] [--out <spec.json>] [--force]
 vyo sketch  <spec.json> [--facts <facts.json>]
 vyo render  <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--paper fit|a4|letter]
 vyo check   <spec.json> [--facts <facts.json>]
@@ -44,13 +44,14 @@ vyo check   <spec.json> [--facts <facts.json>]
 - `compose` writes a scaffold spec (§3). It fills `facts` from the facts file, `product.name` and `product.repo` from `facts.repo.name`, and `theme` from `--theme`. It refuses to overwrite an existing spec, which may hold the agent's words, unless `--force` is given.
   - Without `--from`: a field figure (§4b), in the loose frame unless `--frame swiss`. When the facts hold no parts, it writes nothing and exits 1 with `✗ no parts to draw; the scan found no code. Compose a fill poster instead: vyo compose <facts.json> --from <preset> (vyo presets lists them)`. One field region of kind `--field` (default `wave`), id equal to the kind, `accent` from `--accent` (which must name a part), a placeholder in `names` for each part whose scanned name is unplain or shared with another part, and a placeholder `sentence` when the kind takes one. In the loose frame it lays the field out, finds the empty corners, and places `label`, `headline`, `legend`, a `paragraph` and a `list` of the parts into them (§3b); it writes no notes. The spec has no `hot`.
   - With `--from <preset>`: a fill preset's figure with its geometry kept and every word replaced by a placeholder. A field preset is refused with `--from <id> is a field preset, drawn from its own scan; use --field <kind>`, and `--field` or `--accent` beside `--from` is a usage error.
+  - With `--sheet <name>`: the spec gets `sheet` and compose lays the field out and finds the corners on that sheet (§4). `--sheet` with a name not in `SHEETS`, beside `--from`, or a sheet other than `poster` with `--frame swiss` is a usage error.
   - Validation rejects placeholders, so a scaffold cannot render.
   - Loose frame: it prints the corners the field leaves and one line per text role, and warns when there is no `--repo`, since the record line needs the commit. A field scaffold adds `vyo parts <facts.json> lists the parts: pick the accent by its id and name the <n> flagged parts in names.`; a preset scaffold adds the `rows` line and the silhouette advice.
   - Swiss frame (the exception): the spec also has a masthead at (50, 36, w 490), and a headline and aside where the field's registry entry places them. It prints `floor: <y>`, the footer top for the spec's notes count with a one-line not-built list (§5), and says that each extra not-built line raises the floor by 16px. Then it prints the `masthead`, `headline` and `aside` lines of §4.5: line heights and characters per line, and a `field: <kind>, <about>.` line after them.
   - With `--repo <dir>`: `product.commit` is `git -C <dir> log -1 --format=%h` and `product.date` is `git -C <dir> log -1 --format=%cs`, so reruns are stable.
   - Without it: no `commit`, and `date` is today's ISO date. `facts.json` stays free of timestamps.
 - `sketch` validates the spec and prints the sheet as ASCII (§4.4). A figure with a field reads the facts, from `--facts` or `<repo>-facts.json` beside the spec as `render` does. It needs no browser.
-- `render` validates the spec, builds the HTML, writes a PNG at 2× and a PDF, then runs every check (§6). Default `--facts` is `<repo>-facts.json` beside the spec, where `<repo>` is `product.repo`. Default `--out` is the spec's directory. Outputs: `<repo>-poster.html`, `<repo>-poster.png`, `<repo>-poster-thumb.png` (the poster at 1/6 scale, 140×198 CSS px at 2×, written with the PNG), `<repo>-poster.pdf`. The HTML embeds its fonts as base64 data URIs.
+- `render` validates the spec, builds the HTML, writes a PNG at 2× and a PDF, then runs every check (§6). Default `--facts` is `<repo>-facts.json` beside the spec, where `<repo>` is `product.repo`. Default `--out` is the spec's directory. Outputs: `<repo>-poster.html`, `<repo>-poster.png`, `<repo>-poster-thumb.png` (the poster at 1/6 scale, 140×198 CSS px at 2× on `poster` and 140×175 on `4:5`, written with the PNG), `<repo>-poster.pdf`. `--paper fit` prints the sheet's own size; `a4` and `letter` scale the sheet to fit the page. The HTML embeds its fonts as base64 data URIs.
 - `check` does what `render` does in a temporary directory and writes nothing to `--out`.
 - `vyo shapes` no longer exists.
 - Exit codes: 0 ok (warnings on stderr, prefixed `! `), 1 rule error (`✗ ` lines on stderr), 2 usage.
@@ -204,6 +205,7 @@ Show, in this order:
 type Spec = {
   version: 3;
   frame?: "loose" | "swiss";     // default loose. §3b
+  sheet?: "poster" | "4:5";      // default poster, 840×1190. "4:5" is 840×1050, the portrait ratio feeds like X show without cropping. Loose only (§4)
   facts: string;                 // facts.json `hash`. Render refuses a mismatch (a stale spec)
   product: {
     name: string;                // customer-facing name. compose copies facts.repo.name, and render warns until it differs
@@ -286,6 +288,7 @@ type Text = {                    // swiss roles below; the loose frame's roles a
 Validation lives in `lib/spec.mjs`. It is pure and every error names the field.
 
 - Unknown keys are rejected, at every level.
+- `sheet` is a key of `SHEETS` in `lib/geometry.mjs`, else `sheet: "<value>" is not a sheet; use poster or 4:5`. A swiss spec with a sheet other than `poster` fails with `sheet: the swiss frame is drawn for the poster sheet; leave sheet out, or draw a field in the loose frame`, because the swiss frame's footer and the fill presets are placed in absolute poster coordinates. Every coordinate range check uses the spec's sheet, so `y: 1100` passes on `poster` and fails on `4:5` with `y 0 to 1050`.
 - Every limit in the table below is enforced. The shared limits are `LIMITS` in `lib/spec.mjs`.
 - Each fill region and each hole has exactly one of `profile`, `ellipse`, `polygon` and `path`.
 - Every geometry number is finite. `rx`, `ry`, `cell` and every half-width are positive. A `path` must parse with the small tokenizer in `lib/spec.mjs`, which accepts M, L, C, Q, A, H, V and Z in absolute and relative forms. The validator checks numbers only. Bounds against the sheet and the footer are the page-stage `path` check (§6).
@@ -370,7 +373,7 @@ A loose text takes `role, id, x, y, w, size?, align?` and `text`, `parts` or `it
 
 ## 4. Geometry
 
-The sheet is 840×1190 CSS px with y growing downward. Every number in a figure is sheet px. The footer's top is `1190 − footerHeight − 36` (§5), and everything the agent places must sit above it.
+The sheet is the spec's `sheet` from `SHEETS` in `lib/geometry.mjs`: `poster`, 840×1190 CSS px (the default), or `4:5`, 840×1050. Every sheet is 840 wide, so the fields' x positions hold on each; only the height varies. Render, sketch and the checks take the sheet from the spec through `sheetOf(spec)` and pass it down, and the page gets it in the figure JSON. A loose field's floor is the sheet's bottom edge. y grows downward. Every number in a figure is sheet px. The footer's top is `1190 − footerHeight − 36` (§5), and everything the agent places must sit above it.
 
 ### 4.1 Outlines
 
@@ -459,7 +462,7 @@ Both fields set text in Commit Mono 400 at the mockups' 6.9px and keep inside x 
 
 - Row slots sit 7.9px apart from y 0 to the floor, 7.9px tall: about 113 above a 900px floor. No slot is cut around the text blocks: the band passes behind the masthead and the other figure texts, which render sets above the rows with a 6px paper outline (`-webkit-text-stroke: 12px var(--paper)` painted under the fill).
 - The slots go to the parts by lines, largest remainder first, at least one each, in tree order, top to bottom. With fewer slots than parts, the last parts go undrawn.
-- At row top y, with `u = (y + 14) / 1190`: centre `130 + 560·(0.6·smoothstep(u) + 0.4·u) + 95·sin(6.4u + 0.4)·(1 − 0.5u)`, mirrored across the sheet when `mirror`; half-width `150 + 40·|cos(6.4u + 0.4)|`; letter spacing `0.5 + (half − 150) / 12`. The band enters at the top behind the masthead, swings right, back left across the middle and leaves through the floor.
+- At row top y, with `u = (y + 14) / <sheet height>`, so on 4:5 the same curve is squeezed into the shorter sheet: centre `130 + 560·(0.6·smoothstep(u) + 0.4·u) + 95·sin(6.4u + 0.4)·(1 − 0.5u)`, mirrored across the sheet when `mirror`; half-width `150 + 40·|cos(6.4u + 0.4)|`; letter spacing `0.5 + (half − 150) / 12`. The band enters at the top behind the masthead, swings right, back left across the middle and leaves through the floor.
 - A row's text is its part's name in lower case and three spaces, repeated letter by letter from the run's left edge while letters fit. Every `every`th row (`i % every == every − 1`) carries `sentence` instead, when given.
 - Tone: accent parts take `ink` on light, as in f-wave-paper, and `hot` on dark. Other parts at most two segments deep (and `area:.`) take `wave` (#7A64DC) on light and `mid` on dark; deeper parts `wave-soft` (#907EDD) on light and `soft` on dark. `wave` and `wave-soft` are the field's own tokens (`tokens` in its registry entry): render declares them, and `palette` allows them in the field's rows only.
 
@@ -547,7 +550,7 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 | `fonts` | ✗ | `document.fonts` holds a `FontFace` with status `loaded` for Commit Mono 400, Commit Mono 700 and Newsreader 400 |
 | `masthead-font` | ! | Inter Display or Inter is installed for the product name. Swiss only |
 | `path` | ✗ | Every outline parses and has a non-empty bounding box inside the sheet whose bottom is above the footer top. Message: `region <id> reaches <n>px below the footer; move it up by <n>` |
-| `rows-fit` | ✗ | Every `.row` has `scrollWidth ≤ clientWidth` and sits inside the 840×1190 sheet |
+| `rows-fit` | ✗ | Every `.row` has `scrollWidth ≤ clientWidth` and sits inside the spec's sheet |
 | `region-size` | ✗ | Every fill region produced at least 4 rows, and every dots region fits above the footer. The message names the region. Fields are exempt |
 | `regions-apart` | ✗ | Row rects of different regions at the same y do not overlap, with 4px horizontal inflation |
 | `words-drawn` | ✗ | Per fill region, every word is drawn at least once, and the hot word, when the spec has one, is drawn in the accent. Message: `region <id>: "<word>" never drawn; shorten the list or enlarge the path` |
@@ -581,4 +584,4 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 | `data-block` | Fill for every text, with the text's `id`. Render for the footer blocks and the loose frame's `record` | A text block to measure for overlap and bounds, and to cut out of the rows |
 | `window.drawn` | Fill | Set to `true` after the fonts load and every region and text is laid out. Render waits for it before the screenshot, the PDF and the checks |
 
-The sheet is 840×1190 CSS px. The PNG is rendered at a device scale factor of 2.
+The sheet is the spec's sheet, 840×1190 or 840×1050 CSS px (§4). The PNG is rendered at a device scale factor of 2, so 1680×2380 or 1680×2100.
