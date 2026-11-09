@@ -1,0 +1,62 @@
+{
+  "version": 3,
+  "frame": "signal",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "accent": "#C8FF00",
+  "headline": "A week of dinners, planned in one go.",
+  "motion": { "kind": "nodes", "frames": 16, "fps": 10 },
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "wave",
+        "field": "wave",
+        "fits": "Pantry's story is a week that moves from saved recipes to dinners, so a band of its code travels down the page.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "sentence": "dinner, decided"
+      },
+      {
+        "kind": "routes",
+        "id": "lines",
+        "paths": [
+          { "d": "M 72 180 C 240 200 200 620 480 740 C 620 800 760 980 790 1140", "tone": "hot" },
+          { "d": "M 48 460 Q 420 160 800 520", "tone": "mid" },
+          { "d": "M 100 1020 C 280 880 520 1100 760 840", "tone": "cool" }
+        ],
+        "nodes": [
+          { "path": 0, "t": 0.18, "tone": "hot" },
+          { "path": 0, "t": 0.62, "tone": "ink" },
+          { "path": 1, "t": 0.4, "tone": "hot" },
+          { "path": 2, "t": 0.55, "tone": "cool" }
+        ]
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 40, "y": 40, "w": 220, "align": "left" },
+      { "role": "headline", "id": "headline", "x": 40, "y": 72, "w": 420, "align": "left", "size": 48 },
+      { "role": "legend", "id": "legend", "x": 40, "y": 980, "w": 280, "align": "left", "text": "Every row is a part of Pantry, as many rows as it has code. The bright rows are the plan." },
+      { "role": "meta", "id": "meta", "x": 40, "y": 1120, "w": 360, "text": "REF 04186f4 / 2026-11-07 / Archive pantry" }
+    ]
+  }
+}

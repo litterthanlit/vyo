@@ -1,6 +1,6 @@
 # vyo
 
-vyo explains an app to someone who does not code. It scans a repository and draws the codebase as one poster: every part of the code as a row, peak or stream sized by its code, the part the product is about in an accent colour, a legend that says what the picture shows, and a few plain sentences. You get a PNG and a PDF to send to a client, a PM or a stakeholder.
+vyo explains an app to someone who does not code. It scans a repository and draws the codebase as one poster: every part of the code as a row, peak, stream, triangle or globe sized by its code, the part the product is about in an accent colour, a legend that says what the picture shows, and a few plain sentences. You get a PNG and a PDF to send to a client, a PM or a stakeholder. A signal-frame poster is high-contrast charcoal or paper; `vyo render --gif` writes a short GIF when the spec has motion.
 
 vyo has two halves. The skill tells your coding agent (Cursor, Claude Code or Codex) how to read the repo, choose the picture and write the words. The `vyo` command does the drawing and checks the result: it rejects jargon, file paths, placeholder text and text that collides with the picture.
 

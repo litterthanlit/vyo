@@ -166,6 +166,13 @@ vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
   result(r.status === 1 && r.stderr === `✗ ${BROWSER_NOTE}\n` && !fs.existsSync(path.join(OUT, "recipe-poster.png")), "render with no browser prints the browser note and exits 1", `exit ${r.status}\n${r.stderr}`);
 }
 
+{
+  const file = path.join(OUT, "no-motion.json");
+  fs.writeFileSync(file, JSON.stringify(preset("signal-wave"), null, 2));
+  const r = vyo("render", file, "--facts", factsFile, "--gif", "--no-png", "--no-pdf");
+  result(r.status === 1 && /^✗ render --gif needs motion on the spec: \{ kind, frames, fps \}$/m.test(r.stderr), "render --gif without motion fails", `exit ${r.status}\n${r.stderr}`);
+}
+
 console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length} planted bugs caught`);
 
 const pack = spawnSync(process.execPath, ["--test", path.join(HERE, "pack.test.mjs")], { stdio: "inherit" });

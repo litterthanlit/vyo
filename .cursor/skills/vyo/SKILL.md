@@ -7,12 +7,13 @@ description: >-
   product, visualize the repo as a poster, or draw the codebase. Produces one
   poster (PNG and PDF) that draws the codebase as a field of its own parts,
   with the part the product is about in the accent, a legend that says what
-  the picture encodes, and a few plain words around it.
+  the picture encodes, and a few plain words around it. High-contrast signal
+  posters and short GIFs use the same pipeline.
 ---
 
 # vyo
 
-The poster is a field: the codebase drawn from a scan, one row, peak or stream per part, sized by its code. The field fills the sheet, and a few plain words sit in the corners it leaves empty. You choose the field, the accent part, the plain names and the words, and the tools draw, place and check the rest.
+The poster is a field: the codebase drawn from a scan, one row, peak, stream, triangle or globe per part, sized by its code. The field fills the sheet, and a few plain words sit in the corners it leaves empty. You choose the field, the accent part, the plain names and the words, and the tools draw, place and check the rest.
 
 Run commands from the target repo. `<repo>` is the app's directory, `<name>` its folder name, and `<facts>` is `<repo>/vyo/<name>-facts.json`.
 
@@ -40,7 +41,7 @@ Without installing it, write `npx -y @litterthanlit/vyo` wherever this file says
    `--accent` refuses an id that `parts` did not list. `--repo` gives the record line its commit. Compose finds the corners the field leaves empty, puts the label, headline, legend, a paragraph and the parts list into them, and prints the corners and each text role's size.
 7. Replace every `…` value: the product name, the field's `fits`, the headline, the legend, the paragraph, the names and, for a wave, the `sentence`. Render rejects any placeholder left.
 8. Sketch: `npx vyo sketch <repo>/vyo/<name>-poster.json`. It prints the sheet, the text boxes and the corners. Act on every `!` line. If a corner is cramped, or two text boxes touch, move a block into a corner with room or delete the paragraph. Sketch does not flag two text boxes that overlap, so look at the boxes yourself.
-9. Render: `npx vyo render <repo>/vyo/<name>-poster.json`.
+9. Render: `npx vyo render <repo>/vyo/<name>-poster.json`. For a GIF, add `motion` to the spec and pass `--gif`.
 10. Fix every `✗` line. Render exits 1 until none is left. Weigh every `!` line.
 11. Open the PNG at full size and `<repo>-poster-thumb.png`, the poster at 1/6 scale that `render` writes beside it. The accent part must stand out at thumbnail size, the legend must match what you see, and no name may read as code. If not, change the accent, a name or a block, and go back to step 8.
 12. Reply in chat in the format below.
@@ -52,8 +53,10 @@ Pick the field whose shape is the story. The `fits` check wants a word that star
 - **wave** bends one band of rows down the page, one row per share of the code. Choose it when the story is flow or a hand-off. Keywords "travel", "flow", "hand", "move".
 - **terrain** stands each part up as a peak, as tall as its code and as wide as its files. Choose it when the story is what is big and what matters. Keywords "big", "weight", "matters", "most".
 - **river** runs one stream of digits per part in from the left and merges them into one channel. Choose it when the story is many things merging into one. Keywords "merge", "join", "many", "one".
+- **radial** is a triangle of type from an apex. Choose it when the story spreads out from a centre. Keywords "spread", "out", "from", "centre", "center".
+- **sphere** is a grid of type-built globes that flatten down the page. Choose it when the story is a round that matters, or a fold. Keywords "curve", "round", "fold", "flat".
 
-If you cannot decide, take wave. A field preference in `project-context.md` wins.
+If you cannot decide, take wave. A field preference in `project-context.md` wins. For a high-contrast poster (charcoal or paper, one signal colour, grotesque headline), set `frame: "signal"`; `compose --frame signal`.
 
 ## The words
 
@@ -69,14 +72,14 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 
 ## Spec fields for a field poster
 
-`compose` fills `version`, `facts`, `product` and `theme` (`light` or `dark`). The frame is `loose` unless the spec says `swiss`.
+`compose` fills `version`, `facts`, `product` and `theme` (`light` or `dark`). The frame is `loose` unless the spec says `swiss` or `signal`.
 
 | Field | What it is |
 |---|---|
 | `product.name` | The customer-facing name. `product-name` warns while it is the folder name |
 | `product.commit` | The short hash. `compose --repo` fills it, and the record line needs it |
 | `headline` | At most 72 characters |
-| region `field` | `wave`, `terrain` or `river`. One field per figure |
+| region `field` | `wave`, `terrain`, `river`, `radial` or `sphere`. One field per figure |
 | region `fits` | Why this field matches the story, with its keyword, at most 160 characters |
 | region `accent` | The accent part's id from `vyo parts` |
 | region `names` | Part id to plain name, at most 24 characters each |
@@ -111,6 +114,14 @@ Render writes `<name>-poster.html`, `.png` and `.pdf` beside the spec or into `-
 ## Swiss frame
 
 Use it when the owner asks for a masthead and footer, or the repo has no git history. `compose --field <f> --frame swiss` writes a masthead, headline and aside over the field, and a footer with the counts, 2 or 3 `notes` and `notBuilt`. The field still takes `fits`. The aside does the legend's job, unchecked. [examples.md](examples.md) has `wave-swiss`.
+
+## Signal frame
+
+Use it when the owner wants a high-contrast poster: charcoal or cream, one signal colour (lime `#C8FF00` unless `accent` says otherwise), a grotesque headline, an archival `meta` line, optional highlighter `mark`s. `compose --field <f> --frame signal`. The field still takes `fits`. Extra roles: `meta` (one archival line, at most 80 characters, no sequential "01/02/03" markers), `display` (a huge word, at most 8 characters), `mark` (a block of the signal colour; no text, needs `h`). Type may sit on the field.
+
+Hairline `routes` are a region of open SVG paths with optional nodes. `motion` on the spec is `{ kind: "nodes" | "resolve" | "wipe", frames: 8 to 36, fps: 6 to 24 }`. Then `npx vyo render <spec> --gif` writes a GIF and an MP4. `nodes` travels the dots along the hairlines, `resolve` fades rows in from the top, `wipe` grows the marks.
+
+Worked posters and GIFs: `examples/posters/` in the package (also listed at the end of [examples.md](examples.md)).
 
 ## Draw your own silhouette
 

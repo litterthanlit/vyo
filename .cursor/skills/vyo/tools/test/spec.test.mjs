@@ -24,7 +24,7 @@ const rejects = (mutate, re, base) => {
 };
 
 test("every preset is a valid spec", () => {
-  assert.deepEqual(IDS.sort(), ["eye", "hourglass", "ribbon", "river", "terrain", "warm-start", "wave", "wave-swiss"]);
+  assert.deepEqual(IDS.sort(), ["eye", "hourglass", "radial", "ribbon", "river", "signal-paper", "signal-wave", "sphere", "terrain", "warm-start", "wave", "wave-swiss"]);
   for (const id of IDS) assert.deepEqual(validateSpec(preset(id)), [], id);
 });
 
@@ -161,7 +161,7 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
   assert.deepEqual(validateSpec(withField({ accent: "area:lib/plan", names: { "area:lib": "kitchen" }, sentence: "plan once", every: 4 })()), []);
   assert.deepEqual(validateSpec(withField({ field: "terrain" })()), [], "accent and hot are optional");
   const cases = [
-    [{ field: "lake" }, /^figure\.regions\[0\]\.field: "lake" is not a field; use wave or terrain or river$/],
+    [{ field: "lake" }, /^figure\.regions\[0\]\.field: "lake" is not a field; use wave or terrain or river or radial or sphere$/],
     [{ field: "terrain", sentence: "plan once" }, /^figure\.regions\[0\]\.sentence: a terrain field has no sentence; only wave takes it$/],
     [{ accent: "lib/plan" }, /^figure\.regions\[0\]\.accent: an area id like "area:lib\/plan"/],
     [{ names: { "area:lib": "the API" } }, /^figure\.regions\[0\]\.names\["area:lib"\]: jargon: "api"/],
@@ -197,6 +197,36 @@ test("frames: loose takes its own roles and counts, no notes, and a field; swiss
   const loose = () => ({ ...preset("wave"), frame: "loose", notes: undefined, notBuilt: undefined });
   rejects((s) => (s.figure.texts = [{ role: "masthead", id: "masthead", x: 50, y: 36, w: 490 }]), /^figure\.texts\[0\]\.role: "masthead" is not a role in the loose frame; use label, headline, paragraph, legend, list, rule$/, loose);
   rejects((s) => (s.notes = []), /^notes: the loose frame has no footer/, loose);
-  rejects((s) => (s.frame = "poster"), /^frame: "poster" is not a frame; use swiss or loose$/);
-  rejects((s) => (s.record = "left"), /^record: only the loose frame has a record line/);
+  rejects((s) => (s.frame = "poster"), /^frame: "poster" is not a frame; use swiss or loose or signal$/);
+  rejects((s) => (s.record = "left"), /^record: only the loose and signal frames have a record line/);
+});
+
+test("signal: grotesque roles, marks, routes and motion", () => {
+  assert.deepEqual(validateSpec(preset("signal-wave")), []);
+  assert.deepEqual(validateSpec(preset("signal-paper")), []);
+  const signal = () => preset("signal-wave");
+  rejects((s) => (s.figure.texts = [{ role: "masthead", id: "masthead", x: 50, y: 36, w: 490 }]), /"masthead" is not a role in the signal frame/, signal);
+  rejects((s) => (s.figure.regions = []), /^figure\.regions: 1 to 6 regions/, signal);
+  rejects((s) => (s.figure.regions = [{ kind: "dots", id: "dots", lines: ["PLAN", "WEEK"], x: 40, y: 40, cell: 12, tones: ["ink", "hot"] }]), /^figure\.regions: the signal frame draws a field or a fill/, signal);
+  rejects((s) => (s.motion = { kind: "spin", frames: 12, fps: 12 }), /motion.kind: "spin" is not a motion; use nodes or resolve or wipe/, signal);
+  rejects((s) => (s.motion = { kind: "nodes", frames: 2, fps: 12 }), /motion.frames: a whole number, 8 to 36/, signal);
+  const withRoutes = () => {
+    const s = preset("signal-wave");
+    s.figure.regions.push({
+      kind: "routes",
+      id: "lines",
+      paths: [{ d: "M 40 40 L 200 200", tone: "hot" }],
+      nodes: [{ path: 0, t: 0.4, tone: "ink" }],
+    });
+    s.motion = { kind: "nodes", frames: 12, fps: 10 };
+    return s;
+  };
+  assert.deepEqual(validateSpec(withRoutes()), []);
+  rejects((s) => (s.figure.regions[1].paths[0].d = "Q 1 2"), /paths\[0\]\.d: does not parse/, withRoutes);
+  rejects((s) => (s.figure.regions[1].nodes[0].path = 4), /nodes\[0\]\.path: index of a path, 0 to 0/, withRoutes);
+  const paper = () => preset("signal-paper");
+  rejects((s) => {
+    const m = s.figure.texts.find((t) => t.role === "mark");
+    m.h = 2;
+  }, /figure\.texts\[\d+\]\.h: 4 to 1190/, paper);
 });

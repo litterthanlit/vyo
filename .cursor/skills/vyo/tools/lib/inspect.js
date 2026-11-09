@@ -42,8 +42,9 @@
 
   const blocks = [...sheet.querySelectorAll("[data-block]")].map((el) => {
     const cs = getComputedStyle(el);
-    const rect = textRect(el);
-    return { name: el.dataset.block, role: el.dataset.role, text: el.innerText.replace(/\s+/g, " ").trim(), rect, lines: Math.round(rect.height / parseFloat(cs.lineHeight)), owner: el.dataset.owner || "figure" };
+    const rect = el.dataset.role === "mark" ? box(el.getBoundingClientRect()) : textRect(el);
+    const lh = parseFloat(cs.lineHeight) || rect.height || 1;
+    return { name: el.dataset.block, role: el.dataset.role, text: el.innerText.replace(/\s+/g, " ").trim(), rect, lines: Math.round(rect.height / lh), owner: el.dataset.owner || "figure" };
   });
 
   const figureHot = [...sheet.querySelectorAll("[data-hot]")]

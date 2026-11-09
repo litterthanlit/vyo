@@ -1,0 +1,45 @@
+{
+  "version": 3,
+  "frame": "signal",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "accent": "#FF4F12",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "sphere",
+        "field": "sphere",
+        "fits": "The plan is the round that matters, and the rest of the code folds flat around it.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 40, "y": 24, "w": 200, "align": "left" },
+      { "role": "headline", "id": "headline", "x": 160, "y": 16, "w": 640, "align": "right", "size": 36 },
+      { "role": "legend", "id": "legend", "x": 40, "y": 1088, "w": 400, "align": "left", "text": "Each globe is a part of Pantry, as round as its code. The orange globes are the plan." },
+      { "role": "meta", "id": "meta", "x": 480, "y": 1124, "w": 320, "align": "right", "text": "REF 04186f4 / 2026-11-07 / Archive pantry" }
+    ]
+  }
+}

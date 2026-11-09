@@ -3,7 +3,7 @@
 import { SHEET, GRID, regionRows, fillRows, dotsLines, fixedMeasure, cornersLine } from "./geometry.mjs";
 import { hasWord, PLACEHOLDER } from "./spec.mjs";
 import { floorOf, fieldItems as layoutField, listItems, recordOf, fieldSpace } from "./render.mjs";
-import { frameOf, roleOf, textSize, lineHeight, ruleText, recordRect } from "./frame.mjs";
+import { frameOf, hasRecord, roleOf, textSize, lineHeight, ruleText, recordRect } from "./frame.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { regionParts } from "./parts.mjs";
 import { figureStats, regionStats, SILHOUETTE, REGION, boxMessage, thinMessage } from "./check.mjs";
@@ -24,6 +24,7 @@ function wrap(text, perLine) {
 
 /** Where a text block's letters land, estimated from its role's line height and average advance. */
 export function estimateText(t, spec, facts) {
+  if (t.role === "mark") return { id: t.id, left: t.x, top: t.y, right: t.x + t.w, bottom: t.y + t.h, lines: 1 };
   const role = roleOf(spec, t);
   const size = textSize(spec, t);
   const per = (frameOf(spec) === "swiss" && t.role === "label" && t.hot ? role.em + 0.06 : role.em) * size;
@@ -31,8 +32,8 @@ export function estimateText(t, spec, facts) {
   const lines = {
     name: () => one(frameOf(spec) === "swiss" ? `${spec.product.name}.` : spec.product.name.toUpperCase()),
     headline: () => wrap(spec.headline, Math.max(1, Math.floor(t.w / per))),
-  }[role.prints]?.() ?? (t.role === "list" ? (facts || !t.parts ? listItems(spec, t, facts) : ["x".repeat(12)]) : t.role === "rule" ? [ruleText(t)] : t.role === "label" ? one(t.text) : wrap(t.text.replace(/\*\*/g, ""), Math.max(1, Math.floor(t.w / per))));
-  const width = Math.min(t.w, Math.max(...lines.map((l) => l.length)) * per);
+  }[role.prints]?.() ?? (t.role === "list" ? (facts || !t.parts ? listItems(spec, t, facts) : ["x".repeat(12)]) : t.role === "rule" ? [ruleText(t)] : t.role === "label" ? one(t.text) : wrap((t.text || "").replace(/\*\*/g, ""), Math.max(1, Math.floor(t.w / per))));
+  const width = Math.min(t.w, Math.max(1, ...lines.map((l) => l.length)) * per);
   const left = t.align === "right" ? t.x + t.w - width : t.align === "center" ? t.x + (t.w - width) / 2 : t.x;
   return { id: t.id, left, top: t.y, right: left + width, bottom: t.y + lines.length * lineHeight(spec, t), lines: lines.length };
 }
@@ -53,7 +54,7 @@ export function sketch(spec, facts) {
   const floor = floorOf(spec);
   const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(" "));
   const put = (r, c, ch) => r >= 0 && r < ROWS && c >= 0 && c < COLS && (grid[r][c] = ch);
-  const loose = frameOf(spec) === "loose";
+  const loose = hasRecord(spec);
   const texts = spec.figure.texts.map((t) => estimateText(t, spec, facts));
   if (loose) texts.push({ id: "record", ...recordRect(recordOf(spec, facts)) });
   const rowRects = [];
@@ -79,6 +80,10 @@ export function sketch(spec, facts) {
       legend.push(`${mark} ${region.id} (${region.field}, ${parts.length} parts, ${new Set(items.map((i) => i.y)).size} rows)`);
       for (const p of parts.filter((q) => !drawn.has(q.id))) notes.push(`region ${region.id}: part "${p.name}" (${p.id}) is never drawn`);
       if (region.accent !== undefined && !parts.some((p) => p.hot)) notes.push(`region ${region.id}: accent ${region.accent} names no part`);
+      continue;
+    }
+    if (region.kind === "routes") {
+      legend.push(`~ ${region.id} (routes, ${region.paths.length} paths)`);
       continue;
     }
     if (region.kind === "dots") {
@@ -152,7 +157,7 @@ export function sketch(spec, facts) {
     "",
     `regions: ${legend.join(", ")}; · marks hot rows`,
     `texts: ${texts.map((b) => `${b.id} ${Math.round(b.left)},${Math.round(b.top)} to ${Math.round(b.right)},${Math.round(b.bottom)}`).join("; ")}`,
-    ...(loose ? ["floor: the sheet's bottom edge (loose frame)", cornersLine(fieldSpace(spec, facts).corners)] : [`floor: ${floor}`]),
+    ...(loose ? [`floor: the sheet's bottom edge (${frameOf(spec)} frame)`, ...(spec.figure.regions.some((r) => r.kind === "field") ? [cornersLine(fieldSpace(spec, facts).corners)] : [])] : [`floor: ${floor}`]),
     `${[s.coverage >= SILHOUETTE.coverage, s.height >= SILHOUETTE.height, s.width >= SILHOUETTE.width].every(Boolean) ? "" : "! "}coverage ${Math.round(s.coverage * 100)}% (needs ${Math.round(SILHOUETTE.coverage * 100)}%, ${ok(s.coverage, SILHOUETTE.coverage)}), height ${Math.round(s.height * 100)}% (needs ${Math.round(SILHOUETTE.height * 100)}%, ${ok(s.height, SILHOUETTE.height)}), width ${Math.round(s.width * 100)}% (needs ${Math.round(SILHOUETTE.width * 100)}%, ${ok(s.width, SILHOUETTE.width)})`,
     ...(perRegion.length ? perRegion.map((r) => `region ${r.id}: spread/mean ${r.variety.toFixed(2)} (needs ${REGION.variety}), ${Math.round(r.width)}px across on average (needs ${REGION.width})`) : fieldRects.length ? [] : ["regions: no fill rows"]),
     ...notes.map((n) => `! ${n}`),

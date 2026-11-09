@@ -1,0 +1,45 @@
+{
+  "version": 3,
+  "frame": "signal",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "accent": "#7A64DC",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "radial",
+        "field": "radial",
+        "fits": "Pantry's week spreads out from saved recipes, so its code radiates from a centre.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 40, "y": 40, "w": 200, "align": "left" },
+      { "role": "headline", "id": "headline", "x": 40, "y": 1000, "w": 420, "align": "left", "size": 42 },
+      { "role": "legend", "id": "legend", "x": 480, "y": 1040, "w": 320, "align": "right", "text": "Every ring is a part of Pantry, as wide as its code. The bright rings are the plan." },
+      { "role": "meta", "id": "meta", "x": 40, "y": 1124, "w": 360, "text": "REF 04186f4 / 2026-11-07 / Archive pantry" }
+    ]
+  }
+}

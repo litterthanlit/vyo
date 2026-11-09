@@ -13,7 +13,7 @@ import { scaffoldSpec, validateSpec, THEMES } from "./lib/spec.mjs";
 import { sketch } from "./lib/sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE } from "./lib/geometry.mjs";
 import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
-import { ROLES, FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
+import { ROLES, FRAMES, RECORD_FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
 import { cornersLine } from "./lib/geometry.mjs";
 import { runChecks } from "./lib/check.mjs";
 import { NoBrowser } from "./lib/browser.mjs";
@@ -29,7 +29,7 @@ const USAGE = `Usage:
   vyo parts   <facts.json> [--field ${Object.keys(FIELDS).join("|")}]
   vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
   vyo sketch  <spec.json> [--facts <facts.json>]
-  vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--paper ${PAPERS.join("|")}]
+  vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--gif] [--paper ${PAPERS.join("|")}]
   vyo check   <spec.json> [--facts <facts.json>]
 
 Exit codes: 0 ok (warnings start with "! "), 1 a rule failed (lines start with "✗ "), 2 usage.`;
@@ -261,8 +261,8 @@ function cmdCompose(argv) {
   if (opt.repo) {
     commit = git(opt.repo, "%h");
     date = git(opt.repo, "%cs");
-    if (!commit) warn(`${opt.repo} has no git history; the ${frame === "loose" ? "record line" : "footer"} will show no commit`);
-  } else if (frame === "loose") warn("no --repo, so no commit: the loose frame's record line needs one; set product.commit or compose again with --repo");
+    if (!commit) warn(`${opt.repo} has no git history; the ${RECORD_FRAMES.includes(frame) ? "record line" : "footer"} will show no commit`);
+  } else if (RECORD_FRAMES.includes(frame)) warn(`no --repo, so no commit: the ${frame} frame's record line needs one; set product.commit or compose again with --repo`);
   date ??= new Date().toISOString().slice(0, 10);
   const out = opt.out ?? path.join(path.dirname(pos[0]), `${facts.repo.name}-poster.json`);
   if (fs.existsSync(out) && !opt.force) throw new Failure(`${out} exists; it may hold your words. Pass --force to replace it with a fresh scaffold`);
@@ -275,7 +275,7 @@ function cmdCompose(argv) {
   const notes = preset ? preset.notes.length : 3;
   const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, unplain };
   let space;
-  if (frame === "loose") {
+  if (RECORD_FRAMES.includes(frame)) {
     // Lay the field out on its own sheet, then fill the corners it leaves.
     const draft = scaffoldSpec(facts, { ...o, places: {} });
     const region = draft.figure.regions[0];
@@ -288,7 +288,7 @@ function cmdCompose(argv) {
   const lines = [
     `Wrote ${out}: a scaffold with ${from}. Replace every "…" value, then run vyo sketch ${out}, adjust, sketch again, then vyo render ${out}`,
     ...(field ? [`vyo parts ${pos[0]}${field === "wave" ? "" : ` --field ${field}`} lists the parts: pick the accent by its id${unplain.length ? ` and name the ${unplain.length} flagged part${unplain.length === 1 ? "" : "s"} in names` : ""}.`] : []),
-    ...(frame === "loose" ? looseNotes(field, space) : authoringNotes(notes, field)),
+    ...(RECORD_FRAMES.includes(frame) ? looseNotes(field, space) : authoringNotes(notes, field)),
   ];
   process.stdout.write(lines.join("\n") + "\n");
   return 0;
@@ -327,6 +327,7 @@ async function poster(specFile, opt, outDir, files) {
   const repo = spec.product.repo;
   const input = { spec, facts, presets: loadPresets() };
   if (report(runChecks("spec", input))) return 1;
+  if (files.gif && !spec.motion) throw new Failure("render --gif needs motion on the spec: { kind, frames, fps }");
   const base = path.join(outDir, `${repo}-poster`);
   let html;
   try {
@@ -334,7 +335,7 @@ async function poster(specFile, opt, outDir, files) {
   } catch (e) {
     throw new Failure(e.message);
   }
-  const page = await renderPage({ html, base, ...files });
+  const page = await renderPage({ html, base, motion: spec.motion ?? null, ...files });
   const failed = report(runChecks("page", { ...input, page }));
   return failed ? 1 : 0;
 }
@@ -342,14 +343,14 @@ async function poster(specFile, opt, outDir, files) {
 async function cmdRender(argv) {
   const { pos, opt } = args(
     argv,
-    { facts: { type: "string" }, out: { type: "string" }, "no-png": { type: "boolean" }, "no-pdf": { type: "boolean" }, paper: { type: "string", default: "fit" } },
+    { facts: { type: "string" }, out: { type: "string" }, "no-png": { type: "boolean" }, "no-pdf": { type: "boolean" }, gif: { type: "boolean" }, paper: { type: "string", default: "fit" } },
     1,
   );
   if (!PAPERS.includes(opt.paper)) throw new Usage(`--paper must be ${PAPERS.join(", ")}`);
   const outDir = opt.out ?? path.dirname(pos[0]);
-  const code = await poster(pos[0], opt, outDir, { png: !opt["no-png"], pdf: !opt["no-pdf"], paper: opt.paper });
+  const code = await poster(pos[0], opt, outDir, { png: !opt["no-png"], pdf: !opt["no-pdf"], gif: !!opt.gif, paper: opt.paper });
   const repo = readJson(pos[0], "poster spec").product.repo;
-  const made = ["html", ...(opt["no-png"] ? [] : ["png", "thumb"]), ...(opt["no-pdf"] ? [] : ["pdf"])]
+  const made = ["html", ...(opt["no-png"] ? [] : ["png", "thumb"]), ...(opt["no-pdf"] ? [] : ["pdf"]), ...(opt.gif ? ["gif", "mp4"] : [])]
     .map((x) => path.join(outDir, x === "thumb" ? `${repo}-poster-thumb.png` : `${repo}-poster.${x}`))
     .filter(fs.existsSync);
   if (made.length) process.stdout.write(`${code ? "Wrote, with failures" : "Wrote"}: ${made.join(", ")}\n`);

@@ -10,7 +10,7 @@ import { SHEET, ADVANCE, CORNERS } from "./geometry.mjs";
  *             prints?: "name" | "headline", max?: number, sentences?: number, em: number, mono?: boolean }} Role
  */
 
-/** @type {Record<"swiss" | "loose", Record<string, Role>>} */
+/** @type {Record<"swiss" | "loose" | "signal", Record<string, Role>>} */
 export const ROLES = {
   swiss: {
     masthead: { size: [84, 48, 120], lh: (s) => Math.round(s * 1.05), count: [1, 1], prints: "name", em: 0.45 },
@@ -27,8 +27,23 @@ export const ROLES = {
     list: { size: [13, 11, 14], lh: (s) => Math.round(s * 1.55), count: [0, 1], em: ADVANCE, mono: true },
     rule: { size: [13, 11, 14], lh: (s) => s, count: [0, 1], em: ADVANCE, mono: true },
   },
+  // Charcoal or paper, one signal colour, grotesque headline, archival meta, highlighter marks.
+  signal: {
+    label: { size: [12, 10, 16], lh: (s) => Math.round(s * 1.2), count: [1, 1], prints: "name", em: ADVANCE + 0.18, mono: true },
+    headline: { size: [52, 36, 72], lh: (s) => Math.round(s * 0.98), count: [1, 1], prints: "headline", em: 0.42 },
+    paragraph: { size: [13, 12, 15], lh: (s) => Math.round(s * 1.35), count: [0, 2], max: 220, sentences: 2, em: 0.45 },
+    legend: { size: [12, 10, 14], lh: (s) => Math.round(s * 1.4), count: [1, 1], max: 180, sentences: 2, em: ADVANCE, mono: true },
+    list: { size: [11, 10, 13], lh: (s) => Math.round(s * 1.55), count: [0, 1], em: ADVANCE, mono: true },
+    rule: { size: [12, 10, 14], lh: (s) => s, count: [0, 1], em: ADVANCE, mono: true },
+    meta: { size: [11, 9, 13], lh: (s) => Math.round(s * 1.25), count: [0, 1], max: 80, sentences: 1, em: ADVANCE, mono: true },
+    display: { size: [96, 64, 160], lh: (s) => Math.round(s * 0.9), count: [0, 2], max: 8, em: 0.5 },
+    mark: { size: [12, 1, 200], lh: () => 0, count: [0, 3], em: 0 },
+  },
 };
 export const FRAMES = Object.keys(ROLES);
+/** Frames that draw a record line instead of the swiss footer. */
+export const RECORD_FRAMES = ["loose", "signal"];
+export const hasRecord = (spec) => RECORD_FRAMES.includes(frameOf(spec));
 // A swiss label set hot is the accent word set large, like the hourglass waist.
 export const HOT_LABEL = [26, 10, 32];
 export const LIST = { items: 16, item: 24 };

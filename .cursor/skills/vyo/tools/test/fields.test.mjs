@@ -7,6 +7,8 @@ import { FIELDS } from "../lib/fields/index.mjs";
 import { waveRows, rowsPerPart, WAVE } from "../lib/fields/wave.mjs";
 import { terrainRows, TERRAIN } from "../lib/fields/terrain.mjs";
 import { riverRows, mergeTree, RIVER } from "../lib/fields/river.mjs";
+import { radialRows, RADIAL } from "../lib/fields/radial.mjs";
+import { sphereRows, SPHERE } from "../lib/fields/sphere.mjs";
 import { regionParts, partTies } from "../lib/parts.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
 import { fixedMeasure } from "../lib/geometry.mjs";
@@ -20,7 +22,7 @@ const frame = (over = {}) => ({ floor: 900, mirror: false, blocks: [masthead, as
 const touches = (it, b, pad) => it.x < b.right + pad && it.x + it.width > b.left - pad && it.y < b.bottom + pad && it.y + it.height > b.top - pad;
 
 test("the registry names each field once, with its layout and the options only it takes", () => {
-  assert.deepEqual(Object.keys(FIELDS), ["wave", "terrain", "river"]);
+  assert.deepEqual(Object.keys(FIELDS), ["wave", "terrain", "river", "radial", "sphere"]);
   assert.deepEqual(FIELDS.river.options, []);
   assert.deepEqual(FIELDS.wave.options, ["sentence", "every"]);
   assert.deepEqual(FIELDS.terrain.options, []);
@@ -146,4 +148,32 @@ test("river: parts tied by imports merge before parts that are not", () => {
   const root = mergeTree(parts, [[0, 2, 9]]);
   const first = root.kids.find((k) => !k.leaf);
   assert.deepEqual(first.members, [0, 2]);
+});
+
+test("radial: every part has a row, the triangle spreads from the apex", () => {
+  const parts = regionParts({ accent: "area:lib/plan" }, recipe);
+  const items = radialRows({}, parts, frame({ floor: 1190, blocks: [] }));
+  for (const p of parts) assert.ok(items.some((i) => i.part === p.id), `${p.id} has a row`);
+  assert.ok(items.every((i) => i.size === RADIAL.size && i.x >= 0 && i.x + i.width <= 840));
+  const top = items.filter((i) => i.y < 80);
+  const mid = items.filter((i) => i.y > 500 && i.y < 600);
+  const topW = top.reduce((s, i) => s + i.width, 0) / (top.length || 1);
+  const midW = mid.reduce((s, i) => s + i.width, 0) / (mid.length || 1);
+  assert.ok(midW > topW, `the field spreads out (${midW} vs ${topW})`);
+  assert.ok(items.some((i) => i.hot), "the accent part is hot");
+});
+
+test("sphere: a grid of ellipses, every part drawn, flattening down the page", () => {
+  const parts = regionParts({ accent: "area:lib/plan" }, recipe);
+  const items = sphereRows({}, parts, frame({ floor: 1190, blocks: [] }));
+  for (const p of parts) assert.ok(items.some((i) => i.part === p.id), `${p.id} has a cell`);
+  assert.ok(items.every((i) => i.size === SPHERE.size && i.x >= 0 && i.x + i.width <= 840 && i.y + i.height <= 1190));
+  const top = items.filter((i) => i.y < 250);
+  const bot = items.filter((i) => i.y > 900);
+  const tall = (set) => {
+    const ys = [...new Set(set.map((i) => i.y))];
+    return ys.length ? Math.max(...ys) - Math.min(...ys) : 0;
+  };
+  assert.ok(tall(top) > tall(bot), `lower cells flatten (${tall(top)} vs ${tall(bot)})`);
+  assert.ok(items.some((i) => i.hot), "the accent part is hot");
 });

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parsePath, shapeRings, regionRings, spans, bbox, regionRows, fillRows, corners } from "../lib/geometry.mjs";
+import { parsePath, flattenPath, pointAlong, shapeRings, regionRings, spans, bbox, regionRows, fillRows, corners } from "../lib/geometry.mjs";
 
 const near = (a, b, eps = 0.5) => assert.ok(Math.abs(a - b) <= eps, `${a} is not within ${eps} of ${b}`);
 const width = (s) => s.reduce((t, [l, r]) => t + r - l, 0);
@@ -111,4 +111,18 @@ test("corners: the largest empty rect at each corner, wide enough for text, over
   // A full-width strip across the middle: both top corners would be the whole top band, so they split it.
   const strip = corners([{ left: 0, top: 500, right: 840, bottom: 700 }]);
   assert.deepEqual([strip["top-left"], strip["top-right"], strip["bottom-left"]], [{ x: 0, y: 0, w: 420, h: 500 }, { x: 420, y: 0, w: 420, h: 500 }, { x: 0, y: 700, w: 420, h: 490 }]);
+});
+
+test("flattenPath keeps an open hairline, and pointAlong walks it", () => {
+  const open = flattenPath("M 0 0 L 100 0");
+  assert.equal(open.error, undefined);
+  assert.equal(open.paths.length, 1);
+  assert.deepEqual(open.paths[0][0], [0, 0]);
+  assert.deepEqual(open.paths[0].at(-1), [100, 0]);
+  const mid = pointAlong(open.paths[0], 0.5);
+  near(mid.x, 50, 0.5);
+  near(mid.y, 0, 0.5);
+  const closed = parsePath("M 0 0 L 100 0 L 100 40 Z");
+  assert.ok(closed.rings && closed.rings[0].length >= 3);
+  assert.ok(flattenPath("Q 1 2").error);
 });

@@ -71,7 +71,7 @@ export function ridge(parts, floor) {
 
 /** How bright a letter is, as e-terrain shades it: slopes facing left catch the light, the rim and the accent stand out. */
 function shade(slope, depth, hot, theme) {
-  const [lift, hotLift] = TERRAIN.lift[theme];
+  const [lift, hotLift] = TERRAIN.lift[theme] ?? TERRAIN.lift[String(theme).endsWith("dark") ? "dark" : "light"];
   const lit = Math.min(1, Math.max(0, 0.5 + slope * 0.5));
   let a = 0.42 + 0.5 * lit - Math.min(0.2, depth / 1600) + lift;
   if (depth < RIM) a += 0.35;
