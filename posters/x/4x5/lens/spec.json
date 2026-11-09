@@ -1,0 +1,43 @@
+{
+  "version": 3,
+  "frame": "loose",
+  "sheet": "4:5",
+  "facts": "f44d21ba54fb",
+  "product": {
+    "name": "Vyo",
+    "repo": "tools",
+    "commit": "c9f4d09",
+    "date": "2026-11-09"
+  },
+  "theme": "light",
+  "headline": "It reads your whole project, then shows the one part that matters.",
+  "hot": "reader",
+  "figure": {
+    "fits": "A magnifying glass: the rim and handle are everything Vyo reads in a project, and the glass is the one part it brings up close.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "rim",
+        "path": "M 585.2 672.9 L 781.8 838.2 A 52 52 0 0 1 708.2 911.8 L 542.9 715.2 A 262 262 0 1 1 585.2 672.9 Z",
+        "holes": [{ "ellipse": { "cx": 380, "cy": 510, "rx": 182, "ry": 182 } }],
+        "words": ["every file", "every folder", "every line", "the readme", "the docs", "last change"],
+        "tone": ["mid", "ink"],
+        "size": 11
+      },
+      {
+        "kind": "fill",
+        "id": "glass",
+        "ellipse": { "cx": 380, "cy": 510, "rx": 158, "ry": 158 },
+        "words": ["reader", "the part that matters"],
+        "tone": "ink",
+        "hot": true
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 620, "y": 40, "w": 180, "align": "right" },
+      { "role": "headline", "id": "headline", "x": 40, "y": 40, "w": 540 },
+      { "role": "paragraph", "id": "paragraph", "x": 660, "y": 250, "w": 140, "align": "right", "text": "Vyo goes through every file and folder in a project. You choose the one part it is about." },
+      { "role": "legend", "id": "legend", "x": 40, "y": 820, "w": 460, "text": "The rim and handle are everything Vyo reads in a project. Under the glass, in orange, is the reader: the biggest part of Vyo." }
+    ]
+  }
+}
