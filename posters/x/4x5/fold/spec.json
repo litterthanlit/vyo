@@ -1,0 +1,153 @@
+{
+  "version": 3,
+  "frame": "loose",
+  "sheet": "4:5",
+  "facts": "f44d21ba54fb",
+  "product": {
+    "name": "Vyo",
+    "repo": "tools",
+    "commit": "c9f4d09",
+    "date": "2026-11-09"
+  },
+  "theme": "light",
+  "headline": "Your whole project, folded into one page.",
+  "hot": "page",
+  "figure": {
+    "fits": "A strip of paper folded like a fan falls down the sheet and lands flat as one page, the way Vyo folds every file into one poster.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "folds",
+        "tone": [
+          "soft",
+          "mid",
+          "ink"
+        ],
+        "path": "M560 144L660 144L642 216L416 216ZM408 232L651 232L759 312L492 312ZM485 328L758 328L633 408L335 408ZM333 424L634 424L776 504L458 504ZM451 520L780 520L690 592L280 592Z",
+        "words": [
+          "your files",
+          "folders",
+          "the readme",
+          "every line",
+          "the scan",
+          "plain names",
+          "word lists",
+          "the checks",
+          "the sketch",
+          "fonts"
+        ]
+      },
+      {
+        "kind": "fill",
+        "id": "sheet",
+        "tone": "ink",
+        "hot": true,
+        "polygon": [
+          [
+            17,
+            710
+          ],
+          [
+            732,
+            622
+          ],
+          [
+            745,
+            731
+          ],
+          [
+            624,
+            887
+          ],
+          [
+            48,
+            958
+          ]
+        ],
+        "holes": [
+          {
+            "polygon": [
+              [
+                763,
+                709
+              ],
+              [
+                606,
+                910
+              ],
+              [
+                584,
+                731
+              ]
+            ]
+          }
+        ],
+        "words": [
+          "page",
+          "one picture",
+          "plain words"
+        ]
+      },
+      {
+        "kind": "fill",
+        "id": "flap",
+        "tone": "ink",
+        "size": 11,
+        "polygon": [
+          [
+            736,
+            732
+          ],
+          [
+            622,
+            877
+          ],
+          [
+            607,
+            748
+          ]
+        ],
+        "words": [
+          "png",
+          "pdf"
+        ]
+      }
+    ],
+    "texts": [
+      {
+        "role": "label",
+        "id": "label",
+        "x": 620,
+        "y": 40,
+        "w": 180,
+        "align": "right"
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 40,
+        "y": 40,
+        "w": 440,
+        "align": "left"
+      },
+      {
+        "role": "paragraph",
+        "id": "paragraph",
+        "x": 40,
+        "y": 220,
+        "w": 250,
+        "align": "left",
+        "text": "Point Vyo at a project. It reads the files, draws the parts as one picture, and checks the words around it."
+      },
+      {
+        "role": "legend",
+        "id": "legend",
+        "x": 580,
+        "y": 900,
+        "w": 220,
+        "align": "right",
+        "text": "A strip of every file folds down and lands as one page, in orange. Its turned corner shows what you get: a PNG and a PDF."
+      }
+    ]
+  }
+}
