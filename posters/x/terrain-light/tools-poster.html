@@ -9,8 +9,12 @@ html, body { background: var(--paper) }
 .row { position: absolute; white-space: nowrap; overflow: hidden }
 .dots { position: absolute }
 .t { position: absolute; font-size: 12px; line-height: 18px }
-/* A field runs on behind the figure's texts: each sits above the rows with a 6px paper outline. */
-[data-role] { z-index: 1; -webkit-text-stroke: 12px var(--paper); paint-order: stroke fill }
+/* A field runs on behind the figure's texts: each sits above the rows with a 6px paper outline. The outline is a
+   stroked copy of the block (.halo, made by fill.js) under every glyph; stroked on the block itself, each line's
+   outline would paint over the descenders of the line above. */
+.halo { z-index: 1; color: var(--paper) !important; -webkit-text-stroke: 12px var(--paper) }
+.halo * { color: inherit !important }
+[data-role] { z-index: 2 }
 </style><script>
 window.fontsReady = Promise.all([...document.fonts].map((f) => f.load())).then(() => document.fonts.ready);
 window.hasWord = function hasWord(text, phrase) {
@@ -34,10 +38,18 @@ window.fitWidth = (el, max) => {
 <div class="t" data-block="legend" data-role="legend" data-owner="figure" style="left:540px;top:40px;width:260px;font-size:15px;line-height:21px;text-align:right;font-family:&quot;Newsreader&quot;, serif">Each peak is a part of Vyo, as tall as its code and as wide as its files. The orange peak is drawing and checking.</div>
 <div class="t" data-block="paragraph" data-role="paragraph" data-owner="figure" style="left:540px;top:160px;width:260px;font-size:15px;line-height:21px;text-align:right;font-family:&quot;Newsreader&quot;, serif">Vyo checks every word before the poster is done. It turns away jargon, file paths and text that runs into the picture.</div>
 <div data-block="record" data-owner="render" style="position:absolute;left:18px;top:760px;transform:rotate(-90deg);transform-origin:left top;font-size:10px;line-height:10px;letter-spacing:0.3px;color:var(--mid);white-space:nowrap">Vyo at b1a46ee, 9 November 2026. Drawn by Vyo<span data-hot data-owner="render" style="color:var(--hot)">.</span></div>
-</div><script type="application/json" id="figure">{"regions":[{"kind":"field","id":"terrain","field":"terrain","fits":"What matters most in Vyo is the part that keeps every word plain, so each part stands as a peak as big as its code.","accent":"area:lib","names":{"area:.":"the command","area:lib":"drawing and checking","area:lib/fields":"the shapes","area:lib/scan":"the reader"},"parts":[{"id":"area:.","name":"the command","loc":389,"files":2,"order":0,"hot":false},{"id":"area:lib","name":"drawing and checking","loc":2215,"files":14,"order":1,"hot":true},{"id":"area:lib/fields","name":"the shapes","loc":470,"files":4,"order":2,"hot":false},{"id":"area:lib/scan","name":"the reader","loc":3269,"files":22,"order":3,"hot":false}],"ties":[[1,2,9],[1,3,3],[0,1,11],[0,2,1],[0,3,2]]}],"hot":null,"floor":1190,"mirror":false,"theme":"light"}</script><script type="module">// A figure's geometry and the rows of words that fill it. Pure and DOM-free: render inlines this
+</div><script type="application/json" id="figure">{"regions":[{"kind":"field","id":"terrain","field":"terrain","fits":"What matters most in Vyo is the part that keeps every word plain, so each part stands as a peak as big as its code.","accent":"area:lib","names":{"area:.":"the command","area:lib":"drawing and checking","area:lib/fields":"the shapes","area:lib/scan":"the reader"},"parts":[{"id":"area:.","name":"the command","loc":389,"files":2,"order":0,"hot":false},{"id":"area:lib","name":"drawing and checking","loc":2215,"files":14,"order":1,"hot":true},{"id":"area:lib/fields","name":"the shapes","loc":470,"files":4,"order":2,"hot":false},{"id":"area:lib/scan","name":"the reader","loc":3269,"files":22,"order":3,"hot":false}],"ties":[[1,2,9],[1,3,3],[0,1,11],[0,2,1],[0,3,2]]}],"hot":null,"sheet":{"width":840,"height":1190},"floor":1190,"mirror":false,"theme":"light"}</script><script type="module">// A figure's geometry and the rows of words that fill it. Pure and DOM-free: render inlines this
 // file into the page and `vyo sketch` imports it, so the sketch and the poster lay out the same rows.
 
-const SHEET = { width: 840, height: 1190 };
+// Every sheet is 840 wide, so the fields' x constants hold on each; only the height varies.
+const SHEETS = {
+  poster: { width: 840, height: 1190 },
+  "4:5": { width: 840, height: 1050 },
+};
+// The swiss frame and the fill presets are drawn in absolute coordinates for this sheet alone.
+const SHEET = SHEETS.poster;
+/** The sheet a spec is drawn on. */
+const sheetOf = (spec) => SHEETS[spec.sheet ?? "poster"];
 const SHAPE_KEYS = ["profile", "ellipse", "polygon", "path"];
 // Row pitch and the two heights a row samples, per font size. A row is inside where both are.
 const GRID = { 11: { pitch: 14, probes: [2, 12] }, 12: { pitch: 16, probes: [3, 13] } };
@@ -371,12 +383,13 @@ const CORNERS = ["top-left", "top-right", "bottom-left", "bottom-right"];
  * counted up to CORNER_MAX_H, among those at least CORNER_MIN_W wide when there are any. Two corners that
  * overlap along an edge split the overlap evenly.
  * @param {{ left: number, top: number, right: number, bottom: number }[]} rects
+ * @param {{ width: number, height: number }} sheet
  * @returns {Record<"top-left" | "top-right" | "bottom-left" | "bottom-right", { x: number, y: number, w: number, h: number }>}
  */
-function corners(rects) {
+function corners(rects, sheet) {
   const C = CORNER_CELL;
-  const cols = Math.ceil(SHEET.width / C);
-  const rows = Math.ceil(SHEET.height / C);
+  const cols = Math.ceil(sheet.width / C);
+  const rows = Math.ceil(sheet.height / C);
   const taken = Array.from({ length: rows }, () => new Uint8Array(cols));
   for (const r of rects) {
     for (let q = Math.max(0, Math.floor(r.top / C)); q < Math.min(rows, Math.ceil(r.bottom / C)); q++)
@@ -400,13 +413,13 @@ function corners(rects) {
       if (run * C >= CORNER_MIN_W && score(here) > score(wide)) wide = here;
     }
     if (wide.cols) best = wide;
-    const w = Math.min(SHEET.width, best.cols * C);
+    const w = Math.min(sheet.width, best.cols * C);
     // The bottom row of cells hangs past the sheet's edge, which is not a whole number of cells.
-    const h = Math.max(0, Math.min(SHEET.height, best.rows * C - (vert === "bottom" ? rows * C - SHEET.height : 0)));
+    const h = Math.max(0, Math.min(sheet.height, best.rows * C - (vert === "bottom" ? rows * C - sheet.height : 0)));
     out[name] = { w, h };
   }
   const split = (a, b, size) => {
-    const over = out[a][size] + out[b][size] - (size === "w" ? SHEET.width : SHEET.height);
+    const over = out[a][size] + out[b][size] - (size === "w" ? sheet.width : sheet.height);
     if (over <= 0 || !out[a][size === "w" ? "h" : "w"] || !out[b][size === "w" ? "h" : "w"]) return;
     const cut = Math.ceil(over / 2 / C) * C;
     out[a][size] = Math.max(0, out[a][size] - cut);
@@ -418,7 +431,7 @@ function corners(rects) {
   split("top-right", "bottom-right", "h");
   for (const name of CORNERS) {
     const { w, h } = out[name];
-    out[name] = { x: name.endsWith("left") ? 0 : SHEET.width - w, y: name.startsWith("top") ? 0 : SHEET.height - h, w, h };
+    out[name] = { x: name.endsWith("left") ? 0 : sheet.width - w, y: name.startsWith("top") ? 0 : sheet.height - h, w, h };
   }
   return out;
 }
@@ -464,9 +477,9 @@ function rowsPerPart(parts, n) {
   return got.map((g) => g + 1);
 }
 
-/** The band's centre and half-width at height y: f-wave-paper's path, a smoothstep diagonal plus a damped sine. */
-function wavePath(y) {
-  const u = Math.min(1, Math.max(0, (y + 14) / SHEET.height));
+/** The band's centre and half-width at height y on a sheet this tall: f-wave-paper's path, a smoothstep diagonal plus a damped sine. */
+function wavePath(y, height) {
+  const u = Math.min(1, Math.max(0, (y + 14) / height));
   const centre = 130 + 560 * (u * u * (3 - 2 * u) * 0.6 + u * 0.4) + 95 * Math.sin(6.4 * u + 0.4) * (1 - 0.5 * u);
   return { centre, half: 150 + 40 * Math.abs(Math.cos(6.4 * u + 0.4)) };
 }
@@ -476,16 +489,16 @@ function wavePath(y) {
  * text blocks, as in f-wave-paper: render gives each block a paper halo, so no row is cut around them.
  * @param {{ sentence?: string, every?: number }} region
  * @param {{ id: string, name: string, loc: number, hot: boolean }[]} parts  in tree order
- * @param {{ floor: number, mirror: boolean, theme?: "light" | "dark", measure: (text: string, size: number) => number }} frame
+ * @param {{ sheet: { width: number, height: number }, floor: number, mirror: boolean, theme?: "light" | "dark", measure: (text: string, size: number) => number }} frame
  */
-function waveRows(region, parts, { floor, mirror, theme = "light", measure }) {
+function waveRows(region, parts, { sheet, floor, mirror, theme = "light", measure }) {
   const { size, pitch } = WAVE;
   const every = region.every ?? WAVE.every;
   const slots = Array.from({ length: Math.floor(floor / pitch) }, (_, i) => {
     const y = Math.round(i * pitch * 10) / 10;
-    const { centre: cx, half } = wavePath(y);
-    const centre = mirror ? SHEET.width - cx : cx;
-    return { y, half, runs: clearOf([[Math.max(0, centre - half), Math.min(SHEET.width - 2, centre + half)]], y, pitch, []) };
+    const { centre: cx, half } = wavePath(y, sheet.height);
+    const centre = mirror ? sheet.width - cx : cx;
+    return { y, half, runs: clearOf([[Math.max(0, centre - half), Math.min(sheet.width - 2, centre + half)]], y, pitch, []) };
   });
   const counts = rowsPerPart(parts, slots.length);
   // Fewer rows than parts: the last parts go undrawn, and the field-parts check names them.
@@ -998,7 +1011,7 @@ function drawFill(S, region, blocks) {
 }
 
 function drawField(S, region, blocks) {
-  const items = FIELDS[region.field].layout(region, region.parts, { floor: F.floor, mirror: F.mirror, theme: F.theme, blocks, measure });
+  const items = FIELDS[region.field].layout(region, region.parts, { sheet: F.sheet, floor: F.floor, mirror: F.mirror, theme: F.theme, blocks, measure });
   for (const r of items) drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, 400, r.tone);
   const box = items.length ? bbox([items.flatMap((r) => [[r.x, r.y], [r.x + r.width, r.y + r.height]])]) : { left: 0, top: 0, right: 0, bottom: 0 };
   return { id: region.id, kind: "field", bbox: box, rows: items.length };
@@ -1040,6 +1053,13 @@ function drawDots(S, region) {
   await window.fontsReady;
   const S = document.querySelector(".sheet");
   for (const m of S.querySelectorAll("[data-role=masthead]")) window.fitWidth(m, parseFloat(m.style.width));
+  for (const b of S.querySelectorAll("[data-role]")) {
+    const halo = b.cloneNode(true);
+    for (const a of ["data-block", "data-role", "data-owner", "data-hot"]) halo.removeAttribute(a);
+    halo.classList.add("halo");
+    halo.setAttribute("aria-hidden", "true");
+    b.before(halo);
+  }
   const origin = S.getBoundingClientRect();
   const blocks = [...S.querySelectorAll("[data-role]")].map((b) => {
     const range = document.createRange();
