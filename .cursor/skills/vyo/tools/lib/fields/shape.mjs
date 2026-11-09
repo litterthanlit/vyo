@@ -95,15 +95,18 @@ export function bandsStyle(mask, parts, { measure, theme = "light" }) {
     if (h <= 0) return;
     let { size, lines } = b;
     const centred = (s) => a + h / 2 - ((GLYPH.top + GLYPH.bottom) / 2) * s;
-    if (lines === 1) {
-      for (let k = 0; k < 4; k++) {
-        const widest = Math.max(0, ...lineSpans(mask, centred(size), size, b.y1).map(([l, r]) => r - l));
-        if (nameWidth(name, size) <= widest) break;
-        size = Math.max(BANDS.min, (size * widest) / nameWidth(name, size));
-      }
+    const place = () => (lines === 1 ? [centred(size)] : lineTops(mask, a, b.y1, lines, size));
+    let tops = place();
+    // The whole name must fit on some line: shrink the type until it does, never under the minimum.
+    for (let k = 0; k < 4 && size > BANDS.min; k++) {
+      const widest = Math.max(0, ...tops.flatMap((top) => lineSpans(mask, top, size, b.y1).map(([l, r]) => r - l)));
+      if (nameWidth(name, size) <= widest) break;
+      size = Math.max(BANDS.min, (0.99 * size * widest) / nameWidth(name, size));
+      if (lines > 1) lines = Math.max(1, Math.floor(h / (size * BANDS.pitch)));
+      tops = place();
     }
     b.size = size;
-    const tops = lines === 1 ? [centred(size)] : lineTops(mask, a, b.y1, lines, size);
+    b.lines = lines;
     const cycle = `${name} `;
     const track = trackOf(size) * size;
     const cw = ADVANCE * size;

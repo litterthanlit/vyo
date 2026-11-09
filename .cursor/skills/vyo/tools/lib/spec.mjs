@@ -497,6 +497,7 @@ function fieldRegion(field, { accent, unplain }) {
     fits: hold(`one sentence on why a ${field} matches the product's story, with ${quoted(FIELDS[field].fits)}, at most ${LIMITS.fits} characters`),
     ...(accent ? { accent } : {}),
     ...(unplain.length ? { names: Object.fromEntries(unplain.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])) } : {}),
+    ...(FIELDS[field].options.includes("shape") ? { shape: hold("the silhouette as { ops: [...] }, in the format vyo compose --field shape prints") } : {}),
     ...(FIELDS[field].options.includes("sentence") ? { sentence: hold(`a sentence woven in every ${WAVE.every}th row, at most ${LIMITS.sentence} characters, or remove it`) } : {}),
   };
 }

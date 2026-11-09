@@ -10,8 +10,9 @@ import { stableStringify, factsHash } from "./lib/hash.mjs";
 import { scanRepoDetailed } from "./lib/scan/index.mjs";
 import { showFacts } from "./lib/scan/show.mjs";
 import { scaffoldSpec, validateSpec, THEMES } from "./lib/spec.mjs";
-import { sketch } from "./lib/sketch.mjs";
-import { SHAPE_KEYS, GRID, ADVANCE } from "./lib/geometry.mjs";
+import { sketch, sketchImage } from "./lib/sketch.mjs";
+import { SHAPE_KEYS, GRID, ADVANCE, SHEET } from "./lib/geometry.mjs";
+import { SHAPE_KINDS, SHAPE_FIT } from "./lib/mask.mjs";
 import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
 import { ROLES, FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
 import { cornersLine } from "./lib/geometry.mjs";
@@ -225,6 +226,21 @@ function looseNotes(field, space) {
     `legend ${at("legend")}: exactly one, at most 2 sentences and ${L.legend.max} characters, naming the accent part and the measure.`,
     `list ${at("list")}: parts: true prints the parts' plain names, one per line. rule ${at("rule")}: one character repeated across w.`,
     "record: render writes it at the bottom edge, or up the left edge when the field covers the bottom; set record to bottom or left to choose.",
+    ...(field === "shape" ? shapeNotes() : []),
+  ];
+}
+
+/** The shape format in a few lines, printed by compose --field shape. */
+function shapeNotes() {
+  const kinds = Object.entries(SHAPE_KINDS).map(([k, keys]) => `${k} {${Object.keys(keys).join(", ")}}`).join(", ");
+  const f = SHAPE_FIT;
+  return [
+    'shape: replace the placeholder with your silhouette, ops painted in order into one mask: { "ops": [...], "rotate": deg, "fit": { "w", "h", "cx", "cy" } }',
+    `  each op is { "add": kind, ... } or { "cut": kind, ... }, the first an add. Kinds: ${kinds}.`,
+    '  example: { "add": "rect", "at": [16, 0], "size": [68, 16], "round": 3 }. ellipse r is [rx, ry]; arc from and to are degrees clockwise from twelve o\'clock; any op takes rotate about its own centre.',
+    "  Coordinates are free units, y down: the engine measures what you painted and fits it.",
+    `  fit.w and fit.h are its share of the sheet's width and height (over 1 bleeds off), fit.cx and fit.cy place its centre; without them w ${f.w}, h ${f.h}, cx ${f.cx}, cy ${f.cy}.`,
+    "  The corners above assume that default box; vyo sketch prints the real ones once the shape is drawn.",
   ];
 }
 
@@ -252,6 +268,7 @@ function cmdCompose(argv) {
   if (field && !FIELDS[field]) throw new Usage(`--field ${field} is not a field; use ${Object.keys(FIELDS).join(" or ")}`);
   const frame = opt.frame ?? preset?.frame ?? "loose";
   if (!FRAMES.includes(frame)) throw new Usage(`--frame ${frame} is not a frame; use ${FRAMES.join(" or ")}`);
+  if (field && FIELDS[field].frames && !FIELDS[field].frames.includes(frame)) throw new Usage(`--field ${field} draws only in the ${FIELDS[field].frames.join(" or ")} frame; leave out --frame`);
   if (preset && frame !== preset.frame) throw new Usage(`--from ${opt.from} is a ${preset.frame} preset; the loose frame draws a field, so use --field`);
   const theme = opt.theme ?? preset?.theme ?? "light";
   if (!THEMES.includes(theme)) throw new Usage(`--theme ${theme} is not a theme; use ${THEMES.join(" or ")}`);
@@ -279,6 +296,8 @@ function cmdCompose(argv) {
     // Lay the field out on its own sheet, then fill the corners it leaves.
     const draft = scaffoldSpec(facts, { ...o, places: {} });
     const region = draft.figure.regions[0];
+    // The shape is not drawn yet: place the words around the box a default fit fills.
+    if (field === "shape") region.shape = { ops: [{ add: "rect", at: [0, 0], size: [SHAPE_FIT.w * SHEET.width, SHAPE_FIT.h * SHEET.height] }] };
     space = fieldSpace(draft, facts);
     o.accentNames = regionParts(region, facts).filter((p) => p.hot).map((p) => p.name);
     o.places = scaffoldPlaces(space.corners, space.accent, parts.length);
@@ -306,13 +325,21 @@ function cmdSketch(argv) {
   const { pos, opt } = args(argv, { facts: { type: "string" } }, 1);
   const spec = readJson(pos[0], "poster spec");
   // Placeholder words and copy rules wait for render; the sketch needs the geometry, the texts and the notes count.
-  const blocking = validateSpec(spec).filter((e) => /^(figure\.(regions|texts)|figure:|notes:|version|product)/.test(e) && !/still the placeholder|: (jargon|a file path|a "01|a middle dot)/.test(e));
+  // A drawn shape is geometry too, so its placeholder blocks the sketch.
+  const blocking = validateSpec(spec).filter((e) => /^(figure\.(regions|texts)|figure:|notes:|version|product)/.test(e) && (/\.shape/.test(e) || !/still the placeholder|: (jargon|a file path|a "01|a middle dot)/.test(e)));
   if (blocking.length) {
     for (const e of blocking) fail(`spec: ${e}`);
     return 1;
   }
   const fields = spec.figure.regions.some((r) => r.kind === "field");
-  process.stdout.write(sketch(spec, fields ? factsFor(pos[0], spec, opt) : undefined));
+  const facts = fields ? factsFor(pos[0], spec, opt) : undefined;
+  process.stdout.write(sketch(spec, facts));
+  const image = fields && sketchImage(spec, facts);
+  if (image) {
+    const file = path.join(path.dirname(pos[0]), `${spec.product.repo}-sketch.png`);
+    fs.writeFileSync(file, image);
+    process.stdout.write(`sketch PNG: ${path.resolve(file)}, the silhouette at a third of its size with its bands; open it and check it reads as the object\n`);
+  }
   return 0;
 }
 
