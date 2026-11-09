@@ -1,0 +1,66 @@
+{
+  "version": 3,
+  "frame": "loose",
+  "facts": "cdacae19da2a",
+  "product": {
+    "name": "Vyo",
+    "repo": "tools",
+    "commit": "b1a46ee",
+    "date": "2026-11-09"
+  },
+  "theme": "light",
+  "headline": "Your app, explained with no jargon.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "terrain",
+        "field": "terrain",
+        "fits": "What matters most in Vyo is the part that keeps every word plain, so each part stands as a peak as big as its code.",
+        "accent": "area:lib",
+        "names": {
+          "area:.": "the command",
+          "area:lib": "drawing and checking",
+          "area:lib/fields": "the shapes",
+          "area:lib/scan": "the reader"
+        }
+      }
+    ],
+    "texts": [
+      {
+        "role": "label",
+        "id": "label",
+        "x": 40,
+        "y": 40,
+        "w": 220,
+        "align": "left"
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 40,
+        "y": 80,
+        "w": 340,
+        "align": "left"
+      },
+      {
+        "role": "legend",
+        "id": "legend",
+        "x": 540,
+        "y": 40,
+        "w": 260,
+        "align": "right",
+        "text": "Each peak is a part of Vyo, as tall as its code and as wide as its files. The orange peak is drawing and checking."
+      },
+      {
+        "role": "paragraph",
+        "id": "paragraph",
+        "x": 540,
+        "y": 160,
+        "w": 260,
+        "align": "right",
+        "text": "Vyo checks every word before the poster is done. It turns away jargon, file paths and text that runs into the picture."
+      }
+    ]
+  }
+}
