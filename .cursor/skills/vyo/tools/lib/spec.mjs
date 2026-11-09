@@ -216,7 +216,7 @@ function checkField(f, r, err, copy) {
 
 const sentences = (text) => text.split(/[.!?]+(?:\s+|$)/).filter((x) => x.trim()).length;
 
-function checkText(f, t, err, copy, frame, sheet) {
+function checkText(f, t, err, copy, frame, sheet, withField) {
   const roles = FRAME_ROLES[frame];
   const role = roles[t.role];
   if (!role) return err(`${f}.role: "${t.role}" is not a role in the ${frame} frame; use ${Object.keys(roles).join(", ")}`);
@@ -225,6 +225,7 @@ function checkText(f, t, err, copy, frame, sheet) {
   } else if (t.role === "list") {
     if ((t.parts === true) === (t.items !== undefined)) err(`${f}: a list takes parts: true (the field's parts) or items, not both or neither`);
     if (t.parts !== undefined && t.parts !== true) err(`${f}.parts: true, or leave it out`);
+    else if (t.parts === true && !withField) err(`${f}.parts: a list of parts needs a field region; for shapes you draw, give items`);
     if (t.items !== undefined) {
       if (!Array.isArray(t.items) || t.items.length < 1 || t.items.length > LIST.items || !t.items.every(isStr)) err(`${f}.items: 1 to ${LIST.items} plain names`);
       else
@@ -272,7 +273,9 @@ function checkFigure(fig, err, copy, frame, sheet) {
     ids.add(id);
   };
 
-  if (!Array.isArray(fig.regions) || fig.regions.length < 1 || fig.regions.length > LIMITS.regions) err(`figure.regions: 1 to ${LIMITS.regions} regions`);
+  if (!Array.isArray(fig.regions) || fig.regions.length < 1 || fig.regions.length > LIMITS.regions) {
+    err(`figure.regions: 1 to ${LIMITS.regions} regions${frame === "loose" ? ": a field region, or fill regions you draw" : ""}`);
+  }
   else
     fig.regions.forEach((r, i) => {
       const f = `figure.regions[${i}]`;
@@ -287,7 +290,6 @@ function checkFigure(fig, err, copy, frame, sheet) {
     });
 
   if (Array.isArray(fig.regions) && fig.regions.filter((r) => isObj(r) && r.kind === "field").length > LIMITS.fields) err(`figure.regions: at most ${LIMITS.fields} field region`);
-  if (frame === "loose" && Array.isArray(fig.regions) && !hasField(fig)) err("figure.regions: the loose frame draws a field; add a field region, or set frame to swiss for fill and dots figures");
 
   if (!Array.isArray(fig.texts) || fig.texts.length < 1 || fig.texts.length > LIMITS.texts) return err(`figure.texts: 1 to ${LIMITS.texts} texts`);
   fig.texts.forEach((t, i) => {
@@ -295,7 +297,7 @@ function checkFigure(fig, err, copy, frame, sheet) {
     if (!isObj(t)) return err(`${f}: must be a text`);
     unknownKeys(t, KEYS.text[frame], `${f}.`, err);
     idOk(f, t.id);
-    checkText(f, t, err, copy, frame, sheet);
+    checkText(f, t, err, copy, frame, sheet, hasField(fig));
   });
   for (const [role, { count: [lo, hi] }] of Object.entries(FRAME_ROLES[frame])) {
     const n = fig.texts.filter((t) => isObj(t) && t.role === role).length;

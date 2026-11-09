@@ -215,3 +215,25 @@ test("frames: loose takes its own roles and counts, no notes, and a field; swiss
   rejects((s) => (s.frame = "poster"), /^frame: "poster" is not a frame; use swiss or loose$/);
   rejects((s) => (s.record = "left"), /^record: only the loose frame has a record line/);
 });
+
+const lens = () => ({ ...JSON.parse(fs.readFileSync(path.join(HERE, "fixtures", "loose-lens.json"), "utf8")), facts: "d73b88fe2d4e" });
+
+test("a loose shape: fill regions and no field validate on both sheets, with hot and figure.fits required", () => {
+  assert.deepEqual(validateSpec(lens()), []);
+  assert.deepEqual(validateSpec({ ...lens(), sheet: "4:5" }), []);
+  rejects((s) => delete s.hot, /^hot: missing$/, lens);
+  rejects((s) => delete s.figure.fits, /^figure\.fits: missing$/, lens);
+  rejects((s) => (s.figure.fits = "x".repeat(161)), /^figure\.fits: 161 characters; at most 160$/, lens);
+  rejects((s) => (s.figure.regions[1].ellipse.cy = 1100), /^figure\.regions\[1\]\.ellipse: cx must be 0 to 840 and cy 0 to 1050$/, () => ({ ...lens(), sheet: "4:5" }));
+});
+
+test("a loose figure with no region is refused, naming both kinds", () => {
+  rejects((s) => (s.figure.regions = []), /^figure\.regions: 1 to 6 regions: a field region, or fill regions you draw$/, lens);
+});
+
+test("a loose shape keeps the loose frame's rules: no notes or notBuilt, and a list gives items, not parts", () => {
+  rejects((s) => (s.notes = [{ title: "One", text: "Two." }]), /^notes: the loose frame has no footer/, lens);
+  rejects((s) => (s.notBuilt = []), /^notBuilt: the loose frame has no footer/, lens);
+  rejects((s) => s.figure.texts.push({ role: "list", id: "list", x: 620, y: 600, w: 180, parts: true }), /^figure\.texts\[4\]\.parts: a list of parts needs a field region; for shapes you draw, give items$/, lens);
+  assert.deepEqual(errorsOf((s) => s.figure.texts.push({ role: "list", id: "list", x: 620, y: 600, w: 180, items: ["soup", "stew"] }), lens), []);
+});
