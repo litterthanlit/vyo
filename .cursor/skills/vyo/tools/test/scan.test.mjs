@@ -848,6 +848,43 @@ describe(".mdx is content that counts (§2.2)", () => {
     ));
 });
 
+describe("jobs in config files outside the kept folders (§2.2)", () => {
+  const scanSpec = async (spec) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "scan-jobs-"));
+    for (const [rel, text] of Object.entries(spec)) {
+      fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+      fs.writeFileSync(path.join(root, rel), text);
+    }
+    try {
+      return await scanRepo(root);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  };
+  const cron = (p) => JSON.stringify({ crons: [{ path: p, schedule: "0 8 * * 1" }] });
+  const netlify = (fn) => `[functions."${fn}"]\n  schedule = "@daily"\n`;
+
+  test("a vercel.json or netlify.toml under test/ adds no job", async () => {
+    const f = await scanSpec({
+      "package.json": '{"name":"t"}',
+      "src/index.ts": "export const x = 1;\n",
+      "test/fixtures/app/vercel.json": cron("/api/cron/fixture-only"),
+      "e2e/netlify.toml": netlify("fixture-fn"),
+    });
+    assert.deepEqual(ids(f, "job"), []);
+  });
+
+  test("the same files at the repo root still count", async () => {
+    const f = await scanSpec({
+      "package.json": '{"name":"t"}',
+      "vercel.json": cron("/api/cron/real"),
+      "netlify.toml": netlify("real-fn"),
+      "test/vercel.json": cron("/api/cron/fixture-only"),
+    });
+    assert.deepEqual(ids(f, "job"), ["job:/api/cron/real", "job:real-fn"]);
+  });
+});
+
 describe("sign-in through an outside company's OAuth provider (§2.5)", () => {
   const withRepo = async (spec, fn) => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "scan-oauth-"));

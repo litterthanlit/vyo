@@ -23,14 +23,20 @@ const EXCLUDED_DIRS = new Set([
 // Skipped while walking / listing: these directories never hold anything we read.
 const NEVER_WALK = new Set(["node_modules", ".git", "__pycache__", "site-packages", "bower_components", ".venv", "venv", ".next", ".nuxt", ".svelte-kit", ".turbo", ".vercel"]);
 
+// True when a folder above the file is excluded or hidden. Config readers (vercel.json, netlify.toml)
+// use this too, so a fixture or a build output cannot add jobs the product does not run.
+export function inExcludedDir(rel) {
+  const segs = rel.split("/");
+  for (let i = 0; i < segs.length - 1; i++) {
+    if (EXCLUDED_DIRS.has(segs[i]) || segs[i].startsWith(".")) return true;
+  }
+  return false;
+}
+
 // True when a repo-relative path is outside the "kept source files" set.
 export function isExcluded(rel) {
-  const segs = rel.split("/");
-  const file = segs[segs.length - 1];
-  for (let i = 0; i < segs.length - 1; i++) {
-    const s = segs[i];
-    if (EXCLUDED_DIRS.has(s) || s.startsWith(".")) return true;
-  }
+  if (inExcludedDir(rel)) return true;
+  const file = rel.slice(rel.lastIndexOf("/") + 1);
   if (file.startsWith(".")) return true;
   if (/\.(test|spec)\.[^/]+$/.test(file)) return true;
   if (/\.config\.[^/]+$/.test(file)) return true;

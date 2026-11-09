@@ -1,6 +1,6 @@
 // Jobs: Vercel / Netlify crons, Inngest, Trigger.dev, node-cron, BullMQ, Celery / Dramatiq / Huey / APScheduler.
 // A cron target is a job, never also an endpoint.
-import { readSmall } from "./files.mjs";
+import { inExcludedDir, readSmall } from "./files.mjs";
 import { callArgs, parseArgs, pyString } from "./pyutil.mjs";
 import { jobName } from "./names.mjs";
 import { normRoutePath } from "./routes.mjs";
@@ -15,7 +15,7 @@ export function detectJobs(ctx) {
 
   // vercel.json crons
   for (const p of allPaths) {
-    if (basename(p) !== "vercel.json" || /(^|\/)(node_modules|\.[^/]+)\//.test(p)) continue;
+    if (basename(p) !== "vercel.json" || inExcludedDir(p)) continue;
     const text = readSmall(dir, p);
     let json = null;
     try {
@@ -39,7 +39,7 @@ export function detectJobs(ctx) {
 
   // netlify.toml scheduled functions
   for (const p of allPaths) {
-    if (basename(p) !== "netlify.toml") continue;
+    if (basename(p) !== "netlify.toml" || inExcludedDir(p)) continue;
     const text = readSmall(dir, p) || "";
     for (const m of text.matchAll(/\[functions\.(?:"([^"]+)"|([\w-]+))\]([^[]*)/g)) {
       const sm = /schedule\s*=\s*"([^"]+)"/.exec(m[3]);
