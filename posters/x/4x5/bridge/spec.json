@@ -1,0 +1,73 @@
+{
+  "version": 3,
+  "frame": "loose",
+  "sheet": "4:5",
+  "facts": "f44d21ba54fb",
+  "product": {
+    "name": "Vyo",
+    "repo": "tools",
+    "commit": "c9f4d09",
+    "date": "2026-11-09"
+  },
+  "theme": "light",
+  "headline": "Your app on one page, for a person who has never seen its code.",
+  "hot": "person",
+  "figure": {
+    "fits": "A bridge from a stepped cliff of code, over an open gap, to one person at its far end: Vyo carries the app across to someone who does not code.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "code",
+        "polygon": [[48, 340], [140, 340], [140, 420], [220, 420], [220, 500], [296, 500], [296, 700], [312, 860], [340, 1050], [48, 1050]],
+        "words": ["files", "lines", "names", "folders", "parts", "your project"],
+        "tone": ["soft", "mid"],
+        "size": 11
+      },
+      {
+        "kind": "fill",
+        "id": "span",
+        "path": "M 312 560 L 808 560 L 808 1050 L 636 1050 L 636 820 C 636 712 588 660 500 652 C 420 648 360 646 312 646 Z",
+        "words": ["one picture", "plain words", "one page", "the poster"],
+        "tone": ["mid", "ink"]
+      },
+      {
+        "kind": "fill",
+        "id": "head",
+        "ellipse": { "cx": 712, "cy": 328, "rx": 64, "ry": 56 },
+        "words": ["person", "someone"],
+        "tone": "ink",
+        "hot": true
+      },
+      {
+        "kind": "fill",
+        "id": "body",
+        "profile": [[398, 712, 34], [414, 712, 94], [436, 712, 112], [478, 712, 94], [508, 712, 66], [556, 712, 96]],
+        "words": ["the person", "a client", "a teammate"],
+        "tone": "ink",
+        "hot": true
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 620, "y": 40, "w": 180, "align": "right" },
+      { "role": "headline", "id": "headline", "x": 40, "y": 40, "w": 540, "align": "left" },
+      {
+        "role": "legend",
+        "id": "legend",
+        "x": 600,
+        "y": 110,
+        "w": 200,
+        "align": "right",
+        "text": "On the left, a cliff of code. A deck crosses the gap to the person in orange."
+      },
+      {
+        "role": "paragraph",
+        "id": "paragraph",
+        "x": 40,
+        "y": 210,
+        "w": 420,
+        "align": "left",
+        "text": "Ask your coding agent to explain the app. Vyo reads the project and draws its parts as one picture, with a few plain words checked for jargon."
+      }
+    ]
+  }
+}
