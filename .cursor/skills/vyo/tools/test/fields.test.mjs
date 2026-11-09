@@ -20,7 +20,7 @@ const frame = (over = {}) => ({ floor: 900, mirror: false, blocks: [masthead, as
 const touches = (it, b, pad) => it.x < b.right + pad && it.x + it.width > b.left - pad && it.y < b.bottom + pad && it.y + it.height > b.top - pad;
 
 test("the registry names each field once, with its layout and the options only it takes", () => {
-  assert.deepEqual(Object.keys(FIELDS), ["wave", "terrain", "river"]);
+  assert.deepEqual(Object.keys(FIELDS), ["wave", "terrain", "river", "shape"]);
   assert.deepEqual(FIELDS.river.options, []);
   assert.deepEqual(FIELDS.wave.options, ["sentence", "every"]);
   assert.deepEqual(FIELDS.terrain.options, []);

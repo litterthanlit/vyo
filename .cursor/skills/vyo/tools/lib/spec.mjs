@@ -3,6 +3,8 @@ import { isJargon } from "./jargon.mjs";
 import { SHEET, SHAPE_KEYS, parsePath } from "./geometry.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { WAVE } from "./fields/wave.mjs";
+import { SHAPE_STYLES } from "./fields/shape.mjs";
+import { SHAPE_KINDS, opKind, shapeMask } from "./mask.mjs";
 import { ROLES as FRAME_ROLES, FRAMES, frameOf, sizeRange, LIST } from "./frame.mjs";
 
 /**
@@ -38,7 +40,7 @@ export const PLACEHOLDER = "…";
 export const LIMITS = {
   name: 24, headline: 72, hot: 24, noteTitle: 24, noteText: 220, notBuilt: 6, notBuiltItem: 32, audience: 40,
   fits: 160, regions: 6, texts: 7, words: [2, 14], word: 24, lines: [2, 4], line: 5,
-  profile: [3, 24], polygon: [3, 40], holes: 4, path: 4000, fields: 1, partName: 24, sentence: 40, every: [2, 20], minShare: [0, 0.2], maxParts: [2, 24],
+  profile: [3, 24], polygon: [3, 40], holes: 4, path: 4000, fields: 1, partName: 24, sentence: 40, every: [2, 20], minShare: [0, 0.2], maxParts: [2, 24], ops: 24, fit: [0.05, 3], centre: [-0.5, 1.5],
 };
 export const TONES = ["soft", "mid", "ink", "cold", "cool"];
 export const DOT_TONES = [...TONES, "hot"];
@@ -58,6 +60,8 @@ const KEYS = {
   field: ["kind", "id", "field", "fits", "accent", "names", "minShare", "maxParts", ...FIELD_OPTIONS],
   text: { swiss: ["role", "id", "text", "x", "y", "w", "size", "align", "hot"], loose: ["role", "id", "text", "x", "y", "w", "size", "align", "parts", "items"] },
   ellipse: ["cx", "cy", "rx", "ry"],
+  shape: ["ops", "rotate", "fit"],
+  fit: ["w", "h", "cx", "cy"],
 };
 
 const isStr = (v) => typeof v === "string";
@@ -181,9 +185,67 @@ function checkDots(f, r, err) {
   if (!Number.isInteger(r.cell) || r.cell < 8 || r.cell > 32) err(`${f}.cell: a whole number of px, 8 to 32`);
 }
 
-function checkField(f, r, err, copy) {
+// What each of a shape op's keys must hold, and how to say so.
+const OP_TYPES = {
+  point: [(v) => Array.isArray(v) && v.length === 2 && v.every(isNum), "[x, y]"],
+  positive: [(v) => isNum(v) && v > 0, "a number above 0"],
+  pair: [(v) => Array.isArray(v) && v.length === 2 && v.every((n) => isNum(n) && n > 0), "two numbers above 0"],
+  number: [isNum, "a number of degrees, clockwise from twelve o'clock"],
+  optional: [(v) => v === undefined || (isNum(v) && v >= 0), "a number, 0 or more"],
+  points: [(v) => Array.isArray(v) && v.length >= LIMITS.polygon[0] && v.length <= LIMITS.polygon[1] && v.every((p) => Array.isArray(p) && p.length === 2 && p.every(isNum)), `${LIMITS.polygon[0]} to ${LIMITS.polygon[1]} points of [x, y]`],
+  string: [(v) => isStr(v) && !!v.trim() && v.length <= LIMITS.path, `an SVG path of at most ${LIMITS.path} characters`],
+};
+
+/** Rules for a drawn silhouette: each op one verb and one kind with its keys, the first an add, and something painted. */
+function checkShapeSpec(f, shape, err) {
+  if (isPlaceholder(shape)) return err(`${f}: still the placeholder; draw the silhouette as { ops: [...] } (vyo compose --field shape prints the format)`);
+  if (!isObj(shape)) return err(`${f}: must be { ops, rotate, fit }`);
+  const before = err.count();
+  unknownKeys(shape, KEYS.shape, `${f}.`, err);
+  if (shape.rotate !== undefined && !isNum(shape.rotate)) err(`${f}.rotate: a number of degrees, clockwise`);
+  if (shape.fit !== undefined) {
+    if (!isObj(shape.fit)) err(`${f}.fit: must be { w, h, cx, cy }`);
+    else {
+      unknownKeys(shape.fit, KEYS.fit, `${f}.fit.`, err);
+      for (const [k, side] of [["w", "width"], ["h", "height"]]) {
+        if (shape.fit[k] !== undefined && !inRange(shape.fit[k], ...LIMITS.fit)) err(`${f}.fit.${k}: ${LIMITS.fit[0]} to ${LIMITS.fit[1]}, a share of the sheet's ${side} (over 1 bleeds off)`);
+      }
+      for (const [k, side] of [["cx", "width"], ["cy", "height"]]) {
+        if (shape.fit[k] !== undefined && !inRange(shape.fit[k], ...LIMITS.centre)) err(`${f}.fit.${k}: ${LIMITS.centre[0]} to ${LIMITS.centre[1]}, where the centre sits as a share of the sheet's ${side}`);
+      }
+    }
+  }
+  if (!Array.isArray(shape.ops) || shape.ops.length < 1 || shape.ops.length > LIMITS.ops) return err(`${f}.ops: a list of 1 to ${LIMITS.ops} ops, each { "add" or "cut": kind, ... }`);
+  const kinds = Object.keys(SHAPE_KINDS).join(", ");
+  shape.ops.forEach((op, i) => {
+    const o = `${f}.ops[${i}]`;
+    if (!isObj(op)) return err(`${o}: must be { "add" or "cut": kind, ... }`);
+    const verbs = ["add", "cut"].filter((v) => op[v] !== undefined);
+    if (verbs.length !== 1) return err(`${o}: give exactly one of add or cut (found ${verbs.length ? verbs.join(", ") : "none"})`);
+    const [verb, kind] = opKind(op);
+    const keys = SHAPE_KINDS[kind];
+    if (!keys) return err(`${o}.${verb}: "${kind}" is not a kind; use ${kinds}`);
+    for (const k of Object.keys(op)) if (k !== verb && k !== "rotate" && !(k in keys)) err(`${o}.${k}: a ${kind} takes ${Object.keys(keys).join(", ")} and rotate`);
+    for (const [k, type] of Object.entries(keys)) {
+      const [ok, what] = OP_TYPES[type];
+      if (!ok(op[k])) err(`${o}.${k}: ${op[k] === undefined ? "missing; it " : ""}must be ${what}`);
+    }
+    if (kind === "path" && OP_TYPES.string[0](op.d) && parsePath(op.d).error) err(`${o}.d: does not parse: ${parsePath(op.d).error}`);
+    if (op.rotate !== undefined && !isNum(op.rotate)) err(`${o}.rotate: a number of degrees, clockwise about the op's centre`);
+  });
+  if (isObj(shape.ops[0]) && shape.ops[0].cut !== undefined && shape.ops[0].add === undefined) err(`${f}.ops[0]: must be an add; a cut on an empty sheet removes nothing`);
+  if (err.count() === before && !shapeMask(shape)?.area) err(`${f}: the ops paint nothing on the sheet; the cuts remove all of it, or fit.cx and fit.cy move it off`);
+}
+
+function checkField(f, r, err, copy, frame) {
   const kind = FIELDS[r.field];
   if (!kind) return err(`${f}.field: "${r.field}" is not a field; use ${Object.keys(FIELDS).join(" or ")}`);
+  if (kind.frames && !kind.frames.includes(frame)) err(`${f}.field: a ${r.field} field draws only in the ${kind.frames.join(" or ")} frame; remove frame or set it to ${kind.frames[0]}`);
+  if (kind.options.includes("shape")) {
+    if (r.shape === undefined) err(`${f}.shape: missing; draw the silhouette as { ops: [...] } (vyo compose --field shape prints the format)`);
+    else checkShapeSpec(`${f}.shape`, r.shape, err);
+    if (r.style !== undefined && !SHAPE_STYLES[r.style]) err(`${f}.style: "${r.style}" is not a style; use ${Object.keys(SHAPE_STYLES).join(" or ")}, or leave it out`);
+  }
   for (const k of FIELD_OPTIONS) {
     if (r[k] !== undefined && !kind.options.includes(k)) err(`${f}.${k}: a ${r.field} field has no ${k}; only ${Object.keys(FIELDS).filter((n) => FIELDS[n].options.includes(k)).join(", ")} takes it`);
   }
@@ -281,7 +343,7 @@ function checkFigure(fig, err, copy, frame) {
       idOk(f, r.id);
       if (r.kind === "fill") checkFill(f, r, err);
       else if (r.kind === "dots") checkDots(f, r, err);
-      else checkField(f, r, err, copy);
+      else checkField(f, r, err, copy, frame);
       for (const [k, list] of [["words", r.words], ["lines", r.lines]]) if (Array.isArray(list) && !list.some(isPlaceholder)) list.forEach((w, j) => isStr(w) && copy.push([`${f}.${k}[${j}]`, w]));
     });
 
@@ -323,6 +385,7 @@ function hotPool(fig) {
 export function validateSpec(spec) {
   const errors = [];
   const err = (m) => errors.push(m);
+  err.count = () => errors.length;
   if (!isObj(spec)) return ["spec: must be a JSON object"];
   unknownKeys(spec, KEYS.spec, "", err);
 

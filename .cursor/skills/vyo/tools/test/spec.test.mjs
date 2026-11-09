@@ -24,7 +24,7 @@ const rejects = (mutate, re, base) => {
 };
 
 test("every preset is a valid spec", () => {
-  assert.deepEqual(IDS.sort(), ["eye", "hourglass", "ribbon", "river", "terrain", "warm-start", "wave", "wave-swiss"]);
+  assert.deepEqual(IDS.sort(), ["eye", "hourglass", "ribbon", "river", "shape", "terrain", "warm-start", "wave", "wave-swiss"]);
   for (const id of IDS) assert.deepEqual(validateSpec(preset(id)), [], id);
 });
 
@@ -161,7 +161,7 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
   assert.deepEqual(validateSpec(withField({ accent: "area:lib/plan", names: { "area:lib": "kitchen" }, sentence: "plan once", every: 4 })()), []);
   assert.deepEqual(validateSpec(withField({ field: "terrain" })()), [], "accent and hot are optional");
   const cases = [
-    [{ field: "lake" }, /^figure\.regions\[0\]\.field: "lake" is not a field; use wave or terrain or river$/],
+    [{ field: "lake" }, /^figure\.regions\[0\]\.field: "lake" is not a field; use wave or terrain or river or shape$/],
     [{ field: "terrain", sentence: "plan once" }, /^figure\.regions\[0\]\.sentence: a terrain field has no sentence; only wave takes it$/],
     [{ accent: "lib/plan" }, /^figure\.regions\[0\]\.accent: an area id like "area:lib\/plan"/],
     [{ names: { "area:lib": "the API" } }, /^figure\.regions\[0\]\.names\["area:lib"\]: jargon: "api"/],
