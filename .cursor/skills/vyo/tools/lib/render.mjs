@@ -22,6 +22,8 @@ const FONTS = [
 ];
 export const FONT_FACES = FONTS.map(([family, weight]) => ({ family, weight }));
 const MAST_FONT = `"Inter Display", Inter, "Helvetica Neue", Helvetica, Arial, sans-serif`;
+// A paper halo drawn as shadows: unlike a text stroke, it never paints over the line above.
+const HALO = [[0, 5], [0, -5], [5, 0], [-5, 0], [4, 4], [-4, 4], [4, -4], [-4, -4]].map(([x, y]) => `${x}px ${y}px 2px var(--paper)`).join(",");
 export { SHEET };
 
 // Theme tokens. Rows, dots and texts use only these; `accent` replaces hot.
@@ -119,8 +121,8 @@ const ROLE_PAGE = {
     paragraph: { style: `font-family:${esc(MAST_FONT)};letter-spacing:-.01em`, body: (spec, t) => line(t.text) },
     legend: { style: "letter-spacing:.04em", body: (spec, t) => line(t.text) },
     list: {
-      style: `white-space:pre;font-family:${esc(MAST_FONT)};font-weight:700;letter-spacing:-.02em;text-transform:uppercase`,
-      body: (spec, t, facts) => listItems(spec, t, facts).map((s, i) => `<span style="padding-left:${(i % 4) * 0.9}em">\u2022\u2009${esc(s)}</span>`).join("\n"),
+      style: `white-space:pre;font-family:${esc(MAST_FONT)};font-weight:700;letter-spacing:-.02em;text-transform:uppercase;-webkit-text-stroke:0;text-shadow:${HALO}`,
+      body: (spec, t, facts) => listItems(spec, t, facts).map((s, i) => `${"\u00a0".repeat((i % 4) * 4)}\u2022\u2009${esc(s)}`).join("\n"),
     },
     rule: { style: "white-space:nowrap;overflow:hidden", body: (spec, t) => esc(ruleText(t)) },
     meta: { style: "letter-spacing:.16em;white-space:nowrap;text-transform:uppercase", body: (spec, t) => esc(t.text) },

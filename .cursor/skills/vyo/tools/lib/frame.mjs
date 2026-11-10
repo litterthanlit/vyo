@@ -34,7 +34,7 @@ export const ROLES = {
     paragraph: { size: [13, 12, 15], lh: (s) => Math.round(s * 1.35), count: [0, 2], max: 220, sentences: 2, em: 0.45 },
     legend: { size: [12, 10, 14], lh: (s) => Math.round(s * 1.4), count: [1, 1], max: 180, sentences: 2, em: ADVANCE, mono: true },
     // The stepped list: bold grotesque caps, each item a bullet and one step further in, four steps then back.
-    list: { size: [13, 10, 44], lh: (s) => Math.round(s * 1.02), count: [0, 1], em: 0.66 },
+    list: { size: [13, 10, 44], lh: (s) => Math.round(s * (s < 20 ? 1.4 : 1.02)), count: [0, 1], em: 0.66 },
     rule: { size: [12, 10, 14], lh: (s) => s, count: [0, 1], em: ADVANCE, mono: true },
     meta: { size: [11, 9, 13], lh: (s) => Math.round(s * 1.25), count: [0, 1], max: 80, sentences: 1, em: ADVANCE, mono: true },
     display: { size: [96, 64, 160], lh: (s) => Math.round(s * 0.9), count: [0, 2], max: 8, em: 0.5 },
