@@ -15,7 +15,7 @@ vyo draws a codebase as one poster that someone who does not code can read. Your
   </tr>
 </table>
 
-<p align="center">The same two products in the three looks. Pantry is a recipe planner kept as a test fixture. Hypher is the owner's product.</p>
+<p align="center">The same two products in the three looks. Pantry is a recipe planner kept as a test fixture. Hypher is a tool for handing work from one coding agent to the next.</p>
 
 ## The three looks
 
@@ -57,7 +57,8 @@ To try vyo without installing it, run `npx -y @litterthanlit/vyo init` and have 
 
 ## What it reads
 
-- Nothing leaves your machine. The scan makes no network calls and calls no model.- Your code is never executed. The scan reads source files as text. The only program it runs is `git`, to read the latest commit, with hooks switched off.
+- Nothing leaves your machine. The scan makes no network calls and calls no model.
+- Your code is never executed. The scan reads source files as text. The only program it runs is `git`, to read the latest commit, with hooks switched off.
 - Dotfiles such as `.env`, hidden folders, tests, `node_modules`, and build output at a project root are skipped.
 
 ## Languages
