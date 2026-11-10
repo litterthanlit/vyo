@@ -18,7 +18,7 @@
   const texts = [];
   const boxes = [];
   for (const el of [sheet, ...sheet.querySelectorAll("*")]) {
-    if (el.tagName === "SCRIPT" || !visible(el)) continue;
+    if (el.tagName === "SCRIPT" || el.closest("[data-halo]") || !visible(el)) continue;
     const cs = getComputedStyle(el);
     const where = el.closest("[data-block], [data-region]");
     const tagged = !!el.closest("[data-hot]");

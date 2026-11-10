@@ -481,7 +481,7 @@ The wave and the terrain set text in Commit Mono 400 at the mockups' 6.9px and k
 
 **`wave`** (`lib/fields/wave.mjs`, after `explorations/2026-11-07-abstract-fields/f-wave-paper/`, tinted as `a-wave/` on dark):
 
-- Row slots sit 7.9px apart from y 0 to the floor, 7.9px tall: about 113 above a 900px floor. No slot is cut around the text blocks: the band passes behind the masthead and the other figure texts, which render sets above the rows with a 6px paper outline (`-webkit-text-stroke: 12px var(--paper)` painted under the fill).
+- Row slots sit 7.9px apart from y 0 to the floor, 7.9px tall: about 113 above a 900px floor. No slot is cut around the text blocks: the band passes behind the masthead and the other figure texts, which render sets above the rows with a 6px paper halo (a copy of each block one layer down, its letters transparent and its `text-shadow` paper; see `text-clear`).
 - The slots go to the parts by lines, largest remainder first, at least one each, in tree order, top to bottom. With fewer slots than parts, the last parts go undrawn.
 - At row top y, with `u = (y + 14) / 1190`: centre `130 + 560·(0.6·smoothstep(u) + 0.4·u) + 95·sin(6.4u + 0.4)·(1 − 0.5u)`, mirrored across the sheet when `mirror`; half-width `150 + 40·|cos(6.4u + 0.4)|`; letter spacing `0.5 + (half − 150) / 12`. The band enters at the top behind the masthead, swings right, back left across the middle and leaves through the floor.
 - A row's text is its part's name in lower case and three spaces, repeated letter by letter from the run's left edge while letters fit. Every `every`th row (`i % every == every − 1`) carries `sentence` instead, when given.
@@ -580,7 +580,7 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 |---|---|---|
 | `spec` | ✗ | The spec passes every rule in §3. When it fails, no other check runs |
 | `facts-hash` | ✗ | `spec.facts` equals the facts file's `hash` |
-| `facts-empty` | ! | `facts.empty` is true: the scan found nothing to count, so the footer shows provenance only |
+| `facts-empty` | ! | Swiss frame only. `facts.empty` is true: the scan found nothing to count, so the footer shows provenance only. The loose frame has no counts line, so it never fires there |
 | `product-name` | ! | `product.name` equals `facts.repo.name`, the folder name |
 | `preset-copy` | ! | Every region's geometry equals a preset region's geometry, numbers compared exactly. Field regions are left out, and a figure of only a field never trips it |
 | `part-name` | ! | A part a field draws has the product's name in its name, has no entry in `names`, or shares its name with another part, ignoring case: `parts <id> and <id> are all called "<name>"; give each a plain name of its own in names`. Also a key in `names` that is not a part |
@@ -612,6 +612,7 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 | `row-variety` | ✗ | In every fill region, the standard deviation of its line widths divided by their mean is at least 0.25. A line is all the region's runs at one y, merged into their outer span. Fields are exempt, and the check is skipped when the figure has no fill region. Message: `region <id> is a box; a silhouette changes width along its whole height` |
 | `thin-region` | ! | Every fill region's lines are at least 160px wide on average. Fields are exempt. Message: `region <id> reads as a column; widen it or make it part of the main silhouette` |
 | `blocks-apart` | ✗ | No two `[data-block]` text blocks, or a text block and a row, come within 8px. Two rows of one fill region at the same y are compared horizontally only; a field's rows are not compared with each other, and a wave's rows may pass behind the figure's texts (the blocks with a `data-role`) |
+| `text-clear` | ✗ | Page stage. Each figure text block (`.sheet > [data-role]`) is screenshotted as the poster draws it and again alone on the sheet with no halo; a pixel that is at least half letter alone and differs from it in the poster by more than 35% of the ink-to-paper contrast is covered. More than 8 covered pixels (at 2x) trips it. Message: `<n> px of the <id>'s letters are painted over near <x>,<y>; something is drawn on top of the text, so move the block clear of it`. The halo is a copy of each block (`data-halo`, skipped by `lib/inspect.js`) one layer under every block's letters, with transparent letters and paper `text-shadow` at 6px and 3px; a `-webkit-text-stroke` on the block painted line by line and covered the descenders of the line above, and one block's halo covered the block above it |
 | `blocks-inside` | ✗ | Every `[data-block]` text block sits inside the sheet |
 | `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens: `paper`, `ink`, `soft`, `mid`, `cold`, `cool`, or `hot` (or `accent`). A field's rows may also take the field's own tokens |
 | `hot-tagged` | ✗ | Anything in the hot colour carries `data-hot` |

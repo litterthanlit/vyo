@@ -150,7 +150,7 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 |---|---|---|
 | `spec` | ✗ | The spec passes every rule in §3. When it fails, no other check runs |
 | `facts-hash` | ✗ | `spec.facts` equals the facts file's `hash` |
-| `facts-empty` | ! | `facts.empty` is true: the scan found nothing to count, so the footer shows provenance only |
+| `facts-empty` | ! | Swiss frame only. `facts.empty` is true: the scan found nothing to count, so the footer shows provenance only. The loose frame has no counts line, so it never fires there |
 | `product-name` | ! | `product.name` equals `facts.repo.name`, the folder name |
 | `preset-copy` | ! | Every region's geometry equals a preset region's geometry, numbers compared exactly |
 | `part-name` | ! | A part a field draws has the product's name in its name, has no entry in `names`, or shares its name with another part, ignoring case: `parts <id> and <id> are all called "<name>"; give each a plain name of its own in names`. Also a key in `names` that is not a part |
@@ -182,6 +182,7 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 | `row-variety` | ✗ | In every fill region, the standard deviation of its line widths divided by their mean is at least 0.25. A line is all the region's runs at one y, merged into their outer span, so a hole does not count as variety. Fields are exempt, and the check is skipped when the figure has no fill region. The message says `region <id> is a box; a silhouette changes width along its whole height` |
 | `thin-region` | ! | Every fill region's lines are at least 160px wide on average. Fields are exempt. The message says `region <id> reads as a column; widen it or make it part of the main silhouette` |
 | `blocks-apart` | ✗ | No text block comes within 8px of another block or of a row. Two rows of one fill region at the same y keep 8px horizontally; a field's rows are not compared with each other, and a wave's rows may pass behind the figure's texts (the blocks with a `data-role`) |
+| `text-clear` | ✗ | Nothing is painted over a text block's letters: each block is screenshotted in the poster and alone, and more than 8 letter pixels (at 2x) that differ trip it. Message: `<n> px of the <id>'s letters are painted over near <x>,<y>; something is drawn on top of the text, so move the block clear of it` |
 | `blocks-inside` | ✗ | Every `[data-block]` text block sits inside the sheet |
 | `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens, `cold` and `cool` included; a field's rows may also take the field's own tokens |
 | `hot-tagged` | ✗ | Anything in the hot colour carries `data-hot` |

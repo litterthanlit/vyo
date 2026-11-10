@@ -53,6 +53,7 @@ test("each page check catches its defect", () => {
     ["notes", { blocks: page().blocks.slice(0, 2) }, /the footer shows 2 notes; the spec has 3/],
     ["copy", { rows: [...rows, { ...rows[0], word: "webhooks" }] }, /region top: jargon: "webhooks"/],
     ["drawn", { drawn: false }, /never set window\.drawn/],
+    ["text-clear", { covered: [{ block: "legend", ink: 8000, covered: 22, x: 93, y: 1059 }] }, /^22 px of the legend's letters are painted over near 93,1059; something is drawn on top of the text, so move the block clear of it$/],
     ["path", { regions: [{ id: "bottom", kind: "fill", bbox: rect(75, 560, 765, 910), rows: 20 }] }, /^region bottom reaches 26px below the footer; move it up by 26$/],
     ["path", { regions: [{ id: "bottom", kind: "fill", bbox: rect(75, 560, 900, 800), rows: 20 }] }, /^region bottom runs off the sheet/],
     ["region-size", { regions: [{ id: "top", kind: "fill", bbox: rect(60, 176, 780, 200), rows: 2 }] }, /^region top has 2 rows; it needs at least 4/],
@@ -102,7 +103,7 @@ test("every check has a unique id, a level, a stage and a description", () => {
   for (const c of CHECKS) assert.ok(["fail", "warn"].includes(c.level) && ["spec", "page"].includes(c.stage) && c.about, c.id);
   assert.deepEqual(
     CHECKS.map((c) => c.id).sort(),
-    ["accent-part", "band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "field-parts", "fits", "fonts", "headline-lines", "hot-tagged", "legend", "masthead-font", "notes", "one-region", "palette", "part-name", "part-unplain", "path", "preset-copy", "product-name", "record", "region-size", "regions-apart", "row-variety", "rows-fit", "shape-accent", "shape-cover", "shape-name", "shape-rings", "shape-room", "shape-share", "shape-split", "shape-thin", "shape-tone", "shape-upright", "silhouette", "spec", "thin-region", "words-drawn"],
+    ["accent-part", "band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "field-parts", "fits", "fonts", "headline-lines", "hot-tagged", "legend", "masthead-font", "notes", "one-region", "palette", "part-name", "part-unplain", "path", "preset-copy", "product-name", "record", "region-size", "regions-apart", "row-variety", "rows-fit", "shape-accent", "shape-cover", "shape-name", "shape-rings", "shape-room", "shape-share", "shape-split", "shape-thin", "shape-tone", "shape-upright", "silhouette", "spec", "text-clear", "thin-region", "words-drawn"],
   );
 });
 
@@ -198,4 +199,12 @@ test("record: a loose poster draws one record line with the commit and the date"
   assert.deepEqual(run([]), ["the poster shows 0 record lines; it needs exactly one"]);
   assert.deepEqual(run([{ name: "record", text: "Pantry, 7 November 2026. Drawn by Vyo.", rect: rect(40, 1150, 340, 1160) }], { ...s, product: { ...s.product, commit: undefined } }), ["the record line has no commit; set product.commit to the short hash (vyo compose --repo fills it)"]);
   assert.ok(!runChecks("page", { spec: { ...s, frame: "swiss", notes: [] }, facts: recipe, page: page({ blocks: [] }) }).some((f) => f.id === "record"), "swiss has no record line");
+});
+
+test("facts-empty speaks only in the swiss frame, whose footer prints counts", () => {
+  const empty = { ...recipe, empty: true };
+  const warned = (s) => runChecks("spec", { spec: s, facts: empty, presets: {} }).some((f) => f.id === "facts-empty");
+  assert.equal(warned(loose("x")), false, "a loose field poster has no counts line");
+  const check = CHECKS.find((c) => c.id === "facts-empty");
+  assert.deepEqual([check.frames, check.run({ facts: empty }).length], [["swiss"], 1], "the swiss footer still warns");
 });

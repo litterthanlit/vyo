@@ -53,6 +53,8 @@ export function figureStats(rowRects, dotRects, floor) {
     width: all.length ? (u.right - u.left) / 840 : 0,
   };
 }
+// A descender's tail is about 20 px at 2x; antialiasing alone moves none.
+const TEXT_CLEAR = 8;
 export const SILHOUETTE = { coverage: 0.15, height: 0.55, width: 0.6 };
 
 /**
@@ -106,7 +108,8 @@ export const CHECKS = [
     run: ({ spec, facts }) => (spec.facts === facts.hash ? [] : [`spec.facts is ${spec.facts} but facts.json is ${facts.hash}; the scan changed, so check the copy and set "facts" to ${facts.hash}`]),
   },
   {
-    id: "facts-empty", level: "warn", stage: "spec", about: "the scan found something to count",
+    // Only the swiss footer prints counts; a loose field draws parts by their size and has no counts line.
+    id: "facts-empty", level: "warn", stage: "spec", frames: ["swiss"], about: "the scan found something to count for the swiss footer",
     run: ({ facts }) => (facts.empty ? ["no application facts; the footer shows provenance only"] : []),
   },
   {
@@ -273,6 +276,13 @@ export const CHECKS = [
       fills.forEach((a, i) => fills.slice(i + 1).forEach((b) => a.region === b.region && crowd(a.rect, b.rect) && say({ name: `the row "${a.word}"` }, { name: `the row "${b.word}"` })));
       return [...new Set(out)];
     },
+  },
+  {
+    id: "text-clear", level: "fail", stage: "page", about: `nothing is painted over a text block's letters: at most ${TEXT_CLEAR} px of them (at 2x) differ from the block drawn alone`,
+    run: ({ page }) =>
+      (page.covered ?? [])
+        .filter((c) => c.covered > TEXT_CLEAR)
+        .map((c) => `${c.covered} px of the ${c.block}'s letters are painted over near ${c.x},${c.y}; something is drawn on top of the text, so move the block clear of it`),
   },
   {
     id: "blocks-inside", level: "fail", stage: "page", about: "every text block is inside the sheet",

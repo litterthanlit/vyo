@@ -87,6 +87,12 @@ ${notBuilt.length ? `<div data-block="notBuilt" data-owner="notBuilt" style="${m
 </div>`;
 }
 
+// The halo: paper shadows at 6px and 3px all round, close enough together to read as one outline.
+const HALO = [6, 3]
+  .flatMap((r) => Array.from({ length: r * 4 }, (_, i) => [r * Math.cos((i * Math.PI) / (r * 2)), r * Math.sin((i * Math.PI) / (r * 2))]))
+  .map(([x, y]) => `${x.toFixed(2)}px ${y.toFixed(2)}px 0 var(--paper)`)
+  .join(",");
+
 const SERIF = `font-family:${esc(`"Newsreader", serif`)}`;
 // Per frame, per role: the block's own CSS and what it prints. Sizes and line heights are in lib/frame.mjs.
 const ROLE_PAGE = {
@@ -122,7 +128,10 @@ function textBlock(spec, t, facts) {
   const style = `left:${t.x}px;top:${t.y}px;width:${t.w}px;font-size:${size}px;line-height:${lineHeight(spec, t)}px;text-align:${t.align || "left"};${
     hot ? "font-weight:700;letter-spacing:.18em;color:var(--hot)" : own
   }`;
-  return `<div class="t" data-block="${esc(t.id)}" data-role="${t.role}" data-owner="figure"${hot ? " data-hot" : ""} style="${style}">${body(spec, t, facts)}</div>`;
+  const inner = body(spec, t, facts);
+  // The halo is a copy of the block under every block's letters, so no block's halo covers another's descenders.
+  return `<div class="t" data-halo="${esc(t.id)}" aria-hidden="true" style="${style}">${inner}</div>
+<div class="t" data-block="${esc(t.id)}" data-role="${t.role}" data-owner="figure"${hot ? " data-hot" : ""} style="${style}">${inner}</div>`;
 }
 
 /** The record line's words, without the accent full stop render adds. */
@@ -236,8 +245,12 @@ html, body { background: var(--paper) }
 .row { position: absolute; white-space: nowrap; overflow: hidden }
 .dots { position: absolute }
 .t { position: absolute; font-size: 12px; line-height: 18px }
-/* A field runs on behind the figure's texts: each sits above the rows with a 6px paper outline. */
-[data-role] { z-index: 1; -webkit-text-stroke: 12px var(--paper); paint-order: stroke fill }
+/* A field runs on behind the figure's texts: each sits above the rows with a 6px paper halo. The halos are copies
+   of the blocks one layer down, so no halo covers letters: a text-stroke on the block itself painted line by line
+   and covered the descenders of the line above, and a block's halo covered the block above it. */
+[data-halo] { z-index: 1; color: transparent; text-shadow: ${HALO} }
+[data-halo] * { color: transparent !important }
+[data-role] { z-index: 2 }
 </style><script>${PRELUDE}</script></head><body><div class="sheet">
 ${spec.figure.texts.map((t) => textBlock(spec, t, facts)).join("\n")}
 ${CHROME[frameOf(spec)](spec, facts)}
@@ -271,6 +284,74 @@ async function writeThumb(browser, shot, file) {
 }
 
 /**
+ * How much of each figure text block's letters something else paints over: the block screenshotted as the poster
+ * draws it, then alone on the sheet with no halo. A pixel that is letter alone and not letter in the poster is
+ * covered, by a field's ground, an echo, or a halo of its own lines.
+ * @returns {Promise<{ block: string, ink: number, covered: number, x: number, y: number }[]>}  pixels at 2x, sheet px
+ */
+async function coveredText(page) {
+  const names = await page.evaluate(() => [...document.querySelectorAll(".sheet > [data-role]")].map((el) => el.dataset.block));
+  const out = [];
+  for (const name of names) {
+    const clip = await page.evaluate((n) => {
+      const el = document.querySelector(`.sheet > [data-block="${n}"]`);
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const r = range.getBoundingClientRect();
+      const s = document.querySelector(".sheet").getBoundingClientRect();
+      const [x, y] = [Math.max(s.left, Math.floor(r.left - 3)), Math.max(s.top, Math.floor(r.top - 3))];
+      return { x, y, width: Math.min(s.right, Math.ceil(r.right + 3)) - x, height: Math.min(s.bottom, Math.ceil(r.bottom + 3)) - y };
+    }, name);
+    if (!(clip.width > 0 && clip.height > 0)) continue;
+    const full = (await page.screenshot({ clip })).toString("base64");
+    await page.evaluate((n) => {
+      for (const el of document.querySelector(".sheet").children) {
+        if (el.dataset.block === n) Object.assign(el.style, { textShadow: "none", webkitTextStroke: "0" });
+        else el.style.visibility = "hidden";
+      }
+    }, name);
+    const alone = (await page.screenshot({ clip })).toString("base64");
+    await page.evaluate(() => {
+      for (const el of document.querySelector(".sheet").children) Object.assign(el.style, { textShadow: "", webkitTextStroke: "", visibility: "" });
+    });
+    out.push({ block: name, ...(await page.evaluate(compareInk, { full, alone, name, clip })) });
+  }
+  return out;
+}
+
+/** In the page: the letter pixels of `alone` that `full` does not show, against the block's paper and ink. */
+async function compareInk({ full, alone, name, clip }) {
+  const pixels = async (b64) => {
+    const img = new Image();
+    img.src = `data:image/png;base64,${b64}`;
+    await img.decode();
+    const c = Object.assign(document.createElement("canvas"), { width: img.width, height: img.height });
+    const ctx = c.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    return { w: img.width, data: ctx.getImageData(0, 0, img.width, img.height).data };
+  };
+  const [a, b] = [await pixels(alone), await pixels(full)];
+  const rgb = (s) => s.match(/\d+/g).slice(0, 3).map(Number);
+  const lum = ([r, g, bl]) => 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  const el = document.querySelector(`.sheet > [data-block="${name}"]`);
+  const paper = lum(rgb(getComputedStyle(document.querySelector(".sheet")).backgroundColor));
+  const span = lum(rgb(getComputedStyle(el).color)) - paper || 1;
+  let [ink, covered, sx, sy] = [0, 0, 0, 0];
+  for (let i = 0; i < a.data.length; i += 4) {
+    const la = lum([a.data[i], a.data[i + 1], a.data[i + 2]]);
+    if ((la - paper) / span < 0.5) continue;
+    ink++;
+    const lf = lum([b.data[i], b.data[i + 1], b.data[i + 2]]);
+    if (Math.abs(lf - la) / Math.abs(span) > 0.35) {
+      covered++;
+      sx += (i / 4) % a.w;
+      sy += Math.floor(i / 4 / a.w);
+    }
+  }
+  return { ink, covered, x: Math.round(clip.x + sx / (covered || 1) / 2), y: Math.round(clip.y + sy / (covered || 1) / 2) };
+}
+
+/**
  * Write <base>.html, then render it: PNG at 2x and PDF unless turned off. Returns the page measurements.
  * @param {{ html: string, base: string, png?: boolean, pdf?: boolean, paper?: string }} o
  */
@@ -286,6 +367,7 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
     await page.waitForFunction(() => window.drawn === true, null, { timeout: 15000 }).catch(() => {});
     const report = await page.evaluate(`(${fs.readFileSync(path.join(TOOLS, "lib", "inspect.js"), "utf8").replace(/^\/\/.*\n/, "")})()`);
     report.errors = errors;
+    report.covered = await coveredText(page);
     if (png) {
       const shot = await page.locator(".sheet").screenshot({ path: `${base}.png` });
       await writeThumb(browser, shot, `${base}-thumb.png`);
