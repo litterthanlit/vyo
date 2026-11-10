@@ -9,7 +9,8 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 import { stableStringify, factsHash } from "./lib/hash.mjs";
 import { scanRepoDetailed } from "./lib/scan/index.mjs";
 import { showFacts, hiddenCodeHint } from "./lib/scan/show.mjs";
-import { scaffoldSpec, validateSpec, THEMES } from "./lib/spec.mjs";
+import { scaffoldSpec, validateSpec, THEMES, PLACEHOLDER } from "./lib/spec.mjs";
+import { SHAPE_STYLES } from "./lib/fields/shape.mjs";
 import { sketch, sketchImage } from "./lib/sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE, SHEET } from "./lib/geometry.mjs";
 import { SHAPE_KINDS, SHAPE_ROOM } from "./lib/mask.mjs";
@@ -28,7 +29,7 @@ const USAGE = `Usage:
   vyo show    <facts.json>
   vyo presets [<id>]
   vyo parts   <facts.json> [--field ${Object.keys(FIELDS).join("|")}] [--split <part id>]...
-  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--split <part id>]... [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
+  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--split <part id>]... [--style ${Object.keys(SHAPE_STYLES).join("|")}] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
   vyo sketch  <spec.json> [--facts <facts.json>]
   vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--paper ${PAPERS.join("|")}]
   vyo check   <spec.json> [--facts <facts.json>]
@@ -277,7 +278,7 @@ function git(dir, format) {
 function cmdCompose(argv) {
   const { pos, opt } = args(
     argv,
-    { frame: { type: "string" }, field: { type: "string" }, accent: { type: "string" }, split: { type: "string", multiple: true }, from: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } },
+    { frame: { type: "string" }, field: { type: "string" }, accent: { type: "string" }, split: { type: "string", multiple: true }, from: { type: "string" }, theme: { type: "string" }, style: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } },
     1,
   );
   const presets = loadPresets();
@@ -307,18 +308,21 @@ function cmdCompose(argv) {
   if (fs.existsSync(out) && !opt.force) throw new Failure(`${out} exists; it may hold your words. Pass --force to replace it with a fresh scaffold`);
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
   if (opt.split && field !== "shape") throw new Usage("--split cuts a part of a shape field; pass --field shape");
+  if (opt.style !== undefined && field !== "shape") throw new Usage("--style picks a shape field's look; pass --field shape");
+  if (opt.style !== undefined && !SHAPE_STYLES[opt.style]) throw new Usage(`--style ${opt.style} is not a style; use ${Object.keys(SHAPE_STYLES).join(", ")}`);
   const parts = partsFromFacts(facts, partOptions({ field, ...(opt.split ? { split: opt.split } : {}) }));
   if (opt.accent !== undefined && !accentIds(parts, opt.accent).size) throw new Usage(`--accent ${opt.accent} names no part; vyo parts ${pos[0]} lists the part ids`);
   if (field && !parts.length) throw new Failure(`no parts to draw; the scan found no code. Compose a fill poster instead: vyo compose ${pos[0]} --from <preset> (vyo presets lists them)`);
   const twins = new Set(sameNames(parts).flat());
   const unplain = parts.filter((p) => unplainName(p.name) || twins.has(p));
   const notes = preset ? preset.notes.length : 3;
-  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, split: opt.split, parts };
+  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, split: opt.split, style: opt.style, parts };
   let space;
   if (frame === "loose") {
     const draft = scaffoldSpec(facts, { ...o, places: {} });
     const region = draft.figure.regions[0];
-    o.accentNames = regionParts(region, facts).filter((p) => p.hot).map((p) => p.name);
+    // The names are placeholders until the agent writes them, so only a name it already gave can be quoted.
+    o.accentNames = regionParts(region, facts).filter((p) => p.hot && !p.name.startsWith(PLACEHOLDER)).map((p) => p.name);
     // A shape is not drawn yet, so its words carry no coordinates: the engine places them around it.
     if (field === "shape") o.places = { label: {}, headline: {}, legend: {}, paragraph: {} };
     else {
