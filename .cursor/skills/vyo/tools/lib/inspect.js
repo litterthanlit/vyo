@@ -35,6 +35,7 @@
     hot: el.dataset.hot !== undefined,
     scrollWidth: el.scrollWidth,
     clientWidth: el.clientWidth,
+    opacity: Number(getComputedStyle(el).opacity),
     rect: box(el.getBoundingClientRect()),
   }));
 

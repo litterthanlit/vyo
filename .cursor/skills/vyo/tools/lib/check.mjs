@@ -350,6 +350,18 @@ export const CHECKS = [
     },
   },
   {
+    id: "still", level: "fail", stage: "page", about: "the PNG and PDF show the finished poster: no row hidden and every mark at its full width, whatever motion the spec has",
+    run: ({ spec, page }) => {
+      const hidden = page.rows.filter((r) => r.opacity === 0).length;
+      const marks = spec.figure.texts.filter((t) => t.role === "mark");
+      const short = marks.filter((t) => (page.blocks.find((b) => b.name === t.id)?.rect.right ?? 0) - t.x < t.w - 1).map((t) => t.id);
+      return [
+        ...(hidden ? [`${hidden} rows are hidden in the still; the still must be the motion's last frame`] : []),
+        ...short.map((id) => `mark ${id} is drawn short of its width in the still; the still must be the motion's last frame`),
+      ];
+    },
+  },
+  {
     id: "record", level: "fail", stage: "page", frames: ["loose", "signal"], about: "the record line is drawn once, with the commit and the date",
     run: ({ spec, page }) => {
       const lines = page.blocks.filter((b) => b.name === "record");

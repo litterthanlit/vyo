@@ -172,6 +172,7 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 | `copy` | ✗ | The visible words hold no banned term, file path, "01/02/03" marker or middle dot. The masthead and the render-owned footer lines are exempt |
 | `notes` | ✗ | Swiss: the footer shows exactly the notes in `spec.notes`. Loose and signal: 0 to 2 paragraphs and exactly one legend. Message: `the poster shows <n> paragraphs and <n> legends; use 0 to 2 paragraphs and exactly one legend` |
 | `band` | ✗ | The footer counts line equals the line built from `bandCounts(facts)`. Swiss only |
+| `still` | ✗ | The PNG and PDF show the finished poster whatever the spec's `motion`: no row hidden, every `mark` at its full width. The GIF's frames are the only place motion is partial |
 | `record` | ✗ | Loose and signal. The record line is drawn once and reads `<name> at <commit>, <date>. Drawn by Vyo.`. Without `product.commit`: `the record line has no commit; set product.commit to the short hash (vyo compose --repo fills it)` |
 | `headline-lines` | ! | The headline wraps to more than 2 lines. Swiss only |
 

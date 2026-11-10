@@ -315,7 +315,6 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
     page.on("pageerror", (e) => errors.push(e.message));
     await page.setContent(html, { waitUntil: "load" });
     await page.waitForFunction(() => window.drawn === true, null, { timeout: 15000 }).catch(() => {});
-    if (motion) await page.evaluate((t) => window.applyMotion && window.applyMotion(t), 0.35);
     const report = await page.evaluate(`(${fs.readFileSync(path.join(TOOLS, "lib", "inspect.js"), "utf8").replace(/^\/\/.*\n/, "")})()`);
     report.errors = errors;
     if (png) {

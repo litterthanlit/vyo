@@ -173,6 +173,15 @@ vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
   result(r.status === 1 && /^✗ render --gif needs motion on the spec: \{ kind, frames, fps \}$/m.test(r.stderr), "render --gif without motion fails", `exit ${r.status}\n${r.stderr}`);
 }
 
+for (const kind of ["resolve", "wipe"]) {
+  const dir = path.join(OUT, `still-${kind}`);
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, "recipe-poster.json");
+  fs.writeFileSync(file, JSON.stringify({ ...preset("signal-paper"), motion: { kind, frames: 8, fps: 8 } }, null, 2));
+  const r = vyo("render", file, "--facts", factsFile, "--no-pdf");
+  result(r.status === 0 && /^PASS$/m.test(r.stdout), `a spec with ${kind} motion renders its still as the finished poster`, `exit ${r.status}\n${r.stdout}${r.stderr}`);
+}
+
 console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length} planted bugs caught`);
 
 const pack = spawnSync(process.execPath, ["--test", path.join(HERE, "pack.test.mjs")], { stdio: "inherit" });

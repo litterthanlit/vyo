@@ -200,6 +200,5 @@ function drawDots(S, region) {
       }
     }
   };
-  if (F.motion) window.applyMotion(0.35);
   window.drawn = true;
 })();
