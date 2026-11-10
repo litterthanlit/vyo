@@ -258,6 +258,9 @@ function checkField(f, r, err, copy, frame) {
     if (st !== undefined && !(isObj(st) && ((st.by === "depth" && Object.keys(st).length === 1) || (st.by === "angle" && isNum(st.angle) && Object.keys(st).length === 2)))) {
       err(`${f}.strata: { "by": "angle", "angle": degrees } (90 stacks the parts top to bottom, 0 left to right) or { "by": "depth" } (shells from the outline in)`);
     }
+    if (r.split !== undefined && !(Array.isArray(r.split) && r.split.length >= 1 && r.split.length <= 4 && r.split.every((id) => isStr(id) && /^area:\S+$/.test(id)))) {
+      err(`${f}.split: a list of 1 to 4 part ids, like ["area:source"], each cut into the folders inside it (vyo parts --field shape --split <id> lists the parts it gives)`);
+    }
     if (r.echo !== undefined && (!Number.isInteger(r.echo) || r.echo < 0 || r.echo > RINGS.maxEcho)) err(`${f}.echo: a whole number of faded outlines from 0 to ${RINGS.maxEcho}`);
     else if (r.echo && r.style !== "rings") err(`${f}.echo: only the rings style draws echoes; set style to rings or remove echo`);
   }
@@ -526,11 +529,11 @@ function fieldRegion(field, { accent, parts }) {
  * the corners the field leaves empty (`places`, from lib/frame.mjs). The legend's placeholder spells out its rule.
  * @param {{ accent?: string, accentNames: string[], parts: { id: string, name: string }[], places: Record<string, object> }} o
  */
-function looseFigure(field, { accent, accentNames, parts, places }) {
+function looseFigure(field, { accent, split, accentNames, parts, places }) {
   const name = accentNames.length ? quoted(accentNames) : "the accent part";
   const measure = FIELDS[field].measure.map(quoted).join(", and ");
   return {
-    regions: [fieldRegion(field, { accent, parts })],
+    regions: [{ ...fieldRegion(field, { accent, parts }), ...(split ? { split } : {}) }],
     texts: [
       { role: "label", id: "label", ...places.label },
       { role: "headline", id: "headline", ...places.headline },
@@ -565,7 +568,7 @@ function blankFigure(fig) {
  *           places?: Record<string, object> }} o
  * @returns {Spec}
  */
-export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", theme, commit, date, floor, field = "wave", accent, accentNames = [], parts = [], places }) {
+export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", theme, commit, date, floor, field = "wave", accent, split, accentNames = [], parts = [], places }) {
   const loose = frame === "loose";
   const notes = preset ? preset.notes.length : 3;
   return {
@@ -577,7 +580,7 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
     ...(preset?.accent ? { accent: preset.accent } : {}),
     headline: hold(`one plain sentence about the outcome, at most ${LIMITS.headline} characters`),
     ...(preset ? { hot: hold("the one word set in the accent colour: a word of a fill region, a dots line or a hot label") } : {}),
-    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, accentNames, parts, places }) : fieldFigure(field, floor, { accent, parts }),
+    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, split, accentNames, parts, places }) : fieldFigure(field, floor, { accent, parts }),
     ...(loose
       ? {}
       : {

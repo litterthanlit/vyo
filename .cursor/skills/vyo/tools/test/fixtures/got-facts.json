@@ -1,0 +1,444 @@
+{
+ "empty": true,
+ "excluded": {
+  "by": {
+   "test/": {
+    "files": 65,
+    "lines": 46271
+   }
+  },
+  "files": 65,
+  "lines": 46271
+ },
+ "facts": [
+  {
+   "files": [],
+   "id": "area:.",
+   "kind": "area",
+   "loc": 10349,
+   "meta": {
+    "fileCount": 33,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Got"
+  },
+  {
+   "files": [],
+   "id": "area:benchmark",
+   "kind": "area",
+   "loc": 181,
+   "meta": {
+    "fileCount": 2,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Benchmark"
+  },
+  {
+   "files": [],
+   "id": "area:documentation",
+   "kind": "area",
+   "loc": 366,
+   "meta": {
+    "fileCount": 6,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Documentation"
+  },
+  {
+   "files": [],
+   "id": "area:documentation/examples",
+   "kind": "area",
+   "loc": 366,
+   "meta": {
+    "fileCount": 6,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Examples"
+  },
+  {
+   "files": [],
+   "id": "area:source",
+   "kind": "area",
+   "loc": 9802,
+   "meta": {
+    "fileCount": 25,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Source"
+  },
+  {
+   "files": [],
+   "id": "area:source/as-promise",
+   "kind": "area",
+   "loc": 318,
+   "meta": {
+    "fileCount": 2,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "As promise"
+  },
+  {
+   "files": [],
+   "id": "area:source/core",
+   "kind": "area",
+   "loc": 8859,
+   "meta": {
+    "fileCount": 20,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Inner workings"
+  },
+  {
+   "files": [],
+   "id": "area:source/core/utils",
+   "kind": "area",
+   "loc": 2293,
+   "meta": {
+    "fileCount": 11,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Helpers"
+  }
+ ],
+ "files": {
+  "benchmark/index.ts": {
+   "area": "area:benchmark",
+   "loc": 170
+  },
+  "benchmark/server.ts": {
+   "area": "area:benchmark",
+   "loc": 11
+  },
+  "documentation/examples/advanced-creation.js": {
+   "area": "area:documentation/examples",
+   "loc": 139
+  },
+  "documentation/examples/gh-got.js": {
+   "area": "area:documentation/examples",
+   "loc": 67
+  },
+  "documentation/examples/h2c.js": {
+   "area": "area:documentation/examples",
+   "loc": 42
+  },
+  "documentation/examples/pagination.js": {
+   "area": "area:documentation/examples",
+   "loc": 50
+  },
+  "documentation/examples/runkit-example.js": {
+   "area": "area:documentation/examples",
+   "loc": 5
+  },
+  "documentation/examples/uppercase-headers.js": {
+   "area": "area:documentation/examples",
+   "loc": 63
+  },
+  "source/as-promise/index.ts": {
+   "area": "area:source/as-promise",
+   "loc": 277
+  },
+  "source/as-promise/types.ts": {
+   "area": "area:source/as-promise",
+   "loc": 41
+  },
+  "source/core/calculate-retry-delay.ts": {
+   "area": "area:source/core",
+   "loc": 36
+  },
+  "source/core/diagnostics-channel.ts": {
+   "area": "area:source/core",
+   "loc": 115
+  },
+  "source/core/errors.ts": {
+   "area": "area:source/core",
+   "loc": 251
+  },
+  "source/core/index.ts": {
+   "area": "area:source/core",
+   "loc": 2563
+  },
+  "source/core/options.ts": {
+   "area": "area:source/core",
+   "kit": 1,
+   "loc": 3100
+  },
+  "source/core/parse-link-header.ts": {
+   "area": "area:source/core",
+   "loc": 76
+  },
+  "source/core/response.ts": {
+   "area": "area:source/core",
+   "loc": 178
+  },
+  "source/core/standard-schema.ts": {
+   "area": "area:source/core",
+   "loc": 48
+  },
+  "source/core/timed-out.ts": {
+   "area": "area:source/core",
+   "loc": 199
+  },
+  "source/core/utils/decompress-response.ts": {
+   "area": "area:source/core/utils",
+   "loc": 39
+  },
+  "source/core/utils/dns-cache.ts": {
+   "area": "area:source/core/utils",
+   "loc": 537
+  },
+  "source/core/utils/get-body-size.ts": {
+   "area": "area:source/core/utils",
+   "loc": 15
+  },
+  "source/core/utils/http2-client.ts": {
+   "area": "area:source/core/utils",
+   "loc": 1415
+  },
+  "source/core/utils/is-client-request.ts": {
+   "area": "area:source/core/utils",
+   "loc": 6
+  },
+  "source/core/utils/is-non-replayable-body.ts": {
+   "area": "area:source/core/utils",
+   "loc": 9
+  },
+  "source/core/utils/is-unix-socket-url.ts": {
+   "area": "area:source/core/utils",
+   "loc": 18
+  },
+  "source/core/utils/proxy-events.ts": {
+   "area": "area:source/core/utils",
+   "loc": 16
+  },
+  "source/core/utils/strip-url-auth.ts": {
+   "area": "area:source/core/utils",
+   "loc": 9
+  },
+  "source/core/utils/timer.ts": {
+   "area": "area:source/core/utils",
+   "loc": 212
+  },
+  "source/core/utils/weakable-map.ts": {
+   "area": "area:source/core/utils",
+   "loc": 17
+  },
+  "source/create.ts": {
+   "area": "area:source",
+   "loc": 335
+  },
+  "source/index.ts": {
+   "area": "area:source",
+   "loc": 26
+  },
+  "source/types.ts": {
+   "area": "area:source",
+   "loc": 264
+  }
+ },
+ "hash": "61c09ba5f3c5",
+ "imports": [
+  [
+   "benchmark/index.ts",
+   "source/core/index.ts"
+  ],
+  [
+   "benchmark/index.ts",
+   "source/core/options.ts"
+  ],
+  [
+   "benchmark/index.ts",
+   "source/index.ts"
+  ],
+  [
+   "source/as-promise/index.ts",
+   "source/core/errors.ts"
+  ],
+  [
+   "source/as-promise/index.ts",
+   "source/core/index.ts"
+  ],
+  [
+   "source/as-promise/index.ts",
+   "source/core/options.ts"
+  ],
+  [
+   "source/as-promise/index.ts",
+   "source/core/response.ts"
+  ],
+  [
+   "source/as-promise/index.ts",
+   "source/core/utils/is-non-replayable-body.ts"
+  ],
+  [
+   "source/as-promise/index.ts",
+   "source/core/utils/proxy-events.ts"
+  ],
+  [
+   "source/core/errors.ts",
+   "source/core/utils/strip-url-auth.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/calculate-retry-delay.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/diagnostics-channel.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/errors.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/options.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/response.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/timed-out.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/utils/decompress-response.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/utils/get-body-size.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/utils/is-client-request.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/utils/is-non-replayable-body.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/utils/is-unix-socket-url.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/utils/proxy-events.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/utils/strip-url-auth.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/utils/timer.ts"
+  ],
+  [
+   "source/core/index.ts",
+   "source/core/utils/weakable-map.ts"
+  ],
+  [
+   "source/core/options.ts",
+   "source/core/errors.ts"
+  ],
+  [
+   "source/core/options.ts",
+   "source/core/parse-link-header.ts"
+  ],
+  [
+   "source/core/options.ts",
+   "source/core/response.ts"
+  ],
+  [
+   "source/core/options.ts",
+   "source/core/timed-out.ts"
+  ],
+  [
+   "source/core/options.ts",
+   "source/core/utils/dns-cache.ts"
+  ],
+  [
+   "source/core/options.ts",
+   "source/core/utils/http2-client.ts"
+  ],
+  [
+   "source/core/options.ts",
+   "source/core/utils/is-unix-socket-url.ts"
+  ],
+  [
+   "source/core/response.ts",
+   "source/core/errors.ts"
+  ],
+  [
+   "source/core/response.ts",
+   "source/core/utils/strip-url-auth.ts"
+  ],
+  [
+   "source/core/utils/http2-client.ts",
+   "source/core/timed-out.ts"
+  ],
+  [
+   "source/create.ts",
+   "source/as-promise/index.ts"
+  ],
+  [
+   "source/create.ts",
+   "source/core/index.ts"
+  ],
+  [
+   "source/create.ts",
+   "source/core/options.ts"
+  ],
+  [
+   "source/index.ts",
+   "source/core/calculate-retry-delay.ts"
+  ],
+  [
+   "source/index.ts",
+   "source/core/diagnostics-channel.ts"
+  ],
+  [
+   "source/index.ts",
+   "source/core/errors.ts"
+  ],
+  [
+   "source/index.ts",
+   "source/core/index.ts"
+  ],
+  [
+   "source/index.ts",
+   "source/core/options.ts"
+  ],
+  [
+   "source/index.ts",
+   "source/core/parse-link-header.ts"
+  ],
+  [
+   "source/index.ts",
+   "source/core/response.ts"
+  ],
+  [
+   "source/index.ts",
+   "source/create.ts"
+  ]
+ ],
+ "repo": {
+  "name": "got",
+  "packages": [
+   "."
+  ]
+ },
+ "unresolved": {
+  "../../dist/source/index.js": 5
+ },
+ "uses": [],
+ "version": 1
+}

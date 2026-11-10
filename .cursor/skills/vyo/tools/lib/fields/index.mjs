@@ -48,7 +48,7 @@ export const FIELDS = {
   },
   shape: {
     about: "a silhouette you draw as ops, cut top to bottom into one band per part, as much area as its lines, the type as big as its share",
-    options: ["shape", "style", "echo", "bevel", "strata"],
+    options: ["shape", "style", "echo", "bevel", "strata", "split"],
     // Every band must hold its whole name in readable type, so fewer, bigger parts than a wave.
     parts: { maxParts: 12 },
     measure: [["code", "lines"], ["type", "size", "bigger", "larger", "area"]],

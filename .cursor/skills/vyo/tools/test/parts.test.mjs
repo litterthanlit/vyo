@@ -3,12 +3,14 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { partsFromFacts, unplainName, accentIds, segmentsOf } from "../lib/parts.mjs";
+import { partsFromFacts, unplainName, accentIds, segmentsOf, dominance } from "../lib/parts.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const recipe = scanRepo(path.join(HERE, "fixtures", "recipe"));
 const hypher = JSON.parse(fs.readFileSync(path.join(HERE, "..", "..", "..", "..", "..", "explorations", "2026-11-07-abstract-fields", "hypher-facts.json"), "utf8"));
+// Got: one leaf area, source, holds 95% of the code, so a field draws three parts.
+const got = JSON.parse(fs.readFileSync(path.join(HERE, "fixtures", "got-facts.json"), "utf8"));
 const lines = (facts) => Object.values(facts.files).reduce((s, f) => s + (f.gen ? 0 : f.loc), 0);
 const counted = (facts) => Object.values(facts.files).filter((f) => !f.gen).length;
 const sum = (parts, k) => parts.reduce((s, p) => s + p[k], 0);
@@ -70,4 +72,27 @@ test("accent finds a part by id, the parts inside an area, a glob, or the part a
   assert.deepEqual(ids("area:hypher-web/convex*"), ["area:hypher-web/convex"]);
   assert.deepEqual(ids("area:nowhere"), []);
   assert.deepEqual(ids(undefined), []);
+});
+
+test("split cuts a dominant leaf part into the folders inside it, every line still held once", () => {
+  const shape = { maxParts: 12 };
+  const whole = partsFromFacts(got, shape);
+  assert.deepEqual(whole.map((p) => p.id), ["area:benchmark", "area:documentation", "area:source"]);
+  const split = partsFromFacts(got, { ...shape, split: ["area:source"] });
+  assert.equal(sum(split, "loc"), lines(got));
+  assert.equal(sum(split, "files"), counted(got));
+  assert.ok(split.length >= 6, `about six parts or more (${split.length})`);
+  assert.ok(Math.max(...split.map((p) => p.loc)) / lines(got) < 0.7, "none of them is most of the code");
+  assert.ok(split.some((p) => p.id === "area:source/core/utils") && split.some((p) => p.id === "area:source"), "the leaf keeps its own files and its folders become parts");
+  assert.deepEqual(partsFromFacts(recipe, { split: ["area:lib/plan"] }), partsFromFacts(recipe), "a part with no folders inside is unchanged");
+});
+
+test("dominance names the part that is most of the code and what splitting it gives", () => {
+  const d = dominance(got, { maxParts: 12 });
+  assert.equal(d.part.id, "area:source");
+  assert.ok(d.share > 0.9);
+  assert.deepEqual([d.count, d.split.id, d.split.count], [3, "area:source", 6]);
+  assert.ok(d.split.largest < 0.7);
+  assert.equal(dominance(got, { maxParts: 12, split: ["area:source"] }).split, null, "core has no folder inside it left to split");
+  assert.equal(dominance(recipe), null, "the recipe fixture's parts are fine");
 });

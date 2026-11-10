@@ -5,7 +5,7 @@
 import { SHEET, corners, CORNERS, fixedMeasure } from "./geometry.mjs";
 import { maskGrid, edt, SHAPE_ROOM } from "./mask.mjs";
 import { shapeLayout, nameWidth } from "./fields/shape.mjs";
-import { regionParts } from "./parts.mjs";
+import { regionParts, partOptions, dominance, DOMINANT } from "./parts.mjs";
 import { tokensOf } from "./render.mjs";
 import { FIELDS } from "./fields/index.mjs";
 
@@ -15,14 +15,14 @@ import { FIELDS } from "./fields/index.mjs";
 // piece counts once it holds `piece` of the band's area; a bleed under `bleed` of the shape's extent is a mistake.
 export const SHAPE_LIMITS = { thin: 18, thinArea: 324, cover: 0.35, accent: 40, clear: 16, piece: 0.1, bleed: 0.05 };
 // Every check id the findings fill, in the order the sketch prints them.
-export const SHAPE_CHECKS = ["shape-thin", "shape-cover", "shape-edge", "shape-accent", "shape-name", "shape-split", "shape-room", "shape-rings", "shape-upright", "shape-share", "shape-tone"];
+export const SHAPE_CHECKS = ["shape-dominant", "shape-thin", "shape-cover", "shape-edge", "shape-accent", "shape-name", "shape-split", "shape-room", "shape-rings", "shape-upright", "shape-share", "shape-tone"];
 const CELL = 2;
 
 /** A shape region laid out in Node: its parts, mask, bands, rows and ground. */
 export function shapeReport(spec, region, facts) {
   const parts = regionParts(region, facts);
   const tokens = { ...tokensOf(spec), ...FIELDS.shape.tokens(spec.theme) };
-  return { region, parts, ...shapeLayout(region, parts, { theme: spec.theme, measure: fixedMeasure, tokens }) };
+  return { region, parts, dominant: dominance(facts, partOptions(region)), ...shapeLayout(region, parts, { theme: spec.theme, measure: fixedMeasure, tokens }) };
 }
 
 /** Squared distance, in cells, from every cell to the nearest cell where `on` is false. */
@@ -143,6 +143,19 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
   // Rings' findings are fixed by the layout; relief's read the rows as drawn, so they are a function of them.
   const own = typeof report.findings === "function" ? report.findings(rows) : report.findings ?? {};
   for (const [id, messages] of Object.entries(own)) out[id].push(...messages);
+
+  const d = report.dominant;
+  const accents = parts.filter((p) => p.hot);
+  const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
+  const hotShare = accents.reduce((s, p) => s + p.loc, 0) / total;
+  if (d && accents.length && (hotShare > DOMINANT.share || parts.length < DOMINANT.parts)) {
+    const what = `${hotShare > DOMINANT.share ? `the accent "${accents.map((p) => p.name).join('", "')}" holds ${pct(hotShare)} of the lines` : `the accent holds ${pct(hotShare)} of the lines`} and the shape has ${parts.length} parts, so every style draws it as one slab`;
+    out["shape-dominant"].push(
+      d.split
+        ? `${what}; add "split": [${[...(region.split ?? []), d.split.id].map((id) => `"${id}"`).join(", ")}] to the region to cut "${d.part.name}" into the folders inside it (${d.split.count} parts, the largest ${pct(d.split.largest)}), then put the accent on the one the story is about (vyo parts <facts> --field shape --split ${d.split.id} lists them)`
+        : `${what}; "${d.part.name}" has no folders inside it to split, so put the accent on a smaller part, or keep it in bands, whose type still names every part`,
+    );
+  }
 
   // Every shape check asks for these findings; the opening is the slow part and depends on the shape alone.
   const key = JSON.stringify(region.shape);

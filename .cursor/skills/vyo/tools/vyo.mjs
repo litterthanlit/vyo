@@ -20,15 +20,15 @@ import { runChecks } from "./lib/check.mjs";
 import { NoBrowser } from "./lib/browser.mjs";
 import { init, chooseEditors, EDITORS } from "./lib/init.mjs";
 import { FIELDS } from "./lib/fields/index.mjs";
-import { partsFromFacts, partOptions, regionParts, accentIds, unplainName, sameNames, PART_DEFAULTS } from "./lib/parts.mjs";
+import { partsFromFacts, partOptions, regionParts, accentIds, unplainName, sameNames, dominance, PART_DEFAULTS } from "./lib/parts.mjs";
 
 const USAGE = `Usage:
   vyo init    [--cursor] [--claude] [--codex] [--dir <repo-dir>]
   vyo scan    <repo-dir> --out <dir>/<repo>-facts.json
   vyo show    <facts.json>
   vyo presets [<id>]
-  vyo parts   <facts.json> [--field ${Object.keys(FIELDS).join("|")}]
-  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
+  vyo parts   <facts.json> [--field ${Object.keys(FIELDS).join("|")}] [--split <part id>]...
+  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--split <part id>]... [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
   vyo sketch  <spec.json> [--facts <facts.json>]
   vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--paper ${PAPERS.join("|")}]
   vyo check   <spec.json> [--facts <facts.json>]
@@ -136,10 +136,11 @@ function cmdScan(argv) {
 const pct = (n) => `${n > 0 && n < 0.01 ? Math.round(n * 1000) / 10 : Math.round(n * 100)}%`;
 
 function cmdParts(argv) {
-  const { pos, opt } = args(argv, { field: { type: "string" } }, 1);
+  const { pos, opt } = args(argv, { field: { type: "string" }, split: { type: "string", multiple: true } }, 1);
   if (opt.field !== undefined && !FIELDS[opt.field]) throw new Usage(`--field ${opt.field} is not a field; use ${Object.keys(FIELDS).join(" or ")}`);
+  if (opt.split && opt.field !== "shape") throw new Usage("--split cuts a part of a shape field; pass --field shape");
   const facts = readFacts(pos[0]);
-  const options = partOptions({ field: opt.field });
+  const options = partOptions({ field: opt.field, ...(opt.split ? { split: opt.split } : {}) });
   const parts = partsFromFacts(facts, options);
   const lines = parts.reduce((s, p) => s + p.loc, 0);
   const files = parts.reduce((s, p) => s + p.files, 0);
@@ -153,9 +154,20 @@ function cmdParts(argv) {
       `${p.id.padEnd(width)}  ${pct(lines ? p.loc / lines : 0).padStart(5)}  ${String(p.loc).padStart(5)}  ${String(p.files).padStart(5)}  ${p.name}${flag(p)}`,
     ),
     "Set a field's accent to one id. Give each flagged part a plain name in the field's names, keyed by its id.",
+    ...dominantLines(facts, options, pos[0], opt.field),
   ];
   process.stdout.write(out.join("\n") + "\n");
   return 0;
+}
+
+/** The `!` lines `vyo parts` adds when one part is most of the code or there are too few parts. */
+function dominantLines(facts, options, file, field) {
+  const d = dominance(facts, options);
+  if (!d) return [];
+  const what = `! "${d.part.name}" (${d.part.id}) holds ${pct(d.share)} of the lines among ${d.count} parts; as a shape's accent it draws one slab of orange`;
+  if (!d.split) return [`${what}, and it has no folders inside it to split: put the accent on a smaller part.`];
+  const flags = [...(options.split ?? []), d.split.id].map((id) => `--split ${id}`).join(" ");
+  return [`${what}. Split it into the folders inside it: vyo parts ${file} --field shape ${flags} gives ${d.split.count} parts, the largest ${pct(d.split.largest)}${field === "shape" ? "" : " (a shape field only)"}; then write "split": [${[...(options.split ?? []), d.split.id].map((id) => `"${id}"`).join(", ")}] in the region and put the accent on one of them.`];
 }
 
 function cmdShow(argv) {
@@ -265,7 +277,7 @@ function git(dir, format) {
 function cmdCompose(argv) {
   const { pos, opt } = args(
     argv,
-    { frame: { type: "string" }, field: { type: "string" }, accent: { type: "string" }, from: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } },
+    { frame: { type: "string" }, field: { type: "string" }, accent: { type: "string" }, split: { type: "string", multiple: true }, from: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } },
     1,
   );
   const presets = loadPresets();
@@ -294,13 +306,14 @@ function cmdCompose(argv) {
   const out = opt.out ?? path.join(path.dirname(pos[0]), `${facts.repo.name}-poster.json`);
   if (fs.existsSync(out) && !opt.force) throw new Failure(`${out} exists; it may hold your words. Pass --force to replace it with a fresh scaffold`);
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-  const parts = partsFromFacts(facts, partOptions({ field }));
+  if (opt.split && field !== "shape") throw new Usage("--split cuts a part of a shape field; pass --field shape");
+  const parts = partsFromFacts(facts, partOptions({ field, ...(opt.split ? { split: opt.split } : {}) }));
   if (opt.accent !== undefined && !accentIds(parts, opt.accent).size) throw new Usage(`--accent ${opt.accent} names no part; vyo parts ${pos[0]} lists the part ids`);
   if (field && !parts.length) throw new Failure(`no parts to draw; the scan found no code. Compose a fill poster instead: vyo compose ${pos[0]} --from <preset> (vyo presets lists them)`);
   const twins = new Set(sameNames(parts).flat());
   const unplain = parts.filter((p) => unplainName(p.name) || twins.has(p));
   const notes = preset ? preset.notes.length : 3;
-  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, parts };
+  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, split: opt.split, parts };
   let space;
   if (frame === "loose") {
     const draft = scaffoldSpec(facts, { ...o, places: {} });

@@ -261,6 +261,21 @@ test("findings: the jar has none, and each planted shape trips its own, with a n
   assert.match(crowded["shape-room"][0], /; no corner holds it \(the largest, [a-z-]+, is \d+ by \d+\), so shrink the shape \(fit\.h 0\.\d+ to 0\.\d+\) or move it with fit\.cx and fit\.cy$/);
 });
 
+test("shape-dominant: Got's accent, 95% of its code in 3 parts, is one slab; split names the fix and the fix works", () => {
+  const got = JSON.parse(fs.readFileSync(path.join(HERE, "fixtures", "got-facts.json"), "utf8"));
+  const bone = { ops: [{ add: "capsule", from: [22, 50], to: [78, 50], r: 19 }, ...[[13, 38], [13, 62], [87, 38], [87, 62]].map((at) => ({ add: "circle", at, r: 13 }))], rotate: -50 };
+  const spec = (over) => withShape(bone, { style: "relief", names: {}, ...over });
+  const found = (s) => shapeFindings(shapeReport(s, s.figure.regions[0], got))["shape-dominant"];
+  assert.deepEqual(found(spec({ accent: "area:source" })), [
+    'the accent "Source" holds 95% of the lines and the shape has 3 parts, so every style draws it as one slab; add "split": ["area:source"] to the region to cut "Source" into the folders inside it (6 parts, the largest 63%), then put the accent on the one the story is about (vyo parts <facts> --field shape --split area:source lists them)',
+  ]);
+  const split = spec({ split: ["area:source"], accent: "area:source/core/utils" });
+  assert.deepEqual(validateSpec({ ...split, facts: got.hash }).filter((e) => /split/.test(e)), []);
+  assert.deepEqual(found(split), [], "the accent on one folder of six is quiet");
+  assert.equal(shapeReport(split, split.figure.regions[0], got).parts.length, 6);
+  assert.match(found(spec({ split: ["area:source"], accent: "area:source/core" }))[0], /holds 63% of the lines .*"Inner workings" has no folders inside it to split, so put the accent on a smaller part/);
+});
+
 test("a sharp tip is not a thin feature, a bleed is not thin, and a 10px bar is", () => {
   assert.deepEqual(thinFeatures(shapeMask({ ops: [{ add: "polygon", points: [[0, 0], [100, 50], [0, 100]] }], fit: { w: 0.7 } })), []);
   assert.deepEqual(thinFeatures(shapeMask({ ops: [rect([0, 0], [100, 100])], fit: { w: 1.5 } })), []);
