@@ -288,6 +288,22 @@ test("shatter: disjoint cells, not one band", () => {
   assert.ok(clusters.size >= 8, `broken into ${clusters.size} clusters`);
 });
 
+test("glyph: no seed or masthead draws the letter backwards", () => {
+  const parts = recipeParts();
+  for (const mirror of [false, true]) {
+    for (let seed = 1; seed <= 30; seed++) {
+      const items = glyphRows({ letter: "F", seed }, parts, open({ mirror, blocks: [] }));
+      const left = Math.min(...items.map((i) => i.x));
+      const right = Math.max(...items.map((i) => i.x + i.width));
+      const top = Math.min(...items.map((i) => i.y));
+      const bottom = Math.max(...items.map((i) => i.y + i.height));
+      const low = items.filter((i) => i.y > top + (bottom - top) * 0.75);
+      const stem = low.reduce((s, i) => s + i.x + i.width / 2, 0) / low.length;
+      assert.ok(stem < (left + right) / 2, `seed ${seed}${mirror ? " under a right masthead" : ""}: the F's stem is on its left`);
+    }
+  }
+});
+
 test("glyph: a letter with a counter, every part drawn", () => {
   const parts = recipeParts();
   for (const letter of ["A", "8", "0", "P"]) {

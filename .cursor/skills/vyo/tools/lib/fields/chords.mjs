@@ -119,11 +119,12 @@ function digitsTo(room, cw, spacing) {
   return { text, width: text.length ? text.length * cw + (text.length - 1) * spacing : 0 };
 }
 
-/** Pose a mask and fill it, with part names or, when `region.symbols`, with symbols. New primitives draw the mask, then call this. */
+/** Pose a mask and fill it, with part names or, when `region.symbols`, with symbols. `own.mirror: false` keeps it unflipped. New primitives draw the mask, then call this. */
 export function fillMask(mask, region, parts, opts, own) {
   const { size, pitch } = region.symbols ? SYMBOLS : own;
   const pose = poseOf(region.seed);
-  if (opts.mirror) pose.mirror = !pose.mirror;
+  if (own.mirror === false) pose.mirror = false;
+  else if (opts.mirror) pose.mirror = !pose.mirror;
   const step = Math.round(pitch * pose.density * 10) / 10;
   const chords = applyPoseToMask(mask, pose, { floor: opts.floor, pitch: step });
   return rowsFromChords(chords, parts, {

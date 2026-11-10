@@ -3,7 +3,8 @@ import { SHEET } from "../geometry.mjs";
 import { blankMask, poseOf, stampRect } from "./pose.mjs";
 import { fillMask } from "./chords.mjs";
 
-export const GLYPH = { size: 6.2, pitch: 7.2 };
+// A letter read backwards is a mistake, not a pose, so the glyph never mirrors.
+export const GLYPH = { size: 6.2, pitch: 7.2, mirror: false };
 export const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 // 8px wide, 12 rows, high bit on the left. A, 0, 8 and P keep a counter.
