@@ -142,7 +142,7 @@ test("the mask is a grid for pixel work and a smooth SVG path for the page", () 
   assert.equal(g.w, 42);
   assert.equal(g.bits.reduce((a, b) => a + b, 0), 21 * 21);
   const d = runsPath([[0, [[10, 20]]], [1, [[11, 21]]]]);
-  assert.equal(d, "M10 0H20L21 1H11ZM11 1H21L21 2H11Z", "neighbouring rows join as trapezoids");
+  assert.equal(d, "M10 0H20V0.5H10ZM10 0.5H20L21 1.5H11ZM11 1.5H21V2H11Z", "neighbouring rows join centre to centre, half rows close the ends");
 });
 
 test("bands: one per part in tree order, areas within 15% of line shares, type by weight", () => {
@@ -190,7 +190,8 @@ test("the light theme alternates fills over a cast shadow; the dark theme fills 
   const light = bandsStyle(mask, parts, { measure: fixedMeasure, theme: "light" }).ground;
   assert.equal(light[0].part, null, "the shadow comes first");
   assert.equal(light[0].tone, "cold");
-  assert.deepEqual(light.slice(1, 4).map((g) => g.tone), ["ink", "cool", "ink"]);
+  assert.equal(light[1].tone, "paper", "then the gaps between bands, in paper");
+  assert.deepEqual(light.slice(2, 5).map((g) => g.tone), ["ink", "cool", "ink"]);
   assert.equal(light.find((g) => g.hot).tone, "hot");
   const dark = bandsStyle(mask, parts, { measure: fixedMeasure, theme: "dark" }).ground;
   assert.ok(dark.every((g) => g.part && (g.hot ? g.tone === "hot" : g.tone === "ink")));

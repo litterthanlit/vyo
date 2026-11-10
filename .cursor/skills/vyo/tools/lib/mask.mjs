@@ -236,19 +236,25 @@ export function maskGrid(mask, cell) {
 }
 
 /**
- * Rows of spans as one SVG path: each pair of neighbouring rows joined by a trapezoid through the spans' ends,
- * so slanted edges stay smooth. `rows` is [y, spans][] for consecutive y.
+ * Rows of spans as one SVG path. Each span is sampled at its row's centre, so a trapezoid joins it to the spans
+ * it touches one row down, centre to centre, and slanted edges stay smooth; where nothing touches above or
+ * below, a half-row strip closes the edge. `rows` is [y, spans][], each y once, in order.
  * @param {[number, [number, number][]][]} rows
  */
 export function runsPath(rows) {
   const f = (n) => Math.round(n * 100) / 100;
+  const touching = (spans, l, r) => spans.filter(([a, b]) => a < r && b > l);
   const out = [];
   rows.forEach(([y, spans], i) => {
+    const above = rows[i - 1]?.[0] === y - 1 ? rows[i - 1][1] : [];
     const next = rows[i + 1]?.[0] === y + 1 ? rows[i + 1][1] : [];
     for (const [l, r] of spans) {
-      const below = next.find(([a, b]) => a < r && b > l);
-      const [bl, br] = below ? [Math.max(below[0], l - 2), Math.min(below[1], r + 2)] : [l, r];
-      out.push(`M${f(l)} ${y}H${f(r)}L${f(br)} ${y + 1}H${f(bl)}Z`);
+      if (!touching(above, l, r).length) out.push(`M${f(l)} ${y}H${f(r)}V${y + 0.5}H${f(l)}Z`);
+      // Toward the outer ends of every span below that it touches: a span that splits in two below (a loop
+      // leaving the body) must not taper to one of them and leave a sliver of paper.
+      const below = touching(next, l, r);
+      if (below.length) out.push(`M${f(l)} ${y + 0.5}H${f(r)}L${f(Math.max(...below.map((s) => s[1])))} ${y + 1.5}H${f(Math.min(...below.map((s) => s[0])))}Z`);
+      else out.push(`M${f(l)} ${y + 0.5}H${f(r)}V${y + 1}H${f(l)}Z`);
     }
   });
   return out.join("");

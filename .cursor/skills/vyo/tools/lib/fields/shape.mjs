@@ -1,14 +1,16 @@
 // The shape field: a silhouette the agent draws, filled from its mask. A style reads the mask and the parts and
 // returns the rows of type and the ground under them; `bands` is the only style so far. Pure, like wave.mjs.
 import { SHEET, ADVANCE } from "../geometry.mjs";
-import { shapeMask, intersectRuns, subtractRuns } from "../mask.mjs";
+import { shapeMask, intersectRuns } from "../mask.mjs";
 
 // b-scale's numbers. A band per part, its area by lines; the biggest part's name one line as tall as its band,
 // every other part's type that size times (its lines / the biggest's) to the power `gamma`, never under `min` px.
 // Bands are at least `minBand` px tall and `gap` px apart; lines sit `pitch` em apart.
-export const BANDS = { gamma: 2.4, min: 5, minBand: 8, gap: 3, pitch: 0.86, bold: 12 };
+export const BANDS = { gamma: 2.4, min: 5, minBand: 8, gap: 3, pitch: 0.86, bold: 12, grow: 1.4 };
 // Commit Mono's ascender top and descender bottom, in em below the top of a line set at `pitch` em.
 const GLYPH = { top: 0.04, bottom: 0.99 };
+// How far the last line's descenders reach past its pitch, in em: a band leaves room for them.
+const TAIL = GLYPH.bottom - BANDS.pitch;
 // Per theme: the token for type on the accent fill (paper type on orange washed out on paper, and navy on orange
 // read as ink), the fills the bands take in turn, and the tone of the shadow cast down and right, if any. All ink
 // on paper read as flat signage; alternating ink and slate, over a pale shadow, reads as a printed object in layers.
@@ -52,10 +54,11 @@ export function shapeBands(mask, parts) {
   for (const b of bands) {
     const h = b.y1 - b.y0;
     const wanted = Math.max(min, display * Math.pow(b.part.loc / big.part.loc, gamma));
-    b.lines = Math.max(1, Math.floor(h / (wanted * BANDS.pitch)));
-    b.size = h / b.lines / BANDS.pitch;
-    // A small part stretched to the minimum height keeps its small type: size encodes weight.
-    if (b.lines === 1 && wanted < BANDS.bold) b.size = Math.min(b.size, wanted);
+    b.lines = Math.max(1, Math.floor((h - TAIL * wanted) / (wanted * BANDS.pitch)));
+    b.size = h / (b.lines * BANDS.pitch + TAIL);
+    // A one-line band grows its type toward its height, but size encodes weight: at most `grow` times what its
+    // lines ask for, and a small part stretched to the minimum height keeps its small type.
+    if (b.lines === 1) b.size = Math.min(b.size, wanted < BANDS.bold ? wanted : BANDS.grow * wanted);
   }
   return bands;
 }
@@ -102,7 +105,7 @@ export function bandsStyle(mask, parts, { measure, theme = "light" }) {
       const widest = Math.max(0, ...tops.flatMap((top) => lineSpans(mask, top, size, b.y1).map(([l, r]) => r - l)));
       if (nameWidth(name, size) <= widest) break;
       size = Math.max(BANDS.min, (0.99 * size * widest) / nameWidth(name, size));
-      if (lines > 1) lines = Math.max(1, Math.floor(h / (size * BANDS.pitch)));
+      if (lines > 1) lines = Math.max(1, Math.floor((h - TAIL * size) / (size * BANDS.pitch)));
       tops = place();
     }
     b.size = size;
@@ -117,6 +120,10 @@ export function bandsStyle(mask, parts, { measure, theme = "light" }) {
       let k = (j % 2) * Math.round(cycle.length / 2);
       for (const [l, r] of lineSpans(mask, top, size, b.y1)) {
         let n = Math.floor((r - l + track) / (cw + track));
+        // A span too short for one whole name (beside a loop, down a narrow tail) stays plain fill, not fragments.
+        if (n < name.length) continue;
+        // A span whose letters from k would hold no whole name starts on one instead.
+        if ((cycle.length - (k % cycle.length)) % cycle.length + name.length > n) k = 0;
         let x = l;
         if (lines === 1) {
           // A lone line starts on the name and centres its whole repeats.
@@ -138,10 +145,11 @@ export function bandsStyle(mask, parts, { measure, theme = "light" }) {
     });
   });
   if (shadow) {
-    const cast = mask.runs
-      .map((row, y) => [y + SHADOW, subtractRuns(row.map(([l, r]) => [l + SHADOW, Math.min(SHEET.width, r + SHADOW)]), mask.runs[y + SHADOW] ?? [])])
-      .filter(([y, spans]) => y < SHEET.height && spans.length);
-    ground.unshift({ part: null, hot: false, tone: shadow, rows: cast });
+    // The whole shape cast down and right, under the fills, so their edges blend into the shadow and not into a
+    // seam of paper; the gaps between bands are then painted back in paper.
+    const cast = mask.runs.map((row, y) => [y + SHADOW, row.map(([l, r]) => [l + SHADOW, Math.min(SHEET.width, r + SHADOW)])]).filter(([y, spans]) => y < SHEET.height && spans.length);
+    const gaps = bands.slice(1).flatMap((b) => Array.from({ length: BANDS.gap }, (_, k) => [b.y0 + k, mask.runs[b.y0 + k]]));
+    ground.unshift({ part: null, hot: false, tone: shadow, rows: cast }, { part: null, hot: false, tone: "paper", rows: gaps });
   }
   return { bands, rows, ground };
 }
