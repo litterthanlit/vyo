@@ -12,7 +12,7 @@ import { showFacts } from "./lib/scan/show.mjs";
 import { scaffoldSpec, validateSpec, THEMES } from "./lib/spec.mjs";
 import { sketch } from "./lib/sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE } from "./lib/geometry.mjs";
-import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
+import { buildPage, renderPage, GifFailure, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
 import { ROLES, FRAMES, RECORD_FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
 import { cornersLine } from "./lib/geometry.mjs";
 import { runChecks } from "./lib/check.mjs";
@@ -442,7 +442,7 @@ export async function main(argv) {
       err(USAGE);
       return 2;
     }
-    if (e instanceof Failure || e instanceof NoBrowser) {
+    if (e instanceof Failure || e instanceof NoBrowser || e instanceof GifFailure) {
       fail(e.message);
       return 1;
     }

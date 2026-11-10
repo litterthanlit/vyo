@@ -173,6 +173,15 @@ vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
   result(r.status === 1 && /^✗ render --gif needs motion on the spec: \{ kind, frames, fps \}$/m.test(r.stderr), "render --gif without motion fails", `exit ${r.status}\n${r.stderr}`);
 }
 
+{
+  const dir = path.join(OUT, "gif-no-ffmpeg");
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, "recipe-poster.json");
+  fs.writeFileSync(file, JSON.stringify({ ...preset("signal-paper"), motion: { kind: "wipe", frames: 8, fps: 8 } }, null, 2));
+  const r = spawnSync(process.execPath, [VYO, "render", file, "--facts", factsFile, "--gif", "--no-pdf"], { encoding: "utf8", env: { ...process.env, PATH: dir } });
+  result(r.status === 1 && /^✗ render --gif needs ffmpeg on PATH/m.test(r.stderr) && fs.existsSync(path.join(dir, "recipe-poster.png")), "render --gif without ffmpeg writes the PNG, then fails with one line", `exit ${r.status}\n${r.stderr}`);
+}
+
 for (const kind of ["resolve", "wipe"]) {
   const dir = path.join(OUT, `still-${kind}`);
   fs.mkdirSync(dir, { recursive: true });

@@ -332,8 +332,13 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
   }
 }
 
-function ffmpeg(args) {
-  return spawnSync("ffmpeg", ["-y", "-hide_banner", "-loglevel", "error", ...args], { encoding: "utf8" });
+/** A GIF or MP4 could not be written: ffmpeg is missing or refused the frames. */
+export class GifFailure extends Error {}
+
+function ffmpeg(args, what) {
+  const r = spawnSync("ffmpeg", ["-y", "-hide_banner", "-loglevel", "error", ...args], { encoding: "utf8" });
+  if (r.error?.code === "ENOENT") throw new GifFailure("render --gif needs ffmpeg on PATH; install it (apt install ffmpeg, brew install ffmpeg) or render without --gif");
+  if (r.error || r.status !== 0) throw new GifFailure(`ffmpeg could not write the ${what}: ${(r.stderr || r.error?.message || `exit ${r.status}`).trim()}`);
 }
 
 async function writeGif(page, base, motion) {
@@ -349,11 +354,9 @@ async function writeGif(page, base, motion) {
     }
     const seq = path.join(dir, "frame-%03d.png");
     const pal = path.join(dir, "palette.png");
-    const gif = ffmpeg(["-framerate", String(fps), "-i", seq, "-vf", "scale=560:-1:flags=lanczos,palettegen=max_colors=48", pal]);
-    if (gif.status !== 0) throw new Error(gif.stderr.trim() || "ffmpeg palettegen failed");
-    const out = ffmpeg(["-framerate", String(fps), "-i", seq, "-i", pal, "-lavfi", "scale=560:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer", "-loop", "0", `${base}.gif`]);
-    if (out.status !== 0) throw new Error(out.stderr.trim() || "ffmpeg gif failed");
-    ffmpeg(["-framerate", String(fps), "-i", seq, "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-vf", "scale=840:-2", `${base}.mp4`]);
+    ffmpeg(["-framerate", String(fps), "-i", seq, "-vf", "scale=560:-1:flags=lanczos,palettegen=max_colors=48", pal], "GIF palette");
+    ffmpeg(["-framerate", String(fps), "-i", seq, "-i", pal, "-lavfi", "scale=560:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer", "-loop", "0", `${base}.gif`], "GIF");
+    ffmpeg(["-framerate", String(fps), "-i", seq, "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-vf", "scale=840:-2", `${base}.mp4`], "MP4");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
