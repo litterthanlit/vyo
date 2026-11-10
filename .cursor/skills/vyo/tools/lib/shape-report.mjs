@@ -1,6 +1,6 @@
 // What goes wrong with a drawn silhouette, measured on its mask: features too thin for the thumbnail, too little
 // of the sheet covered, an accent band too small to see, a name never drawn whole, a band split across separate
-// pieces, a text block on the shape. `vyo sketch` prints these as `!` lines and lib/check.mjs runs them as checks;
+// pieces, a text block on the shape. `vyo sketch` prints these at the level lib/check.mjs gives each check, which render uses too;
 // every message says what to change, with a number.
 import { SHEET, corners, CORNERS, fixedMeasure } from "./geometry.mjs";
 import { maskGrid, edt, SHAPE_ROOM, opRings, paintRows } from "./mask.mjs";
@@ -18,8 +18,13 @@ export const SHAPE_LIMITS = { thin: 18, thinArea: 324, cover: 0.35, accent: 40, 
 // locomotive was half legible, the 3-op flask instant); `repeat` or more ops of one kind and about one size
 // (within `alike`), each under `small` of the shape, are details like wheels or windows that merge there.
 export const SHAPE_SIMPLE = { ops: 8, repeat: 3, alike: 0.3, small: 0.1 };
+// A limb: rows at the top or bottom of the shape under `width` of its widest row, about as wide all along (`steady`
+// of them within `even` of the median, so a tapering tip is not one), taking `height` or more of the shape's height
+// for at most `area` of its area. The cold run's mailbox post took 33% of the height for 10% of the area and
+// read as a signpost; a flask's neck is 32% of its body's width and passes.
+export const SHAPE_LIMB = { width: 0.25, even: 1.5, steady: 0.8, height: 0.25, area: 0.15 };
 // Every check id the findings fill, in the order the sketch prints them.
-export const SHAPE_CHECKS = ["shape-dominant", "shape-simple", "shape-thin", "shape-cover", "shape-edge", "shape-accent", "shape-name", "shape-split", "shape-room", "shape-rings", "shape-upright", "shape-share", "shape-tone"];
+export const SHAPE_CHECKS = ["shape-dominant", "shape-simple", "shape-limb", "shape-thin", "shape-cover", "shape-edge", "shape-accent", "shape-name", "shape-split", "shape-room", "shape-rings", "shape-upright", "shape-share", "shape-tone"];
 const CELL = 2;
 
 /** A shape region laid out in Node: its parts, mask, bands, rows and ground. */
@@ -139,6 +144,55 @@ const pct = (n) => `${Math.round(n * 100)}%`;
 const thinCache = { key: null, value: null };
 const bandOf = (report, part) => report.bands?.find((b) => b.part.id === part.id);
 
+/** A long, even, narrow run of rows at the top or bottom of the shape: a post or a pole that holds little of it. */
+export function limbFindings(mask) {
+  const L = SHAPE_LIMB;
+  const widths = mask.runs.map((row) => row.reduce((a, [l, r]) => a + r - l, 0));
+  const rows = widths.map((w, y) => y).filter((y) => widths[y] > 0);
+  if (!rows.length) return [];
+  const [top, bottom] = [rows[0], rows[rows.length - 1] + 1];
+  const widest = Math.max(...widths);
+  const out = [];
+  for (const [end, from, step] of [["top", top, 1], ["bottom", bottom - 1, -1]]) {
+    const run = [];
+    for (let y = from; y >= top && y < bottom && widths[y] < L.width * widest; y += step) run.push(widths[y]);
+    if (!run.length) continue;
+    const median = [...run].sort((a, b) => a - b)[Math.floor(run.length / 2)];
+    const [height, area] = [run.length / (bottom - top), run.reduce((a, w) => a + w, 0) / mask.area];
+    if (height < L.height || area > L.area || run.filter((w) => w <= L.even * median).length < L.steady * run.length) continue;
+    const [a, b] = step > 0 ? [from, from + run.length] : [from - run.length + 1, from + 1];
+    out.push(`a thin limb at the ${end} (y ${a} to ${b}, ${px(median)}px wide) takes ${pct(height)} of the shape's height for ${pct(area)} of its area; at thumbnail size the object reads as a post with a small head, and its bands there are too narrow to read, so shorten it to under ${pct(L.height)} of the height or drop it`);
+  }
+  return out;
+}
+
+/**
+ * shape-dominant: one part is most of the shape, or there are too few parts. Each case says the one action that
+ * changes the picture, and a case with no such action says nothing:
+ * - the biggest part has folders inside it: split it, and if it is the accent, move the accent onto one of them;
+ * - the accent holds most of the lines and cannot be split: outside bands it is one slab of the accent, so a
+ *   smaller accent or bands (whose type still names every part) is the fix; in bands nothing is wrong;
+ * - few parts, the biggest unsplittable and not the accent alone over the line: the accent shows; nothing to do.
+ */
+function dominantFindings({ dominant: d, parts, region }) {
+  const accents = parts.filter((p) => p.hot);
+  if (!d || !accents.length) return [];
+  const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
+  const hotShare = accents.reduce((s, p) => s + p.loc, 0) / total;
+  const style = region.style ?? "bands";
+  const bigIsAccent = accents.some((p) => p.id === d.part.id);
+  if (d.split) {
+    const add = `add "split": [${[...(region.split ?? []), d.split.id].map((id) => `"${id}"`).join(", ")}] to the region to cut "${d.part.name}" into the folders inside it (${d.split.count} parts, the largest ${pct(d.split.largest)})`;
+    return bigIsAccent
+      ? [`the accent "${d.part.name}" holds ${pct(d.share)} of the lines and the shape has ${parts.length} parts, so every style draws it as one slab; ${add}, then put the accent on the one the story is about (vyo parts <facts> --field shape --split ${d.split.id} lists them)`]
+      : [`"${d.part.name}" holds ${pct(d.share)} of the lines and the shape has ${parts.length} parts, so it draws as one slab around the accent; ${add}; the accent stays where it is`];
+  }
+  if (hotShare > DOMINANT.share && style !== "bands") {
+    return [`the accent "${accents.map((p) => p.name).join('", "')}" holds ${pct(hotShare)} of the lines, so ${style} draws it as one slab of the accent; "${d.part.name}" has no folders inside it to split, so put the accent on a smaller part, or set style to bands, whose type still names every part`];
+  }
+  return [];
+}
+
 /**
  * Every finding on a shape region, by check id. `rows` are the rows as drawn (the page's, or Node's for the
  * sketch); `blocks` are the text blocks, each `{ id, left, top, right, bottom }`.
@@ -154,20 +208,7 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
   const own = typeof report.findings === "function" ? report.findings(rows) : report.findings ?? {};
   for (const [id, messages] of Object.entries(own)) out[id].push(...messages);
 
-  const d = report.dominant;
-  const accents = parts.filter((p) => p.hot);
-  const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
-  const hotShare = accents.reduce((s, p) => s + p.loc, 0) / total;
-  // Bands set every part's name in type however big the accent is, so with nothing to split they are the fix.
-  const stuck = !d?.split && (region.style ?? "bands") === "bands";
-  if (d && !stuck && accents.length && (hotShare > DOMINANT.share || parts.length < DOMINANT.parts)) {
-    const what = `${hotShare > DOMINANT.share ? `the accent "${accents.map((p) => p.name).join('", "')}" holds ${pct(hotShare)} of the lines` : `the accent holds ${pct(hotShare)} of the lines`} and the shape has ${parts.length} parts, so every style draws it as one slab`;
-    out["shape-dominant"].push(
-      d.split
-        ? `${what}; add "split": [${[...(region.split ?? []), d.split.id].map((id) => `"${id}"`).join(", ")}] to the region to cut "${d.part.name}" into the folders inside it (${d.split.count} parts, the largest ${pct(d.split.largest)}), then put the accent on the one the story is about (vyo parts <facts> --field shape --split ${d.split.id} lists them)`
-        : `${what}; "${d.part.name}" has no folders inside it to split, so put the accent on a smaller part, or keep it in bands, whose type still names every part`,
-    );
-  }
+  out["shape-dominant"].push(...dominantFindings(report));
 
   const drawn = region.shape.ops.map((op, i) => ({ op, i })).filter(({ op }) => op.crease === undefined);
   if (drawn.length > SHAPE_SIMPLE.ops) {
@@ -184,6 +225,8 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
     like.forEach((d) => seen.add(d.i));
     out["shape-simple"].push(`ops ${like.map((d) => d.i).join(", ")} are ${like.length} ${kind}s of about ${pct(alone[i])} of the shape each: small repeated details like wheels or windows merge at thumbnail size, so drop them or draw them as one shape`);
   }
+
+  out["shape-limb"].push(...limbFindings(mask));
 
   // Every shape check asks for these findings; the opening is the slow part and depends on the shape alone.
   const key = JSON.stringify(region.shape);

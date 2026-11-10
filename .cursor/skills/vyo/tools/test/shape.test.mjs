@@ -8,7 +8,8 @@ import { fileURLToPath } from "node:url";
 import { validateSpec } from "../lib/spec.mjs";
 import { shapeMask, maskGrid, runsPath, SHAPE_ROOM } from "../lib/mask.mjs";
 import { shapeBands, bandsStyle, nameWidth, BANDS } from "../lib/fields/shape.mjs";
-import { shapeReport, shapeFindings, thinFeatures } from "../lib/shape-report.mjs";
+import { shapeReport, shapeFindings, thinFeatures, SHAPE_CHECKS } from "../lib/shape-report.mjs";
+import { CHECKS } from "../lib/check.mjs";
 import { sketch, sketchImage } from "../lib/sketch.mjs";
 import { regionParts } from "../lib/parts.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
@@ -286,9 +287,22 @@ test("shape-dominant: Got's accent, 95% of its code in 3 parts, is one slab; spl
   assert.equal(shapeReport(split, split.figure.regions[0], got).parts.length, 6);
   const lone = { hash: got.hash, facts: [{ id: "area:app", kind: "area", name: "App", meta: { leaf: true } }, { id: "area:docs", kind: "area", name: "Docs", meta: { leaf: true } }], files: { "app/a.js": { area: "area:app", loc: 900 }, "docs/b.js": { area: "area:docs", loc: 100 } } };
   const one = spec({ accent: "area:app" });
-  assert.deepEqual(shapeFindings(shapeReport(one, one.figure.regions[0], lone))["shape-dominant"], ['the accent "App" holds 90% of the lines and the shape has 2 parts, so every style draws it as one slab; "App" has no folders inside it to split, so put the accent on a smaller part, or keep it in bands, whose type still names every part']);
+  assert.deepEqual(shapeFindings(shapeReport(one, one.figure.regions[0], lone))["shape-dominant"], ['the accent "App" holds 90% of the lines, so relief draws it as one slab of the accent; "App" has no folders inside it to split, so put the accent on a smaller part, or set style to bands, whose type still names every part']);
   const banded = spec({ accent: "area:app", style: "bands" });
   assert.deepEqual(shapeFindings(shapeReport(banded, banded.figure.regions[0], lone))["shape-dominant"], [], "in bands with nothing to split, nothing to say");
+});
+
+test("shape-dominant: a small accent among few parts is fine unless the big part can be split, and then the split keeps the accent", () => {
+  const got = JSON.parse(fs.readFileSync(path.join(HERE, "fixtures", "got-facts.json"), "utf8"));
+  const found = (s, facts) => shapeFindings(shapeReport(s, s.figure.regions[0], facts))["shape-dominant"];
+  // The requests cold run: the accent is the 2% part of two, and the 98% part has no folders. Nothing can change it.
+  const mug = { hash: got.hash, facts: [{ id: "area:.", kind: "area", name: "Root" }, { id: "area:src", kind: "area", name: "Src", meta: { leaf: true } }], files: { "README.py": { area: "area:.", loc: 40 }, "src/a.py": { area: "area:src", loc: 1960 } } };
+  for (const style of ["rings", "relief", "bands"]) assert.deepEqual(found(withShape(jar().figure.regions[0].shape, { style, accent: "area:.", names: {} }), mug), [], `${style}: nothing to say`);
+  // Got with the accent on its documentation: Source is the slab, and splitting Source is the fix.
+  const doc = withShape(jar().figure.regions[0].shape, { style: "rings", accent: "area:documentation", names: {} });
+  assert.deepEqual(found(doc, got), ['"Source" holds 95% of the lines and the shape has 3 parts, so it draws as one slab around the accent; add "split": ["area:source"] to the region to cut "Source" into the folders inside it (6 parts, the largest 63%); the accent stays where it is']);
+  const fixed = withShape(jar().figure.regions[0].shape, { style: "rings", accent: "area:documentation", split: ["area:source"], names: {} });
+  assert.deepEqual(found(fixed, got), [], "the split it names quiets it");
 });
 
 test("shape-simple: the cold run's 11-op locomotive is too busy and its wheels merge; the 3-op flask and the bone's four knobs are fine", () => {
@@ -329,7 +343,34 @@ test("sketch of the jar: the mask at 20px with the accent band, each band's numb
   assert.match(out, /^corners: top-left at 0,0 is 420 by \d+;/m);
   assert.doesNotMatch(out, /^! /m);
   const tiny = sketch(withShape({ ...jar().figure.regions[0].shape, fit: { h: 0.3 } }), recipe);
-  assert.match(tiny, /^! the shape covers 7% of the sheet; it needs 35%/m);
+  assert.match(tiny, /^! shape-cover: the shape covers 7% of the sheet; it needs 35%/m);
+});
+
+test("shape-limb: the cold run's mailbox on a long bare post reads as a signpost; a short post, a flask's neck and a tapering tip pass", () => {
+  const limb = (shape) => shapeFindings(shapeReport(withShape(shape), withShape(shape).figure.regions[0], recipe))["shape-limb"];
+  const head = [rect([10, 0], [80, 70], { round: 38 }), rect([10, 40], [80, 42], { round: 4 })];
+  assert.deepEqual(limb({ ops: [...head, rect([41, 80], [18, 40]), rect([88, 12], [8, 36], { round: 2 })] }).map((m) => m.replace(/\d+/g, "#")), [
+    "a thin limb at the bottom (y # to #, #px wide) takes #% of the shape's height for #% of its area; at thumbnail size the object reads as a post with a small head, and its bands there are too narrow to read, so shorten it to under #% of the height or drop it",
+  ]);
+  assert.match(limb({ ops: [...head, rect([41, 80], [18, 40])] })[0], /takes 3\d% of the shape's height for 1\d% of its area;.* shorten it to under 25% of the height or drop it$/);
+  assert.deepEqual(limb({ ops: [...head, rect([41, 80], [18, 20])] }), [], "a short post");
+  assert.deepEqual(limb({ ops: [{ add: "circle", at: [50, 66], r: 34 }, rect([39, 12], [22, 34]), rect([33, 4], [34, 10], { round: 3 })] }), [], "the flask's neck");
+  assert.deepEqual(limb({ ops: [{ add: "polygon", points: [[0, 0], [100, 0], [50, 120]] }] }), [], "a tapering tip");
+  const post = withShape({ ops: [...head, rect([41, 80], [18, 40])] });
+  assert.match(sketch(post, recipe), /^! shape-limb: a thin limb at the bottom/m, "the sketch warns");
+});
+
+test("the sketch prints each shape finding at the level render gives it: a block on the shape is a ✗ in both", () => {
+  for (const id of SHAPE_CHECKS) assert.ok(CHECKS.some((c) => c.id === id), `${id} is a check`);
+  const s = jar();
+  const legend = s.figure.texts.find((t) => t.role === "legend");
+  Object.assign(legend, { x: 300, y: 700, w: 200 });
+  const out = sketch(s, recipe);
+  assert.match(out, /^✗ shape-room: the legend \(\d+ by \d+ at \d+,\d+\) sits on the shape/m);
+  assert.equal(CHECKS.find((c) => c.id === "shape-room").level, "fail");
+  assert.doesNotMatch(out, /^! shape-room/m);
+  const tiny = sketch(withShape({ ...jar().figure.regions[0].shape, fit: { h: 0.3 } }), recipe);
+  assert.match(tiny, /^! shape-cover: /m, "a warning stays a warning");
 });
 
 test("the sketch PNG is a 280px picture of the silhouette with its accent band, encoded without a browser", () => {

@@ -40,8 +40,10 @@ export function estimateText(t, spec, facts, em = 1) {
 // and narrowest column, and `em`, the advance the room is reserved for: Newsreader's average at 0.45 em
 // underestimates a line of long words. A headline column narrower than `roomy` is tried only after every grouping
 // fails at that width: a headline squeezed into a gap in the shape read worse than one split from the legend.
+// A shape the engine fits keeps `gap` px below the words above it, and shrinks to at most `shrink` of its size
+// to keep the label, headline and legend in one column above it.
 export const PLACE = {
-  inset: 40, clear: 20, record: 10, cell: 4, em: 1.12, after: { label: 10, other: 22 }, roomy: 400,
+  inset: 40, clear: 20, record: 10, cell: 4, em: 1.12, after: { label: 10, other: 22 }, roomy: 400, gap: 32, shrink: 0.85,
   w: { label: [120, 300], headline: [240, 520], legend: [190, 300], paragraph: [190, 300], list: [140, 240], rule: [120, 300] },
 };
 const ORDER = ["label", "headline", "legend", "paragraph", "list", "rule"];
@@ -142,38 +144,76 @@ export function placeTexts(spec, facts) {
   const region = spec.figure?.regions?.find((r) => r.kind === "field" && r.field === "shape");
   const loose = spec.figure.texts.filter((t) => t.x === undefined || t.y === undefined);
   if (!region || !loose.length || frameOf(spec) !== "loose") return spec;
-  const mask = shapeMask(region.shape);
   const fixed = spec.figure.texts.filter((t) => !loose.includes(t)).map((t) => estimateText({ w: PLACE.w[t.role]?.[1] ?? 300, ...t }, spec, facts));
-  const centre = (mask.box.left + mask.box.right) / 2;
   const rec = recordRect(recordOf(spec, facts));
   const todo = [...loose].sort((a, b) => ORDER.indexOf(a.role) - ORDER.indexOf(b.role));
-  const placed = new Map();
-  // One column, then the label and headline apart from the rest, then each block alone; each with a roomy headline first.
-  const groups = [[todo], [todo.filter((t) => ["label", "headline"].includes(t.role)), todo.filter((t) => !["label", "headline"].includes(t.role))], todo.map((t) => [t])];
-  for (const [roomy, tries] of [true, false].flatMap((r) => groups.map((g) => [r, g]))) {
-    if (placed.size) break;
-    const parts = tries.filter((g) => g.length);
-    const trial = roomGrid(mask, rec, fixed);
-    const got = [];
-    for (const g of parts) {
-      const col = placeColumn(spec, facts, trial, g, centre, roomy);
-      if (!col) break;
-      for (const t of col) {
-        const e = estimateText(t, spec, facts, PLACE.em);
-        trial.take(e.left - PLACE.after.other, e.top - PLACE.after.other, Math.max(e.right, t.x + t.w) + PLACE.after.other, e.bottom + PLACE.after.other);
+  const lead = todo.filter((t) => ["label", "headline", "legend"].includes(t.role));
+  const not = (some) => todo.filter((t) => !some.includes(t));
+  const pair = todo.filter((t) => ["label", "headline"].includes(t.role));
+  // One column; then, around a shape moved down to make room for them, the label, headline and legend that read
+  // together, apart from the rest; then, around the shape where it was, those apart, the label and headline
+  // apart, and each block alone.
+  const one = [[todo]];
+  const together = [[todo], [lead, not(lead)]];
+  const apart = [[lead, not(lead)], [pair, not(pair)], todo.map((t) => [t])];
+  const arrange = (mask, groups) => {
+    const centre = (mask.box.left + mask.box.right) / 2;
+    for (const [roomy, tries] of [true, false].flatMap((r) => groups.map((g) => [r, g]))) {
+      const trial = roomGrid(mask, rec, fixed);
+      const got = [];
+      for (const g of tries.filter((x) => x.length)) {
+        const col = placeColumn(spec, facts, trial, g, centre, roomy);
+        if (!col) break;
+        for (const t of col) {
+          const e = estimateText(t, spec, facts, PLACE.em);
+          trial.take(e.left - PLACE.after.other, e.top - PLACE.after.other, Math.max(e.right, t.x + t.w) + PLACE.after.other, e.bottom + PLACE.after.other);
+        }
+        got.push(...col);
       }
-      got.push(...col);
+      if (got.length === todo.length) return got;
     }
-    if (got.length === todo.length) for (const t of got) placed.set(t.id, t);
+    return null;
+  };
+
+  // A shape the engine fits (no fit.w, fit.h or fit.cy, no pinned block) may move to make the words one piece
+  // with it: down, when the lead column does not fit above it, and up into the room the words leave.
+  const fit = region.shape.fit ?? {};
+  const free = fit.w === undefined && fit.h === undefined && fit.cy === undefined && !fixed.length;
+  let shape = region.shape;
+  let mask = shapeMask(shape);
+  let placed = arrange(mask, one);
+  if (!placed && free) {
+    const [, widest] = PLACE.w.headline;
+    const head = lead.find((t) => t.role === "headline");
+    const col = stack(spec, facts, lead, widest, "left", head && head.size === undefined ? textSize(spec, head) : undefined);
+    const lower = { ...shape, room: { top: PLACE.inset + col.height + PLACE.gap } };
+    const below = shapeMask(lower);
+    if (below.xf.s >= PLACE.shrink * mask.xf.s) {
+      placed = arrange(below, together);
+      if (placed) [shape, mask] = [lower, below];
+    }
+  }
+  placed ??= arrange(mask, apart);
+  if (placed && free) {
+    const bottom = Math.max(...placed.map((t) => estimateText(t, spec, facts, PLACE.em).bottom));
+    if (bottom + PLACE.gap < mask.box.top) shape = { ...shape, room: { top: bottom + PLACE.gap } };
   }
   // No room anywhere: the blocks go top left in reading order, and shape-room says how much to shrink the shape.
-  if (!placed.size) {
+  if (!placed) {
     let y = PLACE.inset;
-    for (const t of todo) {
+    placed = todo.map((t) => {
       const p = { ...t, x: PLACE.inset, y, w: Math.min(t.w ?? PLACE.w[t.role][1], PLACE.w[t.role][1]), align: t.align ?? "left" };
       y = estimateText(p, spec, facts, PLACE.em).bottom + PLACE.after.other;
-      placed.set(t.id, p);
-    }
+      return p;
+    });
   }
-  return { ...spec, figure: { ...spec.figure, texts: spec.figure.texts.map((t) => placed.get(t.id) ?? { w: PLACE.w[t.role]?.[1] ?? 300, ...t }) } };
+  const at = new Map(placed.map((t) => [t.id, t]));
+  return {
+    ...spec,
+    figure: {
+      ...spec.figure,
+      regions: spec.figure.regions.map((r) => (r === region && shape !== region.shape ? { ...r, shape } : r)),
+      texts: spec.figure.texts.map((t) => at.get(t.id) ?? { w: PLACE.w[t.role]?.[1] ?? 300, ...t }),
+    },
+  };
 }

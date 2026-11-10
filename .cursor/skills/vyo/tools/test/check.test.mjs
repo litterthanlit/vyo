@@ -39,6 +39,12 @@ const failures = (p, s) => findings(p, s).filter((f) => f.level === "fail");
 
 test("a clean page passes every page check", () => assert.deepEqual(failures(page()), []));
 
+test("product-name asks for the name as the product's docs write it, and says to keep a folder name the docs use", () => {
+  const run = (name) => CHECKS.find((c) => c.id === "product-name").run({ spec: { ...spec, product: { name } }, facts: { ...facts, repo: { name: "axios" } } });
+  assert.deepEqual(run("axios"), ['product name equals the folder name "axios"; write the name customers see, capitalised as the product\'s own docs write it. If the docs write it exactly "axios", keep it: this warning only asks you to check']);
+  assert.deepEqual(run("Axios"), []);
+});
+
 test("each page check catches its defect", () => {
   const cases = [
     ["palette", { boxes: [{ color: "rgb(1, 2, 3)", hot: false, where: "a square" }] }, /a square uses rgb\(1, 2, 3\), not a light token/],
@@ -103,7 +109,7 @@ test("every check has a unique id, a level, a stage and a description", () => {
   for (const c of CHECKS) assert.ok(["fail", "warn"].includes(c.level) && ["spec", "page"].includes(c.stage) && c.about, c.id);
   assert.deepEqual(
     CHECKS.map((c) => c.id).sort(),
-    ["accent-part", "band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "field-parts", "fits", "fonts", "headline-lines", "hot-tagged", "legend", "masthead-font", "notes", "one-region", "palette", "part-name", "part-unplain", "path", "preset-copy", "product-name", "record", "region-size", "regions-apart", "row-variety", "rows-fit", "shape-accent", "shape-cover", "shape-dominant", "shape-edge", "shape-name", "shape-rings", "shape-room", "shape-share", "shape-simple", "shape-split", "shape-thin", "shape-tone", "shape-upright", "silhouette", "spec", "text-clear", "thin-region", "words-drawn"],
+    ["accent-part", "band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "field-parts", "fits", "fonts", "headline-lines", "hot-tagged", "legend", "masthead-font", "notes", "one-region", "palette", "part-name", "part-unplain", "path", "preset-copy", "product-name", "record", "region-size", "regions-apart", "row-variety", "rows-fit", "shape-accent", "shape-cover", "shape-dominant", "shape-edge", "shape-limb", "shape-name", "shape-rings", "shape-room", "shape-share", "shape-simple", "shape-split", "shape-thin", "shape-tone", "shape-upright", "silhouette", "spec", "text-clear", "thin-region", "words-drawn"],
   );
 });
 

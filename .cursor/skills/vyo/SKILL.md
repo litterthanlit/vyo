@@ -37,9 +37,9 @@ Without installing it, write `npx -y @litterthanlit/vyo` wherever this file says
    ```bash
    npx vyo compose <facts> --field wave --accent area:lib/plan --repo <repo> --out <repo>/vyo/<name>-poster.json
    ```
-   `--accent` refuses an id that `parts` did not list. Compose refuses to overwrite an existing spec, which may hold your words, unless you pass `--force`. `--repo` gives the record line its commit. Compose finds the corners the field leaves empty, puts the label, headline, legend, a paragraph and the parts list into them, and prints the corners and each text role's size. For a shape it writes the texts with no coordinates: the engine places them around the shape.
+   Add `--theme dark` for a dark sheet, and for a shape `--style bands|rings|relief` for its look. `--accent` refuses an id that `parts` did not list. Compose refuses to overwrite an existing spec, which may hold your words, unless you pass `--force`. `--repo` gives the record line its commit. Compose finds the corners the field leaves empty, puts the label, headline, legend, a paragraph and the parts list into them, and prints the corners and each text role's size. For a shape it writes the texts with no coordinates: the engine places them around the shape.
 7. Replace every `…` value: the product name, the field's `fits`, the headline, the legend, the paragraph, the names, for a wave the `sentence`, and for a shape the `shape` (see "Draw the shape"). Render rejects any placeholder left.
-8. Sketch: `npx vyo sketch <repo>/vyo/<name>-poster.json`. It prints the sheet, the text boxes and the corners, then runs every check that needs no browser. Fix every `✗` line (a legend or fits wording error fails render too) and act on every `!` line. If a corner is cramped, or two text boxes touch, move a block into a corner with room or delete the paragraph.
+8. Sketch: `npx vyo sketch <repo>/vyo/<name>-poster.json`. It prints the sheet, the text boxes and the corners, then runs every check that needs no browser. Every line has the level render gives it: fix every `✗` line and act on every `!` line. If a corner is cramped, or two text boxes touch, move a block into a corner with room or delete the paragraph.
 9. Render: `npx vyo render <repo>/vyo/<name>-poster.json`.
 10. Fix every `✗` line. Render exits 1 until none is left. Weigh every `!` line.
 11. Open the PNG at full size and `<repo>-poster-thumb.png`, the poster at 1/6 scale that `render` writes beside it. The accent part must stand out at thumbnail size, the legend must match what you see, and no name may read as code. If not, change the accent, a name or a block, and go back to step 8.
@@ -59,12 +59,12 @@ If you cannot decide, take wave. A field preference in `project-context.md` wins
 ## Draw the shape
 
 1. Pick one object a stranger would name in a second, tied to the story: a jar for a pantry, a paper plane for a hand-off. Never a heart, a plain circle or a box. Simple reads: a 3-op flask was legible at once, an 11-op locomotive half legible.
-2. Name the one feature that makes it that object, like the jar's lid and shoulders. Draw it in 3 to 6 ops in a 100-unit box, y down, with that feature large, about as tall as it is wide or taller. Leave out small repeated details such as wheels or windows: they merge at thumbnail size. `compose --field shape` prints the format.
-3. Leave `fit` out: the engine fits the shape inside the sheet, below room for the words. Set `fit` only to bleed it off an edge on purpose. Leave `x` and `y` out of the text blocks too: the engine places them in the room the shape leaves. Pin a block with `x` and `y` only for a reason, like a hole cut for the legend.
-4. If `parts --field shape` or the sketch says the accent holds most of the code, add `"split": ["<its id>"]` to the region and run `parts --field shape --split <its id>`.
-   Its folders become parts; put the accent on the one the story is about.
-5. Pick the look with `style`. `bands` (the default) cuts the shape top to bottom and suits any outline, thin parts included. `rings` sets the names along the outline, ring inside ring, with the core in level lines; add `"echo": 6` for faded outlines around it. Choose rings for a fat, round object (a jar, a stone, a bulb) and cut a hole in it where the legend should sit. A thin or spiky shape (a plane, a key, a ladder) starves the rings; take bands or relief, or fatten it until `shape-rings` is quiet. `relief` draws any outline as a lit, sculpted volume in dense 6px type, each part a layer of its own name and the accent glowing (a solid layer on paper); choose it when the object itself should be the poster's pull, solid at thumbnail size. Keep bands when the part names must read from across a room.
-6. Sketch, then open `<name>-sketch.png`; big lines of type show as bars. Say in one word what you see. If that word is not the object, redraw it simpler. Fix every `!` line: each gives the number to change.
+2. Name the one feature that makes it that object, like the jar's lid and shoulders. Draw it in 3 to 6 ops in a 100-unit box, y down, with that feature large, about as tall as it is wide or taller. Leave out small repeated details such as wheels or windows: they merge at thumbnail size. Keep a post or stem short: a long thin limb takes the object's height and reads as a pole with a small head. `compose --field shape` prints the format.
+3. Leave `fit` out: the engine fits the shape inside the sheet and centres it in the room the words leave. Set `fit` only to bleed it off an edge on purpose. Leave `x` and `y` out of the text blocks too: the engine places them in the room the shape leaves. Pin a block with `x` and `y` only for a reason, like a hole cut for the legend.
+4. If `shape-dominant` says to split a part, add the `"split"` it gives to the region and run `parts --field shape --split <its id>`.
+   Its folders become parts; if it was the accent, put the accent on the one the story is about.
+5. Pick the look with `style` (or `compose --style`). `bands` (the default) cuts the shape top to bottom and suits any outline, thin parts included. `rings` sets the names along the outline, ring inside ring, with the core in level lines; add `"echo": 6` for faded outlines around it. Choose rings for a fat, round object (a jar, a stone, a bulb) and cut a hole in it where the legend should sit. A thin or spiky shape (a plane, a key, a ladder) starves the rings; take bands or relief, or fatten it until `shape-rings` is quiet. `relief` draws any outline as a lit, sculpted volume in dense 6px type, each part a layer of its own name and the accent glowing (a solid layer on paper); choose it when the object itself should be the poster's pull, solid at thumbnail size. Keep bands when the part names must read from across a room.
+6. Sketch, then open `<name>-sketch.png`; big lines of type show as bars. Say in one word what you see. If that word is not the object, redraw it simpler. Fix every `✗` and `!` line: each gives the number to change.
 7. Render and look at the thumbnail again.
 
 A relief needs no hints: the default is a rounded volume lit from the top left. Add one only for a feature the outline cannot show, and sketch again after each:
@@ -92,7 +92,7 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 
 | Field | What it is |
 |---|---|
-| `product.name` | The customer-facing name. `product-name` warns while it is the folder name |
+| `product.name` | The customer-facing name, capitalised as the product's docs write it. `product-name` warns while it is the folder name; keep it if the docs write it that way |
 | `product.commit` | The short hash. `compose --repo` fills it, and the record line needs it |
 | `headline` | At most 72 characters |
 | region `field` | `wave`, `terrain`, `river` or `shape`. One field per figure |

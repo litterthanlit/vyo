@@ -6,9 +6,10 @@ import { FONT_FACES, tokensOf, fieldTokensOf, recordText } from "./render.mjs";
 import { frameOf, ROLES } from "./frame.mjs";
 import { partsFromFacts, partOptions, regionParts, unplainName, sameNames } from "./parts.mjs";
 import { FIELDS } from "./fields/index.mjs";
-import { shapeReport, shapeFindings, SHAPE_LIMITS } from "./shape-report.mjs";
+import { shapeReport, shapeFindings, SHAPE_LIMITS, SHAPE_LIMB } from "./shape-report.mjs";
 import { RINGS } from "./fields/shape-rings.mjs";
 import { RELIEF } from "./fields/shape-relief.mjs";
+import { placeTexts } from "./place.mjs";
 
 const rgb = (hex) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(", ")})`;
 const overlap = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
@@ -90,8 +91,17 @@ const pageRegionStats = (page) => regionStats(fillRowsOf(page).map((r) => ({ reg
  */
 const shapeCheck = (id, level, stage, about, drawn = () => ({})) => ({
   id, level, stage, frames: ["loose"], about,
-  run: (i) => fieldsOf(i.spec).filter((r) => r.field === "shape").flatMap((r) => shapeFindings(shapeReport(i.spec, r, i.facts), drawn(i))[id]),
+  run: (i) => {
+    const spec = placedSpec(i);
+    return fieldsOf(spec).filter((r) => r.field === "shape").flatMap((r) => shapeFindings(shapeReport(spec, r, i.facts), drawn(i))[id]);
+  },
 });
+// The spec as render and sketch draw it, with the texts placed and the shape moved for them; once per spec.
+const placed = new WeakMap();
+const placedSpec = ({ spec, facts }) => {
+  if (!placed.has(spec)) placed.set(spec, placeTexts(spec, facts));
+  return placed.get(spec);
+};
 
 /**
  * @typedef {{ spec: any, facts: any, presets: Record<string, any>, page?: any }} CheckInput
@@ -114,7 +124,7 @@ export const CHECKS = [
   },
   {
     id: "product-name", level: "warn", stage: "spec", about: "the product name is the customer-facing name",
-    run: ({ spec, facts }) => (spec.product.name === facts.repo.name ? [`product name equals the folder name "${facts.repo.name}"; use the name customers see`] : []),
+    run: ({ spec, facts }) => (spec.product.name === facts.repo.name ? [`product name equals the folder name "${facts.repo.name}"; write the name customers see, capitalised as the product's own docs write it. If the docs write it exactly "${facts.repo.name}", keep it: this warning only asks you to check`] : []),
   },
   {
     id: "preset-copy", level: "warn", stage: "spec", about: "the figure's geometry is not a preset's, unchanged",
@@ -172,8 +182,9 @@ export const CHECKS = [
         .filter((r) => !FIELDS[r.field].fits.some((w) => startsWord(r.fits, w)))
         .map((r) => `region ${r.id}: fits must say why a ${r.field} matches the product's story; use ${anyOf(FIELDS[r.field].fits)}`),
   },
-  shapeCheck("shape-dominant", "warn", "spec", "a drawn shape's accent part holds at most 75% of the lines, among at least 4 parts, so the accent is not one slab"),
+  shapeCheck("shape-dominant", "warn", "spec", "no part of a drawn shape is one slab: a part over 75% of the lines, or among under 4 parts, is split when it has folders inside it, and an accent over 75% with none is drawn in bands"),
   shapeCheck("shape-simple", "warn", "spec", "a drawn shape has at most 8 ops and no run of small repeated details that merge at thumbnail size"),
+  shapeCheck("shape-limb", "warn", "spec", `no even limb under ${SHAPE_LIMB.width * 100}% of a drawn shape's widest row runs from its top or bottom over ${SHAPE_LIMB.height * 100}% of its height while holding at most ${SHAPE_LIMB.area * 100}% of its area`),
   shapeCheck("shape-thin", "warn", "spec", `no feature of a drawn shape, and no cut in it, is under ${SHAPE_LIMITS.thin}px across, a hairline at thumbnail size`),
   shapeCheck("shape-cover", "warn", "spec", `a drawn shape covers at least ${SHAPE_LIMITS.cover * 100}% of the sheet`),
   shapeCheck("shape-edge", "warn", "spec", `a drawn shape that runs off an edge runs off by at least ${SHAPE_LIMITS.bleed * 100}% of its own size, so the bleed reads as meant`),

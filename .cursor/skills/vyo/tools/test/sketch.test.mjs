@@ -99,7 +99,7 @@ test("a wave sketches from the facts: its parts, its rows, all of them drawn beh
 test("two text blocks whose estimated rects intersect are warned about before render", () => {
   const spec = preset("hourglass");
   spec.figure.texts.push({ role: "aside", id: "one", text: "Plan once and eat well.", x: 600, y: 300, w: 160 }, { role: "aside", id: "two", text: "Shop for the week.", x: 620, y: 310, w: 160 });
-  assert.match(sketch(spec), /^! text blocks "one" and "two" overlap; move one \(render fails blocks-apart\)$/m);
+  assert.match(sketch(spec), /^✗ blocks-apart: text blocks "one" and "two" overlap; move one$/m);
   assert.doesNotMatch(sketch(preset("hourglass")), /overlap/);
 });
 
@@ -122,6 +122,41 @@ test("vyo sketch runs every check that needs no browser: a legend and a fits tha
     assert.equal(out.status, 0);
     assert.match(out.stdout, /^✗ legend: must say what the picture encodes; name the accent part \("the plan"\) and the measure/m);
     assert.match(out.stdout, /^✗ fits: region shape: fits must say why a shape matches the product's story/m);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("compose --field shape --style writes the style and a legend placeholder in that style's words, never the names' placeholder", async () => {
+  const { spawnSync } = await import("node:child_process");
+  const os = await import("node:os");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-compose-"));
+  try {
+    const vyo = (...a) => spawnSync(process.execPath, [path.join(HERE, "..", "vyo.mjs"), ...a], { encoding: "utf8" });
+    const facts = path.join(dir, "recipe-facts.json");
+    vyo("scan", path.join(HERE, "fixtures", "recipe"), "--out", facts);
+    const compose = (out, ...a) => {
+      const r = vyo("compose", facts, "--accent", "area:lib/plan", "--out", out, ...a);
+      return { r, spec: fs.existsSync(out) ? JSON.parse(fs.readFileSync(out, "utf8")) : null };
+    };
+    const legendOf = (spec) => spec.figure.texts.find((t) => t.role === "legend").text;
+    const relief = compose(path.join(dir, "relief.json"), "--field", "shape", "--style", "relief", "--theme", "dark");
+    assert.equal(relief.spec.figure.regions[0].style, "relief");
+    assert.equal(relief.spec.theme, "dark");
+    assert.equal(legendOf(relief.spec), '… at most 2 sentences and 180 characters, like "Every layer is a part of <product>, its size set by its lines of code. The glowing layer is <the accent\'s plain name>."');
+    const rings = compose(path.join(dir, "rings.json"), "--field", "shape", "--style", "rings");
+    assert.match(legendOf(rings.spec), /like "Every ring is a part of <product>, its area as big as its share of the code\. The orange ring is/);
+    const bands = compose(path.join(dir, "bands.json"), "--field", "shape");
+    assert.equal(bands.spec.figure.regions[0].style, undefined, "bands is the default, so no style is written");
+    assert.match(legendOf(bands.spec), /like "Every band is a part of <product>, its type as big as its share of the code\. The orange band is/);
+    for (const s of [relief, rings, bands]) assert.doesNotMatch(legendOf(s.spec), /a plain name for/, "the names' placeholder stays in names");
+    const wave = compose(path.join(dir, "wave.json"), "--field", "wave");
+    assert.match(legendOf(wave.spec), /name the accent part by the plain name you give it in names and the measure \("code" or "lines"\)$/);
+    const wrong = compose(path.join(dir, "bad.json"), "--field", "wave", "--style", "rings");
+    assert.equal(wrong.r.status, 2);
+    assert.match(wrong.r.stderr, /--style picks a shape field's look; pass --field shape/);
+    const blob = compose(path.join(dir, "blob.json"), "--field", "shape", "--style", "blob");
+    assert.match(blob.r.stderr, /--style blob is not a style; use bands, rings, relief/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
