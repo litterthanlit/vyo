@@ -178,9 +178,31 @@ test("every line sits where the mask covers its whole glyph height, and every pa
     }
   }
   for (const p of parts) assert.ok(rows.some((r) => r.part === p.id && r.text.includes(p.name.toLowerCase())), `${p.name} is drawn whole`);
-  const lid = rows.filter((r) => r.part === "area:.");
-  assert.ok(lid.every((r) => r.width > 200), `under the slanted lid no line is a sliver (${lid.map((r) => Math.round(r.width))})`);
+  for (const r of rows) {
+    const name = parts.find((p) => p.id === r.part).name.toLowerCase();
+    assert.equal(r.text, Array(r.text.split(name).length - 1).fill(name).join(" "), `"${r.text}" holds whole names only`);
+  }
   assert.equal(nameWidth("abc", 10), 3 * 0.62 * 10 - 0.2, "a name's width counts its tracking between letters");
+});
+
+test("a tall band broken up by wheels holds its name large on several lines, whole names only, inside the sheet", () => {
+  // The cold run's locomotive: a boiler, a cab, a chimney and three wheels, the accent the biggest part at the bottom.
+  const loco = shapeMask({ ops: [{ add: "capsule", from: [20, 52], to: [72, 52], r: 22 }, rect([66, 12], [32, 64]), rect([22, 6], [12, 26]), rect([8, 72], [94, 12]), ...[28, 58, 84].map((x) => ({ add: "circle", at: [x, 92], r: 16 }))], fit: { w: 1.05, cy: 0.62 } });
+  const parts = [["area:.", "front door", 10], ["area:examples", "sample apps", 1000], ["area:lib", "request handling", 2300]].map(([id, name, loc]) => ({ id, name, loc, hot: id === "area:lib" }));
+  const { bands, rows } = bandsStyle(loco, parts, { measure: fixedMeasure });
+  const hot = bands.find((b) => b.part.hot);
+  assert.ok(hot.y1 - hot.y0 > 300, `the accent band is tall (${hot.y1 - hot.y0}px)`);
+  const mine = rows.filter((r) => r.hot);
+  assert.ok(new Set(mine.map((r) => r.y)).size >= 3, `its name is set on 3 lines or more (${mine.length} rows)`);
+  assert.ok(hot.size >= 40, `in large type (${hot.size.toFixed(1)}px)`);
+  const inked = mine.reduce((s, r) => s + r.width * r.size, 0);
+  const area = loco.runs.slice(hot.y0, hot.y1).reduce((s, row) => s + row.reduce((a, [l, r]) => a + r - l, 0), 0);
+  assert.ok(inked / area > 0.3, `its lines cover the band, not one line in an empty slab (${Math.round((100 * inked) / area)}%)`);
+  for (const r of rows) {
+    const name = r.word.toLowerCase();
+    assert.match(r.text, new RegExp(`^${name}( ${name})*$`), `"${r.text}" holds whole names only`);
+    assert.ok(r.x >= 0 && r.x + r.width <= W, `"${r.text}" stays on the sheet`);
+  }
 });
 
 test("the light theme alternates fills over a cast shadow; the dark theme fills in ink", () => {

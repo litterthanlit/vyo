@@ -30,7 +30,8 @@ const rowAreas = (mask) => mask.runs.map((row) => row.reduce((a, [l, r]) => a + 
 
 /**
  * One band per part, top to bottom in tree order, each covering its part's share of the mask's area, at least
- * `minBand` px tall, with its type size and line count.
+ * `minBand` px tall, with its type size and line count. Type is sized by weight, never larger than lets the name
+ * sit whole on a line of its band, and a band fills its height with as many lines as that size takes.
  * @param {import("../mask.mjs").Mask} mask
  * @param {{ id: string, name: string, loc: number }[]} parts
  * @returns {{ part: object, y0: number, y1: number, lines: number, size: number }[]}
@@ -52,17 +53,73 @@ export function shapeBands(mask, parts) {
     return { part, y0, y1: Math.max(y, y0 + 1) };
   });
   const big = bands.reduce((a, b) => (b.part.loc > a.part.loc ? b : a));
+  // The biggest part's type would be one line as tall as its band; every other part's scales from that by weight.
   const display = (big.y1 - big.y0) / BANDS.pitch;
-  for (const b of bands) {
-    const h = b.y1 - b.y0;
-    const wanted = Math.max(min, display * Math.pow(b.part.loc / big.part.loc, gamma));
-    b.lines = Math.max(1, Math.floor((h - TAIL * wanted) / (wanted * BANDS.pitch)));
-    b.size = h / (b.lines * BANDS.pitch + TAIL);
-    // A one-line band grows its type toward its height, but size encodes weight: at most `grow` times what its
-    // lines ask for, and a small part stretched to the minimum height keeps its small type.
-    if (b.lines === 1) b.size = Math.min(b.size, wanted < BANDS.bold ? wanted : BANDS.grow * wanted);
-  }
+  const set = (b, i, cap = Infinity) => {
+    const wanted = Math.min(cap, Math.max(min, display * Math.pow(b.part.loc / big.part.loc, gamma)));
+    Object.assign(b, typeset(mask, b.y0 + (i ? BANDS.gap : 0), b.y1, b.part.name.toLowerCase(), wanted));
+  };
+  bands.forEach((b, i) => set(b, i));
+  // A smaller part never gets larger type than the biggest, whatever room its band has.
+  bands.forEach((b, i) => b.part.loc < big.part.loc && b.size > big.size && set(b, i, big.size));
   return bands;
+}
+
+/**
+ * A band's type from `a` to `floor`: as near `wanted` px as the band sets its name large and fills its height.
+ * The size starts at the largest that holds the name whole on some line; a large size steps down while a smaller
+ * one would cover much more of the band with whole names (a tall band whose width breaks up below its widest
+ * line, across wheels, takes several lines of slightly smaller type and not one huge line).
+ */
+function typeset(mask, a, floor, name, wanted) {
+  const h = floor - a;
+  const most = fitSize(mask, a, floor, name);
+  const linesAt = (size) => Math.max(1, Math.floor((h - TAIL * size) / (size * BANDS.pitch)));
+  const start = Math.min(wanted, most);
+  if (linesAt(start) === 1 && start <= h / (BANDS.pitch + TAIL) && start < BANDS.bold) {
+    // A one-line band grows its type toward its height, but size encodes weight: a small part stretched to the
+    // minimum height keeps its small type.
+    return { size: Math.min(most, h / (BANDS.pitch + TAIL), wanted), lines: 1 };
+  }
+  const cover = (size) => {
+    const lines = linesAt(size);
+    const tops = lineTops(mask, a, floor, lines, size, name);
+    const inked = tops.reduce((s, top) => s + lineSpans(mask, top, size, floor).reduce((n, [l, r]) => n + wholeNames(name, size, r - l), 0), 0);
+    return { size, lines, cover: inked * nameWidth(name, size) * size };
+  };
+  const tries = [cover(start)];
+  for (let s = start * 0.88; s >= Math.max(BANDS.bold, start / 3) && start >= BANDS.bold; s *= 0.88) tries.push(cover(s));
+  const best = Math.max(...tries.map((t) => t.cover));
+  const pick = tries.find((t) => t.cover >= 0.7 * best);
+  if (pick.lines === 1) {
+    // A lone line grows toward the band's height, at most `grow` times what its weight asks for.
+    return { size: Math.min(most, h / (BANDS.pitch + TAIL), BANDS.grow * wanted), lines: 1 };
+  }
+  // Small type stretches to fill the band's height exactly, as far as the name still fits.
+  if (pick.size < BANDS.bold) return { size: Math.max(pick.size, Math.min(most, h / (pick.lines * BANDS.pitch + TAIL))), lines: pick.lines };
+  return { size: pick.size, lines: pick.lines };
+}
+
+/**
+ * The largest type, at most one line as tall as the band from `a` to `floor`, at which `name` sits whole on some
+ * line of it (a span inside the mask over the line's whole glyph height); never under BANDS.min.
+ */
+function fitSize(mask, a, floor, name) {
+  const fits = (size) => {
+    for (let top = a; top + GLYPH.bottom * size <= floor + 0.5; top += Math.max(1, size / 6)) {
+      if (lineSpans(mask, top, size, floor).some(([l, r]) => r - l >= nameWidth(name, size))) return true;
+    }
+    return false;
+  };
+  let [lo, hi] = [BANDS.min, (floor - a) / (BANDS.pitch + TAIL)];
+  if (hi <= lo || fits(hi)) return Math.max(lo, hi);
+  if (!fits(lo)) return lo;
+  for (let k = 0; k < 14; k++) {
+    const mid = (lo + hi) / 2;
+    if (fits(mid)) lo = mid;
+    else hi = mid;
+  }
+  return lo;
 }
 
 /** Where a line of `size` px type whose top is `top` can sit: the spans inside the mask over its whole glyph height. */
@@ -80,9 +137,8 @@ export const nameWidth = (name, size) => name.length * (ADVANCE + trackOf(size))
 
 /**
  * The bands style: each band in its theme's fill (the accent band in the accent) with its part's name repeated in
- * paper across every line, odd lines shifted half a name. A line holds letters only where the mask covers its
- * whole glyph height, so no letter is cut by a slanted edge. A band whose lines hold no whole name shrinks its
- * type until one does; a one-line band centres its line.
+ * paper across every line, whole names only, centred in each span. A line holds letters only where the mask covers
+ * its whole glyph height, so no letter is cut by a slanted edge, and a span too short for one name stays plain fill.
  * @param {import("../mask.mjs").Mask} mask
  * @param {{ id: string, name: string, loc: number, hot: boolean }[]} parts  in tree order
  * @param {{ measure: (text: string, size: number) => number, theme?: "light" | "dark" }} frame
@@ -98,53 +154,34 @@ export function bandsStyle(mask, parts, { measure, theme = "light" }) {
     const name = b.part.name.toLowerCase();
     ground.push({ part: b.part.id, hot: b.part.hot, tone: b.part.hot ? "hot" : fills[i % fills.length], rows: Array.from({ length: Math.max(0, h) }, (_, k) => [a + k, mask.runs[a + k]]) });
     if (h <= 0) return;
-    let { size, lines } = b;
-    const centred = (s) => a + h / 2 - ((GLYPH.top + GLYPH.bottom) / 2) * s;
-    const place = () => (lines === 1 ? [centred(size)] : lineTops(mask, a, b.y1, lines, size));
-    let tops = place();
-    // The whole name must fit on some line: shrink the type until it does, never under the minimum.
-    for (let k = 0; k < 4 && size > BANDS.min; k++) {
-      const widest = Math.max(0, ...tops.flatMap((top) => lineSpans(mask, top, size, b.y1).map(([l, r]) => r - l)));
-      if (nameWidth(name, size) <= widest) break;
-      size = Math.max(BANDS.min, (0.99 * size * widest) / nameWidth(name, size));
-      if (lines > 1) lines = Math.max(1, Math.floor((h - TAIL * size) / (size * BANDS.pitch)));
-      tops = place();
+    const { size, lines } = b;
+    const holds = (top) => lineSpans(mask, top, size, b.y1).some(([l, r]) => r - l >= nameWidth(name, size) - 0.01);
+    let tops = lines === 1 ? [a + h / 2 - ((GLYPH.top + GLYPH.bottom) / 2) * size] : lineTops(mask, a, b.y1, lines, size, name);
+    // Where no line holds the name, the lines slide (a lone line to the nearest place that does) until one does.
+    if (!tops.some(holds)) {
+      const room = b.y1 - (tops[tops.length - 1] + GLYPH.bottom * size);
+      const shifts = Array.from({ length: Math.ceil(tops[0] - a) + Math.ceil(room) + 1 }, (_, k) => k - Math.ceil(tops[0] - a)).sort((p, q) => Math.abs(p) - Math.abs(q));
+      const shift = shifts.find((d) => tops.some((t) => holds(t + d)));
+      if (shift !== undefined) tops = tops.map((t) => t + shift);
     }
-    b.size = size;
-    b.lines = lines;
     const cycle = `${name} `;
     const track = trackOf(size) * size;
     const cw = ADVANCE * size;
     // The page's own advance differs from Commit Mono's 0.6em by a hair; the spacing takes it up so both agree.
     const spacing = track + cw - measure("M", size);
-    tops.forEach((top, j) => {
+    for (const top of tops) {
       const height = Math.min(GLYPH.bottom * size, b.y1 - top);
-      let k = (j % 2) * Math.round(cycle.length / 2);
       for (const [l, r] of lineSpans(mask, top, size, b.y1)) {
-        let n = Math.floor((r - l + track) / (cw + track));
-        // A span too short for one whole name (beside a loop, down a narrow tail) stays plain fill, not fragments.
-        if (n < name.length) continue;
-        // A span whose letters from k would hold no whole name starts on one instead.
-        if ((cycle.length - (k % cycle.length)) % cycle.length + name.length > n) k = 0;
-        let x = l;
-        if (lines === 1) {
-          // A lone line starts on the name and centres its whole repeats.
-          const whole = Math.max(1, Math.floor((n + 1) / cycle.length));
-          n = Math.min(n, whole * cycle.length - 1);
-          x = l + (r - l - (n * (cw + track) - track)) / 2;
-          k = 0;
-        }
-        let text = Array.from({ length: Math.max(0, n) }, (_, c) => cycle[(k + c) % cycle.length]).join("");
-        const lead = text.length - text.trimStart().length;
-        text = text.trim();
-        k += n;
-        if (!text) continue;
+        const whole = wholeNames(name, size, r - l);
+        if (!whole) continue;
+        const text = cycle.repeat(whole).slice(0, -1);
+        const width = text.length * cw + (text.length - 1) * track;
         rows.push({
-          x: x + lead * (cw + track), y: top, width: text.length * cw + (text.length - 1) * track, height, lineHeight: BANDS.pitch * size,
+          x: l + (r - l - width) / 2, y: top, width, height, lineHeight: BANDS.pitch * size,
           size, text, spacing, weight: size >= BANDS.bold ? 700 : 400, part: b.part.id, word: b.part.name, hot: b.part.hot, tone: b.part.hot ? "on-hot" : "paper",
         });
       }
-    });
+    }
   });
   if (shadow) {
     // The whole shape cast down and right, under the fills, so their edges blend into the shadow and not into a
@@ -156,26 +193,28 @@ export function bandsStyle(mask, parts, { measure, theme = "light" }) {
   return { bands, rows, ground };
 }
 
+/** How many whole copies of `name` at `size` fit across a span `width` px wide, a space between each. */
+export function wholeNames(name, size, width) {
+  const track = trackOf(size) * size;
+  return Math.floor((Math.floor((width + track) / (ADVANCE * size + track)) + 1) / (name.length + 1));
+}
+
 /**
- * Where a band's lines go: `lines` of them `pitch` em apart from its top, unless a line there would hold less
- * than half the band's widest line, as under a slanted lid. Then one line fewer, slid down the freed room to
- * where its narrowest line is widest, and so on while that helps.
+ * Where a band's lines go: the layout of at most `lines` lines `pitch` em apart that sets the most whole names,
+ * among a few counts and offsets, centred in the band's slack when that ties. Under a slanted lid that is fewer
+ * lines slid down; across wheels, every line that is wide enough somewhere.
  */
-function lineTops(mask, a, floor, lines, size) {
+function lineTops(mask, a, floor, lines, size, name) {
   const step = BANDS.pitch * size;
-  const room = (top) => Math.max(0, ...lineSpans(mask, top, size, floor).map(([l, r]) => r - l));
-  const layout = (n, off) => {
-    const tops = Array.from({ length: n }, (_, j) => a + off + j * step);
-    return { tops, worst: Math.min(...tops.map(room)), best: Math.max(...tops.map(room)) };
-  };
-  let pick = layout(lines, 0);
-  const widest = pick.best;
-  for (let n = lines - 1; n >= 1 && pick.worst < widest / 2; n--) {
-    const slack = floor - a - n * step;
-    const tries = [0, 1, 2, 3, 4].map((t) => layout(n, (slack * t) / 4));
-    const better = tries.reduce((p, q) => (q.worst > p.worst ? q : p));
-    if (better.worst <= pick.worst) break;
-    pick = better;
+  const names = (top) => lineSpans(mask, top, size, floor).reduce((n, [l, r]) => n + wholeNames(name, size, r - l), 0);
+  let pick = null;
+  for (let n = lines; n >= Math.max(1, lines - 6); n--) {
+    const slack = Math.max(0, floor - a - (n - 1) * step - GLYPH.bottom * size);
+    for (const t of [2, 1, 3, 0, 4]) {
+      const tops = Array.from({ length: n }, (_, j) => a + (slack * t) / 4 + j * step);
+      const count = tops.reduce((c, top) => c + names(top), 0);
+      if (!pick || count > pick.count) pick = { tops, count };
+    }
   }
   return pick.tops;
 }
