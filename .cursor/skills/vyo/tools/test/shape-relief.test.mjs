@@ -92,31 +92,24 @@ test("strata hold each part's share of the area, and the glyphs follow it", () =
   }
 });
 
-test("every word is whole: a row holds only its part's whole name and tone marks", () => {
+test("every part shows its whole name, while words run across seams and lines enter and leave the shape mid-name", () => {
   for (const strata of [{ by: "angle", angle: 90 }, { by: "angle", angle: 135 }, { by: "depth" }]) {
     const r = report(relief({ strata }));
-    for (const row of r.rows) {
-      const name = r.parts.find((p) => p.id === row.part).name.toLowerCase();
-      assert.match(row.text.split(name).join(""), /^[ ·:]*$/, `"${row.text}" holds a fragment of a name, not just "${name}"`);
-    }
     for (const p of r.parts) assert.ok(r.rows.some((row) => row.part === p.id && row.text.includes(p.name.toLowerCase())), `${p.name} shows whole`);
+    const fragment = (row) => /[a-z]/.test(row.text.split(r.parts.find((p) => p.id === row.part).name.toLowerCase()).join(""));
+    assert.ok(r.rows.filter(fragment).length > 20, `${strata.by} ${strata.angle ?? ""}: rows start and end in part-names`);
+    // A word takes whichever part it starts on is owed most, so a seam steps where whole words begin and end.
+    const byLine = new Map();
+    for (const row of r.rows) byLine.set(row.y, new Set([...(byLine.get(row.y) ?? []), row.part]));
+    assert.ok([...byLine.values()].filter((parts) => parts.size > 1).length >= 5, `${strata.by} ${strata.angle ?? ""}: seams stagger along the lines (${[...byLine.values()].filter((parts) => parts.size > 1).length} lines hold two parts)`);
   }
 });
 
-test("level strata split between glyph lines, never along one, so their seams do not step", () => {
-  const r = report(relief({ strata: { by: "angle", angle: 90 } }));
-  const byLine = new Map();
-  for (const row of r.rows) byLine.set(row.y, new Set([...(byLine.get(row.y) ?? []), row.part]));
-  const split = [...byLine].filter(([, parts]) => parts.size > 1);
-  assert.deepEqual(split.map(([y]) => Math.round(y)), [], "lines that hold two parts");
-});
-
-test("a part too thin for its name borrows one line's cells, and only one", () => {
+test("a stratum too thin for its name across a paper plane still shows it whole", () => {
   const thin = relief({ strata: { by: "angle", angle: 135 }, shape: { ops: [{ add: "polygon", points: [[0, 400], [1000, 0], [430, 600]] }, { add: "polygon", points: [[430, 600], [1000, 0], [740, 1000]] }], fit: { h: 0.83, cx: 0.52, cy: 0.58 }, rotate: -14 } });
   const r = report(thin);
   for (const p of r.parts) assert.ok(r.rows.some((row) => row.part === p.id && row.text.includes(p.name.toLowerCase())), `${p.name} shows whole`);
-  const plain = r.strata.filter((s) => s.whole === 1);
-  assert.ok(plain.length >= 1, "at least one thin part is down to its one borrowed name");
+  assert.deepEqual(findings(thin)["shape-share"], []);
 });
 
 test("with no hints the default is a rounded volume: lit top left, dim bottom right, a clear spread", () => {
@@ -138,23 +131,33 @@ test("with no hints the default is a rounded volume: lit top left, dim bottom ri
   }
 });
 
-test("the dark sheet sets ink letters over a haze and a glowing accent; paper gets a shade body with paper letters, a cast shadow and a solid accent with dark letters", () => {
+test("on either sheet the form is only its letters over the accent's glow, and the sheet's dot grid carries its shadow", () => {
+  const inside = (r, x, y) => r.mask.runs[Math.floor(y)]?.some(([l, rr]) => x >= l && x < rr);
+  for (const theme of ["dark", "light"]) {
+    const r = report(relief({}, theme));
+    assert.ok(r.rows.every((row) => row.spans.every((s) => s.tone === (row.hot ? "hot" : "ink"))), `${theme}: ink letters, the accent's in hot`);
+    assert.equal(r.ground.length, 1, `${theme}: no body, haze or shadow slab, only the glow`);
+    const [glow] = r.ground;
+    assert.ok(glow.hot && glow.tone === "hot" && glow.blur >= 5 && glow.blur <= 7 && glow.alpha <= 0.55, `${theme}: a glow hugging the accent's letters`);
+    const hotRows = r.rows.filter((row) => row.hot);
+    assert.ok(glow.rows.every(([y, spans]) => spans.every(([l, rr]) => hotRows.some((h) => y >= Math.floor(h.y) && y < h.y + h.height + 1 && l >= h.x - 0.01 && rr <= h.x + h.width + 0.01))), `${theme}: the glow covers only the accent's letter cells`);
+    // The dots: every other glyph cell outside the shape, faint; the cast shadow down and right takes them away on
+    // the dark sheet and darkens them on paper.
+    const dots = r.sheet.flatMap((row) => {
+      let k = 0;
+      return row.spans.flatMap((s) => [...s.text].map((ch) => [ch, row.x + (k++ + 0.5) * (row.width / row.text.length), row.y + row.height / 2, s.alpha])).filter(([ch]) => ch === "·");
+    });
+    assert.ok(dots.length > 10000, `${theme}: ${dots.length} dots`);
+    assert.ok(dots.every(([, x, y]) => !(inside(r, x - 2, y) && inside(r, x + 2, y))), `${theme}: no dot on the shape, to the 2px grid`);
+    const b = r.mask.box;
+    const under = dots.filter(([, x, y]) => x > b.right - 20 && x < b.right + 20 && y > b.top + 0.5 * (b.bottom - b.top) && y < b.bottom + 20);
+    const far = dots.filter(([, x, y]) => y < 200);
+    const mean = (a) => a.reduce((s, d) => s + d[3], 0) / a.length;
+    if (theme === "dark") assert.ok(far.every((d) => d[3] <= 0.12) && mean(under) < mean(far), "on the dark sheet the shadow takes the faint light away");
+    else assert.ok(mean(under) > mean(far) + 0.05, "on paper the shadow darkens the dots");
+  }
   const dark = report(relief());
-  assert.ok(dark.rows.every((r) => r.spans.every((s) => s.tone === (r.hot ? "hot" : "ink"))));
-  assert.ok(dark.ground.filter((g) => !g.hot).every((g) => g.tone === "ink" && g.alpha <= 0.3));
-  const light = report(relief({}, "light"));
-  assert.ok(light.rows.every((r) => r.spans.every((s) => s.tone === (r.hot ? "on-hot" : "paper"))), "on paper the accent's letters are dark on its fill");
-  const [shadow, body] = light.ground;
-  assert.equal(shadow.tone, "shade");
-  assert.ok(shadow.blur > 0, "the shadow is soft");
-  assert.equal(body.tone, "shade");
-  assert.deepEqual(body.rows.map(([, s]) => s), light.mask.runs.filter((s) => s.length), "the body's outer layer is the mask itself, not the grid's steps");
-  const [glow, fill] = light.ground.filter((g) => g.hot);
-  assert.ok(glow.blur > 0 && glow.blur <= 8 && glow.alpha <= 0.35, "a narrow glow");
-  assert.ok(fill.tone === "hot" && (fill.alpha ?? 1) === 1 && !fill.blur, "over a solid accent stratum");
-  assert.ok(light.ground.indexOf(fill) > light.ground.findLastIndex((g) => g.tone === "shade" && !g.hot && light.ground.indexOf(g) < light.ground.indexOf(glow)), "drawn over the body");
-  const darkHot = dark.ground.filter((g) => g.hot);
-  assert.ok(darkHot.length === 1 && darkHot[0].blur > 0 && darkHot[0].alpha > 0.3, "on the dark sheet the accent only glows");
+  assert.ok(dark.rows.some((row) => row.hot && row.spans.some((s) => s.glow > 0)), "on the dark sheet each accent letter glows too");
 });
 
 test("the layout is deterministic", () => {
@@ -169,11 +172,11 @@ test("planted relief flaws each warn or fail with a number and an instruction", 
   assert.match(findings(strip)["shape-accent"][0], /^the accent stratum "the plan" is \d+px thick at its thickest; it needs 40px to show in the thumbnail, so turn the strata \(strata\.angle\) to cut across the shape's narrow side, use strata by depth, scale the shape up, or put the accent on a bigger part$/);
 
   const dim = relief({ shape: { ...plainJar, ops: plainJar.ops.map((o) => ({ ...o, face: "dim" })) } });
-  assert.match(findings(dim)["shape-tone"][0], /^at thumbnail size the relief's lit side reaches \d+\.\d% light \(90th percentile\); it needs 38\.0% to read as a bright object, so turn a dim face to lit or drop its face$/);
+  assert.match(findings(dim)["shape-tone"][0], /^at thumbnail size the relief's lit side reaches \d+\.\d% of the ink's contrast \(90th percentile\); it needs 25\.0% to stand off the sheet, so turn a dim face to lit or drop its face$/);
   assert.match(findings(dim)["shape-tone"].at(-1), /so every face is dim, which turns the whole form one way: give one add the other face, or drop the faces$/);
 
   const flat = relief({ bevel: 0 });
-  assert.match(findings(flat)["shape-tone"].at(-1), /^at thumbnail size the relief's tones span \d+\.\d% \(10th to 90th percentile\); it needs 30\.0% to read as a volume, so raise bevel \(it is 0\) to 0\.7 or more, so the form rounds toward the light$/);
+  assert.match(findings(flat)["shape-tone"].at(-1), /^at thumbnail size the relief's tones span \d+\.\d% \(10th to 90th percentile\); it needs 22\.0% to read as a volume, so raise bevel \(it is 0\) to 0\.7 or more, so the form rounds toward the light$/);
   // No message asks for a bevel the spec already has, and an accent over half the shape is shape-dominant's to fix.
   for (const over of [{ bevel: 1 }, { bevel: 0.7 }, { bevel: 1, shape: { ...plainJar, ops: plainJar.ops.map((o) => ({ ...o, face: "lit" })) } }]) {
     for (const m of findings(relief(over))["shape-tone"]) assert.doesNotMatch(m, new RegExp(`bevel \\(it is ${over.bevel}\\) to|toward 1`), m);
@@ -190,7 +193,7 @@ test("sketch of a relief: tone ASCII with the accent stratum, the strata, and a 
   assert.match(out, /^regions: A shape \(shape, 12 strata; @ marks the accent stratum, ·:-=\+\*# the light\)/m);
   assert.match(out, /@{20}/);
   assert.match(out, /#{6}/, "the lit side");
-  assert.match(out, /^relief: bevel 0\.8 \(\d+px rounded\), strata at 90 degrees; thumbnail lit side \d+\.\d% \(needs 38\.0%\), spread \d+\.\d% \(needs 30\.0%\)$/m);
+  assert.match(out, /^relief: bevel 0\.8 \(\d+px rounded\), strata at 90 degrees; thumbnail lit side \d+\.\d% \(needs 25\.0%\), spread \d+\.\d% \(needs 22\.0%\)$/m);
   assert.match(out, /^ {2}\* the plan {17}8\.4% of the area for 8\.4% of the lines, \d+ glyph cells, whole name \d+x, \d+px thick$/m);
   assert.doesNotMatch(out, /^! /m);
   const png = sketchImage(relief(), recipe);
@@ -201,11 +204,11 @@ test("sketch of a relief: tone ASCII with the accent stratum, the strata, and a 
   for (let y = 0; y < 397; y++) {
     for (let x = 0; x < 280; x++) {
       const [r, g, b] = raw.subarray(y * 841 + 1 + x * 3, y * 841 + 4 + x * 3);
-      if (r > 140 && r > g + 60) hot++;
+      if (r > 100 && r > g + 50) hot++;
       else if (Math.abs(r - g) < 30) lum.push(r);
     }
   }
-  assert.ok(hot > 500, `the accent stratum shows (${hot} orange pixels)`);
+  assert.ok(hot > 2000, `the accent stratum shows (${hot} orange pixels)`);
   assert.ok(new Set(lum.map((v) => v >> 4)).size >= 6, "the shading shows as several greys");
 });
 

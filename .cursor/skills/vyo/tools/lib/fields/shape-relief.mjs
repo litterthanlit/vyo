@@ -1,44 +1,37 @@
-// The relief style of the shape field: the silhouette as a lit, sculpted volume set in dense 6px type. The mask's
-// distance field gives a rounded height, strata split it among the parts by lines, and a light from the top left
-// shades every glyph cell; each part's name repeats in its own stratum, the accent bold in the accent over a glow.
-// Pure, like shape.mjs: the page inlines it and `vyo sketch` runs it in Node. Its top-level names all start with
-// relief or RELIEF, because the page concatenates the field modules into one scope.
+// The relief style of the shape field: the silhouette as a lit volume drawn only by the density of 6px type. The
+// mask's distance field gives a rounded height, strata split it among the parts by lines, and a light from the top
+// left sets how strongly every glyph cell inks; each line is set word by word across the strata, the accent bold in
+// the accent over a glow. Pure, like shape.mjs: the page inlines it and `vyo sketch` runs it in Node. Its top-level
+// names all start with relief or RELIEF, because the page concatenates the field modules into one scope.
 import { SHEET, ADVANCE } from "../geometry.mjs";
-import { maskGrid, opRings, opKind, paintRows, intersectRuns } from "../mask.mjs";
+import { maskGrid, opRings, opKind, paintRows, unionRuns } from "../mask.mjs";
 
 // size, leading: the glyph grid. cell: the px of the height field. bevel: the default share of the shape's
 // inscribed radius that is rounded. pillow: the px each stratum rounds off its seams. fold: a crease's width.
-// rim: px inside the outline that never fade. light: toward the light, x right, y down, z up. phase: how far each
-// line's names shift. accent, share, tone: the floors the findings hold, the tone floors set between good forms
-// (lit 0.46 to 0.59, spread 0.36 to 0.42) and dim or flat ones (lit under 0.32, spread under 0.2). slab: the accent's
-// share of the shape past which shape-dominant (DOMINANT.share in parts.mjs) speaks for the tone.
+// rim: px inside the outline whose ink never falls under `edge`. stretch: the contrast about the middle tone.
+// light: toward the light, x right, y down, z up. phase: how far each line's names shift. look: the cells a word
+// reads ahead to choose its part. shadow: the cast shadow's offset and softness, as shares of the shape's short
+// side. accent, share, tone, cover: the floors the findings hold. The tone floors sit between good forms (lit 0.28
+// to 0.30, spread 0.25 to 0.26 on real thumbnails of the plane and the jar) and dim ones (lit under 0.22, spread
+// under 0.2). A relief is drawn by its type's density over a dot grid, so a thin form with air around it still
+// reads as the picture at `cover` of the sheet. slab: the accent's share of the shape past which shape-dominant
+// (DOMINANT.share in parts.mjs) speaks for the tone.
 export const RELIEF = {
-  size: 6, leading: 1.04, cell: 2, bevel: 0.7, pillow: 12, fold: 14, rim: 5, light: [-0.62, -0.78, 0.75], phase: 7,
+  size: 6, leading: 1.04, cell: 2, bevel: 0.7, pillow: 12, fold: 14, rim: 5, edge: 0.6, stretch: 1.5, light: [-0.62, -0.78, 0.75], phase: 7, look: 14,
+  shadow: { at: [0.045, 0.065], soft: 0.07 },
   accent: 40, share: { points: 0.6, part: 0.2 }, slab: 0.75,
-  tone: { lit: 0.38, spread: 0.3 },
+  tone: { lit: 0.25, spread: 0.22 }, cover: 0.18,
 };
-// Per theme: the field's own token, the letters' colour, the underlay (the shading in `levels` soft steps under
-// the letters, its alpha running from `from` in the shadow to `to` in the light), the glow under the accent and
-// the shadow the form casts down and right, and how the accent stratum is drawn. On the dark sheet the letters are
-// the light and the underlay a faint haze of it, and the accent glows. On paper, letters lit the same way on paper
-// alone fade into it, so the form is a body in a deep cool ink, darkest in its shadow, and the letters are paper;
-// an accent glowing over that body read as a muddy orange haze, so it is a solid stratum of the accent with dark
-// letters, shaded by `shade` steps of the body's ink where it turns from the light, over a narrow glow.
+// Per theme: the field's own tokens, which side of the light the letters ink (the light on the dark sheet, the
+// shadow on paper), the accent letters' alpha (from `from` toward 1 by the light or by the ink), the glow under
+// them (and a glow on each letter, in px), and the sheet's dots (their alpha, plus `shadow` times the cast shadow).
+// The glows are sheet px: twice as wide read as a haze over the strata, not light off the letters.
 export const RELIEF_TONES = {
-  light: {
-    tokens: { shade: "#2A3446" }, glyph: "paper", underlay: { tone: "shade", levels: 5, from: 0.97, to: 0.62 },
-    glow: { spread: 6, blur: 8, alpha: 0.35 }, shadow: { tone: "shade", alpha: 0.22, blur: 14, at: [0.04, 0.06] },
-    accent: { glyph: "on-hot", shade: [[0.8, 0.1], [0.6, 0.1], [0.4, 0.1]] },
-  },
-  dark: {
-    tokens: {}, glyph: "ink", underlay: { tone: "ink", levels: 6, from: 0, to: 0.3 },
-    glow: { spread: 12, blur: 18, alpha: 0.6 }, shadow: null, accent: null,
-  },
+  light: { tokens: {}, letters: "shadow", hot: { from: 0.88, by: "ink" }, glow: { blur: 5, alpha: 0.4, letters: 0 }, dots: { alpha: 0.07, shadow: 0.38 } },
+  dark: { tokens: {}, letters: "light", hot: { from: 0.55, by: "light" }, glow: { blur: 7, alpha: 0.55, letters: 2.5 }, dots: { alpha: 0.12, shadow: -0.12 } },
 };
 // Ink a glyph lays on its cell, as a share of the cell, for the thumbnail the sketch predicts.
 const RELIEF_COVER = { letter: [0.2, 0.3], dot: [0.035, 0.06], colon: [0.07, 0.11] };
-// Measured against real thumbnails: the screenshot's antialiasing and downscale thin the glyphs this much.
-const RELIEF_GAIN = 0.75;
 
 /** Squared Euclidean distance, in cells, from each cell to the nearest cell where `f` is 0 (Felzenszwalb). */
 function reliefEdt(f, w, h) {
@@ -95,35 +88,18 @@ function reliefStrataKey(inside, dIn, strata, w) {
   return key;
 }
 
-/** Items sorted by key and cut into the parts in tree order, each as many items as its share of the lines. */
+/**
+ * Items sorted by key and cut into the parts in tree order, each exactly as many items as its share of the lines.
+ * The cut ignores the glyph lines, so a level seam can step partway along one: the relief's strata are staggered.
+ */
 function reliefCut(items, keyOf, parts) {
   const order = items.map((_, k) => k).sort((p, q) => keyOf(items[p]) - keyOf(items[q]) || p - q);
   const label = new Int16Array(items.length);
   const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
-  // A cut where many items share a key (every cell of one row, for level strata) would split that row between
-  // two parts, a step in the seam. So a cut lands where the key changes by half a cell or more, within about one
-  // glyph line of exact, at the place that keeps both the running total and this part's own count nearest exact.
-  // A ring of equal depth too big to fit that window keeps the exact cut. So does a part smaller than a line, or
-  // any part the nearest gap would give more or fewer items than shape-share allows: its seam steps once, where
-  // a whole line would draw a 0.2% part six times its size and take that from the part beside it.
-  const gap = (j) => j <= 0 || j >= order.length || keyOf(items[order[j]]) - keyOf(items[order[j - 1]]) >= 0.5;
-  let [acc, k, before] = [0, 0, 0];
+  let [acc, k] = [0, 0];
   parts.forEach((p, pi) => {
     acc += p.loc;
-    const exact = Math.round((acc / total) * order.length);
-    let end = exact;
-    if (pi < parts.length - 1) {
-      let best = Infinity;
-      for (let e = Math.max(k + 1, exact - 240); e <= Math.min(order.length - 1, exact + 240); e++) {
-        const miss = Math.max(Math.abs(e - exact), Math.abs(e - k - (exact - before)));
-        if (gap(e) && miss < best) [best, end] = [miss, e];
-      }
-      const want = exact - before;
-      const allowed = Math.max((RELIEF.share.points / 100) * order.length, RELIEF.share.part * want);
-      if (Math.abs(end - k - want) > allowed) end = Math.max(k, exact);
-    } else end = order.length;
-    before = exact;
-    for (; k < end; k++) label[order[k]] = pi;
+    for (const end = Math.round((acc / total) * order.length); k < end; k++) label[order[k]] = pi;
   });
   return label;
 }
@@ -222,61 +198,44 @@ function reliefSurface(mask, parts, region) {
     const hy = (at(0, 1) - at(0, -1)) / (2 * C);
     const n = Math.hypot(hx, hy, 1);
     const nl = (-hx * L[0] - hy * L[1] + L[2]) / n;
-    const spec = Math.pow(Math.max(0, (-hx * half[0] - hy * half[1] + half[2]) / n), 16);
+    const spec = Math.pow(Math.max(0, (-hx * half[0] - hy * half[1] + half[2]) / n), 60);
     const lam = nl >= flat ? 0.5 + (0.5 * (nl - flat)) / (1 - flat) : (0.5 * Math.max(0, nl)) / flat;
-    light[i] = Math.min(1, lam + 0.45 * spec);
+    light[i] = Math.min(1, lam + 0.35 * spec);
   }
   return { w, h, inside, label, key, dIn, light, R };
 }
 
 /**
- * How strongly a cell's letter shows, 0 to 1: the light, contrast-stretched so a flat top sits above the middle
- * and the lit side runs to full strength, the rim held up so the outline never fades.
+ * How strongly a cell's letter shows, 0 to 1: its ink against the sheet (the light on the dark sheet, the shadow
+ * on paper), contrast-stretched about the middle, the rim held up so the outline never fades.
  */
-function reliefInk(b, dIn) {
-  return Math.max(dIn < RELIEF.rim ? 0.8 : 0.18, Math.min(1, 0.62 + 1.9 * (b - 0.5)));
+function reliefInk(b, dIn, theme) {
+  const ink = RELIEF_TONES[theme].letters === "light" ? b : 1 - b;
+  return Math.max(dIn < RELIEF.rim ? RELIEF.edge : 0, Math.min(1, Math.max(0, 0.5 + RELIEF.stretch * (ink - 0.5))));
 }
 
-/** What a cell draws: a letter of its part's name, or a tone mark where no whole name fits; never a hole, so a dim surface stays a surface. */
+/** What a cell draws: a letter of its word, or between repeated names a tone mark, or nothing where the ink is faint. */
 function reliefGlyph(ch, gap, v) {
   if (!gap) return ch;
-  return v < 0.65 ? "·" : ":";
+  return v < 0.3 ? " " : v < 0.7 ? "·" : ":";
 }
 
-/** A cell's look: its alpha in tenths, weight and colour token. */
+/** A cell's look: its alpha in twentieths, weight and colour token, and the accent's own glow. */
 function reliefLook(v, b, hot, theme) {
-  if (hot) return { alpha: Math.round(10 * (0.6 + 0.4 * b)) / 10, weight: 700, tone: RELIEF_TONES[theme].accent?.glyph ?? "hot" };
-  return { alpha: Math.round(10 * (0.24 + 0.76 * Math.pow(v, 1.1))) / 10, weight: v > 0.45 ? 700 : 400, tone: RELIEF_TONES[theme].glyph };
-}
-
-/** Cells of the grid where `on` holds, as sheet rows of spans: [y, [[l, r], ...]][]. */
-function reliefRuns(on, w, h, C) {
-  const out = [];
-  for (let gy = 0; gy < h; gy++) {
-    const spans = [];
-    for (let gx = 0; gx < w; gx++) {
-      if (!on[gy * w + gx]) continue;
-      const last = spans[spans.length - 1];
-      if (last && last[1] === gx * C) last[1] += C;
-      else spans.push([gx * C, gx * C + C]);
-    }
-    if (spans.length) for (let k = 0; k < C; k++) out.push([gy * C + k, spans.map((s) => [...s])]);
-  }
-  return out;
-}
-
-/** The cells within `r` px of where `on` holds. */
-function reliefGrow(on, w, h, r, C) {
-  const d = reliefDistance(on.map((b) => 1 - b), w, h, C);
-  return d.map((x) => (x <= r ? 1 : 0));
+  const t = RELIEF_TONES[theme];
+  const q = (a) => Math.round(20 * a) / 20;
+  if (hot) return { alpha: q(t.hot.from + (1 - t.hot.from) * (t.hot.by === "light" ? b : v)), weight: 700, tone: "hot", ...(t.glow.letters ? { glow: t.glow.letters } : {}) };
+  return { alpha: q(0.3 + 0.7 * Math.pow(v, 1.1)), weight: v > 0.42 ? 700 : 400, tone: "ink" };
 }
 
 const reliefCache = { key: null, value: null };
 
 /**
- * The relief style: one row of type per run of a part's cells on a glyph line, each a set of spans by look. A
- * part's name streams across its stratum, clipped clean at the strata seams; where no line would show it whole,
- * its longest run is re-phased to centre one name.
+ * The relief style: the shape drawn only by the density of its type. Each glyph line is set word by word: a word
+ * runs to its end across any seam between strata and is cut only by the shape's edge, and it takes whichever
+ * part under its next few cells is owed the most cells so far (error diffusion), so shares stay honest while
+ * strata stagger, shear and end in part-names. A line enters the shape partway through a name. Outside the shape,
+ * a faint dot grid on the sheet carries the form's cast shadow.
  * @param {import("../mask.mjs").Mask} mask
  * @param {{ id: string, name: string, loc: number, hot: boolean }[]} parts  in tree order
  * @param {{ measure: (text: string, size: number) => number, theme?: "light" | "dark" }} frame
@@ -303,157 +262,160 @@ export function reliefStyle(mask, parts, { measure, theme = "light", tokens, reg
   const spacing = cw - measure("M", size);
   const cellAt = (x, y) => Math.min(h - 1, Math.floor(y / C)) * w + Math.min(w - 1, Math.floor(x / C));
   const names = parts.map((p) => p.name.toLowerCase());
+  const tones = RELIEF_TONES[theme];
 
-  // The type's strata are cut again over the glyph cells, by the same key as the shading's: glyph lines sample
-  // a thin stratum (a 3px shell) unevenly, and each part must hold its share of the glyphs, not of the grid.
+  // The strata are cut again over the glyph cells, by the same key as the shading's: glyph lines sample a thin
+  // stratum unevenly, and each part is owed its share of the glyphs, not of the grid.
   const glyphCells = [];
   for (let j = 0; j < lines; j++) for (let c = 0; c < cols; c++) {
     const i = cellAt(x0 + c * cw + cw / 2, j * lh + lh / 2);
     if (inside[i]) glyphCells.push(j * cols + c);
   }
   const glyphCut = reliefCut(glyphCells, (g) => surface.key[cellAt(x0 + (g % cols) * cw + cw / 2, Math.floor(g / cols) * lh + lh / 2)], parts);
-  const glyphLabel = new Map(glyphCells.map((g, k) => [g, glyphCut[k]]));
+  const owner = new Int16Array(lines * cols).fill(-1);
+  glyphCells.forEach((g, k) => (owner[g] = glyphCut[k]));
 
-  // Runs: on each glyph line, the stretches of one part, split where the part changes. A cell whose left
-  // neighbour is another part holds a tone mark and never a letter, so no two names touch across a seam.
-  const runs = [];
+  // Each line as its inside cells: [c, part of the word, letter index in its name + 2 gap cells].
+  const set = Array.from({ length: lines }, () => []);
+  const owed = new Float64Array(parts.length);
+  const choose = (j, c) => {
+    const cover = new Float64Array(parts.length);
+    for (let k = c; k < Math.min(cols, c + RELIEF.look) && owner[j * cols + k] >= 0; k++) cover[owner[j * cols + k]]++;
+    let best = -1;
+    cover.forEach((n, p) => {
+      if (n && (best < 0 || owed[p] + n > owed[best] + cover[best])) best = p;
+    });
+    return best;
+  };
   for (let j = 0; j < lines; j++) {
-    const y = j * lh + lh / 2;
-    let run = null;
+    let [pi, k, len] = [-1, 0, 0];
     for (let c = 0; c < cols; c++) {
-      const i = cellAt(x0 + c * cw + cw / 2, y);
-      const pi = glyphLabel.get(j * cols + c) ?? -1;
-      if (run && pi === run.part) {
-        run.cells.push(i);
+      const own = owner[j * cols + c];
+      if (own < 0) {
+        pi = -1;
         continue;
       }
-      if (run) runs.push(run);
-      run = pi < 0 ? null : { line: j, c0: c, part: pi, cells: [i], seam: runs.length > 0 && runs[runs.length - 1].line === j && runs[runs.length - 1].c0 + runs[runs.length - 1].cells.length === c };
+      if (pi < 0 || k >= len) {
+        const fresh = pi < 0;
+        pi = choose(j, c);
+        len = names[pi].length + 2;
+        k = fresh ? (j * RELIEF.phase) % len : 0;
+      }
+      owed[own]++;
+      owed[pi]--;
+      set[j].push([c, pi, k++]);
     }
-    if (run) runs.push(run);
   }
-  // Every word is whole: a run packs as many whole names as fit, set in from its start by a share of its slack
-  // that changes line to line, and the cells no whole name fills take tone marks. So the strata's edges stay
-  // clean and no fragment of a name is ever set.
-  const usable = (r) => r.cells.length - (r.seam ? 1 : 0);
-  // A part whose runs are all shorter than its name, as across a thin diagonal stratum, borrows the cells it
-  // lacks from the stratum beside it on one line: one local step in a seam, where keeping every name whole by
-  // stepping would step every seam.
-  parts.forEach((p, pi) => {
-    const mine = runs.filter((r) => r.part === pi);
+  // A part that never shows its whole name, as a stratum under one glyph line can, writes it once over the
+  // stretch of a line that holds most of its own cells.
+  const whole = (pi) => {
     const n = names[pi].length;
-    if (!mine.length || mine.some((r) => usable(r) >= n)) return;
-    {
-      const options = mine.flatMap((r) => {
-        const at = runs.indexOf(r);
-        const [prev, next] = [runs[at - 1], runs[at + 1]];
-        const lack = n - usable(r);
-        return [
-          r.seam && prev?.line === r.line && prev.cells.length - lack >= 2 ? [{ r, from: prev, lack, left: prev.cells.length - lack }] : [],
-          next?.seam && next.line === r.line && next.cells.length - lack >= 2 ? [{ r, from: next, lack, left: next.cells.length - lack }] : [],
-        ].flat();
-      });
-      const pick = options.sort((a, b) => a.lack - b.lack || b.left - a.left)[0];
-      if (!pick) return;
-      const own = pick.r;
-      if (pick.from.c0 > own.c0) {
-        own.cells.push(...pick.from.cells.splice(0, pick.lack));
-        pick.from.c0 += pick.lack;
-      } else {
-        own.cells.unshift(...pick.from.cells.splice(-pick.lack));
-        own.c0 -= pick.lack;
+    return set.some((cells) => cells.some(([c, p, k], a) => p === pi && k === 0 && cells[a + n - 1]?.[1] === pi && cells[a + n - 1][2] === n - 1 && cells[a + n - 1][0] - c === n - 1));
+  };
+  parts.forEach((p, pi) => {
+    if (whole(pi)) return;
+    const n = names[pi].length;
+    let best = null;
+    set.forEach((cells, j) => {
+      for (let a = 0; a + n <= cells.length; a++) {
+        if (cells[a + n - 1][0] - cells[a][0] !== n - 1) continue;
+        let mine = 0;
+        for (let b = a; b < a + n; b++) mine += owner[j * cols + cells[b][0]] === pi ? 1 : 0;
+        if (mine && (!best || mine > best.mine)) best = { j, a, mine };
+      }
+    });
+    if (best) for (let b = 0; b < n; b++) set[best.j][best.a + b] = [set[best.j][best.a + b][0], pi, b];
+  });
+
+  // Rows: on each line, the stretches of one word's part, each a set of spans by look.
+  const rows = [];
+  const hotCells = [];
+  set.forEach((cells, j) => {
+    let run = null;
+    const flush = () => {
+      if (run && run.text.trim()) {
+        const part = parts[run.part];
+        rows.push({
+          x: x0 + run.c0 * cw, y: j * lh, width: run.text.length * cw, height: lh, lineHeight: lh, size, text: run.text, spacing,
+          weight: 400, part: part.id, word: part.name, hot: part.hot, tone: part.hot ? "hot" : "ink", spans: run.spans,
+        });
+      }
+      run = null;
+    };
+    for (const [c, pi, k] of cells) {
+      if (run && (run.part !== pi || run.c0 + run.text.length !== c)) flush();
+      run ??= { part: pi, c0: c, text: "", spans: [] };
+      const i = cellAt(x0 + c * cw + cw / 2, j * lh + lh / 2);
+      const v = reliefInk(light[i], dIn[i], theme);
+      const ch = reliefGlyph(names[pi][k] ?? " ", k >= names[pi].length, v);
+      const look = reliefLook(v, light[i], parts[pi].hot, theme);
+      if (parts[pi].hot && ch !== " ") hotCells.push([j, c]);
+      run.text += ch;
+      const last = run.spans[run.spans.length - 1];
+      if (last && (ch === " " || (last.alpha === look.alpha && last.weight === look.weight && last.tone === look.tone))) last.text += ch;
+      else run.spans.push({ text: ch, ...look });
+    }
+    flush();
+  });
+
+  const ground = [];
+  const hi = parts.findIndex((p) => p.hot);
+  if (hotCells.length) {
+    // The glow: the accent's letter cells in the accent, blurred under them.
+    const byY = new Map();
+    for (const [j, c] of hotCells) {
+      for (let y = Math.floor(j * lh); y < Math.ceil((j + 1) * lh); y++) {
+        const spans = byY.get(y) ?? [];
+        const [l, r] = [x0 + c * cw, x0 + (c + 1) * cw];
+        const last = spans[spans.length - 1];
+        if (last && Math.abs(last[1] - l) < 0.01) last[1] = r;
+        else spans.push([l, r]);
+        byY.set(y, spans);
       }
     }
-  });
-  for (const run of runs) {
-    const cycle = names[run.part].length + 2;
-    run.names = Math.max(0, Math.floor((usable(run) + 2) / cycle));
-    const slack = usable(run) - (run.names * cycle - 2);
-    run.start = (run.seam ? 1 : 0) + (run.names ? (run.line * RELIEF.phase) % (slack + 1) : 0);
+    const glowRows = [...byY].sort((a, b) => a[0] - b[0]).map(([y, spans]) => [y, unionRuns(spans, [])]);
+    ground.push({ part: parts[hi].id, hot: true, tone: "hot", rows: glowRows, alpha: tones.glow.alpha, blur: tones.glow.blur });
   }
 
-  const rows = [];
-  for (const run of runs) {
-    const part = parts[run.part];
-    const name = names[run.part];
+  // The sheet: a dot on every other glyph cell outside the shape, the cast shadow down and right of the form
+  // taking dots away on the dark sheet and darkening them on paper (where it fills the skipped cells too).
+  const short = Math.min(mask.box.right - mask.box.left, mask.box.bottom - mask.box.top);
+  const [ox, oy, soft] = [RELIEF.shadow.at[0] * short, RELIEF.shadow.at[1] * short, RELIEF.shadow.soft * short];
+  const dOut = reliefDistance(inside.map((b) => 1 - b), w, h, C);
+  const shadowAt = (x, y) => {
+    const [sx, sy] = [x - ox, y - oy];
+    if (sx < 0 || sy < 0 || sx >= SHEET.width || sy >= SHEET.height) return 0;
+    const i = cellAt(sx, sy);
+    const d = inside[i] ? dIn[i] : -dOut[i];
+    return Math.max(0, Math.min(1, 0.5 + d / (2 * soft)));
+  };
+  const sheet = [];
+  for (let j = 0; j < lines; j++) {
+    const y = j * lh + lh / 2;
     const spans = [];
     let text = "";
-    run.cells.forEach((i, k) => {
-      const b = light[i];
-      const v = reliefInk(b, dIn[i]);
-      const at = k - run.start;
-      const p = at >= 0 && at < run.names * (name.length + 2) - 2 ? at % (name.length + 2) : -1;
-      const ch = reliefGlyph(name[p] ?? " ", p < 0 || p >= name.length, v);
+    for (let c = 0; c < cols; c++) {
+      const x = x0 + c * cw + cw / 2;
+      let a = 0;
+      if (!inside[cellAt(x, y)]) {
+        const s = shadowAt(x, y);
+        if (!((j + c) % 2 && s < 0.08)) a = Math.round(100 * (tones.dots.alpha + tones.dots.shadow * s)) / 100;
+      }
+      const ch = a >= 0.015 ? "·" : " ";
       text += ch;
-      const look = reliefLook(v, b, part.hot, theme);
       const last = spans[spans.length - 1];
-      if (last && (ch === " " || (last.alpha === look.alpha && last.weight === look.weight && last.tone === look.tone))) last.text += ch;
-      else spans.push({ text: ch, ...look });
-    });
-    if (!text.trim()) continue;
-    rows.push({
-      x: x0 + run.c0 * cw, y: run.line * lh, width: run.cells.length * cw, height: lh, lineHeight: lh, size, text, spacing,
-      weight: 400, part: part.id, word: part.name, hot: part.hot, tone: part.hot ? "hot" : "ink", spans,
-    });
+      if (last && (ch === " " || last.alpha === a)) last.text += ch;
+      else spans.push({ text: ch, alpha: ch === " " ? 0 : a, weight: 400, tone: "ink" });
+    }
+    sheet.push({ x: x0, y: j * lh, width: cols * cw, height: lh, lineHeight: lh, size, text, spacing, spans });
   }
 
-  const tones = RELIEF_TONES[theme];
-  const ground = [];
-  if (tones.shadow) {
-    const { at, ...look } = tones.shadow;
-    const short = Math.min(mask.box.right - mask.box.left, mask.box.bottom - mask.box.top);
-    const [dx, dy] = at.map((f) => Math.round((f * short) / C));
-    const cast = new Uint8Array(w * h);
-    for (let i = 0; i < cast.length; i++) {
-      const [x, y] = [i % w - dx, Math.floor(i / w) - dy];
-      if (!inside[i] && x >= 0 && y >= 0 && x < w && y < h && inside[y * w + x]) cast[i] = 1;
-    }
-    ground.push({ part: null, hot: false, rows: reliefRuns(cast, w, h, C), ...look });
-  }
-  const hi = parts.findIndex((p) => p.hot);
-  // The underlay: the shading itself in a few soft steps under the glyphs, so the form carries at thumbnail
-  // size where 6px type alone is a grey haze.
-  // A haze of light would wash the accent out, but a body must run under it too.
-  const { levels, from, to, blur, tone } = tones.underlay;
-  const step = new Int8Array(w * h).fill(-1);
-  for (let i = 0; i < step.length; i++) {
-    if (!inside[i] || (label[i] === hi && !from)) continue;
-    const v = reliefInk(light[i], dIn[i]);
-    step[i] = Math.max(0, Math.min(levels, Math.round(((v - 0.3) / 0.7) * levels)));
-  }
-  // Steps side by side would show a hairline of paper where their antialiased edges meet, so each layer covers
-  // every cell at least as dense as its step, and its alpha brings the stack to that step's target.
-  const target = (k) => from + ((to - from) * k) / levels;
-  const order = Array.from({ length: levels + 1 }, (_, k) => k).filter((k) => target(k) > 0).sort((a, b) => target(a) - target(b));
-  let below = 0;
-  for (const k of order) {
-    const alpha = Math.round((1 - (1 - target(k)) / (1 - below)) * 1000) / 1000;
-    const on = step.map((s) => (s >= 0 && target(s) >= target(k) ? 1 : 0));
-    // A body's outer layer is the mask's own spans, so its outline is smooth and not the grid's 2px steps.
-    const whole = from > 0 && k === order[0];
-    const rows = whole ? mask.runs.map((s, y) => [y, s]).filter(([, s]) => s.length) : reliefRuns(on, w, h, C).map(([y, spans]) => [y, intersectRuns(spans, mask.runs[y])]).filter(([, s]) => s.length);
-    ground.push({ part: null, hot: false, tone, rows, alpha, blur });
-    below = target(k);
-  }
-  if (hi >= 0) {
-    const hot = label.map((l) => (l === hi ? 1 : 0));
-    ground.push({ part: parts[hi].id, hot: true, tone: "hot", rows: reliefRuns(reliefGrow(hot, w, h, tones.glow.spread, C), w, h, C), alpha: tones.glow.alpha, blur: tones.glow.blur });
-    if (tones.accent) {
-      // The stratum itself, on the mask's own edge where it meets the outline, then its shading in a few steps.
-      const clip = (on) => reliefRuns(on, w, h, C).map(([y, spans]) => [y, intersectRuns(spans, mask.runs[y])]).filter(([, sp]) => sp.length);
-      ground.push({ part: parts[hi].id, hot: true, tone: "hot", rows: clip(hot) });
-      for (const [below, alpha] of tones.accent.shade) {
-        const dim = hot.map((on, i) => (on && reliefInk(light[i], dIn[i]) < below ? 1 : 0));
-        if (dim.some((b) => b)) ground.push({ part: null, hot: false, tone: tones.underlay.tone, rows: clip(dim), alpha, blur: 2 });
-      }
-    }
-  }
-  const value = { strata: reliefStrataOf(surface, parts, rows), rows, ground, surface, tokens };
-  value.findings = (drawn) => reliefFindings(value, parts, drawn, mask, region);
+  const value = { strata: reliefStrataOf(surface, parts, rows), rows, ground, sheet, surface, tokens };
+  value.findings = (drawn) => reliefFindings(value, parts, drawn, mask, region, theme);
   value.ascii = (x, y) => {
     const i = cellAt(x, y);
     if (!inside[i]) return null;
-    return label[i] === hi ? "@" : " ·:-=+*#"[Math.min(7, Math.floor(reliefInk(light[i], 99) * 8))];
+    return label[i] === hi ? "@" : " ·:-=+*#"[Math.min(7, Math.floor(reliefInk(light[i], 99, "dark") * 8))];
   };
   // The thumbnail prediction is only for the sketch and the checks, so the page never pays for it.
   value.summary = () => {
@@ -522,7 +484,7 @@ export function reliefThumb(value, tokens, scale = 3) {
     for (const s of r.spans) {
       for (const ch of s.text) {
         const cover = ch === " " ? 0 : RELIEF_COVER[ch === "·" ? "dot" : ch === ":" ? "colon" : "letter"][s.weight === 700 ? 1 : 0];
-        if (cover) lay(r.x + k * cw, r.y, cw, r.height, cover * s.alpha * RELIEF_GAIN, (letters[s.tone] ??= new Float32Array(W * H)));
+        if (cover) lay(r.x + k * cw, r.y, cw, r.height, cover * s.alpha, (letters[s.tone] ??= new Float32Array(W * H)));
         k++;
       }
     }
@@ -554,9 +516,9 @@ function reliefBlur(a, w, h, r) {
 
 /**
  * The shape's pixels of the predicted thumbnail as contrast with the paper (0 is paper, 1 is as far from it as
- * the ink is, by luminance), and from that how lit the form looks: on the dark sheet the light is the contrast,
- * on paper the body is dark and its light is what it gives back. `lit` is the light's 90th percentile, how bright
- * the lit side gets; `spread` its 10th to 90th, how much volume the shading shows.
+ * the ink is, by luminance). The letters are the ink on either sheet, so `lit` is the contrast's 90th percentile,
+ * how strongly the form's inked side stands off the sheet (the lit side on the dark sheet, the shadow side on
+ * paper); `spread` its 10th to 90th, how much volume the shading shows.
  */
 export function reliefTone(value, mask, tokens, scale = 3) {
   const t = reliefThumb(value, tokens, scale);
@@ -573,8 +535,7 @@ export function reliefTone(value, mask, tokens, scale = 3) {
   }
   vals.sort((a, b) => a - b);
   const q = (f) => vals[Math.min(vals.length - 1, Math.floor(f * vals.length))] ?? 0;
-  const lit = lp < li ? q(0.9) : 1 - q(0.1);
-  return { mean: vals.reduce((s, v) => s + v, 0) / (vals.length || 1), lit, spread: q(0.9) - q(0.1), p10: q(0.1), p90: q(0.9) };
+  return { mean: vals.reduce((s, v) => s + v, 0) / (vals.length || 1), lit: q(0.9), spread: q(0.9) - q(0.1), p10: q(0.1), p90: q(0.9) };
 }
 
 const reliefPct = (n) => `${(Math.round(n * 1000) / 10).toFixed(1)}%`;
@@ -594,7 +555,7 @@ function reliefSummary(value, region) {
 const reliefPicture = (value) => Uint8Array.from(reliefThumb(value, value.tokens).rgb, (v) => Math.round(v));
 
 /** The relief's own findings, by check id; `drawn` are the rows as drawn, each { part, text, width }. */
-function reliefFindings(value, parts, drawn, mask, region) {
+function reliefFindings(value, parts, drawn, mask, region, theme) {
   const out = { "shape-accent": [], "shape-name": [], "shape-share": [], "shape-tone": [] };
   const strata = value.strata;
   const L = RELIEF;
@@ -642,7 +603,8 @@ function reliefFindings(value, parts, drawn, mask, region) {
         ? `raise bevel (it is ${bevel}) to ${L.bevel} or more, so the form rounds toward the light`
         : `its ${Math.round(value.surface.R)}px of rounding is too shallow to shade at this size: draw it fatter, or fold it with a crease along its length`;
   if (tone.lit < L.tone.lit) {
-    out["shape-tone"].push(`at thumbnail size the relief's lit side reaches ${reliefPct(tone.lit)} light (90th percentile); it needs ${reliefPct(L.tone.lit)} to read as a bright object, so ${faces.has("dim") ? "turn a dim face to lit or drop its face" : lever}`);
+    const [side, away, toward] = RELIEF_TONES[theme].letters === "light" ? ["lit", "dim", "lit"] : ["shadow", "lit", "dim"];
+    out["shape-tone"].push(`at thumbnail size the relief's ${side} side reaches ${reliefPct(tone.lit)} of the ink's contrast (90th percentile); it needs ${reliefPct(L.tone.lit)} to stand off the sheet, so ${faces.has(away) ? `turn a ${away} face to ${toward} or drop its face` : lever}`);
   }
   if (tone.spread < L.tone.spread) {
     out["shape-tone"].push(`at thumbnail size the relief's tones span ${reliefPct(tone.spread)} (10th to 90th percentile); it needs ${reliefPct(L.tone.spread)} to read as a volume, so ${lever}`);

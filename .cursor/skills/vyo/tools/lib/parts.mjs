@@ -124,8 +124,8 @@ export function accentIds(parts, accent) {
   return new Set();
 }
 
-/** A region's part options: its field's defaults, then its own. */
-export const partOptions = (region) => ({ ...FIELDS[region.field]?.parts, ...region });
+/** A region's part options: its field's defaults, its style's, then its own. */
+export const partOptions = (region) => ({ ...FIELDS[region.field]?.parts, ...FIELDS[region.field]?.styleParts?.[region.style], ...region });
 
 /** The part that holds `area`: the deepest part that is the area itself or one of its ancestors. */
 function partOfArea(ids, area) {

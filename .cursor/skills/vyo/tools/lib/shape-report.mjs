@@ -8,6 +8,7 @@ import { shapeLayout, nameWidth } from "./fields/shape.mjs";
 import { regionParts, partOptions, dominance, DOMINANT } from "./parts.mjs";
 import { tokensOf } from "./render.mjs";
 import { FIELDS } from "./fields/index.mjs";
+import { RELIEF } from "./fields/shape-relief.mjs";
 
 // A feature narrower than `thin` px is under 3px at a sixth of the size and does not read as form; a thin piece
 // counts once it is `thinArea` px² (a sharp corner's tip is less). The shape should cover `cover` of the sheet;
@@ -242,13 +243,14 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
   const fit = region.shape.fit ?? {};
   const sized = fit.w !== undefined || fit.h !== undefined;
   const cover = mask.area / (SHEET.width * SHEET.height);
-  if (cover < L.cover) {
+  const floor = region.style === "relief" ? RELIEF.cover : L.cover;
+  if (cover < floor) {
     // A little over the bare ratio, so the suggested fit clears the floor after rounding.
-    const k = Math.sqrt(L.cover / cover) * 1.02;
+    const k = Math.sqrt(floor / cover) * 1.02;
     const by = fit.w !== undefined && fit.h === undefined ? "w" : "h";
     const [now, next] = [share(mask.fit[by]), share(mask.fit[by] * k)];
     const [w, h] = [px(mask.box.right - mask.box.left), px(mask.box.bottom - mask.box.top)];
-    const say = `the shape covers ${pct(cover)} of the sheet; it needs ${pct(L.cover)} to read as the picture, so `;
+    const say = `the shape covers ${pct(cover)} of the sheet; it needs ${pct(floor)} to read as the picture, so `;
     out["shape-cover"].push(
       sized && next > now && mask.fit.w * k <= 1 && mask.fit.h * k <= 1
         ? `${say}scale it up ${share(k)}x (set fit.${by} to ${next}, it is ${now}) or draw it fatter`

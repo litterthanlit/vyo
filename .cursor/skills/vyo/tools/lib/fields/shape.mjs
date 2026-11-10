@@ -230,3 +230,4 @@ export function shapeLayout(region, parts, frame) {
 
 export const shapeRows = (region, parts, frame) => shapeLayout(region, parts, frame).rows;
 export const shapeGround = (region, parts, frame) => shapeLayout(region, parts, frame).ground;
+export const shapeSheet = (region, parts, frame) => shapeLayout(region, parts, frame).sheet ?? [];

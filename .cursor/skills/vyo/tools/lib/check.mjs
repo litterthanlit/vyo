@@ -186,7 +186,7 @@ export const CHECKS = [
   shapeCheck("shape-simple", "warn", "spec", "a drawn shape has at most 8 ops and no run of small repeated details that merge at thumbnail size"),
   shapeCheck("shape-limb", "warn", "spec", `no even limb under ${SHAPE_LIMB.width * 100}% of a drawn shape's widest row runs from its top or bottom over ${SHAPE_LIMB.height * 100}% of its height while holding at most ${SHAPE_LIMB.area * 100}% of its area`),
   shapeCheck("shape-thin", "warn", "spec", `no feature of a drawn shape, and no cut in it, is under ${SHAPE_LIMITS.thin}px across, a hairline at thumbnail size`),
-  shapeCheck("shape-cover", "warn", "spec", `a drawn shape covers at least ${SHAPE_LIMITS.cover * 100}% of the sheet`),
+  shapeCheck("shape-cover", "warn", "spec", `a drawn shape covers at least ${SHAPE_LIMITS.cover * 100}% of the sheet (a relief ${RELIEF.cover * 100}%)`),
   shapeCheck("shape-edge", "warn", "spec", `a drawn shape that runs off an edge runs off by at least ${SHAPE_LIMITS.bleed * 100}% of its own size, so the bleed reads as meant`),
   shapeCheck("shape-accent", "warn", "spec", `the accent band of a drawn shape is at least ${SHAPE_LIMITS.accent}px tall, so it shows in the thumbnail`),
   shapeCheck("shape-split", "warn", "spec", "no band of a drawn shape falls on two separate pieces of it"),

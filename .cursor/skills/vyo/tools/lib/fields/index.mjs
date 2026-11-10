@@ -4,7 +4,7 @@
 import { waveRows, WAVE_TONES } from "./wave.mjs";
 import { terrainRows } from "./terrain.mjs";
 import { riverRows } from "./river.mjs";
-import { shapeRows, shapeGround, SHAPE_TONES } from "./shape.mjs";
+import { shapeRows, shapeGround, shapeSheet, SHAPE_TONES } from "./shape.mjs";
 import { RELIEF_TONES } from "./shape-relief.mjs";
 
 export const FIELDS = {
@@ -51,11 +51,15 @@ export const FIELDS = {
     options: ["shape", "style", "echo", "bevel", "strata", "split"],
     // Every band must hold its whole name in readable type, so fewer, bigger parts than a wave.
     parts: { maxParts: 12 },
-    measure: [["code", "lines"], ["type", "size", "bigger", "larger", "area"]],
+    // A relief's 6px type holds any name, so it takes as many parts as a wave.
+    styleParts: { relief: { maxParts: 14 } },
+    measure: [["code", "lines"], ["type", "size", "big", "bigger", "larger", "area"]],
     fits: ["object", "thing", "picture", "shape", "looks"],
     layout: shapeRows,
     // The silhouette under the rows: one fill per band, as rows of spans.
     ground: shapeGround,
+    // Marks on the sheet itself, outside the shape: never figure, so no check reads them.
+    sheet: shapeSheet,
     tokens: (theme) => ({ ...SHAPE_TONES[theme].tokens, ...RELIEF_TONES[theme].tokens }),
     behindTexts: false,
     // The words sit in the room the silhouette leaves, so only the loose frame draws one.

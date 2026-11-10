@@ -66,7 +66,7 @@ function drawRow(S, r, data, height, weight, tone) {
   // A row with spans shades its letters span by span; its width leaves room for the last letter's tracking.
   for (const s of r.spans ?? []) {
     const span = document.createElement("span");
-    span.style.cssText = `opacity:${s.alpha};font-weight:${s.weight};color:var(--${s.tone})`;
+    span.style.cssText = `opacity:${s.alpha};font-weight:${s.weight};color:var(--${s.tone})${s.glow ? `;text-shadow:0 0 ${s.glow}px var(--${s.tone})` : ""}`;
     span.textContent = s.text.replace(/ /g, " ");
     e.appendChild(span);
   }
@@ -104,8 +104,30 @@ function drawFill(S, region, blocks) {
   return { id: region.id, kind: "fill", bbox: bbox(shapeRings(region)), rows: rows.length };
 }
 
+/** The sheet's own marks, each blanked within 10px across or 8px down of a block of words or the record line. */
+function drawSheet(S, region, frame) {
+  const origin = S.getBoundingClientRect();
+  const record = S.querySelector("[data-block=record]")?.getBoundingClientRect();
+  const clear = [...frame.blocks, ...(record ? [{ left: record.left - origin.left, top: record.top - origin.top, right: record.right - origin.left, bottom: record.bottom - origin.top }] : [])];
+  const near = (x, y) => clear.some((b) => x > b.left - 10 && x < b.right + 10 && y > b.top - 8 && y < b.bottom + 8);
+  for (const r of FIELDS[region.field].sheet?.(region, region.parts, frame) ?? []) {
+    const cw = r.width / r.text.length;
+    const e = el("sheet-marks", {}, { position: "absolute", fontSize: r.size + "px", lineHeight: r.lineHeight + "px", height: r.height + "px", left: r.x + "px", top: r.y + "px", letterSpacing: r.spacing + "px", whiteSpace: "pre" });
+    e.setAttribute("aria-hidden", "true");
+    let k = 0;
+    for (const s of r.spans) {
+      const span = document.createElement("span");
+      span.style.cssText = `opacity:${s.alpha};font-weight:${s.weight};color:var(--${s.tone})`;
+      span.textContent = [...s.text].map((ch) => (near(r.x + (k++ + 0.5) * cw, r.y + r.height / 2) ? " " : ch)).join("");
+      e.appendChild(span);
+    }
+    S.appendChild(e);
+  }
+}
+
 function drawField(S, region, blocks) {
   const frame = { floor: F.floor, mirror: F.mirror, theme: F.theme, blocks, measure };
+  drawSheet(S, region, frame);
   for (const g of FIELDS[region.field].ground?.(region, region.parts, frame) ?? []) {
     // A ground may bring its own path, traced from the field, in place of its rows.
     const d = g.path ?? runsPath(g.rows);
