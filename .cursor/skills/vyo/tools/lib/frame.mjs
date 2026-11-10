@@ -21,7 +21,7 @@ export const ROLES = {
   },
   loose: {
     label: { size: [13, 11, 16], lh: (s) => Math.round(s * 1.2), count: [1, 1], prints: "name", em: ADVANCE + 0.17, mono: true },
-    headline: { size: [42, 32, 48], lh: (s) => Math.round(s * 1.06), count: [1, 1], prints: "headline", em: 0.45 },
+    headline: { size: [42, 32, 60], lh: (s) => Math.round(s * 1.06), count: [1, 1], prints: "headline", em: 0.45 },
     paragraph: { size: [15, 13, 17], lh: (s) => Math.round(s * 1.4), count: [0, 2], max: 220, sentences: 2, em: 0.45 },
     legend: { size: [15, 13, 17], lh: (s) => Math.round(s * 1.4), count: [1, 1], max: 180, sentences: 2, em: 0.45 },
     list: { size: [13, 11, 14], lh: (s) => Math.round(s * 1.55), count: [0, 1], em: ADVANCE, mono: true },
@@ -39,6 +39,26 @@ export const roleOf = (spec, t) => ROLES[frameOf(spec)][t.role];
 export const sizeRange = (spec, t) => (frameOf(spec) === "swiss" && t.role === "label" && t.hot ? HOT_LABEL : roleOf(spec, t).size);
 export const textSize = (spec, t) => t.size ?? sizeRange(spec, t)[0];
 export const lineHeight = (spec, t) => roleOf(spec, t).lh(textSize(spec, t));
+
+// Newsreader 400's advance for each character from space to tilde, in thousandths of an em, as Chromium measures
+// it, and the headline's tracking in each frame (render's CSS): a headline's lines are wrapped by these, so the
+// place a column leaves for it holds the lines the page sets.
+const SERIF = [229, 270, 354, 567, 567, 781, 717, 199, 285, 285, 435, 512, 239, 354, 230, 401, 567, 567, 567, 567, 567, 567, 567, 567, 567, 567, 253, 269, 512, 512, 512, 441, 891, 711, 644, 705, 763, 640, 592, 751, 800, 339, 446, 730, 603, 979, 771, 777, 609, 777, 645, 555, 670, 768, 692, 967, 719, 684, 634, 329, 401, 330, 512, 410, 500, 460, 546, 437, 556, 462, 345, 496, 561, 280, 247, 541, 269, 832, 573, 526, 564, 545, 394, 384, 342, 537, 527, 743, 507, 524, 431, 322, 252, 322, 512];
+export const HEADLINE_TRACK = { swiss: -0.005, loose: -0.01 };
+
+/** The px `text` takes in Newsreader at `size`, tracked by `track` em; a character outside the table counts as an "n". */
+export const serifWidth = (text, size, track = 0) => [...text].reduce((w, ch) => w + (SERIF[ch.charCodeAt(0) - 32] ?? SERIF[78]) / 1000 + track, 0) * size;
+
+/** `text` broken into lines no wider than `w` px, word by word, as the page breaks a block of Newsreader. */
+export function serifLines(text, w, size, track = 0) {
+  const lines = [];
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const last = lines.length - 1;
+    if (last >= 0 && serifWidth(`${lines[last]} ${word}`, size, track) <= w) lines[last] += ` ${word}`;
+    else lines.push(word);
+  }
+  return lines;
+}
 
 /** A rule's text: its one character repeated across w. */
 export const ruleText = (t) => t.text.repeat(Math.max(1, Math.floor(t.w / (ADVANCE * textSize({ frame: "loose" }, t)))));

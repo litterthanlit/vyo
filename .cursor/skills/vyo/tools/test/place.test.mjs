@@ -114,3 +114,24 @@ test("a shape that leaves no room gets shape-room, with how much to shrink it", 
   assert.ok(room.length, "some block lands on the shape");
   assert.match(room[0], /; no corner holds it \(the largest, [a-z-]+, is \d+ by \d+\), so shrink the shape \(fit\.h 1\.1 to 0\.9\d\) or move it with fit\.cx and fit\.cy$/);
 });
+
+test("a relief stacks its headline top left: the largest size the room holds in at most four lines, the narrowest column", () => {
+  const plane = { fit: { w: 0.9048, cx: 0.5, cy: 0.6218 }, ops: [{ add: "polygon", points: [[0, 350], [1000, 0], [450, 550]], face: "lit" }, { add: "polygon", points: [[450, 550], [1000, 0], [650, 1000]], face: "dim" }] };
+  const spec = (style) => {
+    const s = bare(plane, style);
+    s.headline = "Switch agents without starting over.";
+    s.figure.texts = s.figure.texts.filter((t) => t.role !== "paragraph");
+    return s;
+  };
+  const placed = placeTexts(spec("relief"), recipe).figure.texts;
+  const head = placed.find((t) => t.role === "headline");
+  const est = estimateText(head, spec("relief"), recipe);
+  assert.equal(head.size, 60);
+  assert.equal(est.lines, 4, "Switch / agents / without / starting over.");
+  assert.ok(head.x === PLACE.inset && head.y < 80 && head.w < 360, `top left in a narrow column: ${head.x},${head.y} ${head.w}px`);
+  assert.equal(estimateText({ ...head, w: head.w - 20 }, spec("relief"), recipe).lines, 5, "the narrowest column that holds it in four");
+  const legend = placed.find((t) => t.role === "legend");
+  assert.ok(legend.x === head.x && legend.w >= PLACE.stacked.legend[0] && legend.w <= PLACE.stacked.legend[1] && legend.y > est.bottom, "the legend under it");
+  // Bands keep the default size.
+  assert.equal(placeTexts(spec(), recipe).figure.texts.find((t) => t.role === "headline").size, 42);
+});

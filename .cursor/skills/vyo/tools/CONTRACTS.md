@@ -373,7 +373,7 @@ A spec sits in one of two frames, `frame: "loose" | "swiss"`, default `loose`. `
 | role | Count | Size (min to max) | Line height | Font | Text |
 |---|---|---|---|---|---|
 | `label` | exactly 1 | 13 (11 to 16) | 1.2 × size | Commit Mono, caps, 0.17em tracking | prints `product.name` in capitals; no `text` |
-| `headline` | exactly 1 | 42 (32 to 48) | 1.06 × size | Newsreader, −0.01em | prints `spec.headline`; no `text`. The only large type |
+| `headline` | exactly 1 | 42 (32 to 60) | 1.06 × size | Newsreader, −0.01em | prints `spec.headline`; no `text`. The only large type |
 | `paragraph` | 0 to 2 | 15 (13 to 17) | 1.4 × size | Newsreader | `text`, ≤ 220 chars, ≤ 2 sentences |
 | `legend` | exactly 1 | 15 (13 to 17) | 1.4 × size | Newsreader | `text`, ≤ 180 chars, ≤ 2 sentences; must name the accent part and the measure (`legend` check) |
 | `list` | 0 or 1 | 13 (11 to 14) | 1.55 × size | Commit Mono, one item per line | `parts: true` (the field's parts' plain names, tree order) or `items` (1 to 16 names, ≤ 24 chars); no `text` |

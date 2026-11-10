@@ -61,7 +61,7 @@ Region and text ids are lowercase and unique. `note`, `counts`, `notBuilt`, `pro
 | Role | Count | Size | What it prints |
 |---|---|---|---|
 | `label` | exactly 1 | 13px mono caps (11 to 16) | the product name |
-| `headline` | exactly 1 | 42px Newsreader (32 to 48), the only large type | `spec.headline` |
+| `headline` | exactly 1 | 42px Newsreader (32 to 60; a relief stacks it as large as fits), the only large type | `spec.headline` |
 | `paragraph` | 0 to 2 | 15px Newsreader (13 to 17) | `text`, at most 220 characters and 2 sentences |
 | `legend` | exactly 1 | 15px Newsreader (13 to 17) | `text`, at most 180 characters and 2 sentences, saying what the picture encodes |
 | `list` | 0 or 1 | 13px mono (11 to 14), one per line | `parts: true` for the field's parts' plain names, or `items` (1 to 16, at most 24 characters each) |

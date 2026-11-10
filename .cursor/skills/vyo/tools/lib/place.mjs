@@ -4,7 +4,7 @@
 // render place every block in the same spot.
 import { SHEET } from "./geometry.mjs";
 import { shapeMask } from "./mask.mjs";
-import { frameOf, roleOf, textSize, lineHeight, ruleText, recordRect, sizeRange } from "./frame.mjs";
+import { frameOf, roleOf, textSize, lineHeight, ruleText, recordRect, sizeRange, serifLines, serifWidth, HEADLINE_TRACK } from "./frame.mjs";
 import { listItems, recordOf } from "./render.mjs";
 
 function wrap(text, perLine) {
@@ -26,11 +26,13 @@ export function estimateText(t, spec, facts, em = 1) {
   const size = textSize(spec, t);
   const per = (frameOf(spec) === "swiss" && t.role === "label" && t.hot ? role.em + 0.06 : role.em) * size * em;
   const one = (text) => [text];
+  // The headline breaks by Newsreader's own advances, so its line count is the page's; the rest by an average.
+  const track = HEADLINE_TRACK[frameOf(spec)];
   const lines = {
     name: () => one(frameOf(spec) === "swiss" ? `${spec.product.name}.` : spec.product.name.toUpperCase()),
-    headline: () => wrap(spec.headline, Math.max(1, Math.floor(t.w / per))),
+    headline: () => serifLines(spec.headline, t.w, size, track),
   }[role.prints]?.() ?? (t.role === "list" ? (facts || !t.parts ? listItems(spec, t, facts) : ["x".repeat(12)]) : t.role === "rule" ? [ruleText(t)] : t.role === "label" ? one(t.text) : wrap(t.text.replace(/\*\*/g, ""), Math.max(1, Math.floor(t.w / per))));
-  const width = Math.min(t.w, Math.max(...lines.map((l) => l.length)) * per);
+  const width = Math.min(t.w, role.prints === "headline" ? Math.max(...lines.map((l) => serifWidth(l, size, track))) * em : Math.max(...lines.map((l) => l.length)) * per);
   const left = t.align === "right" ? t.x + t.w - width : t.align === "center" ? t.x + (t.w - width) / 2 : t.x;
   return { id: t.id, left, top: t.y, right: left + width, bottom: t.y + lines.length * lineHeight(spec, t), lines: lines.length };
 }
@@ -42,9 +44,12 @@ export function estimateText(t, spec, facts, em = 1) {
 // fails at that width: a headline squeezed into a gap in the shape read worse than one split from the legend.
 // A shape the engine fits keeps `gap` px below the words above it, and shrinks to at most `shrink` of its size
 // to keep the label, headline and legend in one column above it.
+// A relief stacks its headline: the largest size, `step` px at a time, at which some column at most `lines` lines
+// tall holds it, the narrowest such column, with the legend under it as wide as the column within `legend`.
 export const PLACE = {
   inset: 40, clear: 20, record: 10, cell: 4, em: 1.12, after: { label: 10, other: 22 }, roomy: 400, gap: 32, shrink: 0.85,
   w: { label: [120, 300], headline: [240, 520], legend: [190, 300], paragraph: [190, 300], list: [140, 240], rule: [120, 300] },
+  stacked: { lines: 4, step: 4, legend: [240, 330] },
 };
 const ORDER = ["label", "headline", "legend", "paragraph", "list", "rule"];
 
@@ -83,11 +88,11 @@ function roomGrid(mask, rec, fixed) {
  * Stack `blocks` in a column `width` px wide: each block as wide as its role allows within it, flush to the
  * column's side `align`, `size` overriding the headline's default. Returns each placed text and the column's height.
  */
-function stack(spec, facts, blocks, width, align, headSize) {
+function stack(spec, facts, blocks, width, align, headSize, widths = {}) {
   let y = 0;
   const out = blocks.map((t, i) => {
     const [, most] = PLACE.w[t.role];
-    const w = Math.round(Math.min(t.w ?? most, most, width));
+    const w = Math.round(widths[t.role] ?? Math.min(t.w ?? most, most, width));
     const size = t.size ?? (t.role === "headline" ? headSize : undefined);
     const placed = { ...t, w, ...(size !== undefined ? { size } : {}), align: t.align ?? align };
     const est = estimateText({ ...placed, x: 0, y: 0 }, spec, facts, PLACE.em);
@@ -116,10 +121,29 @@ function findSpot(room, width, height, centre) {
   return null;
 }
 
-/** Try to place `blocks` as one column, widest first and the headline from its default size down. */
-function placeColumn(spec, facts, room, blocks, centre, roomy) {
+/**
+ * Try to place `blocks` as one column, widest first and the headline from its default size down; or, `stacked`,
+ * the headline from its largest size down in the narrowest column that holds it in PLACE.stacked.lines lines.
+ */
+function placeColumn(spec, facts, room, blocks, centre, roomy, stacked) {
   const head = blocks.find((t) => t.role === "headline");
   const [, lo, hi] = head ? sizeRange(spec, head) : [0, 0, 0];
+  if (stacked && head && head.size === undefined && head.w === undefined) {
+    const S = PLACE.stacked;
+    for (let size = hi; size >= lo; size -= S.step) {
+      for (let width = PLACE.w.headline[0]; width <= PLACE.w.headline[1]; width += 20) {
+        if (serifLines(spec.headline, width, size, HEADLINE_TRACK[frameOf(spec)]).length > S.lines) continue;
+        const legend = Math.min(S.legend[1], Math.max(S.legend[0], width));
+        const column = Math.max(width, ...blocks.filter((t) => t.role === "legend").map(() => legend));
+        for (const align of ["left", "right"]) {
+          const col = stack(spec, facts, blocks, column, align, size, { headline: width, legend });
+          const spot = findSpot(room, column, col.height, centre);
+          if (!spot || spot.align !== align) continue;
+          return col.out.map(({ placed, top, dx }) => ({ ...placed, x: spot.x + dx, y: spot.y + top }));
+        }
+      }
+    }
+  }
   const sizes = head && head.size === undefined ? [textSize(spec, head), 38, 35, lo].filter((s, i, a) => s >= lo && s <= hi && a.indexOf(s) === i) : [undefined];
   const widest = Math.max(...blocks.map((t) => Math.min(t.w ?? PLACE.w[t.role][1], PLACE.w[t.role][1])));
   const narrowest = Math.max(...blocks.map((t) => (roomy && t.role === "headline" ? PLACE.roomy : PLACE.w[t.role][0])));
@@ -162,7 +186,7 @@ export function placeTexts(spec, facts) {
       const trial = roomGrid(mask, rec, fixed);
       const got = [];
       for (const g of tries.filter((x) => x.length)) {
-        const col = placeColumn(spec, facts, trial, g, centre, roomy);
+        const col = placeColumn(spec, facts, trial, g, centre, roomy, region.style === "relief");
         if (!col) break;
         for (const t of col) {
           const e = estimateText(t, spec, facts, PLACE.em);
