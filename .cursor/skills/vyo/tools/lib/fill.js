@@ -80,6 +80,20 @@ function drawRow(S, r, data, height, weight, tone) {
   S.appendChild(e);
 }
 
+/** A row set letter by letter along a curve: each glyph at its own origin and angle, from a field layout. */
+function drawGlyphs(svg, r, data) {
+  const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  t.setAttribute("class", "row");
+  for (const [k, v] of Object.entries(data)) if (v !== false && v !== undefined) t.dataset[k] = v === true ? "" : v;
+  const f = (n) => Math.round(n * 100) / 100;
+  t.setAttribute("x", r.glyphs.map((g) => f(g[0])).join(" "));
+  t.setAttribute("y", r.glyphs.map((g) => f(g[1])).join(" "));
+  t.setAttribute("rotate", r.glyphs.map((g) => f(g[2])).join(" "));
+  Object.assign(t.style, { fontSize: r.size + "px", fontWeight: r.weight ?? 400, fill: `var(--${r.tone})`, color: `var(--${r.tone})`, whiteSpace: "pre" });
+  t.textContent = r.text;
+  svg.appendChild(t);
+}
+
 function drawFill(S, region, blocks) {
   const size = region.size || 12;
   const { pitch } = GRID[size];
@@ -93,7 +107,8 @@ function drawFill(S, region, blocks) {
 function drawField(S, region, blocks) {
   const frame = { floor: F.floor, mirror: F.mirror, theme: F.theme, blocks, measure };
   for (const g of FIELDS[region.field].ground?.(region, region.parts, frame) ?? []) {
-    const d = runsPath(g.rows);
+    // A ground may bring its own path, traced from the field, in place of its rows.
+    const d = g.path ?? runsPath(g.rows);
     if (!d) continue;
     const fill = el("ground", { region: region.id, part: g.part ?? false, hot: g.hot }, { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", background: `var(--${g.tone})`, clipPath: `path("${d}")`, opacity: g.alpha ?? 1 });
     // A blur on the clipped fill itself would be clipped too, so a soft ground blurs a wrapper.
@@ -102,7 +117,12 @@ function drawField(S, region, blocks) {
     S.appendChild(soft || fill);
   }
   const items = FIELDS[region.field].layout(region, region.parts, frame);
-  for (const r of items) drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, r.weight ?? 400, r.tone);
+  const set = items.some((r) => r.glyphs) && S.appendChild(document.createElementNS("http://www.w3.org/2000/svg", "svg"));
+  if (set) Object.assign(set.style, { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", overflow: "visible", fontFamily: '"Commit Mono", monospace' });
+  for (const r of items) {
+    if (r.glyphs) drawGlyphs(set, r, { word: r.word, region: region.id, part: r.part, hot: r.hot });
+    else drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, r.weight ?? 400, r.tone);
+  }
   const box = items.length ? bbox([items.flatMap((r) => [[r.x, r.y], [r.x + r.width, r.y + r.height]])]) : { left: 0, top: 0, right: 0, bottom: 0 };
   return { id: region.id, kind: "field", bbox: box, rows: items.length };
 }

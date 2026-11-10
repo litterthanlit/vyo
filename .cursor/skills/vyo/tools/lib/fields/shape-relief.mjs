@@ -273,7 +273,7 @@ const reliefCache = { key: null, value: null };
  * @param {{ measure: (text: string, size: number) => number, theme?: "light" | "dark" }} frame
  * @param {{ shape: object, bevel?: number, strata?: object }} region
  */
-export function reliefStyle(mask, parts, { measure, theme = "light", tokens }, region) {
+export function reliefStyle(mask, parts, { measure, theme = "light", tokens, region }) {
   const key = JSON.stringify([region.shape, region.bevel, region.strata, parts.map((p) => [p.id, p.name, p.loc, p.hot]), theme]);
   if (reliefCache.key === key) {
     // Only the thumbnail prediction reads the colours, so new ones redo it and nothing else.

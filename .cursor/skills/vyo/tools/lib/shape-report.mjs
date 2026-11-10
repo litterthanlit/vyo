@@ -3,7 +3,7 @@
 // pieces, a text block on the shape. `vyo sketch` prints these as `!` lines and lib/check.mjs runs them as checks;
 // every message says what to change, with a number.
 import { SHEET, corners, CORNERS, fixedMeasure } from "./geometry.mjs";
-import { maskGrid } from "./mask.mjs";
+import { maskGrid, edt } from "./mask.mjs";
 import { shapeLayout, nameWidth } from "./fields/shape.mjs";
 import { regionParts } from "./parts.mjs";
 import { tokensOf } from "./render.mjs";
@@ -21,35 +21,6 @@ export function shapeReport(spec, region, facts) {
   const parts = regionParts(region, facts);
   const tokens = { ...tokensOf(spec), ...FIELDS.shape.tokens(spec.theme) };
   return { region, parts, ...shapeLayout(region, parts, { theme: spec.theme, measure: fixedMeasure, tokens }) };
-}
-
-// Felzenszwalb and Huttenlocher's exact squared Euclidean distance transform, in place, on a w by h grid.
-function edt(f, w, h) {
-  const n = Math.max(w, h);
-  const [d, v, z, g] = [new Float64Array(n), new Int32Array(n), new Float64Array(n + 1), new Float64Array(n)];
-  const pass = (get, set, len) => {
-    for (let q = 0; q < len; q++) g[q] = get(q);
-    let k = 0;
-    [v[0], z[0], z[1]] = [0, -Infinity, Infinity];
-    for (let q = 1; q < len; q++) {
-      let s = (g[q] + q * q - (g[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
-      while (s <= z[k]) {
-        k--;
-        s = (g[q] + q * q - (g[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
-      }
-      k++;
-      [v[k], z[k], z[k + 1]] = [q, s, Infinity];
-    }
-    k = 0;
-    for (let q = 0; q < len; q++) {
-      while (z[k + 1] < q) k++;
-      d[q] = (q - v[k]) ** 2 + g[v[k]];
-    }
-    for (let q = 0; q < len; q++) set(q, d[q]);
-  };
-  for (let x = 0; x < w; x++) pass((y) => f[y * w + x], (y, val) => (f[y * w + x] = val), h);
-  for (let y = 0; y < h; y++) pass((x) => f[y * w + x], (x, val) => (f[y * w + x] = val), w);
-  return f;
 }
 
 /** Squared distance, in cells, from every cell to the nearest cell where `on` is false. */
@@ -159,14 +130,17 @@ const bandOf = (report, part) => report.bands?.find((b) => b.part.id === part.id
 /**
  * Every finding on a shape region, by check id. `rows` are the rows as drawn (the page's, or Node's for the
  * sketch); `blocks` are the text blocks, each `{ id, left, top, right, bottom }`.
- * @returns {Record<"shape-thin" | "shape-cover" | "shape-accent" | "shape-name" | "shape-split" | "shape-room" | "shape-share" | "shape-tone", string[]>}
+ * @returns {Record<"shape-thin" | "shape-cover" | "shape-accent" | "shape-name" | "shape-split" | "shape-room" | "shape-rings" | "shape-upright" | "shape-share" | "shape-tone", string[]>}
  */
 export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) {
   const { mask, bands = [], parts, region } = report;
   const L = SHAPE_LIMITS;
-  const out = { "shape-thin": [], "shape-cover": [], "shape-accent": [], "shape-name": [], "shape-split": [], "shape-room": [], "shape-share": [], "shape-tone": [] };
-  // A style that lays out no bands judges its own accent, names, glyph shares and tones.
-  if (report.findings) Object.assign(out, report.findings(rows));
+  const out = { "shape-thin": [], "shape-cover": [], "shape-accent": [], "shape-name": [], "shape-split": [], "shape-room": [], "shape-rings": [], "shape-upright": [], "shape-share": [], "shape-tone": [] };
+  // A style that is not cut top to bottom judges its own depth and reading; the band checks are the bands'.
+  const banded = (region.style ?? "bands") === "bands";
+  // Rings' findings are fixed by the layout; relief's read the rows as drawn, so they are a function of them.
+  const own = typeof report.findings === "function" ? report.findings(rows) : report.findings ?? {};
+  for (const [id, messages] of Object.entries(own)) out[id].push(...messages);
 
   // Every shape check asks for these findings; the opening is the slow part and depends on the shape alone.
   const key = JSON.stringify(region.shape);
@@ -186,7 +160,7 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
     out["shape-cover"].push(`the shape covers ${pct(cover)} of the sheet; it needs ${pct(L.cover)} to read as the picture, so scale it up ${share(k)}x (set fit.${by} to ${share(mask.fit[by] * k)}, it is ${share(mask.fit[by])}) or draw it fatter`);
   }
 
-  const hot = bands.filter((b) => b.part.hot).sort((a, b) => b.y1 - b.y0 - (a.y1 - a.y0))[0];
+  const hot = !banded ? null : bands.filter((b) => b.part.hot).sort((a, b) => b.y1 - b.y0 - (a.y1 - a.y0))[0];
   if (hot && hot.y1 - hot.y0 < L.accent) {
     const h = hot.y1 - hot.y0;
     out["shape-accent"].push(`the accent band "${hot.part.name}" is ${h}px tall (y ${hot.y0} to ${hot.y1}); it needs ${L.accent}px to show in the thumbnail, so scale the shape up ${share(L.accent / h)}x, narrow it where the band falls, or put the accent on a bigger part`);
@@ -198,12 +172,16 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
     if (mine.some((r) => (r.text ?? "").includes(name))) continue;
     const b = bandOf(report, p);
     if (!b) continue;
+    if (!banded) {
+      out["shape-name"].push(`part "${p.name}" never shows its whole name: ${b.missing}`);
+      continue;
+    }
     const need = Math.ceil(nameWidth(name, b.size));
     const widest = px(Math.max(0, ...mine.map((r) => r.width)));
     out["shape-name"].push(`part "${p.name}" never shows its whole name: its band (y ${b.y0} to ${b.y1}) holds ${widest}px of ${b.size.toFixed(1)}px type and the name needs ${need}px; widen the shape there to at least ${need}px or give the part a shorter name`);
   }
 
-  for (const b of bands) {
+  for (const b of banded ? bands : []) {
     const pieces = piecesBetween(mask, b.y0, b.y1);
     const total = pieces.reduce((s, q) => s + q.area, 0);
     const big = pieces.filter((q) => q.area >= L.piece * total);

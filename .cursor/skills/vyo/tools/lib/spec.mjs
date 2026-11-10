@@ -4,6 +4,7 @@ import { SHEET, SHAPE_KEYS, parsePath } from "./geometry.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { WAVE } from "./fields/wave.mjs";
 import { SHAPE_STYLES } from "./fields/shape.mjs";
+import { RINGS } from "./fields/shape-rings.mjs";
 import { SHAPE_KINDS, opKind, shapeMask } from "./mask.mjs";
 import { ROLES as FRAME_ROLES, FRAMES, frameOf, sizeRange, LIST } from "./frame.mjs";
 
@@ -257,6 +258,8 @@ function checkField(f, r, err, copy, frame) {
     if (st !== undefined && !(isObj(st) && ((st.by === "depth" && Object.keys(st).length === 1) || (st.by === "angle" && isNum(st.angle) && Object.keys(st).length === 2)))) {
       err(`${f}.strata: { "by": "angle", "angle": degrees } (90 stacks the parts top to bottom, 0 left to right) or { "by": "depth" } (shells from the outline in)`);
     }
+    if (r.echo !== undefined && (!Number.isInteger(r.echo) || r.echo < 0 || r.echo > RINGS.maxEcho)) err(`${f}.echo: a whole number of faded outlines from 0 to ${RINGS.maxEcho}`);
+    else if (r.echo && r.style !== "rings") err(`${f}.echo: only the rings style draws echoes; set style to rings or remove echo`);
   }
   for (const k of FIELD_OPTIONS) {
     if (r[k] !== undefined && !kind.options.includes(k)) err(`${f}.${k}: a ${r.field} field has no ${k}; only ${Object.keys(FIELDS).filter((n) => FIELDS[n].options.includes(k)).join(", ")} takes it`);

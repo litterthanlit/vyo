@@ -7,6 +7,7 @@ import { frameOf, ROLES } from "./frame.mjs";
 import { partsFromFacts, partOptions, regionParts, unplainName, sameNames } from "./parts.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { shapeReport, shapeFindings, SHAPE_LIMITS } from "./shape-report.mjs";
+import { RINGS } from "./fields/shape-rings.mjs";
 import { RELIEF } from "./fields/shape-relief.mjs";
 
 const rgb = (hex) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(", ")})`;
@@ -172,6 +173,8 @@ export const CHECKS = [
   shapeCheck("shape-cover", "warn", "spec", `a drawn shape covers at least ${SHAPE_LIMITS.cover * 100}% of the sheet`),
   shapeCheck("shape-accent", "warn", "spec", `the accent band of a drawn shape is at least ${SHAPE_LIMITS.accent}px tall, so it shows in the thumbnail`),
   shapeCheck("shape-split", "warn", "spec", "no band of a drawn shape falls on two separate pieces of it"),
+  shapeCheck("shape-rings", "warn", "spec", `a shape in rings is deep enough for ${RINGS.perPart} rings per part`),
+  shapeCheck("shape-upright", "warn", "spec", `every part of a shape in rings shows its name at least once leaning under ${RINGS.upright} degrees`),
   shapeCheck("shape-tone", "warn", "spec", `at thumbnail size a relief's lit side reaches ${RELIEF.tone.lit * 100}% light and its tones span ${RELIEF.tone.spread * 100}%, so it reads as a bright volume`),
   shapeCheck("shape-share", "fail", "page", `every part of a relief has its share of the glyphs within ${RELIEF.share.part * 100}% of its share of the lines`, ({ page }) => ({ rows: page.rows.map((r) => ({ part: r.part, text: r.text, width: r.rect.width })) })),
   shapeCheck("shape-name", "fail", "page", "every band of a drawn shape shows its part's whole name at least once", ({ page }) => ({ rows: page.rows.map((r) => ({ part: r.part, text: r.text, width: r.rect.width })) })),

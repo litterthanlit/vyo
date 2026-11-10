@@ -34,8 +34,9 @@
     part: el.dataset.part,
     hot: el.dataset.hot !== undefined,
     text: el.textContent.replace(/\u00a0/g, " "),
-    scrollWidth: el.scrollWidth,
-    clientWidth: el.clientWidth,
+    // A row set glyph by glyph in SVG has no box to overflow.
+    scrollWidth: el instanceof SVGElement ? 0 : el.scrollWidth,
+    clientWidth: el instanceof SVGElement ? 0 : el.clientWidth,
     rect: box(el.getBoundingClientRect()),
   }));
 

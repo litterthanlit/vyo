@@ -350,6 +350,137 @@ Before rendering, `vyo sketch` printed the jar's bands, its 62% of the sheet and
 }
 ```
 
+### shape in rings
+
+The same jar, set in rings. Pantry's jar is fat and round, so its outline has room for rings: the lid floats 3 units above the neck and gets rings of its own, and a cut in the body makes the label, a hole the legend sits in. `"style": "rings"` runs the parts' names round the outline, ring inside ring, in tree order from the outline in, each part as much of the jar's area as its code. Where the rings would fold, past the shoulders, they stop, and the cores in the lid and above and below the label are set in level lines on a tone of their own. The plan is a solid orange band with its name reversed out. `"echo": 4` draws four faded outlines around the jar. The legend names the measure as "area".
+
+Before rendering, `vyo sketch` printed 22 rings of 7px for 12 parts, one line per part with its rings and its share of the area beside its share of the lines, and no `!` line.
+
+```json
+{
+  "version": 3,
+  "frame": "loose",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "shape",
+        "field": "shape",
+        "style": "rings",
+        "fits": "Pantry keeps a week of recipes the way a jar keeps preserves, so the picture is a jar of its code.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "shape": {
+          "fit": {
+            "h": 0.74,
+            "cy": 0.6
+          },
+          "ops": [
+            {
+              "add": "rect",
+              "at": [
+                22,
+                0
+              ],
+              "size": [
+                56,
+                13
+              ],
+              "round": 4
+            },
+            {
+              "add": "rect",
+              "at": [
+                28,
+                16
+              ],
+              "size": [
+                44,
+                10
+              ]
+            },
+            {
+              "add": "rect",
+              "at": [
+                6,
+                22
+              ],
+              "size": [
+                88,
+                108
+              ],
+              "round": 26
+            },
+            {
+              "cut": "rect",
+              "at": [
+                22,
+                62
+              ],
+              "size": [
+                56,
+                30
+              ],
+              "round": 4
+            }
+          ]
+        },
+        "echo": 4
+      }
+    ],
+    "texts": [
+      {
+        "role": "label",
+        "id": "label",
+        "x": 40,
+        "y": 40,
+        "w": 220,
+        "align": "left"
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 40,
+        "y": 72,
+        "w": 420,
+        "align": "left"
+      },
+      {
+        "role": "legend",
+        "id": "legend",
+        "x": 300,
+        "y": 790,
+        "w": 240,
+        "align": "center",
+        "text": "Every ring is a part of Pantry, its area as big as its share of the code. The orange rings are the plan."
+      }
+    ]
+  }
+}
+```
+
 ### shape, relief
 
 The same jar as a lit volume, on the dark sheet: `"style": "relief"`. The jar is drawn upright this time, with a 3-unit cut between the lid and the neck so the lid reads as a separate piece. Two creases ridge the lid and a creased rectangle is the label; both fold the surface and leave the outline alone. `bevel` 0.8 rounds the body almost to a cylinder, and `strata` at 90 degrees stacks the parts from the lid down like layers of preserves. Each layer repeats its part's name in 6px type, every word whole, lit from the top left. The plan glows. The legend names the measure as "size" and "lines of code".

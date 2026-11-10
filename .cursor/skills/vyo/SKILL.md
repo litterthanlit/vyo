@@ -53,7 +53,6 @@ Pick the field whose shape is the story. The `fits` check wants a word that star
 - **terrain** stands each part up as a peak, as tall as its code and as wide as its files. Choose it when the story is what is big and what matters. Keywords "big", "weight", "matters", "most".
 - **river** runs one stream of digits per part in from the left and merges them into one channel. Choose it when the story is many things merging into one. Keywords "merge", "join", "many", "one".
 - **shape** cuts a silhouette you draw into one band per part, as much area as its code, the type as big as its share. Choose it when one object stands for the product, or the owner asks for a picture. Keywords "object", "thing", "picture", "shape", "looks".
-  - `"style": "relief"` draws the same silhouette as a lit, sculpted volume in dense 6px type, each part a layer of its own name and the accent glowing. Choose relief when the object itself should be the poster's pull, solid at thumbnail size. Keep the default bands when the part names must read from across a room.
 
 If you cannot decide, take wave. A field preference in `project-context.md` wins.
 
@@ -62,8 +61,9 @@ If you cannot decide, take wave. A field preference in `project-context.md` wins
 1. Pick one object a stranger would name in a second, tied to the story: a jar for a pantry, a paper plane for a hand-off. Never a heart, a plain circle or a box.
 2. Name the one feature that makes it that object, like the jar's lid and shoulders. Draw the object in 3 to 6 ops in a 100-unit box, y down, with that feature large. `compose --field shape` prints the format.
 3. Leave one top corner clear for the headline and legend: start from `"fit": { "h": 0.85, "cy": 0.62 }`, and rotate it a few degrees if it fills the width.
-4. Sketch, then open `<name>-sketch.png`. Say in one word what you see. If that word is not the object, redraw it. Fix every `!` line: each gives the number to change.
-5. Render and look at the thumbnail again.
+4. Pick the look with `style`. `bands` (the default) cuts the shape top to bottom and suits any outline, thin parts included. `rings` sets the names along the outline, ring inside ring, with the core in level lines; add `"echo": 6` for faded outlines around it. Choose rings for a fat, round object (a jar, a stone, a bulb) and cut a hole in it where the legend should sit. A thin or spiky shape (a plane, a key, a ladder) starves the rings; take bands or relief, or fatten it until `shape-rings` is quiet. `relief` draws any outline as a lit, sculpted volume in dense 6px type, each part a layer of its own name and the accent glowing; choose it when the object itself should be the poster's pull, solid at thumbnail size. Keep bands when the part names must read from across a room.
+5. Sketch, then open `<name>-sketch.png`. Say in one word what you see. If that word is not the object, redraw it. Fix every `!` line: each gives the number to change.
+6. Render and look at the thumbnail again.
 
 A relief needs no hints: the default is a rounded volume lit from the top left. Add one only for a feature the outline cannot show, and sketch again after each:
 
@@ -75,7 +75,7 @@ A relief needs no hints: the default is a rounded volume lit from the top left. 
 ## The words
 
 - **Headline.** One plain sentence about the outcome for the user, at most 72 characters. It is the only large type.
-- **Legend.** Required. One or two sentences, at most 180 characters, that say what the picture encodes. Name the accent part by its plain name and the measure: "code" or "lines" for a wave or terrain, plus "files" or "wide" for a terrain, "merge", "join" or "flow" for a river, and "code" plus "type", "size" or "bigger" for a shape (a relief: "its size set by its lines of code"). Example: "Every peak is a part of Pantry, as tall as its code and as wide as its files. The orange peak is the plan."
+- **Legend.** Required. One or two sentences, at most 180 characters, that say what the picture encodes. Name the accent part by its plain name and the measure: "code" or "lines" for a wave or terrain, plus "files" or "wide" for a terrain, "merge", "join" or "flow" for a river, and "code" plus "type", "size" or "bigger" for a shape ("area" for rings; a relief: "its size set by its lines of code"). Example: "Every peak is a part of Pantry, as tall as its code and as wide as its files. The orange peak is the plan."
 - **Fits.** On the field region, at most 160 characters, never drawn. Say why this field matches the product's story, with the field's keyword. Example: "Pantry merges many saved recipes into one week, so every part of its code joins one river."
 - **Paragraphs.** 0 to 2, each at most 2 sentences and 220 characters. Each does a job the picture cannot: how it works, what stays private, what runs on its own, or proof.
 - **Parts list.** `parts: true` prints the parts' plain names in tree order. Keep it when the field prints no names, as a river does.
@@ -99,7 +99,7 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 | region `names` | Part id to plain name, at most 24 characters each |
 | region `sentence` | Wave only, at most 40 characters, set in every 5th row |
 | region `shape` | Shape only: `{ ops, rotate?, fit? }`, the silhouette you draw (see "Draw the shape") |
-| region `style` | Shape only: `bands` (the default) or `relief` |
+| region `style`, `echo` | Shape only: `bands` (default), `rings` or `relief`; `echo` 0 to 12 faded outlines, rings only |
 | region `bevel`, `strata` | Relief only, optional: how rounded the form is, and which way its layers run |
 | `figure.texts` | Exactly one `label` and one `headline` (they print the name and the headline), exactly one `legend`, 0 to 2 `paragraph`, 0 or 1 `list`, 0 or 1 `rule`. Each has `x`, `y`, `w` and optional `size` and `align` |
 | `record` | Optional, `bottom` or `left`, to force the record line's side |
