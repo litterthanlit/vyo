@@ -398,11 +398,6 @@ function ringWalk(field, line) {
   return { ...walk, pts, offset };
 }
 
-const polyPath = (pts) => `M${pts.map((q) => `${Math.round(q[0] * 100) / 100} ${Math.round(q[1] * 100) / 100}`).join("L")}Z`;
-
-/** A polygon wound clockwise on screen, so every fill path unions under the nonzero rule. */
-const clockwise = (pts) => (loopArea(pts) < 0 ? [...pts].reverse() : pts);
-
 /**
  * The rings style: per part a run of rings of its plain name from the outline in, then the core in level lines,
  * the accent part on a solid accent band with its names reversed out, a hairline between parts, and `echo`
@@ -523,7 +518,7 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
   const least = (k, u) => Math.max(parts[k].hot ? RINGS.accent : 0, Math.floor(u) < R ? (2 * nameArc(parts[k])) / (ringLength[Math.floor(u)] || 1) : 0);
   const allot = allotRings(parts, ringAreas, coreRows, least);
   const total = mask.area || 1;
-  const bands = parts.map((part, k) => ({ part, ...allot[k], rings: allot[k].to - allot[k].from, share: allot[k].area / total, lines: 0, size, names: 0, upright: 0 }));
+  const bands = parts.map((part, k) => ({ part, ...allot[k], rings: 0, share: allot[k].area / total, lines: 0, size, names: 0, upright: 0 }));
 
   /** The arcs of ring i between ring coordinates u0 and u1, loop by loop: [walk, from, to]. */
   const arcs = (i, u0, u1) => {
