@@ -230,14 +230,15 @@ function levelRows(field, level, upper, yFrom = 0, yTo = field.H, skip = () => f
  * place in the rings is a ring coordinate u: ring floor(u), a fraction u - floor(u) of the way round it, so a
  * part may end part way round a ring and the next part take the rest; the boundary steps in by one ring there.
  * Past the last ring the core is cut into runs of pixel rows. Every part spans at least `least(k, u)` rings,
- * which keeps room for its name and the accent's band wide enough to see.
- * @param {{ loc: number }[]} parts  in tree order
+ * which keeps room for its name and the accent's band wide enough to see. `start` is the ring coordinate the
+ * first part starts at: the parts share what lies inside it, each in proportion to its lines.
+ * @param {{ loc: number }[]} parts  in the order they run inward
  * @param {number[]} ringAreas  px² of each ring's strip, outline first
  * @param {number[]} coreRows   px² of the core on each sheet row
  * @param {(k: number, u: number) => number} least  the fewest rings part k may span from u
  * @returns {{ from: number, to: number, core: [number, number] | null, area: number }[]}
  */
-export function allotRings(parts, ringAreas, coreRows, least = () => 0) {
+export function allotRings(parts, ringAreas, coreRows, least = () => 0, start = 0) {
   const R = ringAreas.length;
   const cum = [0];
   for (const a of ringAreas) cum.push(cum[cum.length - 1] + a);
@@ -252,12 +253,13 @@ export function allotRings(parts, ringAreas, coreRows, least = () => 0) {
     if (t >= ringTotal) return R;
     let i = 0;
     while (cum[i + 1] <= t) i++;
-    return i + (t - cum[i]) / ringAreas[i];
+    return i + (t - cum[i]) / (ringAreas[i] || 1);
   };
-  let [u, row, rowArea, before] = [0, coreTop, 0, 0];
+  const base = areaAt(start);
+  let [u, row, rowArea, before] = [start, coreTop, 0, 0];
   return parts.map((p, k) => {
     before += p.loc;
-    const target = (before / loc) * total;
+    const target = base + (before / loc) * (total - base);
     const from = u;
     const last = k === parts.length - 1;
     if (last) u = R;
@@ -516,9 +518,44 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
   const nameArc = (p) => (p.name.length + RING_SEP.length) * adv;
   // Room for two copies of the name on the ring the part starts on; the accent at least `RINGS.accent` rings.
   const least = (k, u) => Math.max(parts[k].hot ? RINGS.accent : 0, Math.floor(u) < R ? (2 * nameArc(parts[k])) / (ringLength[Math.floor(u)] || 1) : 0);
-  const allot = allotRings(parts, ringAreas, coreRows, least);
+  // The order the parts run inward. With an accent, one other part's outermost ring is a rim, then the accent's
+  // band of whole rings, so the accent traces the outline as one closed band; then every other part in tree order,
+  // the rim's part with what is left of its share. Ring order encodes nothing, so the rim is the part whose
+  // share is nearest one outer ring's area. The rim and the accent are whole rings and miss their shares a little;
+  // the parts inside share what is left in proportion to their lines, so the difference spreads thin.
+  const allLines = parts.reduce((t, p) => t + p.loc, 0) || 1;
+  const shapeArea = ringAreas.reduce((t, a) => t + a, 0) + coreRows.reduce((t, a) => t + a, 0);
+  const hot = parts.findIndex((p) => p.hot);
+  const outer = (ringAreas[0] ?? 0) / (shapeArea || 1);
+  const rim = parts.reduce((best, p, k) => (p.hot || (best >= 0 && Math.abs(parts[best].loc / allLines - outer) <= Math.abs(p.loc / allLines - outer)) ? best : k), -1);
+  let runs;
+  let accentFloor = false;
+  if (hot < 0 || rim < 0 || R < 2 + RINGS.accent) runs = allotRings(parts, ringAreas, coreRows, least).map((r, k) => ({ ...r, k }));
+  else {
+    const cum = [0];
+    for (const a of ringAreas) cum.push(cum[cum.length - 1] + a);
+    const want = cum[1] + (parts[hot].loc / allLines) * shapeArea;
+    let end = 1;
+    for (let e = 2; e <= R; e++) if (Math.abs(cum[e] - want) < Math.abs(cum[end] - want)) end = e;
+    accentFloor = end < 1 + RINGS.accent;
+    end = Math.min(R, Math.max(end, 1 + RINGS.accent));
+    const rimLines = outer * allLines;
+    // A rim whose ring holds its whole share has nothing left to run inside.
+    const rest = parts.map((p, k) => ({ k, loc: k === rim ? p.loc - rimLines : p.loc })).filter(({ k, loc }) => k !== hot && loc > 0);
+    const restParts = rest.map(({ loc }) => ({ loc }));
+    const leastRest = (j, u) => least(rest[j].k, u);
+    runs = [
+      { k: rim, from: 0, to: 1, core: null, area: ringAreas[0] },
+      { k: hot, from: 1, to: end, core: null, area: cum[end] - cum[1] },
+      ...allotRings(restParts, ringAreas, coreRows, leastRest, end).map((r, j) => ({ ...r, k: rest[j].k })),
+    ].filter((r) => r.to > r.from || r.core);
+  }
   const total = mask.area || 1;
-  const bands = parts.map((part, k) => ({ part, ...allot[k], rings: 0, share: allot[k].area / total, lines: 0, size, names: 0, upright: 0 }));
+  const bands = parts.map((part, k) => {
+    const mine = runs.filter((r) => r.k === k);
+    const area = mine.reduce((t, r) => t + r.area, 0);
+    return { part, runs: mine, core: mine.find((r) => r.core)?.core ?? null, area, rings: 0, share: area / total, lines: 0, size, names: 0, upright: 0 };
+  });
 
   /** The arcs of ring i between ring coordinates u0 and u1, loop by loop: [walk, from, to]. */
   const arcs = (i, u0, u1) => {
@@ -584,13 +621,14 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
   const owners = () => {
     const own = new Int16Array(W * field.H).fill(-1);
     const arcs = new Map();
-    const partAt = (u) => Math.max(0, allot.findIndex((p, k) => u < p.to || k === allot.length - 1));
+    const rings = runs.filter((r) => r.to > r.from);
+    const partAt = (u) => (rings.find((r, j) => u < r.to || j === rings.length - 1) ?? runs[0]).k;
     for (let y = box[1]; y < box[3]; y++) {
       for (let x = box[0]; x < box[2]; x++) {
         const c = y * W + x;
         if (field.sd[c] <= 0) continue;
         const i = ringOf(c);
-        if (i < 0) own[c] = allot.findIndex((p) => p.core && y >= p.core[0] && y < p.core[1]);
+        if (i < 0) own[c] = runs.find((r) => r.core && y >= r.core[0] && y < r.core[1])?.k ?? -1;
         else {
           if (!arcs.has(i)) arcs.set(i, ringLength[i] ? arcOf(i) : () => 0);
           own[c] = partAt(i + arcs.get(i)(x, y) / (ringLength[i] || 1));
@@ -612,11 +650,12 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
 
   // The rings, outline first, so an outer name wins where two would meet.
   for (let i = 0; i < R; i++) {
-    for (const b of bands) {
-      if (b.to <= i || b.from >= i + 1 || !ringLength[i]) continue;
+    for (const run of runs) {
+      if (run.to <= i || run.from >= i + 1 || !ringLength[i]) continue;
+      const b = bands[run.k];
       b.lines++;
       const name = b.part.name.toLowerCase();
-      for (const [walk, a, z] of arcs(i, b.from, b.to)) {
+      for (const [walk, a, z] of arcs(i, run.from, run.to)) {
         const whole = walk.closed && a < 0.5 && z > walk.length - 0.5;
         const unit = nameArc(b.part);
         let n = Math.floor((z - a) / unit);
@@ -645,10 +684,11 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
 
   // The core in level lines, a run of lines per part, each line the whole names its span holds, centred.
   const lines = [];
-  for (const b of bands) {
-    if (!b.core) continue;
+  for (const run of runs) {
+    if (!run.core) continue;
+    const b = bands[run.k];
     const name = b.part.name.toLowerCase();
-    const [y0, y1] = b.core;
+    const [y0, y1] = run.core;
     for (let yc = y0 + (((y1 - y0) % gap) + gap) / 2; yc + gap / 2 <= y1 + 0.01; yc += gap) {
       let spans = null;
       for (const [, here] of coreSpans(Math.floor(yc - glyphRadius), Math.ceil(yc + glyphRadius) + 1, glyphRadius)) {
@@ -676,7 +716,7 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
   const ground = [];
   if (tones.base) ground.push({ part: null, hot: false, tone: tones.base, rows: mask.runs.map((s, y) => [y, s]).filter(([, s]) => s.length) });
   if (cores.length) ground.push({ part: null, hot: false, tone: tones.core, rows: coreSpans(box[1], box[3]) });
-  for (const b of bands.filter((x) => x.part.hot)) {
+  for (const b of runs.filter((r) => parts[r.k].hot).map((r) => ({ ...r, part: parts[r.k] }))) {
     if (b.to > b.from) {
       // Whole rings fill between their levels; a ring the part holds only part way round fills along its arc.
       const [whole0, whole1] = [Math.ceil(b.from), b.to >= R ? R : Math.floor(b.to)];
@@ -694,7 +734,7 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
   // Hairlines between parts: the edge of the ring a part starts on, stepping in a ring where it starts part way round.
   const edges = [];
   const hair = (pts, closed) => edges.push(ribbon(pts, RINGS.hairline, closed));
-  bands.forEach((b, k) => {
+  runs.forEach((b, k) => {
     if (!k) return;
     if (b.from < R) {
       const i = Math.floor(b.from);
@@ -711,7 +751,7 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
         }
         at += walk.length;
       }
-    } else if (b.core && bands[k - 1].core) {
+    } else if (b.core && runs[k - 1].core) {
       for (const [y, spans] of coreSpans(b.core[0], b.core[0] + 1)) for (const [l, r] of spans) edges.push(`M${l} ${y}H${r}V${y + 2 * RINGS.hairline}H${l}Z`);
     }
   });
@@ -748,7 +788,7 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
   const loc = parts.reduce((t, p) => t + p.loc, 0) || 1;
   const across = Math.round(2 * field.deepest);
   for (const b of bands) {
-    b.rings = ringLength.filter((len, i) => len > 0 && i < b.to && i + 1 > b.from).length;
+    b.rings = ringLength.filter((len, i) => len > 0 && b.runs.some((r) => i < r.to && i + 1 > r.from)).length;
     b.missing = b.rings || b.core
       ? `its ${b.rings} rings${b.core ? " and its core lines" : ""} hold no whole copy of "${b.part.name.toLowerCase()}" (${Math.ceil(nameArc(b.part))}px with its dot), where they run short or fold; make the shape fatter there or give the part a shorter name`
       : `the shape ran out of rings before it (${R} rings of ${gap}px fit); draw it fatter or use style bands`;
@@ -760,6 +800,7 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
   const summary = [
     `rings: ${R} rings of ${gap}px fit (the shape is ${across}px across at its thickest; ${P} parts want about ${need})${cores.length ? `, then ${cores.length === 1 ? "a core" : `${cores.length} cores`} of ${lines.length} level lines` : ""}`,
     "parts, outline in (* the accent): rings, core lines, share of the shape's area for share of the lines",
+    ...(accentFloor ? [`the accent's share fills under ${RINGS.accent} rings, too thin to show at thumbnail size, so it takes ${RINGS.accent} (${RINGS.accent * RINGS.gap}px) and more area than its share`] : []),
     ...bands.map((b) => `  ${b.part.hot ? "*" : " "} ${b.part.name.toLowerCase().padEnd(24)} ${String(b.rings).padStart(2)} ${b.rings === 1 ? "ring" : "rings"}${b.core ? `, ${b.lines - b.rings} core lines` : ""}, ${pct(b.share)} of the area for ${pct(b.part.loc / loc)} of the lines`),
   ];
   return { bands, rows, ground, findings, summary, owners, rings: { levels: R, deepest: field.deepest, cores, lines } };
