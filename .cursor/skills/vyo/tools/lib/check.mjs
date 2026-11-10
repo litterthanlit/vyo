@@ -124,7 +124,7 @@ export const CHECKS = [
   },
   {
     id: "product-name", level: "warn", stage: "spec", about: "the product name is the customer-facing name",
-    run: ({ spec, facts }) => (spec.product.name === facts.repo.name ? [`product name equals the folder name "${facts.repo.name}"; use the name customers see`] : []),
+    run: ({ spec, facts }) => (spec.product.name === facts.repo.name ? [`product name equals the folder name "${facts.repo.name}"; write the name customers see, capitalised as the product's own docs write it. If the docs write it exactly "${facts.repo.name}", keep it: this warning only asks you to check`] : []),
   },
   {
     id: "preset-copy", level: "warn", stage: "spec", about: "the figure's geometry is not a preset's, unchanged",

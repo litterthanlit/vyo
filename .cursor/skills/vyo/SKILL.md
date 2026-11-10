@@ -92,7 +92,7 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 
 | Field | What it is |
 |---|---|
-| `product.name` | The customer-facing name. `product-name` warns while it is the folder name |
+| `product.name` | The customer-facing name, capitalised as the product's docs write it. `product-name` warns while it is the folder name; keep it if the docs write it that way |
 | `product.commit` | The short hash. `compose --repo` fills it, and the record line needs it |
 | `headline` | At most 72 characters |
 | region `field` | `wave`, `terrain`, `river` or `shape`. One field per figure |

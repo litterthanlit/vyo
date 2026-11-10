@@ -39,6 +39,12 @@ const failures = (p, s) => findings(p, s).filter((f) => f.level === "fail");
 
 test("a clean page passes every page check", () => assert.deepEqual(failures(page()), []));
 
+test("product-name asks for the name as the product's docs write it, and says to keep a folder name the docs use", () => {
+  const run = (name) => CHECKS.find((c) => c.id === "product-name").run({ spec: { ...spec, product: { name } }, facts: { ...facts, repo: { name: "axios" } } });
+  assert.deepEqual(run("axios"), ['product name equals the folder name "axios"; write the name customers see, capitalised as the product\'s own docs write it. If the docs write it exactly "axios", keep it: this warning only asks you to check']);
+  assert.deepEqual(run("Axios"), []);
+});
+
 test("each page check catches its defect", () => {
   const cases = [
     ["palette", { boxes: [{ color: "rgb(1, 2, 3)", hot: false, where: "a square" }] }, /a square uses rgb\(1, 2, 3\), not a light token/],

@@ -153,7 +153,7 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 | `spec` | ✗ | The spec passes every rule in §3. When it fails, no other check runs |
 | `facts-hash` | ✗ | `spec.facts` equals the facts file's `hash` |
 | `facts-empty` | ! | Swiss frame only. `facts.empty` is true: the scan found nothing to count, so the footer shows provenance only. The loose frame has no counts line, so it never fires there |
-| `product-name` | ! | `product.name` equals `facts.repo.name`, the folder name |
+| `product-name` | ! | `product.name` equals `facts.repo.name`, the folder name. Message: `product name equals the folder name "<name>"; write the name customers see, capitalised as the product's own docs write it. If the docs write it exactly "<name>", keep it: this warning only asks you to check` |
 | `preset-copy` | ! | Every region's geometry equals a preset region's geometry, numbers compared exactly |
 | `part-name` | ! | A part a field draws has the product's name in its name, has no entry in `names`, or shares its name with another part, ignoring case: `parts <id> and <id> are all called "<name>"; give each a plain name of its own in names`. Also a key in `names` that is not a part |
 | `part-unplain` | ✗ | A part a field draws still has an unplain name: all caps, a company name the scan knows, or one word ending in a digit. A scanned name left in place trips it, since `names` replaces the scanned name. Message: `part "<name>" (<id>) looks like a vendor or code name; add a plain name in names` |
