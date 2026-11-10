@@ -205,7 +205,7 @@ window.fitWidth = (el, max) => {
 // The page lays out the figure with the same geometry and field modules `vyo sketch` runs in Node,
 // concatenated into one script: their imports are each other, so they are dropped.
 const LIB = path.join(TOOLS, "lib");
-const PAGE_MODULES = ["geometry.mjs", "mask.mjs", "fields/wave.mjs", "fields/terrain.mjs", "fields/river.mjs", "fields/shape-rings.mjs", "fields/shape.mjs", "fields/index.mjs"];
+const PAGE_MODULES = ["geometry.mjs", "mask.mjs", "fields/wave.mjs", "fields/terrain.mjs", "fields/river.mjs", "fields/shape-rings.mjs", "fields/shape-relief.mjs", "fields/shape.mjs", "fields/index.mjs"];
 const figureScript = () =>
   [...PAGE_MODULES.map((f) => fs.readFileSync(path.join(LIB, f), "utf8").replace(/^import .*\n/gm, "").replace(/^export /gm, "")), fs.readFileSync(path.join(LIB, "fill.js"), "utf8")]
     .join("\n")

@@ -248,7 +248,8 @@ function shapeNotes() {
     "  Coordinates are free units, y down: the engine measures what you painted and fits it.",
     `  fit.w and fit.h are its share of the sheet's width and height (over 1 bleeds off), fit.cx and fit.cy place its centre; without them w ${f.w}, h ${f.h}, cx ${f.cx}, cy ${f.cy}.`,
     "  The corners above assume that default box; vyo sketch prints the real ones once the shape is drawn.",
-    '  style: "bands" (the default) cuts it top to bottom and suits any outline; "rings" sets the names round the outline, ring inside ring, for a fat, round object, with "echo": 0 to 12 faded outlines.',
+    '  style: "bands" (the default) cuts it top to bottom and suits any outline; "rings" sets the names round the outline, ring inside ring, for a fat, round object, with "echo": 0 to 12 faded outlines; "relief" draws any outline as a lit volume.',
+    '  Relief reads optional hints: "face": "lit" or "dim" on an add, { "crease": kind, ... } ops (a fold, never the outline), region "bevel" 0 to 1 and "strata" { "by": "angle", "angle" } or { "by": "depth" }.',
   ];
 }
 
@@ -347,7 +348,7 @@ function cmdSketch(argv) {
   if (image) {
     const file = path.join(path.dirname(pos[0]), `${spec.product.repo}-sketch.png`);
     fs.writeFileSync(file, image);
-    process.stdout.write(`sketch PNG: ${path.resolve(file)}, the silhouette at a third of its size with its bands; open it and check it reads as the object\n`);
+    process.stdout.write(`sketch PNG: ${path.resolve(file)}, the silhouette at a third of its size with its bands or its shading; open it and check it reads as the object\n`);
   }
   return 0;
 }

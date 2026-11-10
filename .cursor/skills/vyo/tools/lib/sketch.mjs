@@ -48,7 +48,9 @@ function shapeSummary({ mask, bands, summary }) {
   const bleeds = [["left", b.left < 0], ["top", b.top < 0], ["right", b.right > W], ["bottom", b.bottom > H]].filter(([, off]) => off).map(([side]) => side);
   return [
     `shape: covers ${Math.round((mask.area / (W * H)) * 100)}% of the sheet (needs ${SHAPE_LIMITS.cover * 100}%), ${Math.round(b.right - b.left)} by ${Math.round(b.bottom - b.top)}px (fit.w ${share(mask.fit.w)}, fit.h ${share(mask.fit.h)}), bleeds ${bleeds.join(", ") || "nowhere"}`,
-    ...(summary ?? ["bands, top to bottom (* the accent):"]),
+    // A style without bands says what it drew in its own lines; relief's are a function, so the page never
+    // pays for its thumbnail prediction.
+    ...(typeof summary === "function" ? summary() : summary ?? ["bands, top to bottom (* the accent):"]),
     ...(summary ? [] : bands).map((d) => `  ${d.part.hot ? "*" : " "} ${d.part.name.toLowerCase().padEnd(24)} y ${d.y0} to ${d.y1}, ${d.y1 - d.y0}px tall, ${d.lines} ${d.lines === 1 ? "line" : "lines"} of ${d.size.toFixed(1)}px type`),
   ];
 }
@@ -78,8 +80,8 @@ export function sketchImage(spec, facts) {
   const S = IMAGE_SCALE;
   const [w, h] = [Math.ceil(SHEET.width / S), Math.ceil(SHEET.height / S)];
   const paper = hexRgb(tokens.paper);
-  const rgb = new Uint8Array(w * h * 3);
-  for (let py = 0; py < h; py++) {
+  const rgb = report.picture ? report.picture(tokens) : new Uint8Array(w * h * 3);
+  for (let py = 0; py < (report.picture ? 0 : h); py++) {
     for (let px = 0; px < w; px++) {
       const sum = [0, 0, 0];
       for (let sy = 0; sy < S; sy++) {
@@ -145,14 +147,14 @@ export function sketch(spec, facts) {
       for (const it of report.rows) fieldRects.push({ left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + it.height });
       for (let r = 0; r < ROWS; r++) {
         const y = Math.min(SHEET.height - 1, r * CELL + CELL / 2);
-        const band = report.bands.find((b) => y >= b.y0 && y < b.y1);
+        const band = report.bands?.find((b) => y >= b.y0 && y < b.y1);
         const hot = report.ground.filter((g) => g.hot).flatMap((g) => g.rows.filter(([gy]) => gy === y).flatMap(([, spans]) => spans));
         for (let c = 0; c < COLS; c++) {
           const x = c * CELL + CELL / 2;
-          if (report.mask.runs[y].some(([l, rr]) => x >= l && x < rr)) put(r, c, (band ? band.part.hot : hot.some(([l, rr]) => x >= l && x < rr)) ? "@" : mark);
+          if (report.mask.runs[y].some(([l, rr]) => x >= l && x < rr)) put(r, c, report.ascii?.(x, y) ?? ((band ? band.part.hot : hot.some(([l, rr]) => x >= l && x < rr)) ? "@" : mark));
         }
       }
-      legend.push(`${mark} ${region.id} (shape, ${report.parts.length} ${report.summary ? "parts" : "bands"}; @ marks the accent band)`);
+      legend.push(`${mark} ${region.id} (shape, ${report.parts.length} ${report.ascii ? "strata; @ marks the accent stratum, ·:-=+*# the light" : report.summary ? "parts; @ marks the accent band" : "bands; @ marks the accent band"})`);
       shapeLines.push(...shapeSummary(report));
       const findings = shapeFindings(report, { blocks: spec.figure.texts.map((t) => estimateText(t, spec, facts)) });
       notes.push(...Object.values(findings).flat());

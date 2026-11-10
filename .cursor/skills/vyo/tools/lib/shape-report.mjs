@@ -6,6 +6,8 @@ import { SHEET, corners, CORNERS, fixedMeasure } from "./geometry.mjs";
 import { maskGrid, edt } from "./mask.mjs";
 import { shapeLayout, nameWidth } from "./fields/shape.mjs";
 import { regionParts } from "./parts.mjs";
+import { tokensOf } from "./render.mjs";
+import { FIELDS } from "./fields/index.mjs";
 
 // A feature narrower than `thin` px is under 3px at a sixth of the size and does not read as form; a thin piece
 // counts once it is `thinArea` px² (a sharp corner's tip is less). The shape should cover `cover` of the sheet;
@@ -17,7 +19,8 @@ const CELL = 2;
 /** A shape region laid out in Node: its parts, mask, bands, rows and ground. */
 export function shapeReport(spec, region, facts) {
   const parts = regionParts(region, facts);
-  return { region, parts, ...shapeLayout(region, parts, { theme: spec.theme, measure: fixedMeasure }) };
+  const tokens = { ...tokensOf(spec), ...FIELDS.shape.tokens(spec.theme) };
+  return { region, parts, ...shapeLayout(region, parts, { theme: spec.theme, measure: fixedMeasure, tokens }) };
 }
 
 /** Squared distance, in cells, from every cell to the nearest cell where `on` is false. */
@@ -121,22 +124,28 @@ export function onShape(mask, rect) {
 const px = (n) => Math.round(n);
 const share = (n) => Math.round(n * 100) / 100;
 const pct = (n) => `${Math.round(n * 100)}%`;
-const bandOf = (report, part) => report.bands.find((b) => b.part.id === part.id);
+const thinCache = { key: null, value: null };
+const bandOf = (report, part) => report.bands?.find((b) => b.part.id === part.id);
 
 /**
  * Every finding on a shape region, by check id. `rows` are the rows as drawn (the page's, or Node's for the
  * sketch); `blocks` are the text blocks, each `{ id, left, top, right, bottom }`.
- * @returns {Record<"shape-thin" | "shape-cover" | "shape-accent" | "shape-name" | "shape-split" | "shape-room" | "shape-rings" | "shape-upright", string[]>}
+ * @returns {Record<"shape-thin" | "shape-cover" | "shape-accent" | "shape-name" | "shape-split" | "shape-room" | "shape-rings" | "shape-upright" | "shape-share" | "shape-tone", string[]>}
  */
 export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) {
-  const { mask, bands, parts, region } = report;
+  const { mask, bands = [], parts, region } = report;
   const L = SHAPE_LIMITS;
-  const out = { "shape-thin": [], "shape-cover": [], "shape-accent": [], "shape-name": [], "shape-split": [], "shape-room": [], "shape-rings": [], "shape-upright": [] };
+  const out = { "shape-thin": [], "shape-cover": [], "shape-accent": [], "shape-name": [], "shape-split": [], "shape-room": [], "shape-rings": [], "shape-upright": [], "shape-share": [], "shape-tone": [] };
   // A style that is not cut top to bottom judges its own depth and reading; the band checks are the bands'.
   const banded = (region.style ?? "bands") === "bands";
-  for (const [id, messages] of Object.entries(report.findings ?? {})) out[id].push(...messages);
+  // Rings' findings are fixed by the layout; relief's read the rows as drawn, so they are a function of them.
+  const own = typeof report.findings === "function" ? report.findings(rows) : report.findings ?? {};
+  for (const [id, messages] of Object.entries(own)) out[id].push(...messages);
 
-  for (const t of thinFeatures(mask)) {
+  // Every shape check asks for these findings; the opening is the slow part and depends on the shape alone.
+  const key = JSON.stringify(region.shape);
+  if (thinCache.key !== key) Object.assign(thinCache, { key, value: thinFeatures(mask) });
+  for (const t of thinCache.value) {
     out["shape-thin"].push(
       t.kind === "part"
         ? `the shape is ${t.width}px thick near ${t.x},${t.y}; under ${L.thin}px it is a hairline at thumbnail size, so make that feature at least ${L.thin}px thick or remove it`

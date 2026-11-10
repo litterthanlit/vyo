@@ -8,6 +8,7 @@ import { partsFromFacts, partOptions, regionParts, unplainName, sameNames } from
 import { FIELDS } from "./fields/index.mjs";
 import { shapeReport, shapeFindings, SHAPE_LIMITS } from "./shape-report.mjs";
 import { RINGS } from "./fields/shape-rings.mjs";
+import { RELIEF } from "./fields/shape-relief.mjs";
 
 const rgb = (hex) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(", ")})`;
 const overlap = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
@@ -174,6 +175,8 @@ export const CHECKS = [
   shapeCheck("shape-split", "warn", "spec", "no band of a drawn shape falls on two separate pieces of it"),
   shapeCheck("shape-rings", "warn", "spec", `a shape in rings is deep enough for ${RINGS.perPart} rings per part`),
   shapeCheck("shape-upright", "warn", "spec", `every part of a shape in rings shows its name at least once leaning under ${RINGS.upright} degrees`),
+  shapeCheck("shape-tone", "warn", "spec", `at thumbnail size a relief's lit side reaches ${RELIEF.tone.lit * 100}% light and its tones span ${RELIEF.tone.spread * 100}%, so it reads as a bright volume`),
+  shapeCheck("shape-share", "fail", "page", `every part of a relief has its share of the glyphs within ${RELIEF.share.part * 100}% of its share of the lines`, ({ page }) => ({ rows: page.rows.map((r) => ({ part: r.part, text: r.text, width: r.rect.width })) })),
   shapeCheck("shape-name", "fail", "page", "every band of a drawn shape shows its part's whole name at least once", ({ page }) => ({ rows: page.rows.map((r) => ({ part: r.part, text: r.text, width: r.rect.width })) })),
   shapeCheck("shape-room", "fail", "page", `every text block sits in the room a drawn shape leaves, ${SHAPE_LIMITS.clear}px clear of it`, ({ page }) => ({
     blocks: page.blocks.filter((b) => b.role).map((b) => ({ id: b.name, ...b.rect })),

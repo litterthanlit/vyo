@@ -197,6 +197,9 @@ const OP_TYPES = {
   string: [(v) => isStr(v) && !!v.trim() && v.length <= LIMITS.path, `an SVG path of at most ${LIMITS.path} characters`],
 };
 
+const SHAPE_FACES = ["lit", "dim", "round"];
+const CREASE_LINE = { capsule: "r", arc: "width" };
+
 /** Rules for a drawn silhouette: each op one verb and one kind with its keys, the first an add, and something painted. */
 function checkShapeSpec(f, shape, err) {
   if (isPlaceholder(shape)) return err(`${f}: still the placeholder; draw the silhouette as { ops: [...] } (vyo compose --field shape prints the format)`);
@@ -216,25 +219,29 @@ function checkShapeSpec(f, shape, err) {
       }
     }
   }
-  if (!Array.isArray(shape.ops) || shape.ops.length < 1 || shape.ops.length > LIMITS.ops) return err(`${f}.ops: a list of 1 to ${LIMITS.ops} ops, each { "add" or "cut": kind, ... }`);
+  if (!Array.isArray(shape.ops) || shape.ops.length < 1 || shape.ops.length > LIMITS.ops) return err(`${f}.ops: a list of 1 to ${LIMITS.ops} ops, each { "add", "cut" or "crease": kind, ... }`);
   const kinds = Object.keys(SHAPE_KINDS).join(", ");
   shape.ops.forEach((op, i) => {
     const o = `${f}.ops[${i}]`;
-    if (!isObj(op)) return err(`${o}: must be { "add" or "cut": kind, ... }`);
-    const verbs = ["add", "cut"].filter((v) => op[v] !== undefined);
-    if (verbs.length !== 1) return err(`${o}: give exactly one of add or cut (found ${verbs.length ? verbs.join(", ") : "none"})`);
+    if (!isObj(op)) return err(`${o}: must be { "add", "cut" or "crease": kind, ... }`);
+    const verbs = ["add", "cut", "crease"].filter((v) => op[v] !== undefined);
+    if (verbs.length !== 1) return err(`${o}: give exactly one of add, cut or crease (found ${verbs.length ? verbs.join(", ") : "none"})`);
     const [verb, kind] = opKind(op);
     const keys = SHAPE_KINDS[kind];
     if (!keys) return err(`${o}.${verb}: "${kind}" is not a kind; use ${kinds}`);
-    for (const k of Object.keys(op)) if (k !== verb && k !== "rotate" && !(k in keys)) err(`${o}.${k}: a ${kind} takes ${Object.keys(keys).join(", ")} and rotate`);
+    for (const k of Object.keys(op)) if (k !== verb && k !== "rotate" && !(k === "face" && verb === "add") && !(k in keys)) err(`${o}.${k}: a ${kind} takes ${Object.keys(keys).join(", ")}${verb === "add" ? ", rotate and face" : " and rotate"}`);
     for (const [k, type] of Object.entries(keys)) {
       const [ok, what] = OP_TYPES[type];
+      // A crease along a capsule or an arc is its centre line, so it needs no thickness.
+      if (verb === "crease" && op[k] === undefined && CREASE_LINE[kind] === k) continue;
       if (!ok(op[k])) err(`${o}.${k}: ${op[k] === undefined ? "missing; it " : ""}must be ${what}`);
     }
+    if (op.face !== undefined && !SHAPE_FACES.includes(op.face)) err(`${o}.face: one of ${SHAPE_FACES.join(", ")}: a flat facet turned toward the light, away from it, or rounded (the default); only the relief style draws it`);
     if (kind === "path" && OP_TYPES.string[0](op.d) && parsePath(op.d).error) err(`${o}.d: does not parse: ${parsePath(op.d).error}`);
     if (op.rotate !== undefined && !isNum(op.rotate)) err(`${o}.rotate: a number of degrees, clockwise about the op's centre`);
   });
   if (isObj(shape.ops[0]) && shape.ops[0].cut !== undefined && shape.ops[0].add === undefined) err(`${f}.ops[0]: must be an add; a cut on an empty sheet removes nothing`);
+  if (isObj(shape.ops[0]) && shape.ops[0].crease !== undefined && shape.ops[0].add === undefined) err(`${f}.ops[0]: must be an add; a crease folds a surface the adds have drawn`);
   if (err.count() === before && !shapeMask(shape)?.area) err(`${f}: the ops paint nothing on the sheet; the cuts remove all of it, or fit.cx and fit.cy move it off`);
 }
 
@@ -246,6 +253,11 @@ function checkField(f, r, err, copy, frame) {
     if (r.shape === undefined) err(`${f}.shape: missing; draw the silhouette as { ops: [...] } (vyo compose --field shape prints the format)`);
     else checkShapeSpec(`${f}.shape`, r.shape, err);
     if (r.style !== undefined && !SHAPE_STYLES[r.style]) err(`${f}.style: "${r.style}" is not a style; use ${Object.keys(SHAPE_STYLES).join(" or ")}, or leave it out`);
+    if (r.bevel !== undefined && !inRange(r.bevel, 0, 1)) err(`${f}.bevel: 0 to 1, the share of the shape's depth that is rounded (1 a full dome, 0.2 a flat top with soft edges)`);
+    const st = r.strata;
+    if (st !== undefined && !(isObj(st) && ((st.by === "depth" && Object.keys(st).length === 1) || (st.by === "angle" && isNum(st.angle) && Object.keys(st).length === 2)))) {
+      err(`${f}.strata: { "by": "angle", "angle": degrees } (90 stacks the parts top to bottom, 0 left to right) or { "by": "depth" } (shells from the outline in)`);
+    }
     if (r.echo !== undefined && (!Number.isInteger(r.echo) || r.echo < 0 || r.echo > RINGS.maxEcho)) err(`${f}.echo: a whole number of faded outlines from 0 to ${RINGS.maxEcho}`);
     else if (r.echo && r.style !== "rings") err(`${f}.echo: only the rings style draws echoes; set style to rings or remove echo`);
   }

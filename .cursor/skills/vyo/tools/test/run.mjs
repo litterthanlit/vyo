@@ -14,7 +14,7 @@ const OUT = path.join(HERE, ".out");
 const VYO = path.join(TOOLS, "vyo.mjs");
 const PRESETS = fs.readdirSync(path.join(TOOLS, "presets")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
 
-const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "shape", "rings", "docs", "init"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
+const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "shape", "rings", "shape-relief", "docs", "init"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
@@ -142,6 +142,20 @@ for (const [name, mutate, expect] of SHAPE_WARNINGS) {
   result(expect.test(r.stderr), `planted shape flaw (${name}) warns with ${expect}`, `exit ${r.status}\n${r.stderr}`);
 }
 
+// A relief's flaws, through the CLI: a form turned away from the light, and an accent stratum too thin to see.
+const RELIEF_WARNINGS = [
+  ["every face dim", (r) => r.shape.ops.forEach((o) => o.add && (o.face = "dim")), /^! shape-tone: at thumbnail size the relief's lit side reaches \d+\.\d% light \(90th percentile\); it needs 38\.0% to read as a bright object, so turn a dim face to lit or drop its face, or raise bevel \(it is 0\.8\) so more of the form turns to the light$/m],
+  ["a flat strip", (r) => (r.shape = { ops: [{ add: "rect", at: [0, 0], size: [100, 40] }], fit: { w: 0.95 } }), /^! shape-accent: the accent stratum "the plan" is \d+px thick at its thickest; it needs 40px to show in the thumbnail, so turn the strata \(strata\.angle\) to cut across the shape's narrow side/m],
+];
+for (const [name, mutate, expect] of RELIEF_WARNINGS) {
+  const spec = preset("shape-relief");
+  mutate(spec.figure.regions[0]);
+  const file = path.join(OUT, "planted-relief.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(expect.test(r.stderr), `planted relief flaw (${name}) warns with ${expect}`, `exit ${r.status}\n${r.stderr}`);
+}
+
 for (const [name, id, mutate, expect] of PLANTED) {
   const spec = preset(id);
   mutate(spec);
@@ -227,7 +241,7 @@ vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
   result(r.status === 1 && /^POSTER NOT FINISHED: fix the 1 ✗ line above/.test(r.stderr.trimEnd().split("\n").at(-1)), "a failing spec exits 1 with a nonexistent VYO_CHROMIUM and ends on the not-finished line", `exit ${r.status}\n${r.stderr}`);
 }
 
-console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length + SHAPE_WARNINGS.length + RINGS_WARNINGS.length} planted bugs caught`);
+console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length + SHAPE_WARNINGS.length + RINGS_WARNINGS.length + RELIEF_WARNINGS.length} planted bugs caught`);
 
 const pack = spawnSync(process.execPath, ["--test", path.join(HERE, "pack.test.mjs")], { stdio: "inherit" });
 

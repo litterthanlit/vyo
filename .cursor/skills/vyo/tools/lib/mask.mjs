@@ -9,10 +9,10 @@ import { SHEET, parsePath } from "./geometry.mjs";
  *             from?: Point | number, to?: Point | number, width?: number, points?: Point[], d?: string }} ShapeOp
  * @typedef {{ ops: ShapeOp[], rotate?: number, fit?: { w?: number, h?: number, cx?: number, cy?: number } }} Shape
  * @typedef {{ runs: [number, number][][], area: number, box: { left: number, top: number, right: number, bottom: number },
- *             fit: { w: number, h: number } }} Mask
+ *             fit: { w: number, h: number }, xf: { s: number, tx: number, ty: number } }} Mask
  *   runs[y]: where the shape is inside on the pixel row y to y + 1 (sampled at y + 0.5), as sorted, disjoint
  *   [left, right] in sheet px, clipped to the sheet. area: covered px on the sheet. box: the whole fitted shape,
- *   bleed included. fit: its width and height as shares of the sheet's.
+ *   bleed included. fit: its width and height as shares of the sheet's. xf: shape units to sheet px, x * s + tx.
  */
 
 // Each kind's keys and their types: "point" is [x, y], "pair" two numbers above 0, "points" a list of points.
@@ -102,17 +102,17 @@ function ringBox(rings) {
   return b;
 }
 
-/** An op's verb and kind: the one of `add` and `cut` it has. */
-export const opKind = (op) => ("add" in op ? ["add", op.add] : ["cut", op.cut]);
+/** An op's verb and kind: the one of `add`, `cut` and `crease` it has. */
+export const opKind = (op) => ("add" in op ? ["add", op.add] : "crease" in op ? ["crease", op.crease] : ["cut", op.cut]);
 
-/** Every op as `{ cut, rings }` in shape units: its own rotate about its centre (a path's: its box's), then the shape's. */
-export function opRings(shape) {
-  return shape.ops.map((op) => {
+/** Every op as `{ verb, cut, rings }` in shape units: its own rotate about its centre (a path's: its box's), then the shape's. */
+export function opRings(shape, ops = shape.ops) {
+  return ops.map((op) => {
     const [verb, kind] = opKind(op);
     let rings = KIND_RINGS[kind](op);
     const b = ringBox(rings);
     rings = turn(rings, op.rotate, [(b.left + b.right) / 2, (b.top + b.bottom) / 2]);
-    return { cut: verb === "cut", rings: turn(rings, shape.rotate, [0, 0]) };
+    return { verb, cut: verb === "cut", rings: turn(rings, shape.rotate, [0, 0]) };
   });
 }
 
@@ -161,7 +161,7 @@ export function intersectRuns(a, b) {
 }
 
 /** The ops' rings, scaled by `s` and moved by (tx, ty), painted into `rows` pixel rows of spans. */
-function paintRows(ops, s, tx, ty, rows) {
+export function paintRows(ops, s, tx, ty, rows) {
   const runs = Array.from({ length: rows }, () => []);
   for (const op of ops) {
     const edges = op.rings.flatMap((ring) => ring.map((p, i) => {
@@ -198,7 +198,8 @@ function runsBox(runs) {
  * @returns {Mask | null}
  */
 export function shapeMask(shape) {
-  const ops = opRings(shape);
+  // A crease folds the relief style's surface; it never changes the silhouette.
+  const ops = opRings(shape).filter((o) => o.verb !== "crease");
   const raw = ringBox(ops.filter((o) => !o.cut).flatMap((o) => o.rings));
   const span = Math.max(raw.right - raw.left, raw.bottom - raw.top);
   if (!(span > 0) || !Number.isFinite(span)) return null;
@@ -216,7 +217,7 @@ export function shapeMask(shape) {
   const runs = paintRows(ops, s, tx, ty, H).map((row) => row.map(([l, r]) => [Math.max(0, l), Math.min(W, r)]).filter(([l, r]) => r > l));
   const area = runs.reduce((sum, row) => sum + row.reduce((a, [l, r]) => a + r - l, 0), 0);
   const placed = { left: box.left * s + tx, top: box.top * s + ty, right: (box.left + box.w) * s + tx, bottom: (box.top + box.h) * s + ty };
-  return { runs, area, box: placed, fit: { w: (box.w * s) / W, h: (box.h * s) / H } };
+  return { runs, area, box: placed, fit: { w: (box.w * s) / W, h: (box.h * s) / H }, xf: { s, tx, ty } };
 }
 
 // Felzenszwalb and Huttenlocher's exact squared Euclidean distance transform, in place, on a w by h grid.

@@ -3,6 +3,7 @@
 import { SHEET, ADVANCE } from "../geometry.mjs";
 import { shapeMask, intersectRuns } from "../mask.mjs";
 import { ringsStyle } from "./shape-rings.mjs";
+import { reliefStyle } from "./shape-relief.mjs";
 
 // b-scale's numbers. A band per part, its area by lines; the biggest part's name one line as tall as its band,
 // every other part's type that size times (its lines / the biggest's) to the power `gamma`, never under `min` px.
@@ -180,7 +181,7 @@ function lineTops(mask, a, floor, lines, size) {
 }
 
 // The looks a shape can take over the same mask, by the region's `style`.
-export const SHAPE_STYLES = { bands: bandsStyle, rings: ringsStyle };
+export const SHAPE_STYLES = { bands: bandsStyle, rings: ringsStyle, relief: reliefStyle };
 
 /** A shape region drawn: its mask, its bands, its rows of type and the ground under them. */
 export function shapeLayout(region, parts, frame) {
