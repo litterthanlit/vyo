@@ -511,7 +511,7 @@ Both fields set text in Commit Mono 400 at the mockups' 6.9px and keep inside x 
 
 **`contour`** (`lib/fields/contour.mjs`): two to four Gaussian hills and four to seven thick iso-bands, nested rings rather than a wave.
 
-**`trace`** (`lib/fields/trace.mjs`): a PNG mask. `fieldInput` decodes it in Node (`lib/fields/png.mjs`, not inlined) and attaches chords. Any non-interlaced PNG up to 4096 px a side reads, palette and alpha included (alpha composites on white). Dark pixels fill, unless the seed inverts them. A missing `mask` uses `tools/presets/masks/trace.png`. A mask that is missing or unreadable fails sketch and render with `✗ trace mask <path>: …`.
+**`trace`** (`lib/fields/trace.mjs`): a PNG mask. `fieldInput` decodes it in Node (`lib/fields/png.mjs`, not inlined) and attaches chords. Any non-interlaced PNG up to 4096 px a side reads, palette and alpha included (alpha composites on white). Dark pixels fill, fitted inside the sheet at the image's own aspect and centred; the seed poses that shape and never inverts it. A missing `mask` uses `tools/presets/masks/trace.png`. A mask that is missing or unreadable fails sketch and render with `✗ trace mask <path>: …`.
 
 Every field takes `seed`. Omitted or 0 is the identity. A non-zero seed is mulberry32 and poses the silhouette: crop, scale, anchor, mirror, a small rotation in mask space rescanned to horizontal chords, density, and an optional circular void. The new fields also move their own parameters (cloud count, fault, letter, and so on). The masthead's mirror is not applied twice.
 

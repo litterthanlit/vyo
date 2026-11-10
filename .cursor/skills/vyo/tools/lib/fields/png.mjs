@@ -174,15 +174,19 @@ export function resolveMask(mask) {
   return abs;
 }
 
-function imageToMask(img, floor, invert) {
+/** The image's dark pixels, fitted inside the sheet above `floor` at its own aspect and centred. */
+function imageToMask(img, floor) {
   const mask = blankMask(floor);
   const { width, height, gray } = img;
+  const fit = Math.min(SHEET.width / width, Math.max(1, floor) / height);
+  const left = (SHEET.width - width * fit) / 2;
+  const top = (floor - height * fit) / 2;
   for (let y = 0; y < mask.h; y++) {
-    const sy = Math.min(height - 1, Math.floor((((y + 0.5) * mask.step) / Math.max(1, floor)) * height));
+    const sy = Math.floor(((y + 0.5) * mask.step - top) / fit);
+    if (sy < 0 || sy >= height) continue;
     for (let x = 0; x < mask.w; x++) {
-      const sx = Math.min(width - 1, Math.floor((((x + 0.5) * mask.step) / SHEET.width) * width));
-      const dark = gray[sy * width + sx] < 128;
-      if (invert ? !dark : dark) mask.bits[y * mask.w + x] = 1;
+      const sx = Math.floor(((x + 0.5) * mask.step - left) / fit);
+      if (sx >= 0 && sx < width && gray[sy * width + sx] < 128) mask.bits[y * mask.w + x] = 1;
     }
   }
   return mask;
@@ -202,8 +206,7 @@ export function traceChords(region, floor, mirror = false) {
   }
   const pose = poseOf(region.seed);
   if (mirror) pose.mirror = !pose.mirror;
-  const invert = !pose.identity && pose.rnd() < 0.5;
-  const mask = imageToMask(img, floor, invert);
+  const mask = imageToMask(img, floor);
   const pitch = Math.round(TRACE.pitch * pose.density * 10) / 10;
   return { chords: applyPoseToMask(mask, pose, { floor, pitch }), pitch };
 }

@@ -349,6 +349,28 @@ test("contour: nested rings, several runs on one row", () => {
   assert.ok(rings >= 4, `a row crosses ${rings} ring edges`);
 });
 
+test("trace: a disc stays round, and no seed swaps the shape for its background", () => {
+  const n = 64;
+  const disc = Buffer.from(Array.from({ length: n * n }, (_, i) => ((i % n) - 31.5) ** 2 + (Math.floor(i / n) - 31.5) ** 2 < 28 ** 2 ? [0, 0, 0, 255] : [255, 255, 255, 255]).flat());
+  const file = path.join(HERE, ".trace-disc.png");
+  fs.writeFileSync(file, encodePng(n, n, disc));
+  try {
+    const box = (chords) => {
+      const on = chords.filter((c) => c.runs.length);
+      const xs = on.flatMap((c) => c.runs.flatMap(([l, r]) => [l, r]));
+      return { w: Math.max(...xs) - Math.min(...xs), h: on.at(-1).y - on[0].y, area: on.reduce((s, c) => s + c.runs.reduce((a, [l, r]) => a + r - l, 0), 0) };
+    };
+    const plain = box(traceChords({ mask: file, seed: 0 }, 1190).chords);
+    assert.ok(Math.abs(plain.w / plain.h - 1) < 0.08, `the disc is ${plain.w} by ${plain.h}`);
+    for (let seed = 1; seed <= 24; seed++) {
+      const posed = box(traceChords({ mask: file, seed }, 1190).chords);
+      assert.ok(posed.area < plain.area * 2, `seed ${seed} fills ${posed.area}, the disc ${plain.area}`);
+    }
+  } finally {
+    fs.rmSync(file, { force: true });
+  }
+});
+
 test("trace: chords follow the PNG, not the whole sheet", () => {
   const parts = recipeParts();
   const png = encodePng(32, 32, Buffer.from(Array.from({ length: 32 * 32 }, (_, i) => (i % 32 < 16 ? [0, 0, 0, 255] : [255, 255, 255, 255])).flat()));
