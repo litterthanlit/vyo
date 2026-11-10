@@ -278,7 +278,8 @@ test("shape-dominant: Got's accent, 95% of its code in 3 parts, is one slab; spl
   const slab = spec({ accent: "area:source", bevel: 1 });
   assert.match(found(spec({ split: ["area:source"], accent: "area:source/core" })).join(""), /^$/, "63% is under the slab line");
   const big = spec({ split: ["area:source"], accent: "area:source/core" });
-  assert.match(shapeFindings(shapeReport(big, big.figure.regions[0], got))["shape-tone"].join("\n"), /so put the accent on a smaller part/, "a 63% accent's tone names the accent");
+  // The relief's glow hugs the accent's letters, so a 63% accent still shades: its grey ends and its own letters show the volume.
+  assert.deepEqual(shapeFindings(shapeReport(big, big.figure.regions[0], got))["shape-tone"], [], "a 63% accent still reads as a volume");
   assert.deepEqual(shapeFindings(shapeReport(slab, slab.figure.regions[0], got))["shape-tone"], []);
   const split = spec({ split: ["area:source"], accent: "area:source/core/utils" });
   assert.deepEqual(shapeFindings(shapeReport(split, split.figure.regions[0], got))["shape-tone"], [], "split, the bone shades as a volume");
