@@ -103,7 +103,9 @@ function reliefCut(items, keyOf, parts) {
   // A cut where many items share a key (every cell of one row, for level strata) would split that row between
   // two parts, a step in the seam. So a cut lands where the key changes by half a cell or more, within about one
   // glyph line of exact, at the place that keeps both the running total and this part's own count nearest exact.
-  // A ring of equal depth too big to fit that window keeps the exact cut.
+  // A ring of equal depth too big to fit that window keeps the exact cut. So does a part smaller than a line, or
+  // any part the nearest gap would give more or fewer items than shape-share allows: its seam steps once, where
+  // a whole line would draw a 0.2% part six times its size and take that from the part beside it.
   const gap = (j) => j <= 0 || j >= order.length || keyOf(items[order[j]]) - keyOf(items[order[j - 1]]) >= 0.5;
   let [acc, k, before] = [0, 0, 0];
   parts.forEach((p, pi) => {
@@ -116,6 +118,9 @@ function reliefCut(items, keyOf, parts) {
         const miss = Math.max(Math.abs(e - exact), Math.abs(e - k - (exact - before)));
         if (gap(e) && miss < best) [best, end] = [miss, e];
       }
+      const want = exact - before;
+      const allowed = Math.max((RELIEF.share.points / 100) * order.length, RELIEF.share.part * want);
+      if (Math.abs(end - k - want) > allowed) end = Math.max(k, exact);
     } else end = order.length;
     before = exact;
     for (; k < end; k++) label[order[k]] = pi;

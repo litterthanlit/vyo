@@ -208,3 +208,24 @@ test("sketch of a relief: tone ASCII with the accent stratum, the strata, and a 
   assert.ok(hot > 500, `the accent stratum shows (${hot} orange pixels)`);
   assert.ok(new Set(lum.map((v) => v >> 4)).size >= 6, "the shading shows as several greys");
 });
+
+test("a part far under one glyph line keeps its share in level strata: date-fns's hourglass, 0.2% beside 4.7%", () => {
+  // date-fns's seven parts by lines, in tree order; the first is a sixth of one glyph line across the rim.
+  const lines = [228, 4601, 38820, 2226, 44523, 4951, 2707];
+  const names = ["upgrade helpers", "extra tools", "date tools", "chained style", "languages", "reading dates", "time zones"];
+  const ids = lines.map((_, i) => `area:p${i}`);
+  const facts = {
+    hash: recipe.hash,
+    facts: ids.map((id, i) => ({ id, kind: "area", name: names[i], meta: { leaf: true } })),
+    files: Object.fromEntries(ids.map((id, i) => [`p${i}/a.js`, { area: id, loc: lines[i] }])),
+  };
+  const hourglass = { ops: [{ add: "rect", at: [6, 0], size: [88, 10], round: 3 }, { add: "polygon", points: [[14, 8], [86, 8], [57, 50], [43, 50]] }, { add: "polygon", points: [[43, 50], [57, 50], [86, 92], [14, 92]] }, { add: "rect", at: [6, 90], size: [88, 10], round: 3 }] };
+  const s = relief({ shape: hourglass, accent: "area:p2", names: {} });
+  delete s.figure.regions[0].strata;
+  delete s.figure.regions[0].bevel;
+  const r = shapeReport(s, s.figure.regions[0], facts);
+  const found = shapeFindings(r);
+  assert.deepEqual(found["shape-share"], [], "every part within shape-share's tolerance");
+  assert.deepEqual(found["shape-name"], [], "every part shows its name whole");
+  assert.ok(r.strata[0].glyphs < 80, `the 0.2% part draws ${r.strata[0].glyphs} glyph cells, not a whole line of about 200`);
+});
