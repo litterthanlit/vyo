@@ -296,9 +296,9 @@ test("shatter: disjoint cells, not one band", () => {
   assert.ok(clusters.size >= 8, `broken into ${clusters.size} clusters`);
 });
 
-test("no seed shrinks a field under the silhouette minimum that its unposed form meets", () => {
+test("no seed takes a field under the silhouette minimum (height, width, area) that its unposed form meets", () => {
   const parts = recipeParts();
-  const span = (rows) => ({ w: Math.max(...rows.map((r) => r.x + r.width)) - Math.min(...rows.map((r) => r.x)), h: Math.max(...rows.map((r) => r.y + r.height)) - Math.min(...rows.map((r) => r.y)) });
+  const span = (rows) => ({ w: Math.max(...rows.map((r) => r.x + r.width)) - Math.min(...rows.map((r) => r.x)), h: Math.max(...rows.map((r) => r.y + r.height)) - Math.min(...rows.map((r) => r.y)), c: rows.reduce((a, r) => a + r.width * r.height, 0) / (840 * 1000) });
   const fields = { scatter: scatterRows, shatter: shatterRows, glyph: glyphRows, bleed: bleedRows, bands: bandsRows, spiral: spiralRows, contour: contourRows, terrain: terrainRows, river: riverRows, sphere: sphereRows, radial: radialRows, wave: waveRows };
   for (const [name, layout] of Object.entries(fields)) {
     const ties = partTies(parts, recipe);
@@ -306,6 +306,7 @@ test("no seed shrinks a field under the silhouette minimum that its unposed form
     for (let seed = 1; seed <= 40; seed++) {
       const s = span(layout({ ties, letter: "P", seed }, parts, open({ blocks: [] })));
       assert.ok(s.h >= Math.min(550, base.h) - 1 && s.w >= Math.min(504, base.w) - 1, `${name} seed ${seed}: ${Math.round(s.w)} by ${Math.round(s.h)}, unposed ${Math.round(base.w)} by ${Math.round(base.h)}`);
+      assert.ok(s.c >= Math.min(0.15, base.c) - 0.002, `${name} seed ${seed}: covers ${s.c.toFixed(3)}, unposed ${base.c.toFixed(3)}`);
     }
   }
 });

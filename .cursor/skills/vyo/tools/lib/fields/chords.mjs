@@ -124,22 +124,24 @@ const ladder = (pose) => {
   const soft = { ...pose, crop: [0, 0, 0, 0], voidR: 0 };
   return [pose, soft, { ...soft, scale: 1, rotation: 0 }];
 };
-function extent(rows) {
-  if (!rows.length) return { w: 0, h: 0, left: 0, right: 0, top: 0, bottom: 0 };
+function extent(rows, floor = 1) {
+  if (!rows.length) return { w: 0, h: 0, c: 0, left: 0, right: 0, top: 0, bottom: 0 };
   const left = Math.min(...rows.map((r) => r.x));
   const right = Math.max(...rows.map((r) => r.x + r.width));
   const top = Math.min(...rows.map((r) => r.y));
   const bottom = Math.max(...rows.map((r) => r.y + r.height));
-  return { w: right - left, h: bottom - top, left, right, top, bottom };
+  const c = rows.reduce((sum, r) => sum + r.width * r.height, 0) / (SHEET.width * floor);
+  return { w: right - left, h: bottom - top, c, left, right, top, bottom };
 }
-// What the silhouette check asks of a figure: 55% of the height above the floor and 60% of the width.
-const minimum = (floor) => ({ w: 0.6 * SHEET.width, h: 0.55 * floor });
-/** Whether rows span the silhouette minimum, or as much as `base` did when `base` falls short of it. */
+// What the silhouette check asks of a figure (55% of the height above the floor, 60% of the width, 15% of the
+// area), with a little to spare on the area, which the page measures from the drawn letters.
+const minimum = (floor) => ({ w: 0.6 * SHEET.width, h: 0.55 * floor, c: 0.16 });
+/** Whether rows meet the silhouette minimum on each measure, or as much as `base` did where `base` falls short. */
 function reaches(rows, base, floor) {
-  const a = extent(rows);
-  const b = extent(base);
+  const a = extent(rows, floor);
+  const b = extent(base, floor);
   const need = minimum(floor);
-  return a.h >= Math.min(need.h, b.h) - 1 && a.w >= Math.min(need.w, b.w) - 1;
+  return a.h >= Math.min(need.h, b.h) - 1 && a.w >= Math.min(need.w, b.w) - 1 && a.c >= Math.min(need.c, b.c) - 0.002;
 }
 
 /**
@@ -168,7 +170,10 @@ export function fillMask(mask, region, parts, opts, own) {
   const pose = poseOf(region.seed);
   if (pose.identity) return fill(pose);
   const need = minimum(opts.floor);
-  const big = (rows) => extent(rows).w >= need.w - 1 && extent(rows).h >= need.h - 1;
+  const big = (rows) => {
+    const e = extent(rows, opts.floor);
+    return e.w >= need.w - 1 && e.h >= need.h - 1 && e.c >= need.c;
+  };
   for (const p of ladder(pose)) {
     const rows = fill({ ...p });
     if (big(rows)) return rows;
@@ -183,8 +188,8 @@ export function fillMask(mask, region, parts, opts, own) {
   let scale = 1;
   let rows = base;
   for (let i = 0; i < 4 && !big(rows) && scale < 2; i++) {
-    const now = extent(rows);
-    scale = Math.min(2, scale * Math.max(1.05, (1.04 * need.w) / now.w, (1.04 * need.h) / now.h));
+    const now = extent(rows, opts.floor);
+    scale = Math.min(2, scale * Math.max(1.05, (1.04 * need.w) / now.w, (1.04 * need.h) / now.h, Math.sqrt((1.04 * need.c) / Math.max(0.01, now.c))));
     rows = fill({ ...poseOf(0), identity: false, scale, anchor });
   }
   return rows;
