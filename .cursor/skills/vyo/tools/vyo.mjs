@@ -214,9 +214,9 @@ function authoringNotes(notes, field) {
   ];
 }
 
-/** The numbers an agent places the loose frame's texts by, printed by compose. */
-function looseNotes(field, space) {
-  const L = ROLES.loose;
+/** The numbers an agent places a loose or signal frame's texts by, printed by compose. */
+function looseNotes(field, space, frame) {
+  const L = ROLES[frame];
   const at = (r) => `${L[r].size[0]}px (${L[r].size[1]} to ${L[r].size[2]}), ${L[r].lh(L[r].size[0])}px per line`;
   return [
     `field: ${field}, ${FIELDS[field].about}. It runs to every edge it reaches; no text sits on it.`,
@@ -323,7 +323,7 @@ function cmdCompose(argv) {
     const region = draft.figure.regions[0];
     space = fieldSpace(draft, facts);
     o.accentNames = regionParts(region, facts).filter((p) => p.hot).map((p) => p.name);
-    o.places = scaffoldPlaces(space.corners, space.accent, parts.length);
+    o.places = scaffoldPlaces(space.corners, space.accent, parts.length, frame);
   }
   fs.writeFileSync(out, JSON.stringify(scaffoldSpec(facts, o), null, 2) + "\n");
   if (logFile && field) recordShape(logFile, field);
@@ -332,7 +332,7 @@ function cmdCompose(argv) {
     ...(avoided ? [`picked ${field} (avoided recent: ${avoided.length ? avoided.join(", ") : "none"})`] : []),
     `Wrote ${out}: a scaffold with ${from}. Replace every "…" value, then run vyo sketch ${out}, adjust, sketch again, then vyo render ${out}`,
     ...(field ? [`vyo parts ${pos[0]}${field === "wave" ? "" : ` --field ${field}`} lists the parts: pick the accent by its id${unplain.length ? ` and name the ${unplain.length} flagged part${unplain.length === 1 ? "" : "s"} in names` : ""}.`] : []),
-    ...(RECORD_FRAMES.includes(frame) ? looseNotes(field, space) : authoringNotes(notes, field)),
+    ...(RECORD_FRAMES.includes(frame) ? looseNotes(field, space, frame) : authoringNotes(notes, field)),
   ];
   process.stdout.write(lines.join("\n") + "\n");
   return 0;
