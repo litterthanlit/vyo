@@ -499,7 +499,7 @@ Charcoal, lime accent, the existing wave field. The bright rows are the plan.
 
 ### signal-paper
 
-The same wave on cream paper. Highlighter `mark`s sit under the label and the meta line.
+The same wave on cream paper. Highlighter `mark`s lie over the label and the meta line, and the accent part's rows are highlighted.
 
 ```json
 {
@@ -544,7 +544,7 @@ The same wave on cream paper. Highlighter `mark`s sit under the label and the me
       { "role": "mark", "id": "hi-1", "x": 36, "y": 38, "w": 132, "h": 20 },
       { "role": "label", "id": "label", "x": 40, "y": 40, "w": 220, "align": "left" },
       { "role": "headline", "id": "headline", "x": 40, "y": 78, "w": 400, "align": "left", "size": 44 },
-      { "role": "legend", "id": "legend", "x": 40, "y": 980, "w": 280, "align": "left", "text": "Every row is a part of Pantry, as many rows as it has code. The black rows are the plan." },
+      { "role": "legend", "id": "legend", "x": 40, "y": 980, "w": 280, "align": "left", "text": "Every row is a part of Pantry, as many rows as it has code. The highlighted rows are the plan." },
       { "role": "meta", "id": "meta", "x": 40, "y": 1120, "w": 400, "text": "REF 04186f4 / 2026-11-07 / Archive pantry" },
       { "role": "mark", "id": "hi-2", "x": 36, "y": 1118, "w": 220, "h": 18 }
     ]

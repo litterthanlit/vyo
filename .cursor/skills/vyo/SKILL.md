@@ -130,7 +130,7 @@ Use it when the owner asks for a masthead and footer, or the repo has no git his
 
 ## Signal frame
 
-Use it when the owner wants a high-contrast poster: charcoal or cream, one signal colour (lime `#C8FF00` unless `accent` says otherwise), a grotesque headline, an archival `meta` line, optional highlighter `mark`s. `compose --field <f> --frame signal`. The field still takes `fits`. Extra roles: `meta` (one archival line, at most 80 characters, no sequential "01/02/03" markers), `display` (a huge word, at most 8 characters), `mark` (a block of the signal colour; no text, needs `h`). Type may sit on the field.
+Use it when the owner wants a high-contrast poster: charcoal or cream, one signal colour (lime `#C8FF00` unless `accent` says otherwise), a grotesque headline, an archival `meta` line, optional highlighter `mark`s. `compose --field <f> --frame signal`. The field still takes `fits`. Extra roles: `meta` (one archival line, at most 80 characters, no sequential "01/02/03" markers), `display` (a huge word, at most 8 characters), `mark` (a block of the signal colour laid over type like a highlighter; no text, needs `h`). On cream the accent part's rows are highlighted the same way, so the legend says "highlighted". Type may sit on the field.
 
 Hairline `routes` are a region of open SVG paths with optional nodes. `motion` on the spec is `{ kind: "nodes" | "resolve" | "wipe", frames: 8 to 36, fps: 6 to 24 }`. Then `npx vyo render <spec> --gif` writes a GIF and an MP4. `nodes` travels the dots along the hairlines, `resolve` fades rows in from the top, `wipe` grows the marks.
 

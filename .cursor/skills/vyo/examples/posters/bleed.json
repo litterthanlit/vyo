@@ -61,7 +61,7 @@
         "y": 1040,
         "w": 320,
         "align": "right",
-        "text": "The form is Pantry's code, cut off at the edge. The black rows are the plan."
+        "text": "The form is Pantry's code, cut off at the edge. The highlighted rows are the plan."
       },
       {
         "role": "meta",

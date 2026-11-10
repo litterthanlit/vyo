@@ -268,7 +268,7 @@ html, body { background: var(--paper) }
 .node { position: absolute; border-radius: 50%; z-index: 0; pointer-events: none }
 /* A field runs on behind the figure's texts: each sits above the rows with a 6px paper outline. */
 [data-role] { z-index: 1; -webkit-text-stroke: 12px var(--paper); paint-order: stroke fill }
-[data-role=mark] { z-index: 0; -webkit-text-stroke: 0; paint-order: normal }
+[data-role=mark] { z-index: 2; -webkit-text-stroke: 0; paint-order: normal; mix-blend-mode: ${spec.theme === "dark" ? "difference" : "multiply"} }
 </style><script>${PRELUDE}</script></head><body><div class="sheet">
 ${spec.figure.texts.map((t) => textBlock(spec, t, facts)).join("\n")}
 ${CHROME[frameOf(spec)](spec, facts)}

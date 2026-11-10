@@ -83,7 +83,12 @@ function drawFill(S, region, blocks) {
 
 function drawField(S, region, blocks) {
   const items = FIELDS[region.field].layout(region, region.parts, { floor: F.floor, mirror: F.mirror, theme: F.theme, frame: F.frame, blocks, measure });
-  for (const r of items) drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, 400, r.tone);
+  // On signal paper the accent part is ink on a highlighter block of the signal colour, as lime type would not read.
+  const highlight = F.frame === "signal" && F.theme === "light";
+  for (const r of items) {
+    drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, 400, r.tone);
+    if (highlight && r.hot) S.lastChild.style.background = "var(--hot)";
+  }
   const box = items.length ? bbox([items.flatMap((r) => [[r.x, r.y], [r.x + r.width, r.y + r.height]])]) : { left: 0, top: 0, right: 0, bottom: 0 };
   return { id: region.id, kind: "field", bbox: box, rows: items.length };
 }

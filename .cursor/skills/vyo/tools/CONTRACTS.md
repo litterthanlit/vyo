@@ -356,7 +356,7 @@ A spec sits in one of three frames, `frame: "loose" | "swiss" | "signal"`, defau
 
 **`swiss`** is the v4 poster, unchanged: masthead, the serif headline, figure texts, a footer hairline with counts, 2 or 3 note columns, the not-built list, provenance and the credit. It takes fill, dots and field figures. Its roles are §3's `Text`.
 
-**`signal`** is the high-contrast poster: charcoal (`theme: "dark"`, paper `#111111`) or cream (`theme: "light"`, paper `#F3EEE4`), one signal colour (default lime `#C8FF00`, or `spec.accent`), a grotesque headline (Inter / Helvetica), archival `meta`, optional highlighter `mark`s. It draws a field or a fill (it rejects a figure with neither). The field's floor is the sheet's bottom edge. Field rows may pass behind type. Extra roles on top of loose: `meta` (0 or 1, 11px mono caps, ≤ 80 characters), `display` (0 to 2, 96px grotesque, ≤ 8 characters), `mark` (0 to 3, a block of the signal colour; no `text`; needs `h` 4 to 1190). `compose --frame signal` places the loose roles in the corners; the agent adds `meta` and `mark`.
+**`signal`** is the high-contrast poster: charcoal (`theme: "dark"`, paper `#111111`) or cream (`theme: "light"`, paper `#F3EEE4`), one signal colour (default lime `#C8FF00`, or `spec.accent`), a grotesque headline (Inter / Helvetica), archival `meta`, optional highlighter `mark`s. It draws a field or a fill (it rejects a figure with neither). The field's floor is the sheet's bottom edge. Field rows may pass behind type. Extra roles on top of loose: `meta` (0 or 1, 11px mono caps, ≤ 80 characters), `display` (0 to 2, 96px grotesque, ≤ 8 characters), `mark` (0 to 3, a block of the signal colour; no `text`; needs `h` 4 to 1190), blended over whatever it covers like a highlighter. On cream, the field's accent part is ink on a block of the signal colour, since lime type does not read on paper. `compose --frame signal` places the loose roles in the corners; the agent adds `meta` and `mark`.
 
 **`loose`** draws a field (it rejects a figure without one) and nothing else of the swiss frame: no masthead, hairline, counts, notes or footer. The field's floor is the sheet's bottom edge, so the wave runs under the top and bottom edges and the terrain off the left, right and bottom. No field row may come within 8px of a text (`blocks-apart` exempts nothing in this frame). Text roles:
 
@@ -617,7 +617,7 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 | `data-block` | Fill for every text, with the text's `id`. Render for the footer blocks and the loose frame's `record` | A text block to measure for overlap and bounds, and to cut out of the rows |
 | `.routes` | Fill | The SVG of a routes region. Hairlines; not measured as rows |
 | `.node` | Fill | A dot on a route. `window.applyMotion` moves it when `motion.kind` is `nodes` |
-| `[data-role=mark]` | Render | A highlighter block. `window.applyMotion` grows its width when `motion.kind` is `wipe` |
+| `[data-role=mark]` | Render | A highlighter block, painted over the type with `mix-blend-mode: multiply` on paper (ink stays ink, the ground turns to the signal colour) and `difference` on charcoal. `window.applyMotion` grows its width when `motion.kind` is `wipe` |
 | `window.applyMotion` | Fill | `(t) => void`, t in 0…1. Still PNG uses t = 0.35. GIF walks t across `motion.frames` |
 | `window.drawn` | Fill | Set to `true` after the fonts load and every region and text is laid out. Render waits for it before the screenshot, the PDF and the checks |
 
