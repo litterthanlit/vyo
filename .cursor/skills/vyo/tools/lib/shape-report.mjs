@@ -1,6 +1,6 @@
 // What goes wrong with a drawn silhouette, measured on its mask: features too thin for the thumbnail, too little
 // of the sheet covered, an accent band too small to see, a name never drawn whole, a band split across separate
-// pieces, a text block on the shape. `vyo sketch` prints these as `!` lines and lib/check.mjs runs them as checks;
+// pieces, a text block on the shape. `vyo sketch` prints these at the level lib/check.mjs gives each check, which render uses too;
 // every message says what to change, with a number.
 import { SHEET, corners, CORNERS, fixedMeasure } from "./geometry.mjs";
 import { maskGrid, edt, SHAPE_ROOM, opRings, paintRows } from "./mask.mjs";

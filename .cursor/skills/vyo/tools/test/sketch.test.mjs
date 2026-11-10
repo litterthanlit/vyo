@@ -99,7 +99,7 @@ test("a wave sketches from the facts: its parts, its rows, all of them drawn beh
 test("two text blocks whose estimated rects intersect are warned about before render", () => {
   const spec = preset("hourglass");
   spec.figure.texts.push({ role: "aside", id: "one", text: "Plan once and eat well.", x: 600, y: 300, w: 160 }, { role: "aside", id: "two", text: "Shop for the week.", x: 620, y: 310, w: 160 });
-  assert.match(sketch(spec), /^! text blocks "one" and "two" overlap; move one \(render fails blocks-apart\)$/m);
+  assert.match(sketch(spec), /^✗ blocks-apart: text blocks "one" and "two" overlap; move one$/m);
   assert.doesNotMatch(sketch(preset("hourglass")), /overlap/);
 });
 

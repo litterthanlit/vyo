@@ -8,7 +8,8 @@ import { fileURLToPath } from "node:url";
 import { validateSpec } from "../lib/spec.mjs";
 import { shapeMask, maskGrid, runsPath, SHAPE_ROOM } from "../lib/mask.mjs";
 import { shapeBands, bandsStyle, nameWidth, BANDS } from "../lib/fields/shape.mjs";
-import { shapeReport, shapeFindings, thinFeatures } from "../lib/shape-report.mjs";
+import { shapeReport, shapeFindings, thinFeatures, SHAPE_CHECKS } from "../lib/shape-report.mjs";
+import { CHECKS } from "../lib/check.mjs";
 import { sketch, sketchImage } from "../lib/sketch.mjs";
 import { regionParts } from "../lib/parts.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
@@ -342,7 +343,20 @@ test("sketch of the jar: the mask at 20px with the accent band, each band's numb
   assert.match(out, /^corners: top-left at 0,0 is 420 by \d+;/m);
   assert.doesNotMatch(out, /^! /m);
   const tiny = sketch(withShape({ ...jar().figure.regions[0].shape, fit: { h: 0.3 } }), recipe);
-  assert.match(tiny, /^! the shape covers 7% of the sheet; it needs 35%/m);
+  assert.match(tiny, /^! shape-cover: the shape covers 7% of the sheet; it needs 35%/m);
+});
+
+test("the sketch prints each shape finding at the level render gives it: a block on the shape is a ✗ in both", () => {
+  for (const id of SHAPE_CHECKS) assert.ok(CHECKS.some((c) => c.id === id), `${id} is a check`);
+  const s = jar();
+  const legend = s.figure.texts.find((t) => t.role === "legend");
+  Object.assign(legend, { x: 300, y: 700, w: 200 });
+  const out = sketch(s, recipe);
+  assert.match(out, /^✗ shape-room: the legend \(\d+ by \d+ at \d+,\d+\) sits on the shape/m);
+  assert.equal(CHECKS.find((c) => c.id === "shape-room").level, "fail");
+  assert.doesNotMatch(out, /^! shape-room/m);
+  const tiny = sketch(withShape({ ...jar().figure.regions[0].shape, fit: { h: 0.3 } }), recipe);
+  assert.match(tiny, /^! shape-cover: /m, "a warning stays a warning");
 });
 
 test("the sketch PNG is a 280px picture of the silhouette with its accent band, encoded without a browser", () => {

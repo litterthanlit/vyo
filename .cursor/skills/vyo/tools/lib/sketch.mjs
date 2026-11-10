@@ -6,7 +6,7 @@ import { floorOf, fieldItems as layoutField, recordOf, fieldSpace, tokensOf } fr
 import { frameOf, recordRect } from "./frame.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { regionParts } from "./parts.mjs";
-import { figureStats, regionStats, SILHOUETTE, REGION, boxMessage, thinMessage } from "./check.mjs";
+import { figureStats, regionStats, SILHOUETTE, REGION, boxMessage, thinMessage, CHECKS } from "./check.mjs";
 import { shapeReport, shapeFindings, SHAPE_LIMITS } from "./shape-report.mjs";
 import { encodePng } from "./png.mjs";
 import { estimateText, placeTexts } from "./place.mjs";
@@ -19,6 +19,8 @@ const LETTERS = "ABCDEF";
 export { estimateText };
 
 const share = (n) => Math.round(n * 100) / 100;
+/** A finding as render prints it: ✗ for a check that fails render, ! for one that warns, then its id. */
+export const findingLine = (id, message) => `${CHECKS.find((c) => c.id === id).level === "fail" ? "✗" : "!"} ${id}: ${message}`;
 
 /** A drawn shape in numbers: how much of the sheet it covers, its fit and bleed, and each band (or the style's own lines). */
 function shapeSummary({ mask, bands, summary }) {
@@ -142,6 +144,7 @@ export function sketch(given, facts) {
   const legend = [];
   const shapeLines = [];
   const notes = [];
+  const marked = [];
   let letter = 0;
 
   for (const region of spec.figure.regions) {
@@ -161,7 +164,7 @@ export function sketch(given, facts) {
       legend.push(`${mark} ${region.id} (shape, ${report.parts.length} ${report.ascii ? "strata; @ marks the accent stratum, ·:-=+*# the light" : report.summary ? "parts; @ marks the accent band" : "bands; @ marks the accent band"})`);
       shapeLines.push(...shapeSummary(report));
       const findings = shapeFindings(report, { blocks: spec.figure.texts.map((t) => estimateText(t, spec, facts)) });
-      notes.push(...Object.values(findings).flat());
+      for (const [id, messages] of Object.entries(findings)) marked.push(...messages.map((m) => findingLine(id, m)));
       continue;
     }
     if (region.kind === "field") {
@@ -233,7 +236,7 @@ export function sketch(given, facts) {
   for (let i = 0; i < texts.length; i++) {
     for (const b of texts.slice(i + 1)) {
       const a = texts[i];
-      if (a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5) notes.push(`text blocks "${a.id}" and "${b.id}" overlap; move one (render fails blocks-apart)`);
+      if (a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5) marked.push(findingLine("blocks-apart", `text blocks "${a.id}" and "${b.id}" overlap; move one`));
     }
   }
 
@@ -257,6 +260,7 @@ export function sketch(given, facts) {
     ...(shapeLines.length ? [] : [`${[s.coverage >= SILHOUETTE.coverage, s.height >= SILHOUETTE.height, s.width >= SILHOUETTE.width].every(Boolean) ? "" : "! "}coverage ${Math.round(s.coverage * 100)}% (needs ${Math.round(SILHOUETTE.coverage * 100)}%, ${ok(s.coverage, SILHOUETTE.coverage)}), height ${Math.round(s.height * 100)}% (needs ${Math.round(SILHOUETTE.height * 100)}%, ${ok(s.height, SILHOUETTE.height)}), width ${Math.round(s.width * 100)}% (needs ${Math.round(SILHOUETTE.width * 100)}%, ${ok(s.width, SILHOUETTE.width)})`]),
     ...(perRegion.length ? perRegion.map((r) => `region ${r.id}: spread/mean ${r.variety.toFixed(2)} (needs ${REGION.variety}), ${Math.round(r.width)}px across on average (needs ${REGION.width})`) : fieldRects.length ? [] : ["regions: no fill rows"]),
     ...notes.map((n) => `! ${n}`),
+    ...marked,
   ];
   return out.join("\n") + "\n";
 }

@@ -146,7 +146,7 @@ test("a thin shape warns shape-rings before render, with the rings it has, the r
   const report = reportOf(s, recipe);
   const [message] = shapeFindings(report)["shape-rings"];
   assert.match(message, /^the shape is \d+px across at its thickest, room for \d rings of 7px; its 12 parts need about 18, so draw it fatter \(about 252px across at its thickest\), raise fit\.h, or use style bands$/);
-  assert.match(sketch(s, recipe), /^! the shape is \d+px across at its thickest, room for \d rings of 7px; its 12 parts need about 18/m);
+  assert.match(sketch(s, recipe), /^! shape-rings: the shape is \d+px across at its thickest, room for \d rings of 7px; its 12 parts need about 18/m);
   assert.match(sketch(s, recipe), /^rings: \d rings of 7px fit \(the shape is \d+px across at its thickest; 12 parts want about 18\)/m);
 });
 
