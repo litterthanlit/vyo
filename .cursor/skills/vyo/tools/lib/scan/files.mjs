@@ -14,33 +14,45 @@ export const JS_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".m
 export const MAX_BYTES = 512 * 1024;
 export const MAX_FILES = 20000;
 
-const EXCLUDED_DIRS = new Set([
-  "node_modules", ".git", "dist", "build", "vyo", "out", ".next", ".nuxt", ".svelte-kit", ".turbo", ".vercel",
-  "coverage", "vendor", "venv", ".venv", "__pycache__", "site-packages", "bower_components",
-  "__tests__", "tests", "test", "e2e", "cypress", "playwright", "public", "static", "assets",
+// Never source, at any depth: tests, caches, installed packages, this skill's own output folder.
+const ALWAYS_EXCLUDED_DIRS = new Set([
+  "node_modules", "vyo", "venv", ".venv", "__pycache__", "site-packages", "bower_components",
+  "__tests__", "tests", "test", "e2e", "cypress", "playwright",
+]);
+// Build output, vendored code and served assets: excluded only where they are output, directly under the
+// repo root or a package root. `internal/build/b.go` is source; `dist/` and `apps/web/dist/` are not.
+const OUTPUT_DIRS = new Set(["dist", "build", "out", "coverage", "vendor", "public", "static", "assets"]);
+
+export const MANIFESTS = new Set([
+  "package.json", "pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", "Pipfile", "go.mod",
+  "Cargo.toml", "Gemfile", "composer.json", "pom.xml", "build.gradle", "build.gradle.kts", "Package.swift",
 ]);
 
 // Skipped while walking / listing: these directories never hold anything we read.
 const NEVER_WALK = new Set(["node_modules", ".git", "__pycache__", "site-packages", "bower_components", ".venv", "venv", ".next", ".nuxt", ".svelte-kit", ".turbo", ".vercel"]);
 
-// True when a repo-relative path is outside the "kept source files" set.
-export function isExcluded(rel) {
+// The repo root and every directory holding a manifest: where an output folder is plausibly output.
+export function packageRoots(paths) {
+  const roots = new Set([""]);
+  for (const p of paths) if (MANIFESTS.has(basename(p))) roots.add(dirname(p));
+  return roots;
+}
+
+// Why a repo-relative path is outside the "kept source files" set, or null when it is kept.
+// The reason names the folder or file kind, for example "build/" or "test files".
+export function excludeReason(rel, roots) {
   const segs = rel.split("/");
   const file = segs[segs.length - 1];
   for (let i = 0; i < segs.length - 1; i++) {
     const s = segs[i];
-    if (EXCLUDED_DIRS.has(s) || s.startsWith(".")) return true;
+    if (s.startsWith(".")) return `${segs.slice(0, i + 1).join("/")}/ (hidden)`;
+    if (ALWAYS_EXCLUDED_DIRS.has(s)) return `${s}/`;
+    if (OUTPUT_DIRS.has(s) && roots.has(segs.slice(0, i).join("/"))) return `${s}/`;
   }
-  if (file.startsWith(".")) return true;
-  if (/\.(test|spec)\.[^/]+$/.test(file)) return true;
-  if (/\.config\.[^/]+$/.test(file)) return true;
-  if (/\.d\.[cm]?ts$/.test(file)) return true;
-  if (/^(test_.*|.*_test)\.py$/.test(file) || file === "conftest.py" || /_test\.go$/.test(file)) return true;
-  return false;
-}
-
-export function isSourcePath(rel) {
-  return SOURCE_EXT.has(extname(rel)) && !isExcluded(rel);
+  if (file.startsWith(".")) return "dotfiles";
+  if (/\.(test|spec)\.[^/]+$/.test(file) || /^(test_.*|.*_test)\.py$/.test(file) || file === "conftest.py" || /_test\.go$/.test(file)) return "test files";
+  if (/\.config\.[^/]+$/.test(file) || /\.d\.[cm]?ts$/.test(file)) return "config and declaration files";
+  return null;
 }
 
 function gitOutput(dir, args) {
@@ -120,10 +132,34 @@ export function detectGen(rel, text) {
 }
 
 // Read the kept source files. Skips files over MAX_BYTES, binary files and anything unreadable.
-// Returns { files: Map<rel,{text,loc,gen}>, skipped: {big,binary,unreadable,capped} }.
+// Returns { files: Map<rel,{text,loc,gen}>, skipped: {big,binary,unreadable,capped},
+// excluded: {files,lines,by:{reason:{files,lines}}} } where `excluded` counts source-extension files the rules dropped.
 export function readSourceFiles(dir, paths) {
   const skipped = { big: 0, binary: 0, unreadable: 0, capped: 0 };
-  let candidates = paths.filter(isSourcePath);
+  const excluded = { files: 0, lines: 0, by: {} };
+  const roots = packageRoots(paths);
+  let candidates = [];
+  for (const rel of paths) {
+    if (!SOURCE_EXT.has(extname(rel))) continue;
+    const reason = excludeReason(rel, roots);
+    if (!reason) {
+      candidates.push(rel);
+      continue;
+    }
+    let lines = 0;
+    try {
+      const abs = path.join(dir, rel);
+      const st = fs.lstatSync(abs);
+      if (st.isFile() && st.size <= MAX_BYTES) lines = countLoc(fs.readFileSync(abs, "utf8"));
+    } catch {
+      // unreadable: counted as a file with no lines
+    }
+    const by = (excluded.by[reason] ??= { files: 0, lines: 0 });
+    by.files++;
+    by.lines += lines;
+    excluded.files++;
+    excluded.lines += lines;
+  }
   if (candidates.length > MAX_FILES) {
     skipped.capped = candidates.length - MAX_FILES;
     candidates = candidates
@@ -154,7 +190,7 @@ export function readSourceFiles(dir, paths) {
       skipped.unreadable++;
     }
   }
-  return { files, skipped };
+  return { files, skipped, excluded };
 }
 
 // Read a small non-source file (package.json, tsconfig.json, vercel.json, …). null when missing/unreadable.

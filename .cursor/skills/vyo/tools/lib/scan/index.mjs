@@ -29,7 +29,7 @@ export function scanRepoDetailed(dirArg) {
   const { paths: allPaths, git } = listFiles(dir);
   diag.git = git;
   const allPathSet = new Set(allPaths);
-  const { files: raw, skipped } = readSourceFiles(dir, allPaths);
+  const { files: raw, skipped, excluded } = readSourceFiles(dir, allPaths);
   diag.skipped = skipped;
   lap("read", t);
 
@@ -151,6 +151,7 @@ export function scanRepoDetailed(dirArg) {
     imports: res.imports,
     uses: useList,
     unresolved,
+    excluded,
   };
   const out = { ...body, hash: factsHash(body) };
   diag.ms.total = Date.now() - t0;

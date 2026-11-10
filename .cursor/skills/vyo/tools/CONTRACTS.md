@@ -74,6 +74,7 @@ type FactsFile = {
   imports: [string, string][];   // [fromFile, toFile], both keys of `files`, deduped, sorted
   uses: [string, string, "package" | "http" | "orm"][];  // [file, factId, via], deduped, sorted
   unresolved: Record<string, number>;          // internal-looking specifiers that didn't resolve → count (diagnostics only)
+  excluded: { files: number; lines: number; by: Record<string, { files: number; lines: number }> };  // source files the exclusion rules dropped, by reason
 };
 type FileInfo = {
   area: string;                  // id of the deepest area fact containing the file

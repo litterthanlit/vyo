@@ -1161,3 +1161,51 @@ describe("scan --out inside the scanned repo", () => {
     }
   });
 });
+
+function scanTree(files, { cli = false } = {}) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "scan-tree-"));
+  try {
+    for (const [rel, text] of Object.entries(files)) {
+      fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+      fs.writeFileSync(path.join(root, rel), text);
+    }
+    const facts = scanRepo(root);
+    if (!cli) return { facts };
+    const r = spawnSync(process.execPath, [CLI, "scan", root, "--out", "-"], { encoding: "utf8" });
+    return { facts, stderr: r.stderr, stdout: r.stdout };
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
+describe("exclusions drop nothing silently", () => {
+  const body = "package b\n\nfunc B() int {\n\treturn 1\n}\n";
+  test("build, vendor and static folders are source below the repo or package root, output at it", () => {
+    const { facts } = scanTree({
+      "go.mod": "module x\n",
+      "internal/build/b.go": body,
+      "internal/vendor/v.go": body,
+      "build/out.go": body,
+      "vendor/dep/d.go": body,
+      "apps/web/package.json": '{"name":"web","dependencies":{}}',
+      "apps/web/dist/bundle.js": "export const a = 1;\n",
+      "apps/web/src/static/s.js": "export const s = 1;\n",
+    });
+    assert.deepEqual(Object.keys(facts.files), ["apps/web/src/static/s.js", "internal/build/b.go", "internal/vendor/v.go"]);
+    assert.equal(facts.excluded.files, 3);
+    assert.deepEqual(Object.keys(facts.excluded.by).sort(), ["build/", "dist/", "vendor/"]);
+    assert.equal(facts.excluded.by["build/"].lines, 4);
+  });
+
+  test("test folders stay excluded at any depth, and are counted", () => {
+    const { facts } = scanTree({ "src/a.go": body, "src/tests/t.go": body, "pkg/sub/test/u.go": body });
+    assert.deepEqual(Object.keys(facts.files), ["src/a.go"]);
+    assert.equal(facts.excluded.by["tests/"].files, 1);
+    assert.equal(facts.excluded.by["test/"].files, 1);
+  });
+
+  test("the CLI says how many files and lines it left out", () => {
+    const { stderr } = scanTree({ "src/a.go": body, "tests/t.go": body, "tests/u.go": body }, { cli: true });
+    assert.match(stderr, /Left out 2 source files \(8 lines\).*tests\/ 2 files\/8 lines/);
+  });
+});

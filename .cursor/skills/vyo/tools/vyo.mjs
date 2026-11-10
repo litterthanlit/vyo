@@ -119,6 +119,11 @@ function cmdScan(argv) {
     `${Object.keys(facts.files).length} files, ${loc} lines${out === "-" ? "" : ` → ${out}`} (hash ${facts.hash})`;
   (out === "-" ? process.stderr : process.stdout).write(summary + "\n");
   if (facts.empty) warn("No screens, endpoints, tables, services, AI or jobs found: nothing to count.");
+  const x = facts.excluded;
+  if (x.files) {
+    const top = Object.entries(x.by).sort((a, b) => b[1].lines - a[1].lines || (a[0] < b[0] ? -1 : 1)).slice(0, 5);
+    warn(`Left out ${x.files} source file${x.files === 1 ? "" : "s"} (${x.lines} lines) as tests, build output, vendored or hidden code: ${top.map(([k, v]) => `${k} ${v.files} files/${v.lines} lines`).join(", ")}${Object.keys(x.by).length > top.length ? ", …" : ""}`);
+  }
   const s = diag.skipped;
   if (s.big || s.binary || s.unreadable || s.capped) warn(`Skipped files: ${s.big} over 512 KB, ${s.binary} binary, ${s.unreadable} unreadable, ${s.capped} past the 20000-file cap`);
   if (diag.parseFailures.length) warn(`Could not parse ${diag.parseFailures.length} config file(s): ${diag.parseFailures.slice(0, 3).join(", ")}`);
