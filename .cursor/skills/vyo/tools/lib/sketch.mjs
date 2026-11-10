@@ -2,11 +2,13 @@
 // Commit Mono's fixed advance, so the agent sees rows, coverage, each region's widths and the floor before rendering.
 import { SHEET, GRID, regionRows, fillRows, dotsLines, fixedMeasure, cornersLine } from "./geometry.mjs";
 import { hasWord, PLACEHOLDER } from "./spec.mjs";
-import { floorOf, fieldItems as layoutField, listItems, recordOf, fieldSpace } from "./render.mjs";
+import { floorOf, fieldItems as layoutField, listItems, recordOf, fieldSpace, tokensOf } from "./render.mjs";
 import { frameOf, roleOf, textSize, lineHeight, ruleText, recordRect } from "./frame.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { regionParts } from "./parts.mjs";
 import { figureStats, regionStats, SILHOUETTE, REGION, boxMessage, thinMessage } from "./check.mjs";
+import { shapeReport, shapeFindings, SHAPE_LIMITS } from "./shape-report.mjs";
+import { encodePng } from "./png.mjs";
 
 const CELL = 20;
 const COLS = SHEET.width / CELL;
@@ -37,6 +39,65 @@ export function estimateText(t, spec, facts) {
   return { id: t.id, left, top: t.y, right: left + width, bottom: t.y + lines.length * lineHeight(spec, t), lines: lines.length };
 }
 
+const share = (n) => Math.round(n * 100) / 100;
+
+/** A drawn shape in numbers: how much of the sheet it covers, its fit and bleed, and each band. */
+function shapeSummary({ mask, bands }) {
+  const { width: W, height: H } = SHEET;
+  const b = mask.box;
+  const bleeds = [["left", b.left < 0], ["top", b.top < 0], ["right", b.right > W], ["bottom", b.bottom > H]].filter(([, off]) => off).map(([side]) => side);
+  return [
+    `shape: covers ${Math.round((mask.area / (W * H)) * 100)}% of the sheet (needs ${SHAPE_LIMITS.cover * 100}%), ${Math.round(b.right - b.left)} by ${Math.round(b.bottom - b.top)}px (fit.w ${share(mask.fit.w)}, fit.h ${share(mask.fit.h)}), bleeds ${bleeds.join(", ") || "nowhere"}`,
+    "bands, top to bottom (* the accent):",
+    ...bands.map((d) => `  ${d.part.hot ? "*" : " "} ${d.part.name.toLowerCase().padEnd(24)} y ${d.y0} to ${d.y1}, ${d.y1 - d.y0}px tall, ${d.lines} ${d.lines === 1 ? "line" : "lines"} of ${d.size.toFixed(1)}px type`),
+  ];
+}
+
+// The sketch PNG is the sheet at a third of its size: 280px wide, like the render's thumbnail.
+const IMAGE_SCALE = 3;
+const hexRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+
+/**
+ * The silhouette as the poster will fill it, without a browser: each band in its fill, the accent band in the
+ * accent, the gaps between bands in paper, and the text blocks outlined. Null when the figure has no drawn shape.
+ * @returns {Buffer | null}
+ */
+export function sketchImage(spec, facts) {
+  const region = spec.figure.regions.find((r) => r.kind === "field" && r.field === "shape");
+  if (!region) return null;
+  const report = shapeReport(spec, region, facts);
+  const tokens = { ...tokensOf(spec), ...FIELDS.shape.tokens(spec.theme) };
+  const toneAt = new Map();
+  for (const g of report.ground) if (g.part) for (const [y, spans] of g.rows) toneAt.set(y, [hexRgb(tokens[g.tone]), spans]);
+  const S = IMAGE_SCALE;
+  const [w, h] = [Math.ceil(SHEET.width / S), Math.ceil(SHEET.height / S)];
+  const paper = hexRgb(tokens.paper);
+  const rgb = new Uint8Array(w * h * 3);
+  for (let py = 0; py < h; py++) {
+    for (let px = 0; px < w; px++) {
+      const sum = [0, 0, 0];
+      for (let sy = 0; sy < S; sy++) {
+        const y = py * S + sy;
+        const [fill, spans] = toneAt.get(y) ?? [paper, []];
+        for (let sx = 0; sx < S; sx++) {
+          const x = px * S + sx + 0.5;
+          const c = spans.some(([l, r]) => x >= l && x < r) ? fill : paper;
+          for (let k = 0; k < 3; k++) sum[k] += c[k];
+        }
+      }
+      rgb.set(sum.map((v) => Math.round(v / (S * S))), (py * w + px) * 3);
+    }
+  }
+  const mid = hexRgb(tokens.mid);
+  const dot = (x, y) => x >= 0 && y >= 0 && x < w && y < h && rgb.set(mid, (y * w + x) * 3);
+  for (const t of spec.figure.texts.map((x) => estimateText(x, spec, facts))) {
+    const [l, r, top, bottom] = [t.left, t.right, t.top, t.bottom].map((v) => Math.round(v / S));
+    for (let x = l; x <= r; x++) dot(x, top), dot(x, bottom);
+    for (let y = top; y <= bottom; y++) dot(l, y), dot(r, y);
+  }
+  return encodePng(w, h, rgb);
+}
+
 const placeholder = (list) => !Array.isArray(list) || list.some((w) => typeof w === "string" && w.trim().startsWith(PLACEHOLDER));
 
 /** A field region's rows as the page lays them out, around the estimated text blocks. */
@@ -60,10 +121,26 @@ export function sketch(spec, facts) {
   const dotRects = [];
   const fieldRects = [];
   const legend = [];
+  const shapeLines = [];
   const notes = [];
   let letter = 0;
 
   for (const region of spec.figure.regions) {
+    if (region.kind === "field" && region.field === "shape") {
+      const mark = LETTERS[letter++];
+      const report = shapeReport(spec, region, facts);
+      for (const it of report.rows) fieldRects.push({ left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + it.height });
+      for (let r = 0; r < ROWS; r++) {
+        const y = Math.min(SHEET.height - 1, r * CELL + CELL / 2);
+        const band = report.bands.find((b) => y >= b.y0 && y < b.y1);
+        for (let c = 0; c < COLS; c++) if (report.mask.runs[y].some(([l, rr]) => c * CELL + CELL / 2 >= l && c * CELL + CELL / 2 < rr)) put(r, c, band?.part.hot ? "@" : mark);
+      }
+      legend.push(`${mark} ${region.id} (shape, ${report.parts.length} bands; @ marks the accent band)`);
+      shapeLines.push(...shapeSummary(report));
+      const findings = shapeFindings(report, { blocks: spec.figure.texts.map((t) => estimateText(t, spec, facts)) });
+      notes.push(...Object.values(findings).flat());
+      continue;
+    }
     if (region.kind === "field") {
       const mark = LETTERS[letter++];
       const items = fieldItems(spec, region, facts, texts);
@@ -151,6 +228,7 @@ export function sketch(spec, facts) {
     ...grid.slice(0, footRow + 1).map((r) => r.join("").trimEnd()),
     "",
     `regions: ${legend.join(", ")}; · marks hot rows`,
+    ...shapeLines,
     `texts: ${texts.map((b) => `${b.id} ${Math.round(b.left)},${Math.round(b.top)} to ${Math.round(b.right)},${Math.round(b.bottom)}`).join("; ")}`,
     ...(loose ? ["floor: the sheet's bottom edge (loose frame)", cornersLine(fieldSpace(spec, facts).corners)] : [`floor: ${floor}`]),
     `${[s.coverage >= SILHOUETTE.coverage, s.height >= SILHOUETTE.height, s.width >= SILHOUETTE.width].every(Boolean) ? "" : "! "}coverage ${Math.round(s.coverage * 100)}% (needs ${Math.round(SILHOUETTE.coverage * 100)}%, ${ok(s.coverage, SILHOUETTE.coverage)}), height ${Math.round(s.height * 100)}% (needs ${Math.round(SILHOUETTE.height * 100)}%, ${ok(s.height, SILHOUETTE.height)}), width ${Math.round(s.width * 100)}% (needs ${Math.round(SILHOUETTE.width * 100)}%, ${ok(s.width, SILHOUETTE.width)})`,

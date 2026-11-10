@@ -134,6 +134,17 @@ export function fieldItems(spec, region, facts, blocks, measure = fixedMeasure) 
   return FIELDS[region.field].layout(r, r.parts, { ...fieldFrame(spec), blocks, measure });
 }
 
+/** The fills a field draws under its rows (only a shape has any), as its style lays them out. */
+export function fieldGround(spec, region, facts) {
+  const ground = FIELDS[region.field].ground;
+  if (!ground) return [];
+  const r = fieldInput(region, facts);
+  return ground(r, r.parts, { ...fieldFrame(spec), blocks: [], measure: fixedMeasure });
+}
+
+/** Ground fills as one rect per span, for the corners and the record line to keep clear of. */
+export const groundRects = (ground) => ground.flatMap((g) => g.rows.flatMap(([y, spans]) => spans.map(([l, r]) => ({ left: l, top: y, right: r, bottom: y + 1 }))));
+
 /** A field region as its layout reads it: with its parts and the imports that tie them, both from facts.json. */
 function fieldInput(region, facts) {
   const parts = regionParts(region, facts);
@@ -145,8 +156,9 @@ function fieldInput(region, facts) {
  * the centre of the accent part's rows (of all rows when nothing is hot). Compose, sketch and the record read it.
  */
 export function fieldSpace(spec, facts) {
-  const items = spec.figure.regions.filter((r) => r.kind === "field").flatMap((r) => fieldItems(spec, r, facts, []));
-  const rects = items.map((it) => ({ left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + it.height }));
+  const fields = spec.figure.regions.filter((r) => r.kind === "field");
+  const items = fields.flatMap((r) => fieldItems(spec, r, facts, []));
+  const rects = [...items.map((it) => ({ left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + it.height })), ...fields.flatMap((r) => groundRects(fieldGround(spec, r, facts)))];
   const hot = items.some((it) => it.hot) ? items.filter((it) => it.hot) : items;
   const mean = (f) => hot.reduce((s, it) => s + f(it), 0) / (hot.length || 1);
   return { rects, corners: corners(rects), accent: { x: mean((it) => it.x + it.width / 2), y: mean((it) => it.y + it.height / 2) } };
@@ -193,7 +205,7 @@ window.fitWidth = (el, max) => {
 // The page lays out the figure with the same geometry and field modules `vyo sketch` runs in Node,
 // concatenated into one script: their imports are each other, so they are dropped.
 const LIB = path.join(TOOLS, "lib");
-const PAGE_MODULES = ["geometry.mjs", "fields/wave.mjs", "fields/terrain.mjs", "fields/river.mjs", "fields/index.mjs"];
+const PAGE_MODULES = ["geometry.mjs", "mask.mjs", "fields/wave.mjs", "fields/terrain.mjs", "fields/river.mjs", "fields/shape.mjs", "fields/index.mjs"];
 const figureScript = () =>
   [...PAGE_MODULES.map((f) => fs.readFileSync(path.join(LIB, f), "utf8").replace(/^import .*\n/gm, "").replace(/^export /gm, "")), fs.readFileSync(path.join(LIB, "fill.js"), "utf8")]
     .join("\n")

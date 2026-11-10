@@ -33,6 +33,7 @@
     region: el.dataset.region,
     part: el.dataset.part,
     hot: el.dataset.hot !== undefined,
+    text: el.textContent.replace(/\u00a0/g, " "),
     scrollWidth: el.scrollWidth,
     clientWidth: el.clientWidth,
     rect: box(el.getBoundingClientRect()),

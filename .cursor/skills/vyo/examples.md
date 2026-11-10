@@ -16,7 +16,7 @@
 
 ## Choosing the field for three products
 
-Write the product's story in one sentence. If it moves something from one place to another, take wave. If it is about which parts carry the product, take terrain. If many things merge into one, take river. Then run `vyo parts` with that field and put the accent on the part the story is about.
+Write the product's story in one sentence. If it moves something from one place to another, take wave. If it is about which parts carry the product, take terrain. If many things merge into one, take river. If one object a stranger would name stands for the product, take shape and draw it. Then run `vyo parts` with that field and put the accent on the part the story is about.
 
 | Product | Story | Field | Accent part | Plain names |
 |---|---|---|---|---|
@@ -281,6 +281,75 @@ The legend names "the plan" and the measure "merge". The fits sentence passes wi
   }
 }
 ```
+### shape
+
+Pantry keeps a week of recipes the way a jar keeps preserves, so the poster draws one jar and fills it with Pantry's code. The lid and the shoulders make it a jar at thumbnail size: a rounded lid, a narrow neck, and a body with 24-unit corners, three ops in a 100 by 130 box. It is turned 9 degrees, so the top corners hold the words, and it bleeds off the bottom. The bands run from the lid down in tree order, each as much of the jar as its code. The more code, the bigger the type, so "screens" and "recipe cards" are set huge and "buttons" is texture. The orange band is the plan.
+
+Before rendering, `vyo sketch` printed the jar's bands, its 62% of the sheet and its corners, and wrote `recipe-sketch.png`. It printed no `!` line.
+
+```json
+{
+  "version": 3,
+  "frame": "loose",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "light",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "shape",
+        "field": "shape",
+        "fits": "Pantry keeps a week of recipes the way a jar keeps preserves, so the picture is a jar of its code.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "shape": {
+          "rotate": 9,
+          "fit": { "h": 0.9, "cx": 0.52, "cy": 0.64 },
+          "ops": [
+            { "add": "rect", "at": [16, 0], "size": [68, 16], "round": 3 },
+            { "add": "rect", "at": [22, 15], "size": [56, 9] },
+            { "add": "rect", "at": [4, 22], "size": [92, 108], "round": 24 }
+          ]
+        }
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 40, "y": 40, "w": 220, "align": "left" },
+      { "role": "headline", "id": "headline", "x": 40, "y": 72, "w": 420, "align": "left" },
+      {
+        "role": "legend",
+        "id": "legend",
+        "x": 540,
+        "y": 40,
+        "w": 260,
+        "align": "right",
+        "text": "Every band is a part of Pantry, its type as big as its share of the code. The orange band is the plan."
+      }
+    ]
+  }
+}
+```
+
 ## Sample chat reply
 
 ```markdown
@@ -390,7 +459,7 @@ Use it when the owner asks for a masthead and footer, or the repo has no git his
 
 ## Drawing your own silhouette
 
-Use this path when the owner asks for a picture, or the scan is empty. You invent one silhouette that acts out the product's main moment and describe it as fill regions and texts. Fill figures sit in the swiss frame, with its masthead and footer. Start from `compose --from <preset>`, then sketch, render and check as for a field.
+When the owner asks for a picture and the scan has code, draw it as a shape field instead, like the jar above: the field cuts your silhouette into the parts. Use this path when the scan is empty, or the owner wants the swiss frame. The table under "Find the shape" helps with either. You invent one silhouette that acts out the product's main moment and describe it as fill regions and texts. Fill figures sit in the swiss frame, with its masthead and footer. Start from `compose --from <preset>`, then sketch, render and check as for a field.
 
 ### Find the shape
 

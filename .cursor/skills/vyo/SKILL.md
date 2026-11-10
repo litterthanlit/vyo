@@ -12,7 +12,7 @@ description: >-
 
 # vyo
 
-The poster is a field: the codebase drawn from a scan, one row, peak or stream per part, sized by its code. The field fills the sheet, and a few plain words sit in the corners it leaves empty. You choose the field, the accent part, the plain names and the words, and the tools draw, place and check the rest.
+The poster is a field: the codebase drawn from a scan, one row, peak, stream or band per part, sized by its code. The field fills the sheet, and a few plain words sit in the corners it leaves empty. You choose the field, the accent part, the plain names and the words, and for a shape field you draw the silhouette. The tools draw, place and check the rest.
 
 Run commands from the target repo. `<repo>` is the app's directory, `<name>` its folder name, and `<facts>` is `<repo>/vyo/<name>-facts.json`.
 
@@ -32,13 +32,13 @@ Without installing it, write `npx -y @litterthanlit/vyo` wherever this file says
 2. Summarise: `npx vyo show <facts>`.
 3. List the parts: `npx vyo parts <facts>`. Each line has an id like `area:lib/plan`, its share of the lines, its files and its scanned name. A name followed by `!` needs a plain name.
 4. Read `README*`, `docs/` and `project-context.md` beside this file if the owner wrote one. Write the product's name and its story in one sentence: what it does for a person. Every claim must point at the scan, the docs or the code.
-5. Choose the field by the story (see below) and the accent part: the part the story is about. For a river, run `parts <facts> --field river` again, because a river splits the code into finer parts with other ids.
+5. Choose the field by the story (see below) and the accent part: the part the story is about. For a river or a shape, run `parts <facts> --field <field>` again: a river splits the code into finer parts, and a shape into at most 12.
 6. Write the scaffold:
    ```bash
    npx vyo compose <facts> --field wave --accent area:lib/plan --repo <repo> --out <repo>/vyo/<name>-poster.json
    ```
    `--accent` refuses an id that `parts` did not list. `--repo` gives the record line its commit. Compose finds the corners the field leaves empty, puts the label, headline, legend, a paragraph and the parts list into them, and prints the corners and each text role's size.
-7. Replace every `…` value: the product name, the field's `fits`, the headline, the legend, the paragraph, the names and, for a wave, the `sentence`. Render rejects any placeholder left.
+7. Replace every `…` value: the product name, the field's `fits`, the headline, the legend, the paragraph, the names, for a wave the `sentence`, and for a shape the `shape` (see "Draw the shape"). Render rejects any placeholder left.
 8. Sketch: `npx vyo sketch <repo>/vyo/<name>-poster.json`. It prints the sheet, the text boxes and the corners. Act on every `!` line. If a corner is cramped, or two text boxes touch, move a block into a corner with room or delete the paragraph. Sketch does not flag two text boxes that overlap, so look at the boxes yourself.
 9. Render: `npx vyo render <repo>/vyo/<name>-poster.json`.
 10. Fix every `✗` line. Render exits 1 until none is left. Weigh every `!` line.
@@ -52,13 +52,22 @@ Pick the field whose shape is the story. The `fits` check wants a word that star
 - **wave** bends one band of rows down the page, one row per share of the code. Choose it when the story is flow or a hand-off. Keywords "travel", "flow", "hand", "move".
 - **terrain** stands each part up as a peak, as tall as its code and as wide as its files. Choose it when the story is what is big and what matters. Keywords "big", "weight", "matters", "most".
 - **river** runs one stream of digits per part in from the left and merges them into one channel. Choose it when the story is many things merging into one. Keywords "merge", "join", "many", "one".
+- **shape** cuts a silhouette you draw into one band per part, as much area as its code, the type as big as its share. Choose it when one object stands for the product, or the owner asks for a picture. Keywords "object", "thing", "picture", "shape", "looks".
 
 If you cannot decide, take wave. A field preference in `project-context.md` wins.
+
+## Draw the shape
+
+1. Pick one object a stranger would name in a second, tied to the story: a jar for a pantry, a paper plane for a hand-off. Never a heart, a plain circle or a box.
+2. Name the one feature that makes it that object, like the jar's lid and shoulders. Draw the object in 3 to 6 ops in a 100-unit box, y down, with that feature large. `compose --field shape` prints the format.
+3. Leave one top corner clear for the headline and legend: start from `"fit": { "h": 0.85, "cy": 0.62 }`, and rotate it a few degrees if it fills the width.
+4. Sketch, then open `<name>-sketch.png`. Say in one word what you see. If that word is not the object, redraw it. Fix every `!` line: each gives the number to change.
+5. Render and look at the thumbnail again.
 
 ## The words
 
 - **Headline.** One plain sentence about the outcome for the user, at most 72 characters. It is the only large type.
-- **Legend.** Required. One or two sentences, at most 180 characters, that say what the picture encodes. Name the accent part by its plain name and the measure: "code" or "lines" for a wave or terrain, plus "files" or "wide" for a terrain, and "merge", "join" or "flow" for a river. Example: "Every peak is a part of Pantry, as tall as its code and as wide as its files. The orange peak is the plan."
+- **Legend.** Required. One or two sentences, at most 180 characters, that say what the picture encodes. Name the accent part by its plain name and the measure: "code" or "lines" for a wave or terrain, plus "files" or "wide" for a terrain, "merge", "join" or "flow" for a river, and "code" plus "type" or "bigger" for a shape. Example: "Every peak is a part of Pantry, as tall as its code and as wide as its files. The orange peak is the plan."
 - **Fits.** On the field region, at most 160 characters, never drawn. Say why this field matches the product's story, with the field's keyword. Example: "Pantry merges many saved recipes into one week, so every part of its code joins one river."
 - **Paragraphs.** 0 to 2, each at most 2 sentences and 220 characters. Each does a job the picture cannot: how it works, what stays private, what runs on its own, or proof.
 - **Parts list.** `parts: true` prints the parts' plain names in tree order. Keep it when the field prints no names, as a river does.
@@ -76,15 +85,16 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 | `product.name` | The customer-facing name. `product-name` warns while it is the folder name |
 | `product.commit` | The short hash. `compose --repo` fills it, and the record line needs it |
 | `headline` | At most 72 characters |
-| region `field` | `wave`, `terrain` or `river`. One field per figure |
+| region `field` | `wave`, `terrain`, `river` or `shape`. One field per figure |
 | region `fits` | Why this field matches the story, with its keyword, at most 160 characters |
 | region `accent` | The accent part's id from `vyo parts` |
 | region `names` | Part id to plain name, at most 24 characters each |
 | region `sentence` | Wave only, at most 40 characters, set in every 5th row |
+| region `shape` | Shape only: `{ ops, rotate?, fit? }`, the silhouette you draw (see "Draw the shape") |
 | `figure.texts` | Exactly one `label` and one `headline` (they print the name and the headline), exactly one `legend`, 0 to 2 `paragraph`, 0 or 1 `list`, 0 or 1 `rule`. Each has `x`, `y`, `w` and optional `size` and `align` |
 | `record` | Optional, `bottom` or `left`, to force the record line's side |
 
-A loose spec has no `notes`, `notBuilt`, `hot` or `figure.fits`. [examples.md](examples.md) has the wave, terrain and river specs in full. The package's `tools/README.md` lists every check.
+A loose spec has no `notes`, `notBuilt`, `hot` or `figure.fits`. [examples.md](examples.md) has the wave, terrain, river and shape specs in full. The package's `tools/README.md` lists every check.
 
 ## Where output goes
 
@@ -114,4 +124,4 @@ Use it when the owner asks for a masthead and footer, or the repo has no git his
 
 ## Draw your own silhouette
 
-Use this only when the owner asks for a picture, like "draw it as an hourglass", or the scan is empty. It is swiss only. Start with `compose --from <preset>` (`npx vyo presets` lists them), then reshape the geometry until `preset-copy` is gone. [examples.md](examples.md), under "Drawing your own silhouette", has the method, four presets and three invented figures.
+Use this only when the scan is empty, so there are no parts to cut a shape field into. A picture the owner asks for, like "draw it as a jar", is a shape field. This path is swiss only. Start with `compose --from <preset>` (`npx vyo presets` lists them), then reshape the geometry until `preset-copy` is gone. [examples.md](examples.md), under "Drawing your own silhouette", has the method, four presets and three invented figures.

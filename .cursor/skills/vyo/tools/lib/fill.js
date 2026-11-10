@@ -57,7 +57,7 @@ function drawRow(S, r, data, height, weight, tone) {
     "row",
     data,
     {
-      fontSize: r.size + "px", lineHeight: height + "px", height: height + "px",
+      fontSize: r.size + "px", lineHeight: (r.lineHeight ?? height) + "px", height: height + "px",
       left: r.x + "px", top: r.y + "px", width: Math.ceil(r.width) + 1 + "px", letterSpacing: r.spacing + "px",
       color: `var(--${tone})`, fontWeight: weight, opacity: r.alpha ?? 1,
     },
@@ -82,8 +82,13 @@ function drawFill(S, region, blocks) {
 }
 
 function drawField(S, region, blocks) {
-  const items = FIELDS[region.field].layout(region, region.parts, { floor: F.floor, mirror: F.mirror, theme: F.theme, blocks, measure });
-  for (const r of items) drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, 400, r.tone);
+  const frame = { floor: F.floor, mirror: F.mirror, theme: F.theme, blocks, measure };
+  for (const g of FIELDS[region.field].ground?.(region, region.parts, frame) ?? []) {
+    const d = runsPath(g.rows);
+    if (d) S.appendChild(el("ground", { region: region.id, part: g.part ?? false, hot: g.hot }, { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", background: `var(--${g.tone})`, clipPath: `path("${d}")` }));
+  }
+  const items = FIELDS[region.field].layout(region, region.parts, frame);
+  for (const r of items) drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, r.weight ?? 400, r.tone);
   const box = items.length ? bbox([items.flatMap((r) => [[r.x, r.y], [r.x + r.width, r.y + r.height]])]) : { left: 0, top: 0, right: 0, bottom: 0 };
   return { id: region.id, kind: "field", bbox: box, rows: items.length };
 }

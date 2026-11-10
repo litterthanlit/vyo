@@ -6,6 +6,7 @@ import { FONT_FACES, tokensOf, fieldTokensOf, recordText } from "./render.mjs";
 import { frameOf, ROLES } from "./frame.mjs";
 import { partsFromFacts, partOptions, regionParts, unplainName, sameNames } from "./parts.mjs";
 import { FIELDS } from "./fields/index.mjs";
+import { shapeReport, shapeFindings, SHAPE_LIMITS } from "./shape-report.mjs";
 
 const rgb = (hex) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(", ")})`;
 const overlap = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
@@ -80,6 +81,15 @@ export const thinMessage = (s) => `region ${s.id} reads as a column; widen it or
 const pageRegionStats = (page) => regionStats(fillRowsOf(page).map((r) => ({ region: r.region, ...r.rect })));
 
 /**
+ * A check of every shape field, read from shape-report's findings. `drawn` picks what the finding measures
+ * on the page: its rows, its text blocks, or nothing (the mask alone).
+ */
+const shapeCheck = (id, level, stage, about, drawn = () => ({})) => ({
+  id, level, stage, frames: ["loose"], about,
+  run: (i) => fieldsOf(i.spec).filter((r) => r.field === "shape").flatMap((r) => shapeFindings(shapeReport(i.spec, r, i.facts), drawn(i))[id]),
+});
+
+/**
  * @typedef {{ spec: any, facts: any, presets: Record<string, any>, page?: any }} CheckInput
  * A check with `frames` runs only on posters in those frames; without, on every poster.
  * @type {{ id: string, level: "fail" | "warn", stage: "spec" | "page", frames?: ("swiss" | "loose")[], about: string, run: (i: CheckInput) => string[] }[]}
@@ -151,6 +161,14 @@ export const CHECKS = [
         .filter((r) => !FIELDS[r.field].fits.some((w) => startsWord(r.fits, w)))
         .map((r) => `region ${r.id}: fits must say why a ${r.field} matches the product's story; use ${anyOf(FIELDS[r.field].fits)}`),
   },
+  shapeCheck("shape-thin", "warn", "spec", `no feature of a drawn shape, and no cut in it, is under ${SHAPE_LIMITS.thin}px across, a hairline at thumbnail size`),
+  shapeCheck("shape-cover", "warn", "spec", `a drawn shape covers at least ${SHAPE_LIMITS.cover * 100}% of the sheet`),
+  shapeCheck("shape-accent", "warn", "spec", `the accent band of a drawn shape is at least ${SHAPE_LIMITS.accent}px tall, so it shows in the thumbnail`),
+  shapeCheck("shape-split", "warn", "spec", "no band of a drawn shape falls on two separate pieces of it"),
+  shapeCheck("shape-name", "fail", "page", "every band of a drawn shape shows its part's whole name at least once", ({ page }) => ({ rows: page.rows.map((r) => ({ part: r.part, text: r.text, width: r.rect.width })) })),
+  shapeCheck("shape-room", "fail", "page", `every text block sits in the room a drawn shape leaves, ${SHAPE_LIMITS.clear}px clear of it`, ({ page }) => ({
+    blocks: page.blocks.filter((b) => b.role).map((b) => ({ id: b.name, ...b.rect })),
+  })),
   {
     id: "drawn", level: "fail", stage: "page", about: "the figure script ran to the end",
     run: ({ page }) => [...page.errors.map((e) => `page error: ${e}`), ...(page.drawn ? [] : ["the figure never set window.drawn"])],
