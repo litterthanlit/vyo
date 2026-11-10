@@ -14,7 +14,7 @@ const OUT = path.join(HERE, ".out");
 const VYO = path.join(TOOLS, "vyo.mjs");
 const PRESETS = fs.readdirSync(path.join(TOOLS, "presets")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
 
-const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "docs", "init"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
+const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "shape", "docs", "init"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
@@ -101,7 +101,33 @@ const PLANTED = [
   ],
   ["a record line with no commit", "terrain", (s) => delete s.product.commit, /^✗ record: the record line has no commit; set product\.commit to the short hash/m],
   ["a fits without the field's keyword", "wave", (s) => (s.figure.regions[0].fits = "Pantry as a band of its own parts."), /^✗ fits: region wave: fits must say why a wave matches the product's story; use "travel" or "flow" or "hand" or "move"$/m],
+  [
+    "a shape whose first band falls in a stem too narrow for its name",
+    "shape",
+    (s) => (s.figure.regions[0].shape = { ops: [{ add: "rect", at: [0, 0], size: [6, 120] }, { add: "rect", at: [-40, 120], size: [84, 60], round: 10 }], fit: { h: 0.8 } }),
+    /^✗ shape-name: part "saved recipes" never shows its whole name: its band \(y \d+ to \d+\) holds \d+px of 5\.0px type and the name needs \d+px; widen the shape there to at least \d+px or give the part a shorter name$/m,
+  ],
+  ["a legend placed on the shape", "shape", (s) => Object.assign(s.figure.texts.find((t) => t.role === "legend"), { x: 300, y: 600 }), /^✗ shape-room: the legend \(\d+ by \d+ at \d+,\d+\) sits on the shape or within 16px of it; move it into the top-(left|right) corner/m],
+  ["a shape that paints nothing", "shape", (s) => s.figure.regions[0].shape.ops.push({ cut: "rect", at: [-50, -50], size: [300, 300] }), /^✗ spec: figure\.regions\[0\]\.shape: the ops paint nothing on the sheet/m],
 ];
+
+// A drawn shape's flaws are warnings: the poster still renders, and the agent weighs the `!` line.
+const jarShape = () => preset("shape").figure.regions[0].shape;
+const SHAPE_WARNINGS = [
+  ["a hairline handle", (s) => s.ops.push({ add: "capsule", from: [96, 60], to: [130, 40], r: 0.6 }), /^! shape-thin: the shape is \d+px thick near \d+,\d+; under 18px it is a hairline at thumbnail size, so make that feature at least 18px thick or remove it$/m],
+  ["a tiny jar", (s) => (s.fit = { h: 0.3, cx: 0.52, cy: 0.64 }), /^! shape-cover: the shape covers 7% of the sheet; it needs 35% to read as the picture, so scale it up 2\.\d+x \(set fit\.h to 0\.\d+, it is 0\.3\) or draw it fatter$/m],
+  ["a jar cut in two", (s) => s.ops.push({ cut: "rect", at: [-10, 70], size: [120, 4] }), /^! shape-split: the band of "[a-z ]+" \(y \d+ to \d+\) falls on 2 separate pieces of the shape/m],
+];
+for (const [name, mutate, expect] of SHAPE_WARNINGS) {
+  const spec = preset("shape");
+  const shape = jarShape();
+  mutate(shape);
+  spec.figure.regions[0].shape = shape;
+  const file = path.join(OUT, "planted-shape.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(expect.test(r.stderr), `planted shape flaw (${name}) warns with ${expect}`, `exit ${r.status}\n${r.stderr}`);
+}
 
 for (const [name, id, mutate, expect] of PLANTED) {
   const spec = preset(id);
@@ -166,7 +192,7 @@ vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
   result(r.status === 1 && r.stderr === `✗ ${BROWSER_NOTE}\n` && !fs.existsSync(path.join(OUT, "recipe-poster.png")), "render with no browser prints the browser note and exits 1", `exit ${r.status}\n${r.stderr}`);
 }
 
-console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length} planted bugs caught`);
+console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length + SHAPE_WARNINGS.length} planted bugs caught`);
 
 const pack = spawnSync(process.execPath, ["--test", path.join(HERE, "pack.test.mjs")], { stdio: "inherit" });
 
