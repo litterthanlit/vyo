@@ -297,7 +297,7 @@ function cmdCompose(argv) {
   const twins = new Set(sameNames(parts).flat());
   const unplain = parts.filter((p) => unplainName(p.name) || twins.has(p));
   const notes = preset ? preset.notes.length : 3;
-  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, unplain };
+  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, parts };
   let space;
   if (frame === "loose") {
     // Lay the field out on its own sheet, then fill the corners it leaves.
@@ -313,7 +313,7 @@ function cmdCompose(argv) {
   const from = preset ? `the ${opt.from} preset's geometry and its words taken out` : `a ${field} field of ${parts.length} parts${opt.accent ? ` with ${opt.accent} in the accent` : ""}`;
   const lines = [
     `Wrote ${out}: a scaffold with ${from}. Replace every "…" value, then run vyo sketch ${out}, adjust, sketch again, then vyo render ${out}`,
-    ...(field ? [`vyo parts ${pos[0]}${field === "wave" ? "" : ` --field ${field}`} lists the parts: pick the accent by its id${unplain.length ? ` and name the ${unplain.length} flagged part${unplain.length === 1 ? "" : "s"} in names` : ""}.`] : []),
+    ...(field ? [`vyo parts ${pos[0]}${field === "wave" ? "" : ` --field ${field}`} lists the parts: pick the accent by its id and give every part a plain name in names${unplain.length ? ` (${unplain.length} flagged by vyo parts must not keep their scanned name)` : ""}.`] : []),
     ...(frame === "loose" ? looseNotes(field, space) : authoringNotes(notes, field)),
   ];
   process.stdout.write(lines.join("\n") + "\n");
