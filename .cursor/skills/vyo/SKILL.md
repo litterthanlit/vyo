@@ -52,7 +52,7 @@ A look is three choices: what draws the form, the frame around it, and the sheet
 **Draw a shape or generate a field.** Draw a `shape` when one object a stranger would name in a second stands for the product (a jar for a pantry, a paper plane for a hand-off), or the owner asks for a picture. It is the strongest poster the tool makes. Draw it from `ops`, or trace it from a PNG with `"mask"` (see "Draw the shape"). Its `style` sets the look over the silhouette:
 
 - `relief`: a lit volume in fine 6px type, each part a layer of its own name, the accent glowing. The object is the poster's pull, with quiet space around it.
-- `symbols`: the silhouette in shaded clusters of `- : = + #`, like ASCII art, lit from the top left, the accent's rows in the accent colour. On charcoal in the signal frame with one orange accent it is the Vorflux look. The parts' names do not print, so add the parts list.
+- `symbols`: the silhouette in shaded clusters of `- : = + #`, like ASCII art, lit from the top left, the accent's rows in the accent colour. On charcoal in the signal frame with one orange accent it reads as fine grey marks with one hot band. The parts' names do not print, so add the parts list.
 - `bands`: the default. The shape cut top to bottom, one band per part, the type as big as its share. Choose it when the part names must read from across a room, and for the brutalist paper sheet.
 - `rings`: the names along the outline, ring inside ring. Only for a fat, round object.
 
