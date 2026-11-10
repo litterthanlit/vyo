@@ -84,7 +84,7 @@ test("a shape that paints nothing, a placeholder, a missing shape, a swiss shape
   assert.deepEqual(validateSpec(withShape({ ops: [rect([0, 0], [10, 10]), { cut: "rect", at: [-1, -1], size: [12, 12] }] })), [`${f}.shape: the ops paint nothing on the sheet; the cuts remove all of it, or fit.cx and fit.cy move it off`]);
   assert.match(validateSpec(withShape("… the silhouette"))[0], /^figure\.regions\[0\]\.shape: still the placeholder; draw the silhouette as \{ ops: \[\.\.\.\] \}/);
   assert.match(validateSpec(withShape(undefined)).join("\n"), /^figure\.regions\[0\]\.shape: missing; draw the silhouette/m);
-  assert.ok(validateSpec(withShape(jar().figure.regions[0].shape, { style: "rings" })).includes(`${f}.style: "rings" is not a style; use bands, or leave it out`));
+  assert.ok(validateSpec(withShape(jar().figure.regions[0].shape, { style: "spiral" })).some((e) => /^figure\.regions\[0\]\.style: "spiral" is not a style; use bands or rings\b.*, or leave it out$/.test(e)));
   const swiss = { ...jar(), frame: "swiss" };
   assert.ok(validateSpec(swiss).includes(`${f}.field: a shape field draws only in the loose frame; remove frame or set it to loose`));
   const wave = JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "wave.json"), "utf8"));

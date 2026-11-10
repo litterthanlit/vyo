@@ -2,6 +2,7 @@
 // returns the rows of type and the ground under them; `bands` is the only style so far. Pure, like wave.mjs.
 import { SHEET, ADVANCE } from "../geometry.mjs";
 import { shapeMask, intersectRuns } from "../mask.mjs";
+import { ringsStyle } from "./shape-rings.mjs";
 
 // b-scale's numbers. A band per part, its area by lines; the biggest part's name one line as tall as its band,
 // every other part's type that size times (its lines / the biggest's) to the power `gamma`, never under `min` px.
@@ -179,12 +180,12 @@ function lineTops(mask, a, floor, lines, size) {
 }
 
 // The looks a shape can take over the same mask, by the region's `style`.
-export const SHAPE_STYLES = { bands: bandsStyle };
+export const SHAPE_STYLES = { bands: bandsStyle, rings: ringsStyle };
 
 /** A shape region drawn: its mask, its bands, its rows of type and the ground under them. */
 export function shapeLayout(region, parts, frame) {
   const mask = shapeMask(region.shape);
-  return { mask, ...SHAPE_STYLES[region.style ?? "bands"](mask, parts, frame) };
+  return { mask, ...SHAPE_STYLES[region.style ?? "bands"](mask, parts, { ...frame, region }) };
 }
 
 export const shapeRows = (region, parts, frame) => shapeLayout(region, parts, frame).rows;

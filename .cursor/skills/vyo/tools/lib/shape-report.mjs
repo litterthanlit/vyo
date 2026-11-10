@@ -3,7 +3,7 @@
 // pieces, a text block on the shape. `vyo sketch` prints these as `!` lines and lib/check.mjs runs them as checks;
 // every message says what to change, with a number.
 import { SHEET, corners, CORNERS, fixedMeasure } from "./geometry.mjs";
-import { maskGrid } from "./mask.mjs";
+import { maskGrid, edt } from "./mask.mjs";
 import { shapeLayout, nameWidth } from "./fields/shape.mjs";
 import { regionParts } from "./parts.mjs";
 
@@ -18,35 +18,6 @@ const CELL = 2;
 export function shapeReport(spec, region, facts) {
   const parts = regionParts(region, facts);
   return { region, parts, ...shapeLayout(region, parts, { theme: spec.theme, measure: fixedMeasure }) };
-}
-
-// Felzenszwalb and Huttenlocher's exact squared Euclidean distance transform, in place, on a w by h grid.
-function edt(f, w, h) {
-  const n = Math.max(w, h);
-  const [d, v, z, g] = [new Float64Array(n), new Int32Array(n), new Float64Array(n + 1), new Float64Array(n)];
-  const pass = (get, set, len) => {
-    for (let q = 0; q < len; q++) g[q] = get(q);
-    let k = 0;
-    [v[0], z[0], z[1]] = [0, -Infinity, Infinity];
-    for (let q = 1; q < len; q++) {
-      let s = (g[q] + q * q - (g[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
-      while (s <= z[k]) {
-        k--;
-        s = (g[q] + q * q - (g[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
-      }
-      k++;
-      [v[k], z[k], z[k + 1]] = [q, s, Infinity];
-    }
-    k = 0;
-    for (let q = 0; q < len; q++) {
-      while (z[k + 1] < q) k++;
-      d[q] = (q - v[k]) ** 2 + g[v[k]];
-    }
-    for (let q = 0; q < len; q++) set(q, d[q]);
-  };
-  for (let x = 0; x < w; x++) pass((y) => f[y * w + x], (y, val) => (f[y * w + x] = val), h);
-  for (let y = 0; y < h; y++) pass((x) => f[y * w + x], (x, val) => (f[y * w + x] = val), w);
-  return f;
 }
 
 /** Squared distance, in cells, from every cell to the nearest cell where `on` is false. */
