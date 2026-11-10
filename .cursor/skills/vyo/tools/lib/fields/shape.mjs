@@ -77,13 +77,13 @@ export function lineSpans(mask, top, size, floor) {
 export const nameWidth = (name, size) => name.length * (ADVANCE + trackOf(size)) * size - trackOf(size) * size;
 
 /**
- * The bands style: each band filled with ink (the accent band with the accent) and its part's name repeated in
+ * The bands style: each band in its theme's fill (the accent band in the accent) with its part's name repeated in
  * paper across every line, odd lines shifted half a name. A line holds letters only where the mask covers its
- * whole glyph height, so no letter is cut by a slanted edge. A one-line band shrinks its type until one whole
- * name fits, and centres the line.
+ * whole glyph height, so no letter is cut by a slanted edge. A band whose lines hold no whole name shrinks its
+ * type until one does; a one-line band centres its line.
  * @param {import("../mask.mjs").Mask} mask
  * @param {{ id: string, name: string, loc: number, hot: boolean }[]} parts  in tree order
- * @param {{ measure: (text: string, size: number) => number }} frame
+ * @param {{ measure: (text: string, size: number) => number, theme?: "light" | "dark" }} frame
  */
 export function bandsStyle(mask, parts, { measure, theme = "light" }) {
   const { fills, shadow } = SHAPE_TONES[theme];
