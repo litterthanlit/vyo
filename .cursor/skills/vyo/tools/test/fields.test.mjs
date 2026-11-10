@@ -36,8 +36,9 @@ test("the registry names each field once, with its layout and the options only i
   assert.deepEqual(FIELDS.river.options, ["seed"]);
   assert.deepEqual(FIELDS.wave.options, ["sentence", "every", "seed"]);
   assert.deepEqual(FIELDS.terrain.options, ["seed"]);
-  assert.deepEqual(FIELDS.glyph.options, ["letter", "seed"]);
-  assert.deepEqual(FIELDS.trace.options, ["mask", "seed"]);
+  assert.deepEqual(FIELDS.glyph.options, ["letter", "seed", "symbols"]);
+  assert.deepEqual(FIELDS.trace.options, ["mask", "seed", "symbols"]);
+  for (const f of ["scatter", "shatter", "bleed", "bands", "spiral", "contour"]) assert.deepEqual(FIELDS[f].options, ["seed", "symbols"], f);
 });
 
 test("every field module except the PNG reader is inlined into the page", () => {
@@ -384,8 +385,27 @@ test("trace: chords follow the PNG, not the whole sheet", () => {
     assert.ok(items.some((i) => i.hot));
     const right = Math.max(...items.map((i) => i.x + i.width));
     const left = Math.min(...items.map((i) => i.x));
-    assert.ok(left < 20 && right < 460, `fills the dark half (${left} to ${right})`);
+    const top = Math.min(...items.map((i) => i.y));
+    const bottom = Math.max(...items.map((i) => i.y + i.height));
+    assert.ok(Math.abs((right - left) / (bottom - top) - 0.5) < 0.06, `the dark half, 16 by 32, draws ${right - left} by ${bottom - top}`);
   } finally {
     fs.rmSync(file, { force: true });
   }
+});
+
+test("symbols: a mask field drawn in shaded symbols with gaps, every part and the accent kept", () => {
+  const parts = recipeParts();
+  const items = scatterRows({ symbols: true }, parts, open());
+  onSheet(items, 1000);
+  for (const p of parts) assert.ok(items.some((i) => i.part === p.id), p.id);
+  assert.ok(items.some((i) => i.hot));
+  const all = items.map((i) => i.text).join("");
+  assert.match(all, /^[-:=+# ]+$/, "only the ramp's symbols and gaps");
+  for (const ch of ["#", "+", "="]) assert.ok(all.includes(ch), `uses ${ch}`);
+  const gaps = (all.match(/ /g) || []).length / all.length;
+  assert.ok(gaps > 0.15 && gaps < 0.7, `gaps are ${Math.round(gaps * 100)}% of the cells`);
+  assert.deepEqual(items, scatterRows({ symbols: true }, parts, open()), "the same every time");
+  const wings = traceChords({ mask: "wings", symbols: true }, 1190);
+  const traced = traceRows({ chords: wings.chords, pitch: wings.pitch, symbols: true }, parts, open({ floor: 1190 }));
+  assert.ok(traced.length > 100 && traced.every((i) => /^[-:=+# ]+$/.test(i.text)), "the bundled wings mask fills with symbols");
 });

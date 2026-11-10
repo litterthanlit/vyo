@@ -241,6 +241,7 @@ function checkField(f, r, err, copy) {
   if (r.seed !== undefined && !(Number.isInteger(r.seed) && inRange(r.seed, 0, 2147483647))) err(`${f}.seed: a whole number, 0 to 2147483647`);
   if (r.letter !== undefined && kind.options.includes("letter") && !/^[A-Z0-9]$/.test(r.letter)) err(`${f}.letter: one character A to Z or 0 to 9`);
   if (r.mask !== undefined && kind.options.includes("mask") && !(isStr(r.mask) && r.mask.trim())) err(`${f}.mask: a path to a PNG`);
+  if (r.symbols !== undefined && kind.options.includes("symbols") && typeof r.symbols !== "boolean") err(`${f}.symbols: true or false`);
   plain(`${f}.fits`, r.fits, LIMITS.fits, "one sentence on why this field matches the product's story");
   const whole = (k) => {
     const [lo, hi] = LIMITS[k];

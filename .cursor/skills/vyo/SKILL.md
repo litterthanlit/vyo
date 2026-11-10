@@ -62,7 +62,9 @@ Pick the field whose shape is the story. The `fits` check wants a word that star
 - **bands** are stacked bars with gaps between them. Choose it when the story is layers. Keywords "stack", "band", "bar", "layer".
 - **spiral** is a coil. Choose it when the story turns. Keywords "spin", "coil", "spiral", "turn".
 - **contour** is nested rings around a few hills, like a map. Choose it when the story is levels or a ridge. Keywords "contour", "level", "map", "ridge".
-- **trace** fills a shape traced from a PNG (`mask`, a path, or the bundled sample). Choose it when the silhouette comes from an image. Keywords "trace", "mask", "image", "from".
+- **trace** fills a shape traced from a PNG (`mask`: `"wings"`, `"trace"`, or a path). Choose it when the silhouette comes from an image. Keywords "trace", "mask", "image", "from".
+
+Any field from scatter to trace takes `symbols: true`: the shape is drawn in sparse clusters of `=`, `+` and `#`, shaded by depth, the way ASCII art draws a form. On charcoal with one signal colour it is the strongest still the tool makes; `npx vyo presets wings` shows it.
 
 ### Do not repeat the last shape
 
@@ -96,7 +98,8 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 | region `sentence` | Wave only, at most 40 characters, set in every 5th row |
 | region `seed` | Whole number 0 to 2147483647. Omitted or 0 keeps the field's own silhouette. Compose writes a non-zero seed |
 | region `letter` | Glyph only: one character, A–Z or 0–9. Compose uses the first character of the repo name |
-| region `mask` | Trace only: path to a PNG, absolute or relative to the working directory. Omitted uses the bundled sample |
+| region `mask` | Trace only: `"wings"` or `"trace"` for a bundled mask, or a path to a PNG, absolute or relative to the working directory. Omitted uses the keyhole |
+| region `symbols` | Mask fields (scatter to trace): `true` draws the shape in shaded `- : = + #` with gaps, like ASCII art, instead of part names |
 | `figure.texts` | Exactly one `label` and one `headline` (they print the name and the headline), exactly one `legend`, 0 to 2 `paragraph`, 0 or 1 `list`, 0 or 1 `rule`. Each has `x`, `y`, `w` and optional `size` and `align` |
 | `record` | Optional, `bottom` or `left`, to force the record line's side |
 

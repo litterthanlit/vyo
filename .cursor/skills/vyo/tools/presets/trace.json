@@ -1,0 +1,68 @@
+{
+  "version": 3,
+  "frame": "loose",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "trace",
+        "field": "trace",
+        "fits": "The week's shape is traced from an image, so the code fills that mask.",
+        "accent": "area:lib/plan",
+        "seed": 0,
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      {
+        "role": "label",
+        "id": "label",
+        "x": 40,
+        "y": 24,
+        "w": 160,
+        "align": "left"
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 32,
+        "y": 960,
+        "w": 200,
+        "align": "left",
+        "size": 32
+      },
+      {
+        "role": "legend",
+        "id": "legend",
+        "x": 620,
+        "y": 24,
+        "w": 200,
+        "align": "left",
+        "size": 13,
+        "text": "Every row is a part of Pantry, as many as its code. The orange rows are the plan."
+      }
+    ]
+  }
+}

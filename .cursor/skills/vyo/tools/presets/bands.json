@@ -1,0 +1,80 @@
+{
+  "version": 3,
+  "frame": "swiss",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "light",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "bands",
+        "field": "bands",
+        "fits": "A week stacks up in layers, so Pantry's code sits in bands.",
+        "accent": "area:lib/plan",
+        "seed": 0,
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      {
+        "role": "masthead",
+        "id": "masthead",
+        "x": 50,
+        "y": 36,
+        "w": 340
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 420,
+        "y": 52,
+        "w": 360
+      },
+      {
+        "role": "aside",
+        "id": "aside",
+        "x": 560,
+        "y": 700,
+        "w": 220,
+        "text": "Every bar is a part of Pantry, as many as its code. The black bars are the plan."
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "How it works",
+      "text": "Save the recipes you already cook. Pantry fills the week from them, suggests a few new ones, and builds the shopping list from what the plan needs."
+    },
+    {
+      "title": "Every Monday",
+      "text": "At 8 in the morning Pantry emails you the week's plan, so the first dinner is decided before the day starts."
+    },
+    {
+      "title": "Yours alone",
+      "text": "Sign in with your own account. Your recipes, plans and lists are saved to it, and you can pick up the week on any device."
+    }
+  ],
+  "notBuilt": [
+    "paid plans"
+  ]
+}

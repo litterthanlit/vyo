@@ -71,7 +71,7 @@ export const FIELDS = {
   },
   scatter: {
     about: "separate clouds of part names, ellipses scattered across the sheet with gaps between them",
-    options: ["seed"],
+    options: ["seed", "symbols"],
     measure: [["code", "lines"]],
     fits: ["scatter", "speck", "cloud", "dust"],
     layout: scatterRows,
@@ -81,7 +81,7 @@ export const FIELDS = {
   },
   shatter: {
     about: "a grid of type cells broken along a fault, some cells dropped and the rest shifted apart",
-    options: ["seed"],
+    options: ["seed", "symbols"],
     measure: [["code", "lines"]],
     fits: ["break", "grid", "split", "apart"],
     layout: shatterRows,
@@ -91,7 +91,7 @@ export const FIELDS = {
   },
   glyph: {
     about: "one giant letter filled with part names, a mark that can crop and bleed off the sheet",
-    options: ["letter", "seed"],
+    options: ["letter", "seed", "symbols"],
     measure: [["code", "lines"]],
     fits: ["letter", "mark", "sign", "name"],
     layout: glyphRows,
@@ -101,7 +101,7 @@ export const FIELDS = {
   },
   bleed: {
     about: "one large form whose centre sits off the sheet, so the type runs off an edge",
-    options: ["seed"],
+    options: ["seed", "symbols"],
     measure: [["code", "lines"]],
     fits: ["crop", "bleed", "edge", "off"],
     layout: bleedRows,
@@ -111,7 +111,7 @@ export const FIELDS = {
   },
   bands: {
     about: "stacked bars of type with gaps of paper between them, left and right edges staggered",
-    options: ["seed"],
+    options: ["seed", "symbols"],
     measure: [["code", "lines"]],
     fits: ["stack", "band", "bar", "layer"],
     layout: bandsRows,
@@ -121,7 +121,7 @@ export const FIELDS = {
   },
   spiral: {
     about: "a thick coil of part names, an Archimedean spiral rather than a wave",
-    options: ["seed"],
+    options: ["seed", "symbols"],
     measure: [["code", "lines"]],
     fits: ["spin", "coil", "spiral", "turn"],
     layout: spiralRows,
@@ -131,7 +131,7 @@ export const FIELDS = {
   },
   contour: {
     about: "nested rings of type around a few hills, like contour lines on a map",
-    options: ["seed"],
+    options: ["seed", "symbols"],
     measure: [["code", "lines"]],
     fits: ["contour", "level", "map", "ridge"],
     layout: contourRows,
@@ -141,7 +141,7 @@ export const FIELDS = {
   },
   trace: {
     about: "part names filling a shape traced from a PNG mask",
-    options: ["mask", "seed"],
+    options: ["mask", "seed", "symbols"],
     measure: [["code", "lines"]],
     fits: ["trace", "mask", "image", "from"],
     layout: traceRows,

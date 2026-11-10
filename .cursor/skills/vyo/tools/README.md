@@ -91,14 +91,16 @@ A field region is `{ kind: "field", id, field, fits, accent?, names?, sentence?,
 | `river` | One stream of `0`s and `1`s per part entering the left edge, as thick as its share of lines, merging pair by pair by how many imports tie them into one channel that leaves the right edge, after g-flow. 5px digits in 3.1px cells on 5px rows; no part name is printed. The accent part's stream and a short run at the last merge are `hot`; other streams alternate `ink` and `mid`. Parts default to `minShare` 0.002 and `maxParts` 24 | `seed` |
 | `radial` | A triangle of type from an apex near the top, chords widening down the page, one row per share of lines. Accent rings take the signal colour on charcoal | `seed` |
 | `sphere` | A 3×5 grid of type-built ellipses that flatten down the page, one cell per share of lines | `seed` |
-| `scatter` | Separate clouds of part names, with gaps between the ellipses | `seed` |
-| `shatter` | A grid of cells broken along a fault, some cells dropped | `seed` |
-| `glyph` | One giant letter filled with part names | `letter` (A–Z or 0–9), `seed` |
-| `bleed` | One large form whose centre is off the sheet, so the type runs off an edge | `seed` |
-| `bands` | Stacked bars with gaps between them and staggered ends | `seed` |
-| `spiral` | A thick Archimedean coil, not a sine | `seed` |
-| `contour` | Nested rings around a few Gaussian hills | `seed` |
-| `trace` | A shape traced from a PNG. No `mask` uses `tools/presets/masks/trace.png` | `mask`, `seed` |
+| `scatter` | Separate clouds of part names, with gaps between the ellipses | `seed`, `symbols` |
+| `shatter` | A grid of cells broken along a fault, some cells dropped | `seed`, `symbols` |
+| `glyph` | One giant letter filled with part names | `letter` (A–Z or 0–9), `seed`, `symbols` |
+| `bleed` | One large form whose centre is off the sheet, so the type runs off an edge | `seed`, `symbols` |
+| `bands` | Stacked bars with gaps between them and staggered ends | `seed`, `symbols` |
+| `spiral` | A thick Archimedean coil, not a sine | `seed`, `symbols` |
+| `contour` | Nested rings around a few Gaussian hills | `seed`, `symbols` |
+| `trace` | A shape traced from a PNG, fitted by its dark pixels' box at its own aspect. `mask` is a bundled name (`wings`, `trace`) or a path; none uses the `trace` keyhole | `mask`, `seed`, `symbols` |
+
+`symbols: true` on a mask field (every field from `scatter` to `trace`) draws the shape in `-`, `:`, `=`, `+` and `#` instead of the parts' names: the deeper inside the form a cell sits, the denser its symbol, and smooth noise leaves gaps so the form breaks into clusters. Parts still share the rows by lines, and the accent part's rows take the accent colour. The `wings` preset is the worked example.
 
 On paper the terrain's letters take 0.14 more alpha and its accent 0.5 more (0.3 on dark), as in i-loose.
 
