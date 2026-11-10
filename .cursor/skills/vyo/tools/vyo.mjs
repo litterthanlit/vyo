@@ -8,7 +8,7 @@ import { parseArgs } from "node:util";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { stableStringify, factsHash } from "./lib/hash.mjs";
 import { scanRepoDetailed } from "./lib/scan/index.mjs";
-import { showFacts } from "./lib/scan/show.mjs";
+import { showFacts, hiddenCodeHint } from "./lib/scan/show.mjs";
 import { scaffoldSpec, validateSpec, THEMES } from "./lib/spec.mjs";
 import { sketch, sketchImage } from "./lib/sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE, SHEET } from "./lib/geometry.mjs";
@@ -119,6 +119,8 @@ function cmdScan(argv) {
     `${Object.keys(facts.files).length} files, ${loc} lines${out === "-" ? "" : ` → ${out}`} (hash ${facts.hash})`;
   (out === "-" ? process.stderr : process.stdout).write(summary + "\n");
   if (facts.empty) warn("No screens, endpoints, tables, services, AI or jobs found: nothing to count.");
+  const hidden = hiddenCodeHint(facts);
+  if (hidden) warn(hidden);
   const x = facts.excluded;
   if (x.files) {
     const top = Object.entries(x.by).sort((a, b) => b[1].lines - a[1].lines || (a[0] < b[0] ? -1 : 1)).slice(0, 5);

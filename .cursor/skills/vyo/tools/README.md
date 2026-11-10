@@ -9,7 +9,7 @@ Run them from the target repo as `npx vyo …` once `@litterthanlit/vyo` is a de
 | Command | What it does |
 |---|---|
 | `vyo init [--cursor] [--claude] [--codex] [--dir <repo-dir>]` | Copies `SKILL.md` and its three docs into `.cursor/skills/vyo/` and/or `.claude/skills/vyo/` of the repo (default `.`; the editor folders it has, or both if it has neither). `--codex` adds one marked block to `AGENTS.md` that points at the skill. A rerun overwrites the same files and replaces the block. Prints each path it wrote |
-| `vyo scan <repo-dir> --out <dir>/<repo>-facts.json` | Reads the repo and writes `facts.json`. Never writes inside the repo except to `--out` |
+| `vyo scan <repo-dir> --out <dir>/<repo>-facts.json` | Reads the repo and writes `facts.json`. Never writes inside the repo except to `--out`. Tests, hidden folders, and `dist`, `build`, `out`, `vendor`, `public`, `static` and `assets` at a repo or package root are left out, and `scan` prints how many files and lines. When all the code is in a hidden folder such as `.cursor/`, `scan` and `show` name it; run `scan` on that folder |
 | `vyo show <facts.json>` | Prints a plain summary of the facts |
 | `vyo parts <facts.json> [--field wave\|terrain\|river\|shape]` | Prints the parts a field draws, with that field's part defaults: id, share of lines, lines, files and scanned name, with `! looks like a vendor or code name` after each unplain name and `! same name as <id>` after each name another part shares |
 | `vyo presets [<id>]` | Lists the presets with id, `fits`, and a summary of regions and texts. With an id, prints that preset's figure as JSON |

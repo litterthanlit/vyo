@@ -39,6 +39,14 @@ export function packageRoots(paths) {
   return roots;
 }
 
+function commonDir(a, b) {
+  const x = a.split("/");
+  const y = b.split("/");
+  let i = 0;
+  while (i < x.length && i < y.length && x[i] === y[i]) i++;
+  return x.slice(0, i).join("/");
+}
+
 // Why a repo-relative path is outside the "kept source files" set, or null when it is kept.
 // The reason names the folder or file kind, for example "build/" or "test files".
 export function excludeReason(rel, roots) {
@@ -134,7 +142,8 @@ export function detectGen(rel, text) {
 
 // Read the kept source files. Skips files over MAX_BYTES, binary files and anything unreadable.
 // Returns { files: Map<rel,{text,loc,gen}>, skipped: {big,binary,unreadable,capped},
-// excluded: {files,lines,by:{reason:{files,lines}}} } where `excluded` counts source-extension files the rules dropped.
+// excluded: {files,lines,by:{reason:{files,lines}},hidden?:{reason:commonDir}} } where `excluded` counts the
+// source-extension files the rules dropped and `hidden` names, per hidden folder, the deepest folder holding all of them.
 export function readSourceFiles(dir, paths) {
   const skipped = { big: 0, binary: 0, unreadable: 0, capped: 0 };
   const excluded = { files: 0, lines: 0, by: {} };
@@ -154,6 +163,12 @@ export function readSourceFiles(dir, paths) {
       if (st.isFile() && st.size <= MAX_BYTES) lines = countLoc(fs.readFileSync(abs, "utf8"));
     } catch {
       // unreadable: counted as a file with no lines
+    }
+    if (reason.endsWith("/ (hidden)")) {
+      const hidden = (excluded.hidden ??= {});
+      const d = dirname(rel);
+      const prev = hidden[reason];
+      hidden[reason] = prev === undefined ? d : commonDir(prev, d);
     }
     const by = (excluded.by[reason] ??= { files: 0, lines: 0 });
     by.files++;

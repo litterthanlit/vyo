@@ -1225,6 +1225,16 @@ describe("exclusions drop nothing silently", () => {
     assert.ok(draftParts(facts).length >= 1);
   });
 
+  test("code only in a hidden folder is named in scan and show, with the folder to scan", () => {
+    const tree = { "README.md": "x\n", ".tools/app/a.go": body, ".tools/app/b.go": body };
+    const { facts, stderr } = scanTree(tree, { cli: true });
+    assert.deepEqual(Object.keys(facts.files), []);
+    assert.match(stderr, /No code outside hidden folders\. \.tools\/ holds 2 source files \(8 lines\).*vyo scan <repo>\/\.tools\/app /);
+    assert.match(showFacts(facts), /No code outside hidden folders\. \.tools\/ holds 2 source files/);
+    const withCode = scanTree({ ...tree, "src/c.go": body }, { cli: true });
+    assert.doesNotMatch(withCode.stderr, /hidden folders/);
+  });
+
   test("the CLI says how many files and lines it left out", () => {
     const { stderr } = scanTree({ "src/a.go": body, "tests/t.go": body, "tests/u.go": body }, { cli: true });
     assert.match(stderr, /Left out 2 source files \(8 lines\).*tests\/ 2 files\/8 lines/);
