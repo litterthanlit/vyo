@@ -94,19 +94,11 @@
     "texts": [
       {
         "role": "label",
-        "id": "label",
-        "x": 40,
-        "y": 40,
-        "w": 220,
-        "align": "left"
+        "id": "label"
       },
       {
         "role": "headline",
-        "id": "headline",
-        "x": 40,
-        "y": 72,
-        "w": 420,
-        "align": "left"
+        "id": "headline"
       },
       {
         "role": "legend",

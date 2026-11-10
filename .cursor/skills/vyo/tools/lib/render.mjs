@@ -9,6 +9,7 @@ import { bandCounts, bandLine, provenance } from "./band.mjs";
 import { regionParts, partTies } from "./parts.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { launchChromium } from "./browser.mjs";
+import { placeTexts } from "./place.mjs";
 
 const TOOLS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const FONT_DIR = path.join(TOOLS, "..", "fonts");
@@ -234,7 +235,8 @@ const figureData = (spec, facts) => ({
 });
 
 /** The poster as one HTML string. Throws when the fonts are missing. */
-export function buildPage(spec, facts) {
+export function buildPage(given, facts) {
+  const spec = placeTexts(given, facts);
   const vars = Object.entries(Object.assign({}, ...Object.values(fieldTokensOf(spec)), tokensOf(spec))).map(([k, v]) => `--${k}:${v}`).join(";");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(spec.product.name)} poster</title><style>
 ${fontFaces()}

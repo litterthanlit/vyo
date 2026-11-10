@@ -44,15 +44,11 @@
       }
     ],
     "texts": [
-      { "role": "label", "id": "label", "x": 40, "y": 40, "w": 220, "align": "left" },
-      { "role": "headline", "id": "headline", "x": 40, "y": 72, "w": 420, "align": "left" },
+      { "role": "label", "id": "label" },
+      { "role": "headline", "id": "headline" },
       {
         "role": "legend",
         "id": "legend",
-        "x": 540,
-        "y": 40,
-        "w": 260,
-        "align": "right",
         "text": "Every band is a part of Pantry, its type as big as its share of the code. The orange band is the plan."
       }
     ]

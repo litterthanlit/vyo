@@ -28,7 +28,7 @@ export const SHAPE_KINDS = {
 // With no fit.w or fit.h, the shape is as large as fits in the sheet less these margins, standing on the bottom
 // one: the top margin is room for the label, headline and legend, the bottom one for the record line. A fit.w or
 // fit.h without a centre centres it across at cx and at cy down.
-export const SHAPE_ROOM = { left: 40, right: 40, top: 230, bottom: 56 };
+export const SHAPE_ROOM = { left: 40, right: 40, top: 250, bottom: 56 };
 export const SHAPE_FIT = { cx: 0.5, cy: 0.61 };
 const QUARTER = 16;
 

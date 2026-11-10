@@ -15,7 +15,7 @@ const OUT = path.join(HERE, ".out");
 const VYO = path.join(TOOLS, "vyo.mjs");
 const PRESETS = fs.readdirSync(path.join(TOOLS, "presets")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
 
-const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "shape", "rings", "shape-relief", "docs", "init"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
+const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "shape", "place", "rings", "shape-relief", "docs", "init"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });

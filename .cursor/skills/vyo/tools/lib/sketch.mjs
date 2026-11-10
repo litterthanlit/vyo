@@ -2,42 +2,20 @@
 // Commit Mono's fixed advance, so the agent sees rows, coverage, each region's widths and the floor before rendering.
 import { SHEET, GRID, regionRows, fillRows, dotsLines, fixedMeasure, cornersLine } from "./geometry.mjs";
 import { hasWord, PLACEHOLDER } from "./spec.mjs";
-import { floorOf, fieldItems as layoutField, listItems, recordOf, fieldSpace, tokensOf } from "./render.mjs";
-import { frameOf, roleOf, textSize, lineHeight, ruleText, recordRect } from "./frame.mjs";
+import { floorOf, fieldItems as layoutField, recordOf, fieldSpace, tokensOf } from "./render.mjs";
+import { frameOf, recordRect } from "./frame.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { regionParts } from "./parts.mjs";
 import { figureStats, regionStats, SILHOUETTE, REGION, boxMessage, thinMessage } from "./check.mjs";
 import { shapeReport, shapeFindings, SHAPE_LIMITS } from "./shape-report.mjs";
 import { encodePng } from "./png.mjs";
+import { estimateText, placeTexts } from "./place.mjs";
 
 const CELL = 20;
 const COLS = SHEET.width / CELL;
 const ROWS = Math.ceil(SHEET.height / CELL);
 const LETTERS = "ABCDEF";
-function wrap(text, perLine) {
-  const lines = [];
-  for (const word of text.split(/\s+/)) {
-    const last = lines.length - 1;
-    if (last >= 0 && lines[last].length + 1 + word.length <= perLine) lines[last] += ` ${word}`;
-    else lines.push(word);
-  }
-  return lines;
-}
-
-/** Where a text block's letters land, estimated from its role's line height and average advance. */
-export function estimateText(t, spec, facts) {
-  const role = roleOf(spec, t);
-  const size = textSize(spec, t);
-  const per = (frameOf(spec) === "swiss" && t.role === "label" && t.hot ? role.em + 0.06 : role.em) * size;
-  const one = (text) => [text];
-  const lines = {
-    name: () => one(frameOf(spec) === "swiss" ? `${spec.product.name}.` : spec.product.name.toUpperCase()),
-    headline: () => wrap(spec.headline, Math.max(1, Math.floor(t.w / per))),
-  }[role.prints]?.() ?? (t.role === "list" ? (facts || !t.parts ? listItems(spec, t, facts) : ["x".repeat(12)]) : t.role === "rule" ? [ruleText(t)] : t.role === "label" ? one(t.text) : wrap(t.text.replace(/\*\*/g, ""), Math.max(1, Math.floor(t.w / per))));
-  const width = Math.min(t.w, Math.max(...lines.map((l) => l.length)) * per);
-  const left = t.align === "right" ? t.x + t.w - width : t.align === "center" ? t.x + (t.w - width) / 2 : t.x;
-  return { id: t.id, left, top: t.y, right: left + width, bottom: t.y + lines.length * lineHeight(spec, t), lines: lines.length };
-}
+export { estimateText };
 
 const share = (n) => Math.round(n * 100) / 100;
 
@@ -64,7 +42,8 @@ const hexRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
  * accent, the gaps between bands in paper, and the text blocks outlined. Null when the figure has no drawn shape.
  * @returns {Buffer | null}
  */
-export function sketchImage(spec, facts) {
+export function sketchImage(given, facts) {
+  const spec = placeTexts(given, facts);
   const region = spec.figure.regions.find((r) => r.kind === "field" && r.field === "shape");
   if (!region) return null;
   const report = shapeReport(spec, region, facts);
@@ -125,7 +104,8 @@ export function fieldItems(spec, region, facts, texts = spec.figure.texts.map((t
  * A figure with a field needs the facts its parts come from.
  * @returns {string}
  */
-export function sketch(spec, facts) {
+export function sketch(given, facts) {
+  const spec = facts ? placeTexts(given, facts) : given;
   const floor = floorOf(spec);
   const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(" "));
   const put = (r, c, ch) => r >= 0 && r < ROWS && c >= 0 && c < COLS && (grid[r][c] = ch);

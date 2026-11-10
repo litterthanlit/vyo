@@ -292,7 +292,7 @@ function checkField(f, r, err, copy, frame) {
 
 const sentences = (text) => text.split(/[.!?]+(?:\s+|$)/).filter((x) => x.trim()).length;
 
-function checkText(f, t, err, copy, frame) {
+function checkText(f, t, err, copy, frame, placed) {
   const roles = FRAME_ROLES[frame];
   const role = roles[t.role];
   if (!role) return err(`${f}.role: "${t.role}" is not a role in the ${frame} frame; use ${Object.keys(roles).join(", ")}`);
@@ -324,8 +324,11 @@ function checkText(f, t, err, copy, frame) {
     }
   }
   if (t.hot !== undefined && (t.role !== "label" || typeof t.hot !== "boolean")) err(`${f}.hot: only a label can be hot`);
-  if (!inRange(t.x, 0, SHEET.width) || !inRange(t.y, 0, SHEET.height)) err(`${f}: x must be 0 to ${SHEET.width} and y 0 to ${SHEET.height}`);
-  if (!inRange(t.w, 16, SHEET.width)) err(`${f}.w: 16 to ${SHEET.width}`);
+  // Around a drawn shape the engine places a block that leaves out x and y; w, if given, is the widest it may be.
+  const auto = placed && t.x === undefined && t.y === undefined;
+  if (placed && (t.x === undefined) !== (t.y === undefined)) err(`${f}: give x and y together, or leave both out and the engine places the block`);
+  else if (!auto && (!inRange(t.x, 0, SHEET.width) || !inRange(t.y, 0, SHEET.height))) err(`${f}: x must be 0 to ${SHEET.width} and y 0 to ${SHEET.height}`);
+  if (!(placed && t.w === undefined) && !inRange(t.w, 16, SHEET.width)) err(`${f}.w: 16 to ${SHEET.width}`);
   const [, lo, hi] = sizeRange({ frame }, t);
   if (t.size !== undefined && !inRange(t.size, lo, hi)) err(`${f}.size: ${lo} to ${hi}`);
   if (t.align !== undefined && !["left", "right", "center"].includes(t.align)) err(`${f}.align: left, right or center`);
@@ -366,12 +369,13 @@ function checkFigure(fig, err, copy, frame) {
   if (frame === "loose" && Array.isArray(fig.regions) && !hasField(fig)) err("figure.regions: the loose frame draws a field; add a field region, or set frame to swiss for fill and dots figures");
 
   if (!Array.isArray(fig.texts) || fig.texts.length < 1 || fig.texts.length > LIMITS.texts) return err(`figure.texts: 1 to ${LIMITS.texts} texts`);
+  const placed = frame === "loose" && Array.isArray(fig.regions) && fig.regions.some((r) => isObj(r) && r.kind === "field" && r.field === "shape");
   fig.texts.forEach((t, i) => {
     const f = `figure.texts[${i}]`;
     if (!isObj(t)) return err(`${f}: must be a text`);
     unknownKeys(t, KEYS.text[frame], `${f}.`, err);
     idOk(f, t.id);
-    checkText(f, t, err, copy, frame);
+    checkText(f, t, err, copy, frame, placed);
   });
   for (const [role, { count: [lo, hi] }] of Object.entries(FRAME_ROLES[frame])) {
     const n = fig.texts.filter((t) => isObj(t) && t.role === role).length;
@@ -531,7 +535,7 @@ function looseFigure(field, { accent, accentNames, parts, places }) {
       { role: "label", id: "label", ...places.label },
       { role: "headline", id: "headline", ...places.headline },
       { role: "legend", id: "legend", ...places.legend, text: hold(`what the picture encodes, at most 2 sentences and ${FRAME_ROLES.loose.legend.max} characters: name ${name} and the measure (${measure})`) },
-      ...(places.paragraph ? [{ role: "paragraph", id: "paragraph", ...places.paragraph, text: hold(`what the product does for its user, at most 2 sentences and ${FRAME_ROLES.loose.paragraph.max} characters, or remove it`) }] : []),
+      ...(places.paragraph ? [{ role: "paragraph", id: "paragraph", ...places.paragraph, text: hold(`what the product does for its user, at most 2 sentences and ${FRAME_ROLES.loose.paragraph.max} characters, or remove the block`) }] : []),
       ...(places.list ? [{ role: "list", id: "list", ...places.list, parts: true }] : []),
     ],
   };
