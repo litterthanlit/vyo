@@ -138,19 +138,23 @@ test("with no hints the default is a rounded volume: lit top left, dim bottom ri
   }
 });
 
-test("the dark sheet sets ink letters over a haze; paper gets a shade body with paper letters and a cast shadow", () => {
+test("the dark sheet sets ink letters over a haze and a glowing accent; paper gets a shade body with paper letters, a cast shadow and a solid accent with dark letters", () => {
   const dark = report(relief());
   assert.ok(dark.rows.every((r) => r.spans.every((s) => s.tone === (r.hot ? "hot" : "ink"))));
   assert.ok(dark.ground.filter((g) => !g.hot).every((g) => g.tone === "ink" && g.alpha <= 0.3));
   const light = report(relief({}, "light"));
-  assert.ok(light.rows.every((r) => r.spans.every((s) => s.tone === (r.hot ? "hot" : "paper"))));
+  assert.ok(light.rows.every((r) => r.spans.every((s) => s.tone === (r.hot ? "on-hot" : "paper"))), "on paper the accent's letters are dark on its fill");
   const [shadow, body] = light.ground;
   assert.equal(shadow.tone, "shade");
   assert.ok(shadow.blur > 0, "the shadow is soft");
   assert.equal(body.tone, "shade");
   assert.deepEqual(body.rows.map(([, s]) => s), light.mask.runs.filter((s) => s.length), "the body's outer layer is the mask itself, not the grid's steps");
-  const glow = light.ground.find((g) => g.hot);
-  assert.ok(glow.blur > 0 && glow.alpha > 0.3, "the accent glows");
+  const [glow, fill] = light.ground.filter((g) => g.hot);
+  assert.ok(glow.blur > 0 && glow.blur <= 8 && glow.alpha <= 0.35, "a narrow glow");
+  assert.ok(fill.tone === "hot" && (fill.alpha ?? 1) === 1 && !fill.blur, "over a solid accent stratum");
+  assert.ok(light.ground.indexOf(fill) > light.ground.findLastIndex((g) => g.tone === "shade" && !g.hot && light.ground.indexOf(g) < light.ground.indexOf(glow)), "drawn over the body");
+  const darkHot = dark.ground.filter((g) => g.hot);
+  assert.ok(darkHot.length === 1 && darkHot[0].blur > 0 && darkHot[0].alpha > 0.3, "on the dark sheet the accent only glows");
 });
 
 test("the layout is deterministic", () => {
@@ -165,10 +169,15 @@ test("planted relief flaws each warn or fail with a number and an instruction", 
   assert.match(findings(strip)["shape-accent"][0], /^the accent stratum "the plan" is \d+px thick at its thickest; it needs 40px to show in the thumbnail, so turn the strata \(strata\.angle\) to cut across the shape's narrow side, use strata by depth, scale the shape up, or put the accent on a bigger part$/);
 
   const dim = relief({ shape: { ...plainJar, ops: plainJar.ops.map((o) => ({ ...o, face: "dim" })) } });
-  assert.match(findings(dim)["shape-tone"][0], /^at thumbnail size the relief's lit side reaches \d+\.\d% light \(90th percentile\); it needs 38\.0% to read as a bright object, so turn a dim face to lit or drop its face, or raise bevel \(it is 0\.8\) so more of the form turns to the light$/);
+  assert.match(findings(dim)["shape-tone"][0], /^at thumbnail size the relief's lit side reaches \d+\.\d% light \(90th percentile\); it needs 38\.0% to read as a bright object, so turn a dim face to lit or drop its face$/);
+  assert.match(findings(dim)["shape-tone"].at(-1), /so every face is dim, which turns the whole form one way: give one add the other face, or drop the faces$/);
 
   const flat = relief({ bevel: 0 });
-  assert.match(findings(flat)["shape-tone"].at(-1), /^at thumbnail size the relief's tones span \d+\.\d% \(10th to 90th percentile\); it needs 30\.0% to read as a volume, so raise bevel \(it is 0\) toward 1 or add a lit and a dim face$/);
+  assert.match(findings(flat)["shape-tone"].at(-1), /^at thumbnail size the relief's tones span \d+\.\d% \(10th to 90th percentile\); it needs 30\.0% to read as a volume, so raise bevel \(it is 0\) to 0\.7 or more, so the form rounds toward the light$/);
+  // No message asks for a bevel the spec already has, and an accent over half the shape is shape-dominant's to fix.
+  for (const over of [{ bevel: 1 }, { bevel: 0.7 }, { bevel: 1, shape: { ...plainJar, ops: plainJar.ops.map((o) => ({ ...o, face: "lit" })) } }]) {
+    for (const m of findings(relief(over))["shape-tone"]) assert.doesNotMatch(m, new RegExp(`bevel \\(it is ${over.bevel}\\) to|toward 1`), m);
+  }
 
   const rows = report(relief()).rows.map((r) => ({ part: r.part, text: r.part === "area:lib/plan" ? r.text.slice(0, 3) : r.text, width: r.width }));
   const lost = findings(relief(), rows);

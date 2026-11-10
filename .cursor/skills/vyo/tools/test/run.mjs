@@ -145,7 +145,7 @@ for (const [name, mutate, expect] of SHAPE_WARNINGS) {
 
 // A relief's flaws, through the CLI: a form turned away from the light, and an accent stratum too thin to see.
 const RELIEF_WARNINGS = [
-  ["every face dim", (r) => r.shape.ops.forEach((o) => o.add && (o.face = "dim")), /^! shape-tone: at thumbnail size the relief's lit side reaches \d+\.\d% light \(90th percentile\); it needs 38\.0% to read as a bright object, so turn a dim face to lit or drop its face, or raise bevel \(it is 0\.8\) so more of the form turns to the light$/m],
+  ["every face dim", (r) => r.shape.ops.forEach((o) => o.add && (o.face = "dim")), /^! shape-tone: at thumbnail size the relief's lit side reaches \d+\.\d% light \(90th percentile\); it needs 38\.0% to read as a bright object, so turn a dim face to lit or drop its face$/m],
   ["a flat strip", (r) => (r.shape = { ops: [{ add: "rect", at: [0, 0], size: [100, 40] }], fit: { w: 0.95 } }), /^! shape-accent: the accent stratum "the plan" is \d+px thick at its thickest; it needs 40px to show in the thumbnail, so turn the strata \(strata\.angle\) to cut across the shape's narrow side/m],
 ];
 for (const [name, mutate, expect] of RELIEF_WARNINGS) {

@@ -269,7 +269,11 @@ test("shape-dominant: Got's accent, 95% of its code in 3 parts, is one slab; spl
   assert.deepEqual(found(spec({ accent: "area:source" })), [
     'the accent "Source" holds 95% of the lines and the shape has 3 parts, so every style draws it as one slab; add "split": ["area:source"] to the region to cut "Source" into the folders inside it (6 parts, the largest 63%), then put the accent on the one the story is about (vyo parts <facts> --field shape --split area:source lists them)',
   ]);
+  // The cold run's bone at bevel 1 with faces stayed at a 14% spread: no hint moves a 95% accent, so tone waits for the split.
+  const slab = spec({ accent: "area:source", bevel: 1 });
+  assert.deepEqual(shapeFindings(shapeReport(slab, slab.figure.regions[0], got))["shape-tone"], []);
   const split = spec({ split: ["area:source"], accent: "area:source/core/utils" });
+  assert.deepEqual(shapeFindings(shapeReport(split, split.figure.regions[0], got))["shape-tone"], [], "split, the bone shades as a volume");
   assert.deepEqual(validateSpec({ ...split, facts: got.hash }).filter((e) => /split/.test(e)), []);
   assert.deepEqual(found(split), [], "the accent on one folder of six is quiet");
   assert.equal(shapeReport(split, split.figure.regions[0], got).parts.length, 6);
