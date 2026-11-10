@@ -3,7 +3,7 @@
 import { SHEET, GRID, regionRows, fillRows, dotsLines, fixedMeasure, cornersLine } from "./geometry.mjs";
 import { hasWord, PLACEHOLDER } from "./spec.mjs";
 import { floorOf, fieldItems as layoutField, recordOf, fieldSpace, tokensOf } from "./render.mjs";
-import { frameOf, recordRect } from "./frame.mjs";
+import { frameOf, hasRecord, recordRect } from "./frame.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { regionParts } from "./parts.mjs";
 import { figureStats, regionStats, SILHOUETTE, REGION, boxMessage, thinMessage, CHECKS } from "./check.mjs";
@@ -135,7 +135,7 @@ export function sketch(given, facts) {
   const floor = floorOf(spec);
   const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(" "));
   const put = (r, c, ch) => r >= 0 && r < ROWS && c >= 0 && c < COLS && (grid[r][c] = ch);
-  const loose = frameOf(spec) === "loose";
+  const loose = hasRecord(spec);
   const texts = spec.figure.texts.map((t) => estimateText(t, spec, facts));
   if (loose) texts.push({ id: "record", ...recordRect(recordOf(spec, facts)) });
   const rowRects = [];
@@ -182,6 +182,10 @@ export function sketch(given, facts) {
       legend.push(`${mark} ${region.id} (${region.field}, ${parts.length} parts, ${new Set(items.map((i) => i.y)).size} rows)`);
       for (const p of parts.filter((q) => !drawn.has(q.id))) notes.push(`region ${region.id}: part "${p.name}" (${p.id}) is never drawn`);
       if (region.accent !== undefined && !parts.some((p) => p.hot)) notes.push(`region ${region.id}: accent ${region.accent} names no part`);
+      continue;
+    }
+    if (region.kind === "routes") {
+      legend.push(`~ ${region.id} (routes, ${region.paths.length} paths)`);
       continue;
     }
     if (region.kind === "dots") {
@@ -256,7 +260,7 @@ export function sketch(given, facts) {
     `regions: ${legend.join(", ")}; · marks hot rows`,
     ...shapeLines,
     `texts: ${texts.map((b) => `${b.id} ${Math.round(b.left)},${Math.round(b.top)} to ${Math.round(b.right)},${Math.round(b.bottom)}`).join("; ")}`,
-    ...(loose ? ["floor: the sheet's bottom edge (loose frame)", cornersLine(fieldSpace(spec, facts).corners)] : [`floor: ${floor}`]),
+    ...(loose ? [`floor: the sheet's bottom edge (${frameOf(spec)} frame)`, ...(spec.figure.regions.some((r) => r.kind === "field") ? [cornersLine(fieldSpace(spec, facts).corners)] : [])] : [`floor: ${floor}`]),
     ...(shapeLines.length ? [] : [`${[s.coverage >= SILHOUETTE.coverage, s.height >= SILHOUETTE.height, s.width >= SILHOUETTE.width].every(Boolean) ? "" : "! "}coverage ${Math.round(s.coverage * 100)}% (needs ${Math.round(SILHOUETTE.coverage * 100)}%, ${ok(s.coverage, SILHOUETTE.coverage)}), height ${Math.round(s.height * 100)}% (needs ${Math.round(SILHOUETTE.height * 100)}%, ${ok(s.height, SILHOUETTE.height)}), width ${Math.round(s.width * 100)}% (needs ${Math.round(SILHOUETTE.width * 100)}%, ${ok(s.width, SILHOUETTE.width)})`]),
     ...(perRegion.length ? perRegion.map((r) => `region ${r.id}: spread/mean ${r.variety.toFixed(2)} (needs ${REGION.variety}), ${Math.round(r.width)}px across on average (needs ${REGION.width})`) : fieldRects.length ? [] : ["regions: no fill rows"]),
     ...notes.map((n) => `! ${n}`),

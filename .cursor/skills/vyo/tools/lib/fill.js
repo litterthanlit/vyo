@@ -126,7 +126,7 @@ function drawSheet(S, region, frame) {
 }
 
 function drawField(S, region, blocks) {
-  const frame = { floor: F.floor, mirror: F.mirror, theme: F.theme, blocks, measure };
+  const frame = { floor: F.floor, mirror: F.mirror, theme: F.theme, frame: F.frame, blocks, measure };
   drawSheet(S, region, frame);
   for (const g of FIELDS[region.field].ground?.(region, region.parts, frame) ?? []) {
     // A ground may bring its own path, traced from the field, in place of its rows.
@@ -139,14 +139,55 @@ function drawField(S, region, blocks) {
     S.appendChild(soft || fill);
   }
   const items = FIELDS[region.field].layout(region, region.parts, frame);
+  // On signal paper the accent part is ink on a highlighter block of the signal colour, as lime type would not read.
+  const highlight = F.frame === "signal" && F.theme === "light";
   const set = items.some((r) => r.glyphs) && S.appendChild(document.createElementNS("http://www.w3.org/2000/svg", "svg"));
   if (set) Object.assign(set.style, { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", overflow: "visible", fontFamily: '"Commit Mono", monospace' });
   for (const r of items) {
     if (r.glyphs) drawGlyphs(set, r, { word: r.word, region: region.id, part: r.part, hot: r.hot });
-    else drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, r.weight ?? 400, r.tone);
+    else {
+      drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, r.weight ?? 400, r.tone);
+      if (highlight && r.hot) S.lastChild.style.background = "var(--hot)";
+    }
   }
   const box = items.length ? bbox([items.flatMap((r) => [[r.x, r.y], [r.x + r.width, r.y + r.height]])]) : { left: 0, top: 0, right: 0, bottom: 0 };
   return { id: region.id, kind: "field", bbox: box, rows: items.length };
+}
+
+function drawRoutes(S, region) {
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("class", "routes");
+  svg.setAttribute("viewBox", `0 0 ${SHEET.width} ${SHEET.height}`);
+  svg.setAttribute("width", String(SHEET.width));
+  svg.setAttribute("height", String(SHEET.height));
+  svg.dataset.region = region.id;
+  const pts = [];
+  region.paths.forEach((p, i) => {
+    const path = document.createElementNS(NS, "path");
+    path.setAttribute("d", p.d);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", `var(--${p.tone})`);
+    path.setAttribute("stroke-width", "1.15");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    if (p.tone === "hot") path.setAttribute("data-hot", "");
+    svg.appendChild(path);
+    pts[i] = p.points && p.points.length ? p.points : [[0, 0]];
+  });
+  S.appendChild(svg);
+  for (const n of region.nodes || []) {
+    const at = pointAlong(pts[n.path] || pts[0], n.t);
+    const hot = n.tone === "hot";
+    const node = el("node", { region: region.id, hot, tone: n.tone, path: String(n.path), t: String(n.t) }, {
+      left: at.x - 4 + "px", top: at.y - 4 + "px", width: "8px", height: "8px",
+      background: `var(--${n.tone})`,
+    });
+    S.appendChild(node);
+  }
+  const all = pts.flat();
+  const box = all.length ? bbox([all]) : { left: 0, top: 0, right: 0, bottom: 0 };
+  return { id: region.id, kind: "routes", bbox: box, rows: 0 };
 }
 
 function drawDots(S, region) {
@@ -196,7 +237,38 @@ function drawDots(S, region) {
     const r = range.getBoundingClientRect();
     return { left: r.left - origin.left, top: r.top - origin.top, right: r.right - origin.left, bottom: r.bottom - origin.top };
   });
-  const draw = { fill: drawFill, dots: drawDots, field: drawField };
+  const draw = { fill: drawFill, dots: drawDots, field: drawField, routes: drawRoutes };
   window.figure = { regions: F.regions.map((r) => draw[r.kind](S, r, blocks)) };
+  window.applyMotion = (t) => {
+    window.motionT = t;
+    const kind = F.motion && F.motion.kind;
+    if (kind === "nodes" || !kind) {
+      for (const node of S.querySelectorAll(".node")) {
+        const path = Number(node.dataset.path);
+        const region = F.regions.find((r) => r.id === node.dataset.region);
+        const pts = region && region.paths[path] && region.paths[path].points;
+        if (!pts) continue;
+        const base = Number(node.dataset.t) || 0;
+        const at = pointAlong(pts, (base + t) % 1);
+        node.style.left = at.x - 4 + "px";
+        node.style.top = at.y - 4 + "px";
+      }
+    }
+    if (kind === "resolve") {
+      const rows = [...S.querySelectorAll(".row")];
+      rows.forEach((row, i) => {
+        const u = rows.length ? i / rows.length : 1;
+        row.style.opacity = u <= t ? "1" : "0";
+      });
+    } else {
+      for (const row of S.querySelectorAll(".row")) if (row.style.opacity === "0") row.style.opacity = "";
+    }
+    if (kind === "wipe") {
+      for (const mark of S.querySelectorAll("[data-role=mark]")) {
+        const w = Number(mark.dataset.markW) || parseFloat(mark.style.width);
+        mark.style.width = w * t + "px";
+      }
+    }
+  };
   window.drawn = true;
 })();

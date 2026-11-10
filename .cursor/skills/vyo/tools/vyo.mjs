@@ -14,14 +14,16 @@ import { SHAPE_STYLES } from "./lib/fields/shape.mjs";
 import { sketch, sketchImage } from "./lib/sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE, SHEET } from "./lib/geometry.mjs";
 import { SHAPE_KINDS, SHAPE_ROOM } from "./lib/mask.mjs";
-import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
-import { ROLES, FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
+import { buildPage, renderPage, GifFailure, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
+import { ROLES, FRAMES, RECORD_FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
 import { cornersLine } from "./lib/geometry.mjs";
 import { runChecks, CHECKS } from "./lib/check.mjs";
 import { NoBrowser } from "./lib/browser.mjs";
+import { MaskFailure } from "./lib/png-mask.mjs";
 import { init, chooseEditors, EDITORS } from "./lib/init.mjs";
 import { FIELDS } from "./lib/fields/index.mjs";
 import { partsFromFacts, partOptions, regionParts, accentIds, unplainName, sameNames, dominance, PART_DEFAULTS } from "./lib/parts.mjs";
+import { pickField, readRecent, recordShape, usedAgo } from "./lib/recent.mjs";
 
 const USAGE = `Usage:
   vyo init    [--cursor] [--claude] [--codex] [--dir <repo-dir>]
@@ -29,9 +31,10 @@ const USAGE = `Usage:
   vyo show    <facts.json>
   vyo presets [<id>]
   vyo parts   <facts.json> [--field ${Object.keys(FIELDS).join("|")}] [--split <part id>]...
-  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--split <part id>]... [--style ${Object.keys(SHAPE_STYLES).join("|")}] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
+  vyo shapes  [--log <file>]
+  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--style ${Object.keys(SHAPE_STYLES).join("|")}] [--split <part id>]... [--seed <n>] [--accent <part id>] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--shapes-log <file>] [--force]
   vyo sketch  <spec.json> [--facts <facts.json>]
-  vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--paper ${PAPERS.join("|")}]
+  vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--gif] [--paper ${PAPERS.join("|")}]
   vyo check   <spec.json> [--facts <facts.json>]
 
 Exit codes: 0 ok (warnings start with "! "), 1 a rule failed (lines start with "✗ "), 2 usage.`;
@@ -232,9 +235,9 @@ function authoringNotes(notes, field) {
   ];
 }
 
-/** The numbers an agent places the loose frame's texts by, printed by compose. */
-function looseNotes(field, space) {
-  const L = ROLES.loose;
+/** The numbers an agent places a loose or signal frame's texts by, printed by compose. */
+function looseNotes(field, space, frame) {
+  const L = ROLES[frame];
   const at = (r) => `${L[r].size[0]}px (${L[r].size[1]} to ${L[r].size[2]}), ${L[r].lh(L[r].size[0])}px per line`;
   return [
     `field: ${field}, ${FIELDS[field].about}. ${field === "shape" ? "No text sits on it." : "It runs to every edge it reaches; no text sits on it."}`,
@@ -275,10 +278,40 @@ function git(dir, format) {
   }
 }
 
+function glyphLetter(name) {
+  const found = String(name ?? "").match(/[A-Za-z0-9]/);
+  return found ? found[0].toUpperCase() : "A";
+}
+
+function cmdShapes(argv) {
+  const { opt } = args(argv, { log: { type: "string" }, "shapes-log": { type: "string" } }, 0);
+  const file = opt.log ?? opt["shapes-log"] ?? path.join(process.cwd(), "vyo", "recent-shapes.json");
+  const { shapes } = readRecent(file);
+  const lines = Object.entries(FIELDS).map(([name, field]) => {
+    const ago = usedAgo(shapes, name);
+    return `${name} — ${field.about} — ${ago === null ? "never" : `last used ${ago} ago`}`;
+  });
+  process.stdout.write(lines.join("\n") + "\n");
+  return 0;
+}
+
 function cmdCompose(argv) {
   const { pos, opt } = args(
     argv,
-    { frame: { type: "string" }, field: { type: "string" }, accent: { type: "string" }, split: { type: "string", multiple: true }, from: { type: "string" }, theme: { type: "string" }, style: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } },
+    {
+      frame: { type: "string" },
+      field: { type: "string" },
+      style: { type: "string" },
+      split: { type: "string", multiple: true },
+      accent: { type: "string" },
+      from: { type: "string" },
+      theme: { type: "string" },
+      repo: { type: "string" },
+      out: { type: "string" },
+      force: { type: "boolean" },
+      seed: { type: "string" },
+      "shapes-log": { type: "string" },
+    },
     1,
   );
   const presets = loadPresets();
@@ -287,11 +320,20 @@ function cmdCompose(argv) {
   const fieldPreset = preset?.figure.regions.find((r) => r.kind === "field");
   if (fieldPreset) throw new Usage(`--from ${opt.from} is a field preset, drawn from its own scan; use --field ${fieldPreset.field}`);
   if (preset && (opt.field !== undefined || opt.accent !== undefined)) throw new Usage("--field and --accent make a field poster; --from starts from a fill preset. Pass one or the other");
-  const field = preset ? undefined : (opt.field ?? "wave");
-  if (field && !FIELDS[field]) throw new Usage(`--field ${field} is not a field; use ${Object.keys(FIELDS).join(" or ")}`);
+  if (opt.field !== undefined && !FIELDS[opt.field]) throw new Usage(`--field ${opt.field} is not a field; use ${Object.keys(FIELDS).join(" or ")}`);
+  let seed;
+  if (!preset && opt.seed !== undefined) {
+    if (!/^\d+$/.test(opt.seed) || Number(opt.seed) > 2147483647) throw new Usage(`--seed ${opt.seed} is not a whole number from 0 to 2147483647`);
+    seed = Number(opt.seed);
+  }
+  if (opt.style !== undefined && !SHAPE_STYLES[opt.style]) throw new Usage(`--style ${opt.style} is not a style; use ${Object.keys(SHAPE_STYLES).join(", ")}`);
+  // A style is a shape's look, so --style alone asks for a shape.
+  if (opt.style !== undefined && opt.field === undefined && !preset) opt.field = "shape";
+  if (opt.split && opt.field !== "shape") throw new Usage("--split cuts a part of a shape field; pass --field shape");
+  if (opt.style !== undefined && opt.field !== "shape") throw new Usage("--style picks a shape field's look; pass --field shape");
   const frame = opt.frame ?? preset?.frame ?? "loose";
   if (!FRAMES.includes(frame)) throw new Usage(`--frame ${frame} is not a frame; use ${FRAMES.join(" or ")}`);
-  if (field && FIELDS[field].frames && !FIELDS[field].frames.includes(frame)) throw new Usage(`--field ${field} draws only in the ${FIELDS[field].frames.join(" or ")} frame; leave out --frame`);
+  if (opt.field && FIELDS[opt.field].frames && !FIELDS[opt.field].frames.includes(frame)) throw new Usage(`--field ${opt.field} draws only in the ${FIELDS[opt.field].frames.join(" or ")} frame; leave out --frame`);
   if (preset && frame !== preset.frame) throw new Usage(`--from ${opt.from} is a ${preset.frame} preset; the loose frame draws a field, so use --field`);
   const theme = opt.theme ?? preset?.theme ?? "light";
   if (!THEMES.includes(theme)) throw new Usage(`--theme ${theme} is not a theme; use ${THEMES.join(" or ")}`);
@@ -301,24 +343,30 @@ function cmdCompose(argv) {
   if (opt.repo) {
     commit = git(opt.repo, "%h");
     date = git(opt.repo, "%cs");
-    if (!commit) warn(`${opt.repo} has no git history; the ${frame === "loose" ? "record line" : "footer"} will show no commit`);
-  } else if (frame === "loose") warn("no --repo, so no commit: the loose frame's record line needs one; set product.commit or compose again with --repo");
+    if (!commit) warn(`${opt.repo} has no git history; the ${RECORD_FRAMES.includes(frame) ? "record line" : "footer"} will show no commit`);
+  } else if (RECORD_FRAMES.includes(frame)) warn(`no --repo, so no commit: the ${frame} frame's record line needs one; set product.commit or compose again with --repo`);
   date ??= new Date().toISOString().slice(0, 10);
   const out = opt.out ?? path.join(path.dirname(pos[0]), `${facts.repo.name}-poster.json`);
   if (fs.existsSync(out) && !opt.force) throw new Failure(`${out} exists; it may hold your words. Pass --force to replace it with a fresh scaffold`);
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-  if (opt.split && field !== "shape") throw new Usage("--split cuts a part of a shape field; pass --field shape");
-  if (opt.style !== undefined && field !== "shape") throw new Usage("--style picks a shape field's look; pass --field shape");
-  if (opt.style !== undefined && !SHAPE_STYLES[opt.style]) throw new Usage(`--style ${opt.style} is not a style; use ${Object.keys(SHAPE_STYLES).join(", ")}`);
+  const logFile = preset ? null : (opt["shapes-log"] ?? path.join(path.dirname(path.resolve(out)), "recent-shapes.json"));
+  let field = preset ? undefined : opt.field;
+  const avoided = !preset && field === undefined ? readRecent(logFile).shapes : null;
+  const hashKey = parseInt(String(facts.hash).slice(0, 8), 16) || 0;
+  // A shape waits for the agent to draw it, so the pick never lands on one; compose offers it instead.
+  if (avoided) field = pickField(Object.keys(FIELDS).filter((f) => !FIELDS[f].options.includes("shape") && (!FIELDS[f].frames || FIELDS[f].frames.includes(frame))), avoided, hashKey + avoided.length);
+  if (field && FIELDS[field].options.includes("seed") && seed === undefined) seed = (hashKey % 2147483646) + 1;
+  if (field && !FIELDS[field].options.includes("seed")) seed = undefined;
+  const letter = field === "glyph" ? glyphLetter(facts.repo.name) : undefined;
   const parts = partsFromFacts(facts, partOptions({ field, ...(opt.split ? { split: opt.split } : {}) }));
   if (opt.accent !== undefined && !accentIds(parts, opt.accent).size) throw new Usage(`--accent ${opt.accent} names no part; vyo parts ${pos[0]} lists the part ids`);
   if (field && !parts.length) throw new Failure(`no parts to draw; the scan found no code. Compose a fill poster instead: vyo compose ${pos[0]} --from <preset> (vyo presets lists them)`);
   const twins = new Set(sameNames(parts).flat());
   const unplain = parts.filter((p) => unplainName(p.name) || twins.has(p));
   const notes = preset ? preset.notes.length : 3;
-  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, split: opt.split, style: opt.style, parts };
+  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, split: opt.split, style: opt.style, parts, seed, letter };
   let space;
-  if (frame === "loose") {
+  if (RECORD_FRAMES.includes(frame)) {
     const draft = scaffoldSpec(facts, { ...o, places: {} });
     const region = draft.figure.regions[0];
     // The names are placeholders until the agent writes them, so only a name it already gave can be quoted.
@@ -328,15 +376,18 @@ function cmdCompose(argv) {
     else {
       // Lay the field out on its own sheet, then fill the corners it leaves.
       space = fieldSpace(draft, facts);
-      o.places = scaffoldPlaces(space.corners, space.accent, parts.length);
+      o.places = scaffoldPlaces(space.corners, space.accent, parts.length, frame);
     }
   }
   fs.writeFileSync(out, JSON.stringify(scaffoldSpec(facts, o), null, 2) + "\n");
+  if (logFile && field) recordShape(logFile, field);
   const from = preset ? `the ${opt.from} preset's geometry and its words taken out` : `a ${field} field of ${parts.length} parts${opt.accent ? ` with ${opt.accent} in the accent` : ""}`;
   const lines = [
+    ...(avoided ? [`picked ${field} (avoided recent: ${avoided.length ? avoided.join(", ") : "none"})`] : []),
     `Wrote ${out}: a scaffold with ${from}. Replace every "…" value, then run vyo sketch ${out}, adjust, sketch again, then vyo render ${out}`,
     ...(field ? [`vyo parts ${pos[0]}${field === "wave" ? "" : ` --field ${field}`} lists the parts: pick the accent by its id and give every part a plain name in names${unplain.length ? ` (${unplain.length} flagged by vyo parts must not keep their scanned name)` : ""}.`] : []),
-    ...(frame === "loose" ? looseNotes(field, space) : authoringNotes(notes, field)),
+    ...(avoided ? [`Or draw the object yourself: compose again with --field shape --style ${Object.keys(SHAPE_STYLES).join("|")} when one thing a stranger names in a second stands for the product.`] : []),
+    ...(RECORD_FRAMES.includes(frame) ? looseNotes(field, space, frame) : authoringNotes(notes, field)),
   ];
   process.stdout.write(lines.join("\n") + "\n");
   return 0;
@@ -394,6 +445,7 @@ async function poster(specFile, opt, outDir, files) {
   const input = { spec, facts, presets: loadPresets() };
   const specFails = report(runChecks("spec", input));
   if (specFails) return specFails;
+  if (files.gif && !spec.motion) throw new Failure("render --gif needs motion on the spec: { kind, frames, fps }");
   const base = path.join(outDir, `${repo}-poster`);
   let html;
   try {
@@ -401,22 +453,22 @@ async function poster(specFile, opt, outDir, files) {
   } catch (e) {
     throw new Failure(e.message);
   }
-  const page = await renderPage({ html, base, ...files });
+  const page = await renderPage({ html, base, motion: spec.motion ?? null, ...files });
   return report(runChecks("page", { ...input, page }));
 }
 
 async function cmdRender(argv) {
   const { pos, opt } = args(
     argv,
-    { facts: { type: "string" }, out: { type: "string" }, "no-png": { type: "boolean" }, "no-pdf": { type: "boolean" }, paper: { type: "string", default: "fit" } },
+    { facts: { type: "string" }, out: { type: "string" }, "no-png": { type: "boolean" }, "no-pdf": { type: "boolean" }, gif: { type: "boolean" }, paper: { type: "string", default: "fit" } },
     1,
   );
   if (!PAPERS.includes(opt.paper)) throw new Usage(`--paper must be ${PAPERS.join(", ")}`);
   const outDir = opt.out ?? path.dirname(pos[0]);
-  const fails = await poster(pos[0], opt, outDir, { png: !opt["no-png"], pdf: !opt["no-pdf"], paper: opt.paper });
+  const fails = await poster(pos[0], opt, outDir, { png: !opt["no-png"], pdf: !opt["no-pdf"], gif: !!opt.gif, paper: opt.paper });
   const code = fails ? 1 : 0;
   const repo = readJson(pos[0], "poster spec").product.repo;
-  const made = ["html", ...(opt["no-png"] ? [] : ["png", "thumb"]), ...(opt["no-pdf"] ? [] : ["pdf"])]
+  const made = ["html", ...(opt["no-png"] ? [] : ["png", "thumb"]), ...(opt["no-pdf"] ? [] : ["pdf"]), ...(opt.gif ? ["gif", "mp4"] : [])]
     .map((x) => path.join(outDir, x === "thumb" ? `${repo}-poster-thumb.png` : `${repo}-poster.${x}`))
     .filter(fs.existsSync);
   if (made.length) process.stdout.write(`${code ? "Wrote, with failures" : "Wrote"}: ${made.join(", ")}\n`);
@@ -446,7 +498,7 @@ function cmdInit(argv) {
   return 0;
 }
 
-const COMMANDS = { init: cmdInit, scan: cmdScan, show: cmdShow, parts: cmdParts, presets: cmdPresets, compose: cmdCompose, sketch: cmdSketch, render: cmdRender, check: cmdCheck };
+const COMMANDS = { init: cmdInit, scan: cmdScan, show: cmdShow, parts: cmdParts, presets: cmdPresets, shapes: cmdShapes, compose: cmdCompose, sketch: cmdSketch, render: cmdRender, check: cmdCheck };
 
 export async function main(argv) {
   const [cmd, ...rest] = argv;
@@ -464,7 +516,7 @@ export async function main(argv) {
       err(USAGE);
       return 2;
     }
-    if (e instanceof Failure || e instanceof NoBrowser) {
+    if (e instanceof Failure || e instanceof NoBrowser || e instanceof GifFailure || e instanceof MaskFailure) {
       fail(e.message);
       return 1;
     }

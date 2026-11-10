@@ -14,9 +14,61 @@
 **A picture in mind**
 > Draw my codebase as an hourglass: everything my users throw at it, squeezed into one plan.
 
-## Choosing the field for three products
+## Choosing the field
 
-Write the product's story in one sentence. If it moves something from one place to another, take wave. If it is about which parts carry the product, take terrain. If many things merge into one, take river. If one object a stranger would name stands for the product, take shape and draw it. Then run `vyo parts` with that field and put the accent on the part the story is about.
+Write the product's story in one sentence, then pick the silhouette that acts it out. If one object a stranger would name stands for the product, take shape and draw it (below). Otherwise pick a generated field. Do not start from wave. Run `vyo shapes` and take a primitive that has not been used in the last few posters; a new shape beats a familiar one. `compose` without `--field` does the same and will not pick wave. Pass `--field` only when the story clearly matches.
+
+| Field | When to use it | Keywords |
+|---|---|---|
+| shape | One object stands for the product; you draw it | object, thing, picture, shape, looks |
+| wave | Something moves or is handed on | travel, flow, hand, move |
+| terrain | What is big is what matters | big, weight, matters, most |
+| river | Many things merge into one | merge, join, many, one |
+| radial | It spreads from a centre | spread, out, from, centre, center |
+| sphere | A round flattens or folds | curve, round, fold, flat |
+| scatter | Parts sit apart, like dust | scatter, speck, cloud, dust |
+| shatter | A grid breaks or splits | break, grid, split, apart |
+| glyph | The story is a letter or a mark | letter, mark, sign, name |
+| bleed | The form is cropped off the sheet | crop, bleed, edge, off |
+| slabs | Layers, stacked | stack, slab, bar, layer |
+| spiral | It turns | spin, coil, spiral, turn |
+| contour | Levels, a ridge, a map | contour, level, map, ridge |
+| trace | The silhouette comes from an image | trace, mask, image, from |
+
+Then run `vyo parts` with that field and put the accent on the part the story is about. For a high-contrast poster, set `frame: "signal"`.
+
+A scatter with a seed, the short form. `seed` 0 would leave the clouds where the field draws them with no seed; any other seed moves them:
+
+```json
+{
+  "version": 3,
+  "frame": "signal",
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "commit": "04186f4", "date": "2026-11-07" },
+  "theme": "dark",
+  "accent": "#C8FF00",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "scatter",
+        "field": "scatter",
+        "seed": 3,
+        "fits": "Saved recipes sit apart like dust, so Pantry's code scatters in clouds.",
+        "accent": "area:lib/plan"
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 40, "y": 40, "w": 220 },
+      { "role": "headline", "id": "headline", "x": 40, "y": 72, "w": 420, "size": 48 },
+      { "role": "legend", "id": "legend", "x": 40, "y": 980, "w": 320, "text": "Every speck is a part of Pantry, as many as its code. The bright specks are the plan." }
+    ]
+  }
+}
+```
+
+## Three products
 
 | Product | Story | Field | Accent part | Plain names |
 |---|---|---|---|---|
@@ -647,6 +699,223 @@ Use it when the owner asks for a masthead and footer, or the repo has no git his
 }
 ```
 
+## Signal frame, radial and sphere
+
+High-contrast posters sit in `frame: "signal"`. Charcoal or cream, one signal colour, a grotesque headline, an archival `meta` line. `radial` spreads from an apex; `sphere` is a grid of globes that flatten. These four blocks are the preset files in `tools/presets/`.
+
+### signal-wave
+
+Charcoal, lime accent, the existing wave field. The bright rows are the plan.
+
+```json
+{
+  "version": 3,
+  "frame": "signal",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "accent": "#C8FF00",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "wave",
+        "field": "wave",
+        "fits": "Pantry's story is a week that moves from saved recipes to dinners, so a band of its code travels down the page.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "sentence": "dinner, decided"
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 40, "y": 40, "w": 220, "align": "left" },
+      { "role": "headline", "id": "headline", "x": 40, "y": 72, "w": 420, "align": "left", "size": 48 },
+      { "role": "list", "id": "list", "x": 40, "y": 280, "w": 240, "align": "left", "parts": true },
+      { "role": "legend", "id": "legend", "x": 40, "y": 980, "w": 280, "align": "left", "text": "Every row is a part of Pantry, as many rows as it has code. The bright rows are the plan." },
+      { "role": "meta", "id": "meta", "x": 40, "y": 1120, "w": 360, "text": "Archive N° 31 / Pantry / Observation series" }
+    ]
+  }
+}
+```
+
+### signal-paper
+
+The same wave on cream paper. Highlighter `mark`s lie over the label and the meta line, and the accent part's rows are highlighted.
+
+```json
+{
+  "version": 3,
+  "frame": "signal",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "light",
+  "accent": "#C8FF00",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "wave",
+        "field": "wave",
+        "fits": "Pantry's story is a week that moves from saved recipes to dinners, so a band of its code travels down the page.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "sentence": "dinner, decided"
+      }
+    ],
+    "texts": [
+      { "role": "mark", "id": "hi-1", "x": 36, "y": 38, "w": 132, "h": 20 },
+      { "role": "label", "id": "label", "x": 40, "y": 40, "w": 220, "align": "left" },
+      { "role": "headline", "id": "headline", "x": 40, "y": 78, "w": 400, "align": "left", "size": 44 },
+      { "role": "legend", "id": "legend", "x": 40, "y": 980, "w": 280, "align": "left", "text": "Every row is a part of Pantry, as many rows as it has code. The highlighted rows are the plan." },
+      { "role": "meta", "id": "meta", "x": 40, "y": 1120, "w": 400, "text": "Archive N° 31 / Pantry / Observation series" },
+      { "role": "mark", "id": "hi-2", "x": 36, "y": 1118, "w": 220, "h": 18 }
+    ]
+  }
+}
+```
+
+### radial
+
+A triangle of type from an apex. Fits uses "spreads" and "centre".
+
+```json
+{
+  "version": 3,
+  "frame": "signal",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "accent": "#7A64DC",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "radial",
+        "field": "radial",
+        "fits": "Pantry's week spreads out from saved recipes, so its code radiates from a centre.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 40, "y": 40, "w": 200, "align": "left" },
+      { "role": "headline", "id": "headline", "x": 40, "y": 1000, "w": 420, "align": "left", "size": 42 },
+      { "role": "legend", "id": "legend", "x": 480, "y": 1040, "w": 320, "align": "right", "text": "Every ring is a part of Pantry, as wide as its code. The bright rings are the plan." },
+      { "role": "meta", "id": "meta", "x": 40, "y": 1124, "w": 360, "text": "Archive N° 31 / Pantry / Observation series" }
+    ]
+  }
+}
+```
+
+### sphere
+
+A grid of globes that flatten down the page. Fits uses "round" and "folds".
+
+```json
+{
+  "version": 3,
+  "frame": "signal",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "accent": "#FF4F12",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "sphere",
+        "field": "sphere",
+        "fits": "The plan is the round that matters, and the rest of the code folds flat around it.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 40, "y": 24, "w": 200, "align": "left" },
+      { "role": "headline", "id": "headline", "x": 160, "y": 16, "w": 640, "align": "right", "size": 36 },
+      { "role": "legend", "id": "legend", "x": 40, "y": 1088, "w": 400, "align": "left", "text": "Each globe is a part of Pantry, as round as its code. The orange globes are the plan." },
+      { "role": "meta", "id": "meta", "x": 480, "y": 1124, "w": 320, "align": "right", "text": "Archive N° 31 / Pantry / Observation series" }
+    ]
+  }
+}
+```
+
 ## Drawing your own silhouette
 
 When the owner asks for a picture and the scan has code, draw it as a shape field instead, like the jar above: the field cuts your silhouette into the parts. Use this path when the scan is empty, or the owner wants the swiss frame. The table under "Find the shape" helps with either. You invent one silhouette that acts out the product's main moment and describe it as fill regions and texts. Fill figures sit in the swiss frame, with its masthead and footer. Start from `compose --from <preset>`, then sketch, render and check as for a field.
@@ -694,9 +963,9 @@ The words:
 
 ### Describe the regions
 
-The sheet is 840 by 1190 px and y grows downward. A figure has `fits` (at most 160 characters), 1 to 6 `regions` and 1 to 6 `texts`.
+The sheet is 840 by 1190 px and y grows downward. A figure has `fits` (at most 160 characters), 1 to 6 `regions` and 1 to 14 `texts`.
 
-A fill region has `kind: "fill"`, `id`, one geometry, `words` (2 to 14, at most 24 characters each) and `tone`. Options: `holes` (shapes to cut out), `band` (1 to 4 rows per word), `size` (11 or 12), `caps`, and `hot` (every row in the accent). Geometry, by preference: `profile`, 3 to 24 stops `[y, cx, halfWidth]` with y increasing; `ellipse` `{ cx, cy, rx, ry }`; `polygon`, 3 to 40 `[x, y]` points for hard corners; `path`, an SVG path.
+A fill region has `kind: "fill"`, `id`, one geometry, `words` (2 to 14, at most 24 characters each) and `tone`. Options: `holes` (shapes to cut out), `band` (1 to 4 rows per word), `size` (7 to 12), `caps`, and `hot` (every row in the accent). Geometry, by preference: `profile`, 3 to 24 stops `[y, cx, halfWidth]` with y increasing; `ellipse` `{ cx, cy, rx, ry }`; `polygon`, 3 to 40 `[x, y]` points for hard corners; `path`, an SVG path.
 
 A dots region spells 2 to 4 words of at most 5 letters in squares: `kind: "dots"`, `id`, `lines`, `x`, `y`, `cell` (px per square), and `tones`, one per line, which may include `hot`. A dots line is 29 squares wide and 7 tall, with lines 9 squares apart.
 
@@ -1079,9 +1348,9 @@ The lids are a profile with a hole, and their tone steps soft, mid, soft down th
       {
         "role": "masthead",
         "id": "masthead",
-        "x": 290,
+        "x": 318,
         "y": 562,
-        "w": 260,
+        "w": 204,
         "size": 72,
         "align": "center"
       }
@@ -1236,3 +1505,29 @@ Nightly copies a small office's files every night. Main moment: whatever the off
 ```
 
 `hot` is "last night". The emblem region has `hot: true`, so all its rows are in the accent.
+
+
+## Gallery
+
+Rendered posters for Pantry, the `recipe` fixture, live in `examples/posters/` of the repository; the npm package leaves them out. Rebuild with `node examples/posters/build.mjs` from the skill directory (`VYO_CHROMIUM` set).
+
+| File | What it is |
+|---|---|
+| `signal-wave.png` | Charcoal wave, lime accent, grotesque type |
+| `signal-paper.png` | Cream wave, highlighter marks |
+| `radial.png` | Triangle of type from an apex |
+| `sphere.png` | Globes that flatten down the page |
+| `density.png` | Hourglass silhouette at size 8 |
+| `signal-river.png` | River on charcoal, lime merge |
+| `routes.gif` / `routes.mp4` | Hairlines, nodes travelling |
+| `wipe.gif` / `wipe.mp4` | Highlighter wipe on paper |
+| `scatter.png` | Charcoal scatter, clouds of type, lime accent |
+| `shatter.png` / `shatter.gif` | Paper shatter grid, resolve GIF |
+| `glyph.png` | Charcoal letter P |
+| `bleed.png` | Paper bleed, form off the right edge |
+| `slabs.png` | Swiss slabs, stacked bars |
+| `spiral.png` / `spiral.gif` | Charcoal coil, resolve GIF |
+| `contour.png` | Charcoal contour rings |
+| `trace.png` | Dark loose trace of a keyhole |
+| `brutal.png` | Paper signal: posed slabs, a highlighted accent slab, the stepped capitals list and an archive line |
+| `wings.png` | Charcoal signal trace of the bundled wings mask in `symbols`, orange accent band |

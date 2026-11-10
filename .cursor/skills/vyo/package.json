@@ -2,7 +2,7 @@
   "name": "@litterthanlit/vyo",
   "version": "0.1.0",
   "type": "module",
-  "description": "Explain an app to someone who does not code: scan a repo, compose a poster of its parts, render it to PNG and PDF, and check it.",
+  "description": "Explain an app to someone who does not code: scan a repo, compose a poster of its parts, render it to PNG, PDF and GIF, and check it.",
   "license": "MIT",
   "repository": {
     "type": "git",

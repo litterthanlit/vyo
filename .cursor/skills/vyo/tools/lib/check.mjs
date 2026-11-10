@@ -3,7 +3,7 @@
 import { validateSpec, textProblems, hasWord, geometryKey } from "./spec.mjs";
 import { bandCounts, bandLine } from "./band.mjs";
 import { FONT_FACES, tokensOf, fieldTokensOf, recordText } from "./render.mjs";
-import { frameOf, ROLES } from "./frame.mjs";
+import { frameOf, ROLES, RECORD_FRAMES } from "./frame.mjs";
 import { partsFromFacts, partOptions, regionParts, unplainName, sameNames } from "./parts.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { shapeReport, shapeFindings, SHAPE_LIMITS, SHAPE_LIMB } from "./shape-report.mjs";
@@ -106,7 +106,7 @@ const placedSpec = ({ spec, facts }) => {
 /**
  * @typedef {{ spec: any, facts: any, presets: Record<string, any>, page?: any }} CheckInput
  * A check with `frames` runs only on posters in those frames; without, on every poster.
- * @type {{ id: string, level: "fail" | "warn", stage: "spec" | "page", frames?: ("swiss" | "loose")[], about: string, run: (i: CheckInput) => string[] }[]}
+ * @type {{ id: string, level: "fail" | "warn", stage: "spec" | "page", frames?: ("swiss" | "loose" | "signal")[], about: string, run: (i: CheckInput) => string[] }[]}
  */
 export const CHECKS = [
   {
@@ -163,7 +163,7 @@ export const CHECKS = [
     run: ({ spec }) => fieldsOf(spec).filter((r) => r.accent === undefined).map((r) => `no accent part in region ${r.id}; set accent to the id of the part the poster is about (vyo parts lists them)`),
   },
   {
-    id: "legend", level: "fail", stage: "spec", frames: ["loose"], about: "the legend names the accent part and the field's measure, so the picture reads as this project",
+    id: "legend", level: "fail", stage: "spec", frames: ["loose", "signal"], about: "the legend names the accent part and the field's measure, so the picture reads as this project",
     run: ({ spec, facts }) =>
       fieldsOf(spec).flatMap((r) => {
         const legend = spec.figure.texts.find((t) => t.role === "legend")?.text ?? "";
@@ -232,7 +232,7 @@ export const CHECKS = [
     id: "region-size", level: "fail", stage: "page", about: "every fill region has at least 4 rows and every dots region fits above the footer",
     run: ({ page }) =>
       page.regions.flatMap((r) => {
-        if (r.kind === "field") return [];
+        if (r.kind === "field" || r.kind === "routes") return [];
         if (r.kind === "fill") return r.rows >= 4 ? [] : [`region ${r.id} has ${r.rows} rows; it needs at least 4, so make it taller or wider`];
         const ok = inside(r.bbox, page.sheet) && r.bbox.bottom <= page.footerTop + 0.5;
         return ok ? [] : [`region ${r.id} does not fit: its letters end at ${round(r.bbox.bottom)}px and ${round(r.bbox.right)}px, the footer starts at ${round(page.footerTop)}px; use a smaller cell or move it`];
@@ -279,13 +279,21 @@ export const CHECKS = [
     id: "blocks-apart", level: "fail", stage: "page", about: "no two text blocks overlap, rows and dots keep clear of them (in the swiss frame a wave's rows may pass behind the figure's texts), and blocks side by side keep 8px apart",
     run: ({ spec, page }) => {
       const blocks = page.blocks.map((b) => ({ ...b, kind: "block" }));
-      // In the loose frame no type sits on the field, so no row passes behind a text.
-      const behind = new Set(frameOf(spec) === "swiss" ? fieldsOf(spec).filter((r) => FIELDS[r.field].behindTexts).map((r) => r.id) : []);
+      // Swiss and signal let a field's rows pass behind type; a mark may sit under type.
+      const behind = new Set(frameOf(spec) !== "loose" ? fieldsOf(spec).filter((r) => FIELDS[r.field].behindTexts).map((r) => r.id) : []);
       const marks = [...page.rows.map((r) => ({ ...r, name: `the row "${r.word}"` })), ...page.dots.map((d) => ({ ...d, name: `the dots line "${d.word}"` }))];
       const out = [];
       const say = (a, b) => out.push(`${a.name} overlaps ${b.name} or sits within 8px of it; shorten one of them`);
-      blocks.forEach((a, i) => blocks.slice(i + 1).forEach((b) => crowd(a.rect, b.rect) && say(a, b)));
-      for (const a of blocks) for (const m of marks) if (!(a.role && behind.has(m.region)) && crowd(a.rect, m.rect)) say(a, m);
+      blocks.forEach((a, i) =>
+        blocks.slice(i + 1).forEach((b) => {
+          if (a.role === "mark" || b.role === "mark") return;
+          if (crowd(a.rect, b.rect)) say(a, b);
+        }),
+      );
+      for (const a of blocks) {
+        if (a.role === "mark") continue;
+        for (const m of marks) if (!(a.role && behind.has(m.region)) && crowd(a.rect, m.rect)) say(a, m);
+      }
       const fills = fillRowsOf(page);
       fills.forEach((a, i) => fills.slice(i + 1).forEach((b) => a.region === b.region && crowd(a.rect, b.rect) && say({ name: `the row "${a.word}"` }, { name: `the row "${b.word}"` })));
       return [...new Set(out)];
@@ -300,7 +308,13 @@ export const CHECKS = [
   },
   {
     id: "blocks-inside", level: "fail", stage: "page", about: "every text block is inside the sheet",
-    run: ({ page }) => page.blocks.filter((b) => !inside(b.rect, page.sheet)).map((b) => `${b.name} runs off the sheet (bottom at ${round(b.rect.bottom)}px of ${page.sheet.bottom}px)`),
+    run: ({ page }) =>
+      page.blocks
+        .filter((b) => !inside(b.rect, page.sheet))
+        .map((b) => {
+          const edge = ["right", "bottom", "left", "top"].find((k) => (k === "right" || k === "bottom" ? b.rect[k] > page.sheet[k] : b.rect[k] < page.sheet[k])) ?? "bottom";
+          return `${b.name} runs off the sheet (its ${edge} edge at ${round(b.rect[edge])}px, the sheet's at ${round(page.sheet[edge])}px)`;
+        }),
   },
   {
     id: "silhouette", level: "fail", stage: "page", about: "the figure covers 15% of the sheet above the footer and spans 55% of its height and 60% of its width (a drawn shape is judged by shape-cover instead)",
@@ -375,14 +389,15 @@ export const CHECKS = [
     },
   },
   {
-    id: "notes", level: "fail", stage: "page", about: "swiss: the footer shows the spec's notes; loose: 0 to 2 paragraphs and exactly one legend",
+    id: "notes", level: "fail", stage: "page", about: "swiss: the footer shows the spec's notes; loose and signal: 0 to 2 paragraphs and exactly one legend",
     run: ({ spec, page }) => {
       const n = (pred) => page.blocks.filter(pred).length;
       if (frameOf(spec) === "swiss") {
         const shown = n((b) => b.name === "note");
         return shown === spec.notes.length ? [] : [`the footer shows ${shown} notes; the spec has ${spec.notes.length}`];
       }
-      const [lo, hi] = ROLES.loose.paragraph.count;
+      const R = ROLES[frameOf(spec)] || ROLES.loose;
+      const [lo, hi] = R.paragraph.count;
       const paragraphs = n((b) => b.role === "paragraph");
       const legends = n((b) => b.role === "legend");
       return paragraphs >= lo && paragraphs <= hi && legends === 1 ? [] : [`the poster shows ${paragraphs} paragraphs and ${legends} legends; use ${lo} to ${hi} paragraphs and exactly one legend`];
@@ -397,7 +412,19 @@ export const CHECKS = [
     },
   },
   {
-    id: "record", level: "fail", stage: "page", frames: ["loose"], about: "the record line is drawn once, with the commit and the date",
+    id: "still", level: "fail", stage: "page", about: "the PNG and PDF show the finished poster: no row hidden and every mark at its full width, whatever motion the spec has",
+    run: ({ spec, page }) => {
+      const hidden = page.rows.filter((r) => r.opacity === 0).length;
+      const marks = spec.figure.texts.filter((t) => t.role === "mark");
+      const short = marks.filter((t) => (page.blocks.find((b) => b.name === t.id)?.rect.right ?? 0) - t.x < t.w - 1).map((t) => t.id);
+      return [
+        ...(hidden ? [`${hidden} rows are hidden in the still; the still must be the motion's last frame`] : []),
+        ...short.map((id) => `mark ${id} is drawn short of its width in the still; the still must be the motion's last frame`),
+      ];
+    },
+  },
+  {
+    id: "record", level: "fail", stage: "page", frames: ["loose", "signal"], about: "the record line is drawn once, with the commit and the date",
     run: ({ spec, page }) => {
       const lines = page.blocks.filter((b) => b.name === "record");
       if (lines.length !== 1) return [`the poster shows ${lines.length} record lines; it needs exactly one`];

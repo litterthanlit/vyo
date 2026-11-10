@@ -4,7 +4,14 @@
 export const SHEET = { width: 840, height: 1190 };
 export const SHAPE_KEYS = ["profile", "ellipse", "polygon", "path"];
 // Row pitch and the two heights a row samples, per font size. A row is inside where both are.
-export const GRID = { 11: { pitch: 14, probes: [2, 12] }, 12: { pitch: 16, probes: [3, 13] } };
+export const GRID = {
+  7: { pitch: 9, probes: [1, 8] },
+  8: { pitch: 10, probes: [2, 8] },
+  9: { pitch: 12, probes: [2, 10] },
+  10: { pitch: 13, probes: [2, 11] },
+  11: { pitch: 14, probes: [2, 12] },
+  12: { pitch: 16, probes: [3, 13] },
+};
 // Commit Mono advances 0.6em, so a row's text width is its length times this.
 export const ADVANCE = 0.6;
 /** Commit Mono's fixed advance, standing in for the page's measured text in Node. */
@@ -178,6 +185,96 @@ export function parsePath(d) {
   if (ring) rings.push(ring);
   const closed = rings.filter((r) => r.length >= 3);
   return closed.length ? { rings: closed } : { error: "no closed shape" };
+}
+
+/**
+ * An open or closed SVG path flattened to polylines, one per subpath. Used by routes; fill regions still
+ * need a closed shape from `parsePath`.
+ * @param {string} d
+ * @returns {{ paths: [number, number][][] } | { error: string }}
+ */
+export function flattenPath(d) {
+  const parsed = parsePathOpen(d);
+  return parsed;
+}
+
+function parsePathOpen(d) {
+  const { tokens, error } = tokenize(d);
+  if (error) return { error };
+  if (!tokens.length) return { error: "empty" };
+  if (tokens[0] !== "M" && tokens[0] !== "m") return { error: "must start with M" };
+  const paths = [];
+  let ring = null;
+  let cur = [0, 0];
+  let start = [0, 0];
+  let i = 0;
+  let cmd = null;
+  while (i < tokens.length) {
+    if (typeof tokens[i] === "string") cmd = tokens[i++];
+    else if (cmd === null) return { error: "a number before any command" };
+    const up = cmd.toUpperCase();
+    const rel = cmd !== up;
+    if (!(up in ARITY)) return { error: `"${cmd}" is not supported; use M L H V C Q A Z` };
+    if (up === "Z") {
+      if (ring) {
+        ring.push(start);
+        paths.push(ring);
+      }
+      ring = null;
+      cur = start;
+      continue;
+    }
+    const args = tokens.slice(i, i + ARITY[up]);
+    if (args.length < ARITY[up] || args.some((a) => typeof a !== "number")) return { error: `"${cmd}" needs ${ARITY[up]} numbers` };
+    i += ARITY[up];
+    const abs = (x, y) => (rel ? [cur[0] + x, cur[1] + y] : [x, y]);
+    let pts;
+    if (up === "M") {
+      if (ring && ring.length >= 2) paths.push(ring);
+      cur = start = abs(args[0], args[1]);
+      ring = [cur];
+      cmd = rel ? "l" : "L";
+      continue;
+    }
+    if (!ring) ring = [cur];
+    if (up === "L") pts = [abs(args[0], args[1])];
+    else if (up === "H") pts = [[rel ? cur[0] + args[0] : args[0], cur[1]]];
+    else if (up === "V") pts = [[cur[0], rel ? cur[1] + args[0] : args[0]]];
+    else if (up === "C") pts = bezier([cur, abs(args[0], args[1]), abs(args[2], args[3]), abs(args[4], args[5])]);
+    else if (up === "Q") pts = bezier([cur, abs(args[0], args[1]), abs(args[2], args[3])]);
+    else {
+      if (![0, 1].includes(args[3]) || ![0, 1].includes(args[4])) return { error: "arc flags must be 0 or 1" };
+      pts = arcPoints(cur, [...args.slice(0, 5), ...abs(args[5], args[6])]);
+    }
+    ring.push(...pts);
+    cur = pts[pts.length - 1];
+  }
+  if (ring && ring.length >= 2) paths.push(ring);
+  return paths.length ? { paths } : { error: "no path" };
+}
+
+/** A point at fraction `t` (0 to 1) along a polyline. */
+export function pointAlong(pts, t) {
+  if (!pts.length) return { x: 0, y: 0 };
+  if (pts.length === 1) return { x: pts[0][0], y: pts[0][1] };
+  const segs = [];
+  let total = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const len = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    segs.push({ a: pts[i - 1], b: pts[i], len });
+    total += len;
+  }
+  if (total === 0) return { x: pts[0][0], y: pts[0][1] };
+  let u = Math.min(1, Math.max(0, t)) * total;
+  for (const s of segs) {
+    if (u <= s.len) {
+      const k = s.len ? u / s.len : 0;
+      return { x: s.a[0] + (s.b[0] - s.a[0]) * k, y: s.a[1] + (s.b[1] - s.a[1]) * k };
+    }
+    u -= s.len;
+  }
+  const last = pts[pts.length - 1];
+  return { x: last[0], y: last[1] };
 }
 
 /** The rings of one shape: `{ profile }`, `{ ellipse }`, `{ polygon }` or `{ path }`. Paths that do not parse give no rings. */

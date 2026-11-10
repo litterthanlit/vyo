@@ -26,14 +26,16 @@ Copy this file into the target app's repo beside the skill, at `.cursor/skills/v
 
 ## Frame preference
 
-<!-- loose | swiss. Loose (the default) lets the field fill the sheet with a few words in its corners.
-     Swiss adds a masthead and a footer with counts, notes and the not-built list. -->
+<!-- loose | swiss | signal. Loose (the default) lets the field fill the sheet with a few words in its corners.
+     Swiss adds a masthead and a footer with counts, notes and the not-built list.
+     Signal is high-contrast: charcoal or paper, one signal colour, grotesque headline. -->
 
 ## Field preference
 
-<!-- wave | terrain | river | shape. Wave for a story of flow or hand-off, terrain for what is big and what
-     matters, river for many things merging into one, shape for one object that stands for the product
-     (name it under "The picture"). Leave blank to let the skill choose. -->
+<!-- shape | wave | terrain | river | radial | sphere | scatter | shatter | glyph | bleed | slabs | spiral | contour | trace.
+     shape for one object that stands for the product (name it under "The picture"); the rest are generated.
+     Wave is not the fallback. Leave blank and the skill picks: a drawn shape when one object fits the story,
+     else an unused generated field (vyo shapes), never wave unless you write it here. -->
 
 ## Accent part
 

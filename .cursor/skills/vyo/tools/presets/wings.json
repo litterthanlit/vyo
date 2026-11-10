@@ -1,0 +1,48 @@
+{
+  "version": 3,
+  "frame": "signal",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "accent": "#FF5A1F",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "trace",
+        "field": "trace",
+        "fits": "Pantry lifts a week of dinners off your hands, so its code is traced from a mask of wings.",
+        "accent": "area:lib/plan",
+        "mask": "wings",
+        "symbols": true,
+        "seed": 0,
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 48, "y": 44, "w": 200 },
+      { "role": "headline", "id": "headline", "x": 48, "y": 92, "w": 560, "size": 68 },
+      { "role": "paragraph", "id": "paragraph", "x": 48, "y": 330, "w": 330, "text": "Pantry reads the recipes you already cook and plans the week from them. The first dinner is decided before the day starts." },
+      { "role": "legend", "id": "legend", "x": 48, "y": 1010, "w": 300, "text": "Every row of marks is a part of Pantry, as many rows as it has code. The orange rows are the plan." }
+    ]
+  }
+}

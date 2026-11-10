@@ -25,7 +25,12 @@ function fillFrom(scaffold, preset) {
     assert.equal(typeof preset, "string", `the preset has no words for ${scaffold}`);
     return preset;
   }
-  if (Array.isArray(scaffold)) return scaffold.map((item, i) => fillFrom(item, preset?.find?.((p) => p.id !== undefined && p.id === item?.id) ?? preset?.[i]));
+  if (Array.isArray(scaffold)) {
+    const match = (item, i) => preset?.find?.((p) => p.id !== undefined && p.id === item?.id) ?? preset?.[i];
+    // A block the scaffold offers "or remove the block" and the preset lacks is removed, as an author would.
+    const optional = (item, i) => typeof item?.text === "string" && item.text.endsWith("or remove the block") && !preset?.some?.((p) => p.id === item.id);
+    return scaffold.filter((item, i) => !optional(item, i)).map((item, i) => fillFrom(item, match(item, i)));
+  }
   if (scaffold && typeof scaffold === "object") return Object.fromEntries(Object.entries(scaffold).map(([k, v]) => [k, fillFrom(v, preset?.[k])]));
   return scaffold;
 }

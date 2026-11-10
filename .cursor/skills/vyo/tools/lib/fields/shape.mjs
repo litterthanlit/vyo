@@ -10,9 +10,9 @@ import { reliefStyle } from "./shape-relief.mjs";
 // Bands are at least `minBand` px tall and `gap` px apart; lines sit `pitch` em apart.
 export const BANDS = { gamma: 2.4, min: 5, minBand: 8, gap: 3, pitch: 0.86, bold: 12, grow: 1.4 };
 // Commit Mono's ascender top and descender bottom, in em below the top of a line set at `pitch` em.
-const GLYPH = { top: 0.04, bottom: 0.99 };
+const INK_BOX = { top: 0.04, bottom: 0.99 };
 // How far the last line's descenders reach past its pitch, in em: a band leaves room for them.
-const TAIL = GLYPH.bottom - BANDS.pitch;
+const TAIL = INK_BOX.bottom - BANDS.pitch;
 // Per theme: the token for type on the accent fill (paper type on orange washed out on paper, and navy on orange
 // read as ink), the fills the bands take in turn, and the tone of the shadow cast down and right, if any. All ink
 // on paper read as flat signage; alternating ink and slate, over a pale shadow, reads as a printed object in layers.
@@ -106,7 +106,7 @@ function typeset(mask, a, floor, name, wanted) {
  */
 function fitSize(mask, a, floor, name) {
   const fits = (size) => {
-    for (let top = a; top + GLYPH.bottom * size <= floor + 0.5; top += Math.max(1, size / 6)) {
+    for (let top = a; top + INK_BOX.bottom * size <= floor + 0.5; top += Math.max(1, size / 6)) {
       if (lineSpans(mask, top, size, floor).some(([l, r]) => r - l >= nameWidth(name, size))) return true;
     }
     return false;
@@ -124,8 +124,8 @@ function fitSize(mask, a, floor, name) {
 
 /** Where a line of `size` px type whose top is `top` can sit: the spans inside the mask over its whole glyph height. */
 export function lineSpans(mask, top, size, floor) {
-  const y0 = Math.max(0, Math.floor(top + GLYPH.top * size));
-  const y1 = Math.min(floor, Math.ceil(top + GLYPH.bottom * size), SHEET.height);
+  const y0 = Math.max(0, Math.floor(top + INK_BOX.top * size));
+  const y1 = Math.min(floor, Math.ceil(top + INK_BOX.bottom * size), SHEET.height);
   if (y1 <= y0) return [];
   let spans = mask.runs[y0];
   for (let y = y0 + 1; y < y1 && spans.length; y++) spans = intersectRuns(spans, mask.runs[y]);
@@ -156,10 +156,10 @@ export function bandsStyle(mask, parts, { measure, theme = "light" }) {
     if (h <= 0) return;
     const { size, lines } = b;
     const holds = (top) => lineSpans(mask, top, size, b.y1).some(([l, r]) => r - l >= nameWidth(name, size) - 0.01);
-    let tops = lines === 1 ? [a + h / 2 - ((GLYPH.top + GLYPH.bottom) / 2) * size] : lineTops(mask, a, b.y1, lines, size, name);
+    let tops = lines === 1 ? [a + h / 2 - ((INK_BOX.top + INK_BOX.bottom) / 2) * size] : lineTops(mask, a, b.y1, lines, size, name);
     // Where no line holds the name, the lines slide (a lone line to the nearest place that does) until one does.
     if (!tops.some(holds)) {
-      const room = b.y1 - (tops[tops.length - 1] + GLYPH.bottom * size);
+      const room = b.y1 - (tops[tops.length - 1] + INK_BOX.bottom * size);
       const shifts = Array.from({ length: Math.ceil(tops[0] - a) + Math.ceil(room) + 1 }, (_, k) => k - Math.ceil(tops[0] - a)).sort((p, q) => Math.abs(p) - Math.abs(q));
       const shift = shifts.find((d) => tops.some((t) => holds(t + d)));
       if (shift !== undefined) tops = tops.map((t) => t + shift);
@@ -170,7 +170,7 @@ export function bandsStyle(mask, parts, { measure, theme = "light" }) {
     // The page's own advance differs from Commit Mono's 0.6em by a hair; the spacing takes it up so both agree.
     const spacing = track + cw - measure("M", size);
     for (const top of tops) {
-      const height = Math.min(GLYPH.bottom * size, b.y1 - top);
+      const height = Math.min(INK_BOX.bottom * size, b.y1 - top);
       for (const [l, r] of lineSpans(mask, top, size, b.y1)) {
         const whole = wholeNames(name, size, r - l);
         if (!whole) continue;
@@ -209,7 +209,7 @@ function lineTops(mask, a, floor, lines, size, name) {
   const names = (top) => lineSpans(mask, top, size, floor).reduce((n, [l, r]) => n + wholeNames(name, size, r - l), 0);
   let pick = null;
   for (let n = lines; n >= Math.max(1, lines - 6); n--) {
-    const slack = Math.max(0, floor - a - (n - 1) * step - GLYPH.bottom * size);
+    const slack = Math.max(0, floor - a - (n - 1) * step - INK_BOX.bottom * size);
     for (const t of [2, 1, 3, 0, 4]) {
       const tops = Array.from({ length: n }, (_, j) => a + (slack * t) / 4 + j * step);
       const count = tops.reduce((c, top) => c + names(top), 0);

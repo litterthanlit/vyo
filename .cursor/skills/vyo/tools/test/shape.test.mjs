@@ -87,7 +87,7 @@ test("a shape that paints nothing, a placeholder, a missing shape, a swiss shape
   assert.match(validateSpec(withShape(undefined)).join("\n"), /^figure\.regions\[0\]\.shape: missing; draw the silhouette/m);
   assert.ok(validateSpec(withShape(jar().figure.regions[0].shape, { style: "spiral" })).some((e) => /^figure\.regions\[0\]\.style: "spiral" is not a style; use bands or rings\b.*, or leave it out$/.test(e)));
   const swiss = { ...jar(), frame: "swiss" };
-  assert.ok(validateSpec(swiss).includes(`${f}.field: a shape field draws only in the loose frame; remove frame or set it to loose`));
+  assert.ok(validateSpec(swiss).includes(`${f}.field: a shape field draws only in the loose or signal frame; remove frame or set it to loose`));
   const wave = JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "wave.json"), "utf8"));
   wave.figure.regions[0].shape = { ops: [rect([0, 0], [1, 1])] };
   assert.ok(validateSpec(wave).includes(`${f}.shape: a wave field has no shape; only shape takes it`));

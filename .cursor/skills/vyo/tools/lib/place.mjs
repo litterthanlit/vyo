@@ -1,10 +1,10 @@
-// Where the loose frame's text blocks go around a drawn shape when the spec leaves out their x and y: one column
-// stacked in reading order (label, headline, legend, paragraphs, list) in the room the shape and the record line
+// Where the loose or signal frame's text blocks go around a drawn shape when the spec leaves out their x and y: one
+// column stacked in reading order (label, meta, headline, legend, paragraphs, list) in the room the shape and the record line
 // leave, or split across two places when no one place holds it all. Pure and deterministic, so `vyo sketch` and
 // render place every block in the same spot.
 import { SHEET } from "./geometry.mjs";
 import { shapeMask } from "./mask.mjs";
-import { frameOf, roleOf, textSize, lineHeight, ruleText, recordRect, sizeRange, serifLines, serifWidth, HEADLINE_TRACK } from "./frame.mjs";
+import { frameOf, hasRecord, roleOf, textSize, lineHeight, ruleText, recordRect, sizeRange, serifLines, serifWidth, HEADLINE_TRACK } from "./frame.mjs";
 import { listItems, recordOf } from "./render.mjs";
 
 function wrap(text, perLine) {
@@ -17,22 +17,32 @@ function wrap(text, perLine) {
   return lines;
 }
 
+/** The headline broken into lines `w` px wide at `size`: by Newsreader's advances in a serif frame, else by the role's average. */
+function headlineLines(spec, w, size) {
+  const track = HEADLINE_TRACK[frameOf(spec)];
+  if (track !== undefined) return serifLines(spec.headline, w, size, track);
+  return wrap(spec.headline, Math.max(1, Math.floor(w / (roleOf(spec, { role: "headline" }).em * size))));
+}
+
 /**
  * Where a text block's letters land, estimated from its role's line height and average advance; `em` scales the
  * advance, so a placement can reserve room for a wider font than the average.
  */
 export function estimateText(t, spec, facts, em = 1) {
+  if (t.role === "mark") return { id: t.id, left: t.x, top: t.y, right: t.x + t.w, bottom: t.y + t.h, lines: 1 };
   const role = roleOf(spec, t);
   const size = textSize(spec, t);
   const per = (frameOf(spec) === "swiss" && t.role === "label" && t.hot ? role.em + 0.06 : role.em) * size * em;
   const one = (text) => [text];
-  // The headline breaks by Newsreader's own advances, so its line count is the page's; the rest by an average.
+  // A serif headline breaks by Newsreader's own advances, so its line count is the page's; the rest, and the
+  // signal frame's grotesque headline, by an average.
   const track = HEADLINE_TRACK[frameOf(spec)];
+  const serif = role.prints === "headline" && track !== undefined;
   const lines = {
     name: () => one(frameOf(spec) === "swiss" ? `${spec.product.name}.` : spec.product.name.toUpperCase()),
-    headline: () => serifLines(spec.headline, t.w, size, track),
-  }[role.prints]?.() ?? (t.role === "list" ? (facts || !t.parts ? listItems(spec, t, facts) : ["x".repeat(12)]) : t.role === "rule" ? [ruleText(t)] : t.role === "label" ? one(t.text) : wrap(t.text.replace(/\*\*/g, ""), Math.max(1, Math.floor(t.w / per))));
-  const width = Math.min(t.w, role.prints === "headline" ? Math.max(...lines.map((l) => serifWidth(l, size, track))) * em : Math.max(...lines.map((l) => l.length)) * per);
+    headline: () => headlineLines(spec, t.w, size),
+  }[role.prints]?.() ?? (t.role === "list" ? (facts || !t.parts ? listItems(spec, t, facts) : ["x".repeat(12)]) : t.role === "rule" ? [ruleText(t)] : t.role === "label" ? one(t.text) : wrap((t.text || "").replace(/\*\*/g, ""), Math.max(1, Math.floor(t.w / per))));
+  const width = Math.min(t.w, serif ? Math.max(...lines.map((l) => serifWidth(l, size, track))) * em : Math.max(1, ...lines.map((l) => l.length)) * per);
   const left = t.align === "right" ? t.x + t.w - width : t.align === "center" ? t.x + (t.w - width) / 2 : t.x;
   return { id: t.id, left, top: t.y, right: left + width, bottom: t.y + lines.length * lineHeight(spec, t), lines: lines.length };
 }
@@ -49,10 +59,10 @@ export function estimateText(t, spec, facts, em = 1) {
 // legend under it as wide as the column within `legend`.
 export const PLACE = {
   inset: 40, clear: 20, record: 10, cell: 4, em: 1.12, after: { label: 10, other: 22 }, roomy: 400, gap: 32, shrink: 0.85,
-  w: { label: [120, 300], headline: [240, 520], legend: [190, 300], paragraph: [190, 300], list: [140, 240], rule: [120, 300] },
+  w: { label: [120, 300], meta: [160, 420], headline: [240, 520], display: [200, 600], legend: [190, 300], paragraph: [190, 300], list: [140, 240], rule: [120, 300] },
   stacked: { lines: 4, step: 4, legend: [240, 330], label: 18 },
 };
-const ORDER = ["label", "headline", "legend", "paragraph", "list", "rule"];
+const ORDER = ["label", "meta", "headline", "display", "legend", "paragraph", "list", "rule"];
 
 /** The sheet as a grid of PLACE.cell px, 1 where no block may go, with a summed-area table to test rects in O(1). */
 function roomGrid(mask, rec, fixed) {
@@ -133,7 +143,7 @@ function placeColumn(spec, facts, room, blocks, centre, roomy, stacked) {
     const S = PLACE.stacked;
     for (let size = hi; size >= lo; size -= S.step) {
       for (let width = PLACE.w.headline[0]; width <= PLACE.w.headline[1]; width += 20) {
-        if (serifLines(spec.headline, width, size, HEADLINE_TRACK[frameOf(spec)]).length > S.lines) continue;
+        if (headlineLines(spec, width, size).length > S.lines) continue;
         const legend = Math.min(S.legend[1], Math.max(S.legend[0], width));
         const column = Math.max(width, ...blocks.filter((t) => t.role === "legend").map(() => legend));
         for (const align of ["left", "right"]) {
@@ -167,8 +177,9 @@ function placeColumn(spec, facts, room, blocks, centre, roomy, stacked) {
  */
 export function placeTexts(spec, facts) {
   const region = spec.figure?.regions?.find((r) => r.kind === "field" && r.field === "shape");
-  const loose = spec.figure.texts.filter((t) => t.x === undefined || t.y === undefined);
-  if (!region || !loose.length || frameOf(spec) !== "loose") return spec;
+  // A highlighter mark is laid over type the agent placed, so it always carries its own x and y.
+  const loose = spec.figure.texts.filter((t) => t.role !== "mark" && (t.x === undefined || t.y === undefined));
+  if (!region || !loose.length || !hasRecord(spec)) return spec;
   const fixed = spec.figure.texts.filter((t) => !loose.includes(t)).map((t) => estimateText({ w: PLACE.w[t.role]?.[1] ?? 300, ...t }, spec, facts));
   const rec = recordRect(recordOf(spec, facts));
   const todo = [...loose].sort((a, b) => ORDER.indexOf(a.role) - ORDER.indexOf(b.role));
