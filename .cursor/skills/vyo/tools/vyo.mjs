@@ -12,23 +12,23 @@ import { showFacts, hiddenCodeHint } from "./lib/scan/show.mjs";
 import { scaffoldSpec, validateSpec, THEMES } from "./lib/spec.mjs";
 import { sketch, sketchImage } from "./lib/sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE, SHEET } from "./lib/geometry.mjs";
-import { SHAPE_KINDS, SHAPE_FIT } from "./lib/mask.mjs";
+import { SHAPE_KINDS, SHAPE_ROOM } from "./lib/mask.mjs";
 import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
 import { ROLES, FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
 import { cornersLine } from "./lib/geometry.mjs";
-import { runChecks } from "./lib/check.mjs";
+import { runChecks, CHECKS } from "./lib/check.mjs";
 import { NoBrowser } from "./lib/browser.mjs";
 import { init, chooseEditors, EDITORS } from "./lib/init.mjs";
 import { FIELDS } from "./lib/fields/index.mjs";
-import { partsFromFacts, partOptions, regionParts, accentIds, unplainName, sameNames, PART_DEFAULTS } from "./lib/parts.mjs";
+import { partsFromFacts, partOptions, regionParts, accentIds, unplainName, sameNames, dominance, PART_DEFAULTS } from "./lib/parts.mjs";
 
 const USAGE = `Usage:
   vyo init    [--cursor] [--claude] [--codex] [--dir <repo-dir>]
   vyo scan    <repo-dir> --out <dir>/<repo>-facts.json
   vyo show    <facts.json>
   vyo presets [<id>]
-  vyo parts   <facts.json> [--field ${Object.keys(FIELDS).join("|")}]
-  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
+  vyo parts   <facts.json> [--field ${Object.keys(FIELDS).join("|")}] [--split <part id>]...
+  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--accent <part id>] [--split <part id>]... [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--force]
   vyo sketch  <spec.json> [--facts <facts.json>]
   vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--paper ${PAPERS.join("|")}]
   vyo check   <spec.json> [--facts <facts.json>]
@@ -136,10 +136,11 @@ function cmdScan(argv) {
 const pct = (n) => `${n > 0 && n < 0.01 ? Math.round(n * 1000) / 10 : Math.round(n * 100)}%`;
 
 function cmdParts(argv) {
-  const { pos, opt } = args(argv, { field: { type: "string" } }, 1);
+  const { pos, opt } = args(argv, { field: { type: "string" }, split: { type: "string", multiple: true } }, 1);
   if (opt.field !== undefined && !FIELDS[opt.field]) throw new Usage(`--field ${opt.field} is not a field; use ${Object.keys(FIELDS).join(" or ")}`);
+  if (opt.split && opt.field !== "shape") throw new Usage("--split cuts a part of a shape field; pass --field shape");
   const facts = readFacts(pos[0]);
-  const options = partOptions({ field: opt.field });
+  const options = partOptions({ field: opt.field, ...(opt.split ? { split: opt.split } : {}) });
   const parts = partsFromFacts(facts, options);
   const lines = parts.reduce((s, p) => s + p.loc, 0);
   const files = parts.reduce((s, p) => s + p.files, 0);
@@ -153,9 +154,20 @@ function cmdParts(argv) {
       `${p.id.padEnd(width)}  ${pct(lines ? p.loc / lines : 0).padStart(5)}  ${String(p.loc).padStart(5)}  ${String(p.files).padStart(5)}  ${p.name}${flag(p)}`,
     ),
     "Set a field's accent to one id. Give each flagged part a plain name in the field's names, keyed by its id.",
+    ...dominantLines(facts, options, pos[0], opt.field),
   ];
   process.stdout.write(out.join("\n") + "\n");
   return 0;
+}
+
+/** The `!` lines `vyo parts` adds when one part is most of the code or there are too few parts. */
+function dominantLines(facts, options, file, field) {
+  const d = dominance(facts, options);
+  if (!d) return [];
+  const what = `! "${d.part.name}" (${d.part.id}) holds ${pct(d.share)} of the lines among ${d.count} parts; as a shape's accent it draws one slab of orange`;
+  if (!d.split) return [`${what}, and it has no folders inside it to split: put the accent on a smaller part.`];
+  const flags = [...(options.split ?? []), d.split.id].map((id) => `--split ${id}`).join(" ");
+  return [`${what}. Split it into the folders inside it: vyo parts ${file} --field shape ${flags} gives ${d.split.count} parts, the largest ${pct(d.split.largest)}${field === "shape" ? "" : " (a shape field only)"}; then write "split": [${[...(options.split ?? []), d.split.id].map((id) => `"${id}"`).join(", ")}] in the region and put the accent on one of them.`];
 }
 
 function cmdShow(argv) {
@@ -224,9 +236,10 @@ function looseNotes(field, space) {
   const L = ROLES.loose;
   const at = (r) => `${L[r].size[0]}px (${L[r].size[1]} to ${L[r].size[2]}), ${L[r].lh(L[r].size[0])}px per line`;
   return [
-    `field: ${field}, ${FIELDS[field].about}. It runs to every edge it reaches; no text sits on it.`,
-    cornersLine(space.corners),
-    "  Compose put the headline in the largest corner, the label in the smallest, the list in the tallest and the legend nearest the accent part. Move them within the corners; vyo sketch prints the corners again.",
+    `field: ${field}, ${FIELDS[field].about}. ${field === "shape" ? "No text sits on it." : "It runs to every edge it reaches; no text sits on it."}`,
+    ...(field === "shape"
+      ? ["texts: no coordinates. The engine places the label, headline, legend and paragraph in the room the shape leaves, in reading order, the headline sized to fit; vyo sketch prints where. Give a block x and y only to pin it there."]
+      : [cornersLine(space.corners), "  Compose put the headline in the largest corner, the label in the smallest, the list in the tallest and the legend nearest the accent part. Move them within the corners; vyo sketch prints the corners again."]),
     `label ${at("label")}: the product name in capitals.`,
     `headline ${at("headline")}: the only large type, ragged on the side that faces the field (align right in a right corner).`,
     `paragraph ${at("paragraph")}: 0 to 2 of them, at most 2 sentences and ${L.paragraph.max} characters each.`,
@@ -240,14 +253,14 @@ function looseNotes(field, space) {
 /** The shape format in a few lines, printed by compose --field shape. */
 function shapeNotes() {
   const kinds = Object.entries(SHAPE_KINDS).map(([k, keys]) => `${k} {${Object.keys(keys).join(", ")}}`).join(", ");
-  const f = SHAPE_FIT;
+  const R = SHAPE_ROOM;
   return [
     'shape: replace the placeholder with your silhouette, ops painted in order into one mask: { "ops": [...], "rotate": deg, "fit": { "w", "h", "cx", "cy" } }',
     `  each op is { "add": kind, ... } or { "cut": kind, ... }, the first an add. Kinds: ${kinds}.`,
     '  example: { "add": "rect", "at": [16, 0], "size": [68, 16], "round": 3 }. ellipse r is [rx, ry]; arc from and to are degrees clockwise from twelve o\'clock; any op takes rotate about its own centre.',
     "  Coordinates are free units, y down: the engine measures what you painted and fits it.",
-    `  fit.w and fit.h are its share of the sheet's width and height (over 1 bleeds off), fit.cx and fit.cy place its centre; without them w ${f.w}, h ${f.h}, cx ${f.cx}, cy ${f.cy}.`,
-    "  The corners above assume that default box; vyo sketch prints the real ones once the shape is drawn.",
+    `  Leave fit out: the shape is then as large as fits ${R.left}px in from the sides, ${R.top}px below the top (room for the words) and ${R.bottom}px above the bottom, on that bottom margin, and never bleeds.`,
+    "  fit.w or fit.h sets its share of the sheet's width or height instead (over 1 bleeds off, and the sketch says which edges), fit.cx and fit.cy its centre.",
     '  style: "bands" (the default) cuts it top to bottom and suits any outline; "rings" sets the names round the outline, ring inside ring, for a fat, round object, with "echo": 0 to 12 faded outlines; "relief" draws any outline as a lit volume.',
     '  Relief reads optional hints: "face": "lit" or "dim" on an add, { "crease": kind, ... } ops (a fold, never the outline), region "bevel" 0 to 1 and "strata" { "by": "angle", "angle" } or { "by": "depth" }.',
   ];
@@ -264,7 +277,7 @@ function git(dir, format) {
 function cmdCompose(argv) {
   const { pos, opt } = args(
     argv,
-    { frame: { type: "string" }, field: { type: "string" }, accent: { type: "string" }, from: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } },
+    { frame: { type: "string" }, field: { type: "string" }, accent: { type: "string" }, split: { type: "string", multiple: true }, from: { type: "string" }, theme: { type: "string" }, repo: { type: "string" }, out: { type: "string" }, force: { type: "boolean" } },
     1,
   );
   const presets = loadPresets();
@@ -293,23 +306,26 @@ function cmdCompose(argv) {
   const out = opt.out ?? path.join(path.dirname(pos[0]), `${facts.repo.name}-poster.json`);
   if (fs.existsSync(out) && !opt.force) throw new Failure(`${out} exists; it may hold your words. Pass --force to replace it with a fresh scaffold`);
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-  const parts = partsFromFacts(facts, partOptions({ field }));
+  if (opt.split && field !== "shape") throw new Usage("--split cuts a part of a shape field; pass --field shape");
+  const parts = partsFromFacts(facts, partOptions({ field, ...(opt.split ? { split: opt.split } : {}) }));
   if (opt.accent !== undefined && !accentIds(parts, opt.accent).size) throw new Usage(`--accent ${opt.accent} names no part; vyo parts ${pos[0]} lists the part ids`);
   if (field && !parts.length) throw new Failure(`no parts to draw; the scan found no code. Compose a fill poster instead: vyo compose ${pos[0]} --from <preset> (vyo presets lists them)`);
   const twins = new Set(sameNames(parts).flat());
   const unplain = parts.filter((p) => unplainName(p.name) || twins.has(p));
   const notes = preset ? preset.notes.length : 3;
-  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, parts };
+  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, split: opt.split, parts };
   let space;
   if (frame === "loose") {
-    // Lay the field out on its own sheet, then fill the corners it leaves.
     const draft = scaffoldSpec(facts, { ...o, places: {} });
     const region = draft.figure.regions[0];
-    // The shape is not drawn yet: place the words around the box a default fit fills.
-    if (field === "shape") region.shape = { ops: [{ add: "rect", at: [0, 0], size: [SHAPE_FIT.w * SHEET.width, SHAPE_FIT.h * SHEET.height] }] };
-    space = fieldSpace(draft, facts);
     o.accentNames = regionParts(region, facts).filter((p) => p.hot).map((p) => p.name);
-    o.places = scaffoldPlaces(space.corners, space.accent, parts.length);
+    // A shape is not drawn yet, so its words carry no coordinates: the engine places them around it.
+    if (field === "shape") o.places = { label: {}, headline: {}, legend: {}, paragraph: {} };
+    else {
+      // Lay the field out on its own sheet, then fill the corners it leaves.
+      space = fieldSpace(draft, facts);
+      o.places = scaffoldPlaces(space.corners, space.accent, parts.length);
+    }
   }
   fs.writeFileSync(out, JSON.stringify(scaffoldSpec(facts, o), null, 2) + "\n");
   const from = preset ? `the ${opt.from} preset's geometry and its words taken out` : `a ${field} field of ${parts.length} parts${opt.accent ? ` with ${opt.accent} in the accent` : ""}`;
@@ -344,6 +360,15 @@ function cmdSketch(argv) {
   const fields = spec.figure.regions.some((r) => r.kind === "field");
   const facts = fields ? factsFor(pos[0], spec, opt) : undefined;
   process.stdout.write(sketch(spec, facts));
+  // Every rule that needs no browser runs here too, so a wording error costs no render. The shape checks are
+  // already among the sketch's own lines, measured on its layout.
+  for (const e of validateSpec(spec).filter((x) => !blocking.includes(x))) process.stdout.write(`✗ spec: ${e}\n`);
+  if (facts) {
+    const frame = spec.frame ?? "loose";
+    for (const c of CHECKS.filter((x) => x.stage === "spec" && x.id !== "spec" && !x.id.startsWith("shape-") && (!x.frames || x.frames.includes(frame)))) {
+      for (const m of c.run({ spec, facts, presets: loadPresets() })) process.stdout.write(`${c.level === "fail" ? "✗" : "!"} ${c.id}: ${m}\n`);
+    }
+  }
   const image = fields && sketchImage(spec, facts);
   if (image) {
     const file = path.join(path.dirname(pos[0]), `${spec.product.repo}-sketch.png`);

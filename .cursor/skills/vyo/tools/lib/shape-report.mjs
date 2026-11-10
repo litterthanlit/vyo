@@ -3,24 +3,30 @@
 // pieces, a text block on the shape. `vyo sketch` prints these as `!` lines and lib/check.mjs runs them as checks;
 // every message says what to change, with a number.
 import { SHEET, corners, CORNERS, fixedMeasure } from "./geometry.mjs";
-import { maskGrid, edt } from "./mask.mjs";
+import { maskGrid, edt, SHAPE_ROOM, opRings, paintRows } from "./mask.mjs";
 import { shapeLayout, nameWidth } from "./fields/shape.mjs";
-import { regionParts } from "./parts.mjs";
+import { regionParts, partOptions, dominance, DOMINANT } from "./parts.mjs";
 import { tokensOf } from "./render.mjs";
 import { FIELDS } from "./fields/index.mjs";
 
 // A feature narrower than `thin` px is under 3px at a sixth of the size and does not read as form; a thin piece
 // counts once it is `thinArea` px² (a sharp corner's tip is less). The shape should cover `cover` of the sheet;
 // the accent band needs `accent` px to show in the thumbnail; text keeps `clear` px off the shape; a band's
-// piece counts once it holds `piece` of the band's area.
-export const SHAPE_LIMITS = { thin: 18, thinArea: 324, cover: 0.35, accent: 40, clear: 16, piece: 0.1 };
+// piece counts once it holds `piece` of the band's area; a bleed under `bleed` of the shape's extent is a mistake.
+export const SHAPE_LIMITS = { thin: 18, thinArea: 324, cover: 0.35, accent: 40, clear: 16, piece: 0.1, bleed: 0.05 };
+// Past `ops` adds and cuts a silhouette stops reading as one object at thumbnail size (the cold runs' 11-op
+// locomotive was half legible, the 3-op flask instant); `repeat` or more ops of one kind and about one size
+// (within `alike`), each under `small` of the shape, are details like wheels or windows that merge there.
+export const SHAPE_SIMPLE = { ops: 8, repeat: 3, alike: 0.3, small: 0.1 };
+// Every check id the findings fill, in the order the sketch prints them.
+export const SHAPE_CHECKS = ["shape-dominant", "shape-simple", "shape-thin", "shape-cover", "shape-edge", "shape-accent", "shape-name", "shape-split", "shape-room", "shape-rings", "shape-upright", "shape-share", "shape-tone"];
 const CELL = 2;
 
 /** A shape region laid out in Node: its parts, mask, bands, rows and ground. */
 export function shapeReport(spec, region, facts) {
   const parts = regionParts(region, facts);
   const tokens = { ...tokensOf(spec), ...FIELDS.shape.tokens(spec.theme) };
-  return { region, parts, ...shapeLayout(region, parts, { theme: spec.theme, measure: fixedMeasure, tokens }) };
+  return { region, parts, dominant: dominance(facts, partOptions(region)), ...shapeLayout(region, parts, { theme: spec.theme, measure: fixedMeasure, tokens }) };
 }
 
 /** Squared distance, in cells, from every cell to the nearest cell where `on` is false. */
@@ -79,31 +85,37 @@ export function thinFeatures(mask) {
   return out;
 }
 
-/** The separate pieces of the mask between rows y0 and y1, by runs that touch from one row to the next. */
-export function piecesBetween(mask, y0, y1) {
-  const pieces = [];
+/** Each run of the mask with the piece of the whole shape it belongs to, by runs that touch from row to row. */
+function runPieces(mask) {
+  const parent = [];
+  const find = (i) => (parent[i] === i ? i : (parent[i] = find(parent[i])));
   let prev = [];
-  for (let y = y0; y < y1; y++) {
-    const here = mask.runs[y].map(([l, r]) => {
-      const touching = [...new Set(prev.filter((p) => p.l < r && p.r > l).map((p) => p.piece.root()))];
-      let piece = touching[0];
-      if (!piece) {
-        piece = { area: 0, left: l, right: r, top: y, bottom: y + 1, parent: null, root() { return this.parent ? this.parent.root() : this; } };
-        pieces.push(piece);
-      }
-      for (const other of touching.slice(1)) other.parent = piece;
-      Object.assign(piece, { area: piece.area + r - l, left: Math.min(piece.left, l), right: Math.max(piece.right, r), bottom: y + 1 });
-      return { l, r, piece };
+  const rows = mask.runs.map((row) => {
+    const here = row.map(([l, r]) => {
+      const id = parent.push(parent.length) - 1;
+      for (const p of prev) if (p.l < r && p.r > l) parent[find(p.id)] = find(id);
+      return { l, r, id };
     });
     prev = here;
+    return here;
+  });
+  return rows.map((row) => row.map((run) => ({ ...run, piece: find(run.id) })));
+}
+
+/**
+ * The pieces of the shape that rows y0 to y1 cross, each with its area, left and right within those rows. Two
+ * spans are one piece when the shape joins them anywhere, so a cup's handle is not a piece apart from the cup.
+ */
+export function piecesBetween(mask, y0, y1) {
+  const runs = runPieces(mask);
+  const pieces = new Map();
+  for (let y = y0; y < y1; y++) {
+    for (const { l, r, piece } of runs[y]) {
+      const q = pieces.get(piece) ?? { area: 0, left: l, right: r, top: y, bottom: y + 1 };
+      pieces.set(piece, { area: q.area + r - l, left: Math.min(q.left, l), right: Math.max(q.right, r), top: q.top, bottom: y + 1 });
+    }
   }
-  const roots = new Map();
-  for (const p of pieces) {
-    const root = p.root();
-    if (root !== p) Object.assign(root, { area: root.area + p.area, left: Math.min(root.left, p.left), right: Math.max(root.right, p.right), top: Math.min(root.top, p.top), bottom: Math.max(root.bottom, p.bottom) });
-    roots.set(root, root);
-  }
-  return [...roots.values()].sort((a, b) => b.area - a.area).map(({ area, left, right, top, bottom }) => ({ area, left, right, top, bottom }));
+  return [...pieces.values()].sort((a, b) => b.area - a.area);
 }
 
 /** The empty corners the shape leaves, kept `clear` px off it. */
@@ -130,17 +142,48 @@ const bandOf = (report, part) => report.bands?.find((b) => b.part.id === part.id
 /**
  * Every finding on a shape region, by check id. `rows` are the rows as drawn (the page's, or Node's for the
  * sketch); `blocks` are the text blocks, each `{ id, left, top, right, bottom }`.
- * @returns {Record<"shape-thin" | "shape-cover" | "shape-accent" | "shape-name" | "shape-split" | "shape-room" | "shape-rings" | "shape-upright" | "shape-share" | "shape-tone", string[]>}
+ * @returns {Record<(typeof SHAPE_CHECKS)[number], string[]>}
  */
 export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) {
   const { mask, bands = [], parts, region } = report;
   const L = SHAPE_LIMITS;
-  const out = { "shape-thin": [], "shape-cover": [], "shape-accent": [], "shape-name": [], "shape-split": [], "shape-room": [], "shape-rings": [], "shape-upright": [], "shape-share": [], "shape-tone": [] };
+  const out = Object.fromEntries(SHAPE_CHECKS.map((id) => [id, []]));
   // A style that is not cut top to bottom judges its own depth and reading; the band checks are the bands'.
   const banded = (region.style ?? "bands") === "bands";
   // Rings' findings are fixed by the layout; relief's read the rows as drawn, so they are a function of them.
   const own = typeof report.findings === "function" ? report.findings(rows) : report.findings ?? {};
   for (const [id, messages] of Object.entries(own)) out[id].push(...messages);
+
+  const d = report.dominant;
+  const accents = parts.filter((p) => p.hot);
+  const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
+  const hotShare = accents.reduce((s, p) => s + p.loc, 0) / total;
+  // Bands set every part's name in type however big the accent is, so with nothing to split they are the fix.
+  const stuck = !d?.split && (region.style ?? "bands") === "bands";
+  if (d && !stuck && accents.length && (hotShare > DOMINANT.share || parts.length < DOMINANT.parts)) {
+    const what = `${hotShare > DOMINANT.share ? `the accent "${accents.map((p) => p.name).join('", "')}" holds ${pct(hotShare)} of the lines` : `the accent holds ${pct(hotShare)} of the lines`} and the shape has ${parts.length} parts, so every style draws it as one slab`;
+    out["shape-dominant"].push(
+      d.split
+        ? `${what}; add "split": [${[...(region.split ?? []), d.split.id].map((id) => `"${id}"`).join(", ")}] to the region to cut "${d.part.name}" into the folders inside it (${d.split.count} parts, the largest ${pct(d.split.largest)}), then put the accent on the one the story is about (vyo parts <facts> --field shape --split ${d.split.id} lists them)`
+        : `${what}; "${d.part.name}" has no folders inside it to split, so put the accent on a smaller part, or keep it in bands, whose type still names every part`,
+    );
+  }
+
+  const drawn = region.shape.ops.map((op, i) => ({ op, i })).filter(({ op }) => op.crease === undefined);
+  if (drawn.length > SHAPE_SIMPLE.ops) {
+    out["shape-simple"].push(`the shape has ${drawn.length} ops; past ${SHAPE_SIMPLE.ops} a silhouette stops reading as one object at thumbnail size, so simplify it: one object with one telling feature, in 3 to 6 ops`);
+  }
+  const { s, tx, ty } = mask.xf;
+  const alone = opRings(region.shape).map((o) => paintRows([{ ...o, cut: false }], s, tx, ty, SHEET.height).reduce((a, row) => a + row.reduce((n, [l, r]) => n + r - l, 0), 0) / mask.area);
+  const seen = new Set();
+  for (const { op, i } of drawn) {
+    if (seen.has(i) || alone[i] >= SHAPE_SIMPLE.small) continue;
+    const kind = op.add ?? op.cut;
+    const like = drawn.filter((d) => (d.op.add ?? d.op.cut) === kind && alone[d.i] < SHAPE_SIMPLE.small && Math.abs(alone[d.i] - alone[i]) <= SHAPE_SIMPLE.alike * alone[i]);
+    if (like.length < SHAPE_SIMPLE.repeat) continue;
+    like.forEach((d) => seen.add(d.i));
+    out["shape-simple"].push(`ops ${like.map((d) => d.i).join(", ")} are ${like.length} ${kind}s of about ${pct(alone[i])} of the shape each: small repeated details like wheels or windows merge at thumbnail size, so drop them or draw them as one shape`);
+  }
 
   // Every shape check asks for these findings; the opening is the slow part and depends on the shape alone.
   const key = JSON.stringify(region.shape);
@@ -153,11 +196,34 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
     );
   }
 
+  const fit = region.shape.fit ?? {};
+  const sized = fit.w !== undefined || fit.h !== undefined;
   const cover = mask.area / (SHEET.width * SHEET.height);
   if (cover < L.cover) {
-    const k = Math.sqrt(L.cover / cover);
-    const by = region.shape.fit?.w !== undefined && region.shape.fit?.h === undefined ? "w" : "h";
-    out["shape-cover"].push(`the shape covers ${pct(cover)} of the sheet; it needs ${pct(L.cover)} to read as the picture, so scale it up ${share(k)}x (set fit.${by} to ${share(mask.fit[by] * k)}, it is ${share(mask.fit[by])}) or draw it fatter`);
+    // A little over the bare ratio, so the suggested fit clears the floor after rounding.
+    const k = Math.sqrt(L.cover / cover) * 1.02;
+    const by = fit.w !== undefined && fit.h === undefined ? "w" : "h";
+    const [now, next] = [share(mask.fit[by]), share(mask.fit[by] * k)];
+    const [w, h] = [px(mask.box.right - mask.box.left), px(mask.box.bottom - mask.box.top)];
+    const say = `the shape covers ${pct(cover)} of the sheet; it needs ${pct(L.cover)} to read as the picture, so `;
+    out["shape-cover"].push(
+      sized && next > now && mask.fit.w * k <= 1 && mask.fit.h * k <= 1
+        ? `${say}scale it up ${share(k)}x (set fit.${by} to ${next}, it is ${now}) or draw it fatter`
+        : `${say}draw it fatter: it fills ${pct(mask.area / (w * h))} of its ${w} by ${h}px box${sized ? "" : ", already as large as the room the text leaves"}; thicken its thin parts or make it closer to as tall as it is wide`,
+    );
+  }
+
+  // A deliberate bleed runs well off the sheet; a sliver off one edge reads as a mistake.
+  const { width: W, height: H } = SHEET;
+  const b = mask.box;
+  for (const [edge, over, extent, key, sign] of [["left", -b.left, b.right - b.left, "cx", 1], ["right", b.right - W, b.right - b.left, "cx", -1], ["top", -b.top, b.bottom - b.top, "cy", 1], ["bottom", b.bottom - H, b.bottom - b.top, "cy", -1]]) {
+    if (over <= 0.5 || over >= L.bleed * extent) continue;
+    const size = key === "cx" ? W : H;
+    const centre = key === "cx" ? (b.left + b.right) / 2 / W : (b.top + b.bottom) / 2 / H;
+    const move = Math.ceil(over) + SHAPE_ROOM.bottom;
+    out["shape-edge"].push(
+      `the shape runs ${Math.ceil(over)}px off the ${edge} edge, too little to read as a bleed, so it looks cut by mistake; ${sized ? `leave out fit.w and fit.h to fit it inside the sheet, or move it ${move}px ${sign > 0 ? (key === "cx" ? "right" : "down") : key === "cx" ? "left" : "up"} (fit.${key} ${share(centre)} to ${share(centre + (sign * move) / size)})` : `move fit.${key} back toward the middle`}, or bleed it boldly, by a fifth of the shape or more`,
+    );
   }
 
   const hot = !banded ? null : bands.filter((b) => b.part.hot).sort((a, b) => b.y1 - b.y0 - (a.y1 - a.y0))[0];

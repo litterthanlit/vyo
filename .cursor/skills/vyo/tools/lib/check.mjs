@@ -53,6 +53,8 @@ export function figureStats(rowRects, dotRects, floor) {
     width: all.length ? (u.right - u.left) / 840 : 0,
   };
 }
+// A descender's tail is about 20 px at 2x; antialiasing alone moves none.
+const TEXT_CLEAR = 8;
 export const SILHOUETTE = { coverage: 0.15, height: 0.55, width: 0.6 };
 
 /**
@@ -106,7 +108,8 @@ export const CHECKS = [
     run: ({ spec, facts }) => (spec.facts === facts.hash ? [] : [`spec.facts is ${spec.facts} but facts.json is ${facts.hash}; the scan changed, so check the copy and set "facts" to ${facts.hash}`]),
   },
   {
-    id: "facts-empty", level: "warn", stage: "spec", about: "the scan found something to count",
+    // Only the swiss footer prints counts; a loose field draws parts by their size and has no counts line.
+    id: "facts-empty", level: "warn", stage: "spec", frames: ["swiss"], about: "the scan found something to count for the swiss footer",
     run: ({ facts }) => (facts.empty ? ["no application facts; the footer shows provenance only"] : []),
   },
   {
@@ -169,8 +172,11 @@ export const CHECKS = [
         .filter((r) => !FIELDS[r.field].fits.some((w) => startsWord(r.fits, w)))
         .map((r) => `region ${r.id}: fits must say why a ${r.field} matches the product's story; use ${anyOf(FIELDS[r.field].fits)}`),
   },
+  shapeCheck("shape-dominant", "warn", "spec", "a drawn shape's accent part holds at most 75% of the lines, among at least 4 parts, so the accent is not one slab"),
+  shapeCheck("shape-simple", "warn", "spec", "a drawn shape has at most 8 ops and no run of small repeated details that merge at thumbnail size"),
   shapeCheck("shape-thin", "warn", "spec", `no feature of a drawn shape, and no cut in it, is under ${SHAPE_LIMITS.thin}px across, a hairline at thumbnail size`),
   shapeCheck("shape-cover", "warn", "spec", `a drawn shape covers at least ${SHAPE_LIMITS.cover * 100}% of the sheet`),
+  shapeCheck("shape-edge", "warn", "spec", `a drawn shape that runs off an edge runs off by at least ${SHAPE_LIMITS.bleed * 100}% of its own size, so the bleed reads as meant`),
   shapeCheck("shape-accent", "warn", "spec", `the accent band of a drawn shape is at least ${SHAPE_LIMITS.accent}px tall, so it shows in the thumbnail`),
   shapeCheck("shape-split", "warn", "spec", "no band of a drawn shape falls on two separate pieces of it"),
   shapeCheck("shape-rings", "warn", "spec", `a shape in rings is deep enough for ${RINGS.perPart} rings per part`),
@@ -275,12 +281,21 @@ export const CHECKS = [
     },
   },
   {
+    id: "text-clear", level: "fail", stage: "page", about: `nothing is painted over a text block's letters: at most ${TEXT_CLEAR} px of them (at 2x) differ from the block drawn alone`,
+    run: ({ page }) =>
+      (page.covered ?? [])
+        .filter((c) => c.covered > TEXT_CLEAR)
+        .map((c) => `${c.covered} px of the ${c.block}'s letters are painted over near ${c.x},${c.y}; something is drawn on top of the text, so move the block clear of it`),
+  },
+  {
     id: "blocks-inside", level: "fail", stage: "page", about: "every text block is inside the sheet",
     run: ({ page }) => page.blocks.filter((b) => !inside(b.rect, page.sheet)).map((b) => `${b.name} runs off the sheet (bottom at ${round(b.rect.bottom)}px of ${page.sheet.bottom}px)`),
   },
   {
-    id: "silhouette", level: "fail", stage: "page", about: "the figure covers 15% of the sheet above the footer and spans 55% of its height and 60% of its width",
-    run: ({ page }) => {
+    id: "silhouette", level: "fail", stage: "page", about: "the figure covers 15% of the sheet above the footer and spans 55% of its height and 60% of its width (a drawn shape is judged by shape-cover instead)",
+    run: ({ spec, page }) => {
+      // A shape's rows are type inside a silhouette the mask already measures; their extent is not the figure's.
+      if (fieldsOf(spec).some((r) => r.field === "shape")) return [];
       const s = figureStats(page.rows.map((r) => r.rect), page.dots.map((d) => d.rect), page.footerTop);
       const out = [];
       if (s.coverage < SILHOUETTE.coverage) out.push(`the figure covers ${pct(s.coverage)} of the sheet above the footer; it needs ${pct(SILHOUETTE.coverage)}, so enlarge the shapes`);

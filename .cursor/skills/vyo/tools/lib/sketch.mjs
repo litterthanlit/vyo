@@ -2,42 +2,21 @@
 // Commit Mono's fixed advance, so the agent sees rows, coverage, each region's widths and the floor before rendering.
 import { SHEET, GRID, regionRows, fillRows, dotsLines, fixedMeasure, cornersLine } from "./geometry.mjs";
 import { hasWord, PLACEHOLDER } from "./spec.mjs";
-import { floorOf, fieldItems as layoutField, listItems, recordOf, fieldSpace, tokensOf } from "./render.mjs";
-import { frameOf, roleOf, textSize, lineHeight, ruleText, recordRect } from "./frame.mjs";
+import { floorOf, fieldItems as layoutField, recordOf, fieldSpace, tokensOf } from "./render.mjs";
+import { frameOf, recordRect } from "./frame.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { regionParts } from "./parts.mjs";
 import { figureStats, regionStats, SILHOUETTE, REGION, boxMessage, thinMessage } from "./check.mjs";
 import { shapeReport, shapeFindings, SHAPE_LIMITS } from "./shape-report.mjs";
 import { encodePng } from "./png.mjs";
+import { estimateText, placeTexts } from "./place.mjs";
+import { opKind, opRings, paintRows } from "./mask.mjs";
 
 const CELL = 20;
 const COLS = SHEET.width / CELL;
 const ROWS = Math.ceil(SHEET.height / CELL);
 const LETTERS = "ABCDEF";
-function wrap(text, perLine) {
-  const lines = [];
-  for (const word of text.split(/\s+/)) {
-    const last = lines.length - 1;
-    if (last >= 0 && lines[last].length + 1 + word.length <= perLine) lines[last] += ` ${word}`;
-    else lines.push(word);
-  }
-  return lines;
-}
-
-/** Where a text block's letters land, estimated from its role's line height and average advance. */
-export function estimateText(t, spec, facts) {
-  const role = roleOf(spec, t);
-  const size = textSize(spec, t);
-  const per = (frameOf(spec) === "swiss" && t.role === "label" && t.hot ? role.em + 0.06 : role.em) * size;
-  const one = (text) => [text];
-  const lines = {
-    name: () => one(frameOf(spec) === "swiss" ? `${spec.product.name}.` : spec.product.name.toUpperCase()),
-    headline: () => wrap(spec.headline, Math.max(1, Math.floor(t.w / per))),
-  }[role.prints]?.() ?? (t.role === "list" ? (facts || !t.parts ? listItems(spec, t, facts) : ["x".repeat(12)]) : t.role === "rule" ? [ruleText(t)] : t.role === "label" ? one(t.text) : wrap(t.text.replace(/\*\*/g, ""), Math.max(1, Math.floor(t.w / per))));
-  const width = Math.min(t.w, Math.max(...lines.map((l) => l.length)) * per);
-  const left = t.align === "right" ? t.x + t.w - width : t.align === "center" ? t.x + (t.w - width) / 2 : t.x;
-  return { id: t.id, left, top: t.y, right: left + width, bottom: t.y + lines.length * lineHeight(spec, t), lines: lines.length };
-}
+export { estimateText };
 
 const share = (n) => Math.round(n * 100) / 100;
 
@@ -55,16 +34,20 @@ function shapeSummary({ mask, bands, summary }) {
   ];
 }
 
-// The sketch PNG is the sheet at a third of its size: 280px wide, like the render's thumbnail.
+// The sketch PNG is the sheet at a third of its size: 280px wide, like the render's thumbnail. Type at BAR_SIZE px
+// or more is drawn as bars.
 const IMAGE_SCALE = 3;
+const BAR_SIZE = 12;
 const hexRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
 /**
  * The silhouette as the poster will fill it, without a browser: each band in its fill, the accent band in the
- * accent, the gaps between bands in paper, and the text blocks outlined. Null when the figure has no drawn shape.
+ * accent, the gaps between bands in paper, its large lines of type as bars, its creases as lines, and the text
+ * blocks outlined. Null when the figure has no drawn shape.
  * @returns {Buffer | null}
  */
-export function sketchImage(spec, facts) {
+export function sketchImage(given, facts) {
+  const spec = placeTexts(given, facts);
   const region = spec.figure.regions.find((r) => r.kind === "field" && r.field === "shape");
   if (!region) return null;
   const report = shapeReport(spec, region, facts);
@@ -103,6 +86,26 @@ export function sketchImage(spec, facts) {
       if (i >= 0 && i < rgb.length) for (let k = 0; k < 3; k++) rgb[i + k] = Math.round(rgb[i + k] * 0.6 + c[k] * 0.4);
     }
   }
+  // Large type as solid bars across its x-height, in its tone, so the sketch shows where the big words fall.
+  for (const r of report.rows.filter((q) => !q.glyphs && q.size >= BAR_SIZE)) {
+    const c = hexRgb(tokens[r.tone] ?? tokens.paper);
+    for (let py = Math.round((r.y + 0.42 * r.size) / S); py <= Math.round((r.y + 0.78 * r.size) / S); py++)
+      for (let px = Math.round(r.x / S); px <= Math.round((r.x + r.width) / S); px++) if (px >= 0 && py >= 0 && px < w && py < h) rgb.set(c, (py * w + px) * 3);
+  }
+  // Creases as lines in the paper's tone: they fold the relief's light, which a third of the size hides.
+  const { s: k, tx, ty } = report.mask.xf;
+  for (const op of region.shape.ops.filter((o) => opKind(o)[0] === "crease")) {
+    const kind = op.crease;
+    const thin = kind === "capsule" ? { r: 1.5 / k } : kind === "arc" ? { width: 3 / k } : {};
+    const runs = paintRows(opRings(region.shape, [{ ...op, ...thin, add: kind, crease: undefined }]).map((o) => ({ ...o, cut: false })), k, tx, ty, SHEET.height);
+    const ink = (x, y) => y >= 0 && y < runs.length && runs[y].some(([l, r]) => x >= l && x < r);
+    const line = hexRgb(tokens.paper);
+    for (let py = 0; py < h; py++)
+      for (let px = 0; px < w; px++) {
+        const [x, y] = [px * S + 1.5, py * S + 1];
+        if (["capsule", "arc"].includes(kind) ? ink(x, y) : ink(x, y) !== ink(x + S, y) || ink(x, y) !== ink(x, y + S)) rgb.set(line, (py * w + px) * 3);
+      }
+  }
   const mid = hexRgb(tokens.mid);
   const dot = (x, y) => x >= 0 && y >= 0 && x < w && y < h && rgb.set(mid, (y * w + x) * 3);
   for (const t of spec.figure.texts.map((x) => estimateText(x, spec, facts))) {
@@ -125,7 +128,8 @@ export function fieldItems(spec, region, facts, texts = spec.figure.texts.map((t
  * A figure with a field needs the facts its parts come from.
  * @returns {string}
  */
-export function sketch(spec, facts) {
+export function sketch(given, facts) {
+  const spec = facts ? placeTexts(given, facts) : given;
   const floor = floorOf(spec);
   const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(" "));
   const put = (r, c, ch) => r >= 0 && r < ROWS && c >= 0 && c < COLS && (grid[r][c] = ch);
@@ -250,7 +254,7 @@ export function sketch(spec, facts) {
     ...shapeLines,
     `texts: ${texts.map((b) => `${b.id} ${Math.round(b.left)},${Math.round(b.top)} to ${Math.round(b.right)},${Math.round(b.bottom)}`).join("; ")}`,
     ...(loose ? ["floor: the sheet's bottom edge (loose frame)", cornersLine(fieldSpace(spec, facts).corners)] : [`floor: ${floor}`]),
-    `${[s.coverage >= SILHOUETTE.coverage, s.height >= SILHOUETTE.height, s.width >= SILHOUETTE.width].every(Boolean) ? "" : "! "}coverage ${Math.round(s.coverage * 100)}% (needs ${Math.round(SILHOUETTE.coverage * 100)}%, ${ok(s.coverage, SILHOUETTE.coverage)}), height ${Math.round(s.height * 100)}% (needs ${Math.round(SILHOUETTE.height * 100)}%, ${ok(s.height, SILHOUETTE.height)}), width ${Math.round(s.width * 100)}% (needs ${Math.round(SILHOUETTE.width * 100)}%, ${ok(s.width, SILHOUETTE.width)})`,
+    ...(shapeLines.length ? [] : [`${[s.coverage >= SILHOUETTE.coverage, s.height >= SILHOUETTE.height, s.width >= SILHOUETTE.width].every(Boolean) ? "" : "! "}coverage ${Math.round(s.coverage * 100)}% (needs ${Math.round(SILHOUETTE.coverage * 100)}%, ${ok(s.coverage, SILHOUETTE.coverage)}), height ${Math.round(s.height * 100)}% (needs ${Math.round(SILHOUETTE.height * 100)}%, ${ok(s.height, SILHOUETTE.height)}), width ${Math.round(s.width * 100)}% (needs ${Math.round(SILHOUETTE.width * 100)}%, ${ok(s.width, SILHOUETTE.width)})`]),
     ...(perRegion.length ? perRegion.map((r) => `region ${r.id}: spread/mean ${r.variety.toFixed(2)} (needs ${REGION.variety}), ${Math.round(r.width)}px across on average (needs ${REGION.width})`) : fieldRects.length ? [] : ["regions: no fill rows"]),
     ...notes.map((n) => `! ${n}`),
   ];

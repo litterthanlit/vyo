@@ -102,3 +102,27 @@ test("two text blocks whose estimated rects intersect are warned about before re
   assert.match(sketch(spec), /^! text blocks "one" and "two" overlap; move one \(render fails blocks-apart\)$/m);
   assert.doesNotMatch(sketch(preset("hourglass")), /overlap/);
 });
+
+test("vyo sketch runs every check that needs no browser: a legend and a fits that render would fail are caught here", async () => {
+  const { spawnSync } = await import("node:child_process");
+  const os = await import("node:os");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-sketch-"));
+  try {
+    const vyo = (...a) => spawnSync(process.execPath, [path.join(HERE, "..", "vyo.mjs"), ...a], { encoding: "utf8" });
+    vyo("scan", path.join(HERE, "fixtures", "recipe"), "--out", path.join(dir, "recipe-facts.json"));
+    const facts = JSON.parse(fs.readFileSync(path.join(dir, "recipe-facts.json"), "utf8"));
+    const spec = { ...preset("shape"), facts: facts.hash };
+    const file = path.join(dir, "recipe-poster.json");
+    fs.writeFileSync(file, JSON.stringify(spec));
+    assert.doesNotMatch(vyo("sketch", file).stdout, /^[✗!] (legend|fits|spec)/m, "the jar preset is clean");
+    spec.figure.texts.find((t) => t.role === "legend").text = "Every band is a part of Pantry. The orange band is the plan.";
+    spec.figure.regions[0].fits = "A jar.";
+    fs.writeFileSync(file, JSON.stringify(spec));
+    const out = vyo("sketch", file);
+    assert.equal(out.status, 0);
+    assert.match(out.stdout, /^✗ legend: must say what the picture encodes; name the accent part \("the plan"\) and the measure/m);
+    assert.match(out.stdout, /^✗ fits: region shape: fits must say why a shape matches the product's story/m);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

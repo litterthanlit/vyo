@@ -258,6 +258,9 @@ function checkField(f, r, err, copy, frame) {
     if (st !== undefined && !(isObj(st) && ((st.by === "depth" && Object.keys(st).length === 1) || (st.by === "angle" && isNum(st.angle) && Object.keys(st).length === 2)))) {
       err(`${f}.strata: { "by": "angle", "angle": degrees } (90 stacks the parts top to bottom, 0 left to right) or { "by": "depth" } (shells from the outline in)`);
     }
+    if (r.split !== undefined && !(Array.isArray(r.split) && r.split.length >= 1 && r.split.length <= 4 && r.split.every((id) => isStr(id) && /^area:\S+$/.test(id)))) {
+      err(`${f}.split: a list of 1 to 4 part ids, like ["area:source"], each cut into the folders inside it (vyo parts --field shape --split <id> lists the parts it gives)`);
+    }
     if (r.echo !== undefined && (!Number.isInteger(r.echo) || r.echo < 0 || r.echo > RINGS.maxEcho)) err(`${f}.echo: a whole number of faded outlines from 0 to ${RINGS.maxEcho}`);
     else if (r.echo && r.style !== "rings") err(`${f}.echo: only the rings style draws echoes; set style to rings or remove echo`);
   }
@@ -292,7 +295,7 @@ function checkField(f, r, err, copy, frame) {
 
 const sentences = (text) => text.split(/[.!?]+(?:\s+|$)/).filter((x) => x.trim()).length;
 
-function checkText(f, t, err, copy, frame) {
+function checkText(f, t, err, copy, frame, placed) {
   const roles = FRAME_ROLES[frame];
   const role = roles[t.role];
   if (!role) return err(`${f}.role: "${t.role}" is not a role in the ${frame} frame; use ${Object.keys(roles).join(", ")}`);
@@ -324,8 +327,11 @@ function checkText(f, t, err, copy, frame) {
     }
   }
   if (t.hot !== undefined && (t.role !== "label" || typeof t.hot !== "boolean")) err(`${f}.hot: only a label can be hot`);
-  if (!inRange(t.x, 0, SHEET.width) || !inRange(t.y, 0, SHEET.height)) err(`${f}: x must be 0 to ${SHEET.width} and y 0 to ${SHEET.height}`);
-  if (!inRange(t.w, 16, SHEET.width)) err(`${f}.w: 16 to ${SHEET.width}`);
+  // Around a drawn shape the engine places a block that leaves out x and y; w, if given, is the widest it may be.
+  const auto = placed && t.x === undefined && t.y === undefined;
+  if (placed && (t.x === undefined) !== (t.y === undefined)) err(`${f}: give x and y together, or leave both out and the engine places the block`);
+  else if (!auto && (!inRange(t.x, 0, SHEET.width) || !inRange(t.y, 0, SHEET.height))) err(`${f}: x must be 0 to ${SHEET.width} and y 0 to ${SHEET.height}`);
+  if (!(placed && t.w === undefined) && !inRange(t.w, 16, SHEET.width)) err(`${f}.w: 16 to ${SHEET.width}`);
   const [, lo, hi] = sizeRange({ frame }, t);
   if (t.size !== undefined && !inRange(t.size, lo, hi)) err(`${f}.size: ${lo} to ${hi}`);
   if (t.align !== undefined && !["left", "right", "center"].includes(t.align)) err(`${f}.align: left, right or center`);
@@ -366,12 +372,13 @@ function checkFigure(fig, err, copy, frame) {
   if (frame === "loose" && Array.isArray(fig.regions) && !hasField(fig)) err("figure.regions: the loose frame draws a field; add a field region, or set frame to swiss for fill and dots figures");
 
   if (!Array.isArray(fig.texts) || fig.texts.length < 1 || fig.texts.length > LIMITS.texts) return err(`figure.texts: 1 to ${LIMITS.texts} texts`);
+  const placed = frame === "loose" && Array.isArray(fig.regions) && fig.regions.some((r) => isObj(r) && r.kind === "field" && r.field === "shape");
   fig.texts.forEach((t, i) => {
     const f = `figure.texts[${i}]`;
     if (!isObj(t)) return err(`${f}: must be a text`);
     unknownKeys(t, KEYS.text[frame], `${f}.`, err);
     idOk(f, t.id);
-    checkText(f, t, err, copy, frame);
+    checkText(f, t, err, copy, frame, placed);
   });
   for (const [role, { count: [lo, hi] }] of Object.entries(FRAME_ROLES[frame])) {
     const n = fig.texts.filter((t) => isObj(t) && t.role === role).length;
@@ -522,16 +529,16 @@ function fieldRegion(field, { accent, parts }) {
  * the corners the field leaves empty (`places`, from lib/frame.mjs). The legend's placeholder spells out its rule.
  * @param {{ accent?: string, accentNames: string[], parts: { id: string, name: string }[], places: Record<string, object> }} o
  */
-function looseFigure(field, { accent, accentNames, parts, places }) {
+function looseFigure(field, { accent, split, accentNames, parts, places }) {
   const name = accentNames.length ? quoted(accentNames) : "the accent part";
   const measure = FIELDS[field].measure.map(quoted).join(", and ");
   return {
-    regions: [fieldRegion(field, { accent, parts })],
+    regions: [{ ...fieldRegion(field, { accent, parts }), ...(split ? { split } : {}) }],
     texts: [
       { role: "label", id: "label", ...places.label },
       { role: "headline", id: "headline", ...places.headline },
       { role: "legend", id: "legend", ...places.legend, text: hold(`what the picture encodes, at most 2 sentences and ${FRAME_ROLES.loose.legend.max} characters: name ${name} and the measure (${measure})`) },
-      ...(places.paragraph ? [{ role: "paragraph", id: "paragraph", ...places.paragraph, text: hold(`what the product does for its user, at most 2 sentences and ${FRAME_ROLES.loose.paragraph.max} characters, or remove it`) }] : []),
+      ...(places.paragraph ? [{ role: "paragraph", id: "paragraph", ...places.paragraph, text: hold(`what the product does for its user, at most 2 sentences and ${FRAME_ROLES.loose.paragraph.max} characters, or remove the block`) }] : []),
       ...(places.list ? [{ role: "list", id: "list", ...places.list, parts: true }] : []),
     ],
   };
@@ -561,7 +568,7 @@ function blankFigure(fig) {
  *           places?: Record<string, object> }} o
  * @returns {Spec}
  */
-export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", theme, commit, date, floor, field = "wave", accent, accentNames = [], parts = [], places }) {
+export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", theme, commit, date, floor, field = "wave", accent, split, accentNames = [], parts = [], places }) {
   const loose = frame === "loose";
   const notes = preset ? preset.notes.length : 3;
   return {
@@ -573,7 +580,7 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
     ...(preset?.accent ? { accent: preset.accent } : {}),
     headline: hold(`one plain sentence about the outcome, at most ${LIMITS.headline} characters`),
     ...(preset ? { hot: hold("the one word set in the accent colour: a word of a fill region, a dots line or a hot label") } : {}),
-    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, accentNames, parts, places }) : fieldFigure(field, floor, { accent, parts }),
+    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, split, accentNames, parts, places }) : fieldFigure(field, floor, { accent, parts }),
     ...(loose
       ? {}
       : {

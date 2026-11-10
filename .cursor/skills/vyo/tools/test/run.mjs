@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { buildPage, renderPage } from "../lib/render.mjs";
 import { fieldItems } from "../lib/sketch.mjs";
 import { BROWSER_NOTE } from "../lib/browser.mjs";
+import { runChecks } from "../lib/check.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TOOLS = path.join(HERE, "..");
@@ -14,7 +15,7 @@ const OUT = path.join(HERE, ".out");
 const VYO = path.join(TOOLS, "vyo.mjs");
 const PRESETS = fs.readdirSync(path.join(TOOLS, "presets")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
 
-const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "shape", "rings", "shape-relief", "docs", "init"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
+const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "shape", "place", "rings", "shape-relief", "docs", "init"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
@@ -144,7 +145,7 @@ for (const [name, mutate, expect] of SHAPE_WARNINGS) {
 
 // A relief's flaws, through the CLI: a form turned away from the light, and an accent stratum too thin to see.
 const RELIEF_WARNINGS = [
-  ["every face dim", (r) => r.shape.ops.forEach((o) => o.add && (o.face = "dim")), /^! shape-tone: at thumbnail size the relief's lit side reaches \d+\.\d% light \(90th percentile\); it needs 38\.0% to read as a bright object, so turn a dim face to lit or drop its face, or raise bevel \(it is 0\.8\) so more of the form turns to the light$/m],
+  ["every face dim", (r) => r.shape.ops.forEach((o) => o.add && (o.face = "dim")), /^! shape-tone: at thumbnail size the relief's lit side reaches \d+\.\d% light \(90th percentile\); it needs 38\.0% to read as a bright object, so turn a dim face to lit or drop its face$/m],
   ["a flat strip", (r) => (r.shape = { ops: [{ add: "rect", at: [0, 0], size: [100, 40] }], fit: { w: 0.95 } }), /^! shape-accent: the accent stratum "the plan" is \d+px thick at its thickest; it needs 40px to show in the thumbnail, so turn the strata \(strata\.angle\) to cut across the shape's narrow side/m],
 ];
 for (const [name, mutate, expect] of RELIEF_WARNINGS) {
@@ -196,6 +197,17 @@ for (const id of PRESETS.filter((p) => preset(p).figure.regions.some((r) => r.ki
     return !r || Math.abs(r.left - n.x) > 2 || Math.abs(r.top - n.y) > 2 || Math.abs(r.right - (n.x + n.width)) > 2;
   });
   result(node.length === page.rows.length && !far.length, `${id}: the sketch and the page place the same ${node.length} rows within 2px`, `node ${node.length} rows, page ${page.rows.length}; first apart: ${JSON.stringify(far[0])} vs ${JSON.stringify(page.rows[node.indexOf(far[0])]?.rect)}`);
+}
+
+// A halo drawn line by line covered the y of "type" with the stroke of "The" below it; text-clear must see that.
+{
+  const spec = preset("shape");
+  spec.figure.texts.find((t) => t.role === "legend").text = "Every band is a part of Hypher, its type as big as its share of the code. The orange band is the handoff note.";
+  const html = buildPage(spec, facts);
+  const stroked = html.replace("[data-role] { z-index: 2 }", "[data-role] { z-index: 2; -webkit-text-stroke: 12px var(--paper); paint-order: stroke fill }");
+  const covered = async (h) => runChecks("page", { spec, facts, presets: {}, page: await renderPage({ html: h, base: path.join(OUT, "halo"), png: false, pdf: false }) }).filter((f) => f.id === "text-clear");
+  const [now, then] = [await covered(html), await covered(stroked)];
+  result(stroked !== html && !now.length && /^\d+ px of the legend's letters are painted over near \d+,\d+;/.test(then[0]?.message ?? ""), "text-clear passes the halo and catches a stroke that covers the line above", `now ${JSON.stringify(now)}\nthen ${JSON.stringify(then)}`);
 }
 
 const emptyFacts = path.join(OUT, "empty-facts.json");

@@ -25,8 +25,11 @@ export const SHAPE_KINDS = {
   polygon: { points: "points", round: "optional" },
   path: { d: "string" },
 };
-// With no fit, the shape's extent fills this much of the sheet and sits a little low, leaving the top for the words.
-export const SHAPE_FIT = { w: 0.9, h: 0.74, cx: 0.5, cy: 0.61 };
+// With no fit.w or fit.h, the shape is as large as fits in the sheet less these margins, standing on the bottom
+// one: the top margin is room for the label, headline and legend, the bottom one for the record line. A fit.w or
+// fit.h without a centre centres it across at cx and at cy down.
+export const SHAPE_ROOM = { left: 40, right: 40, top: 250, bottom: 56 };
+export const SHAPE_FIT = { cx: 0.5, cy: 0.61 };
 const QUARTER = 16;
 
 const arcRing = (cx, cy, rx, ry, a0, a1, n) =>
@@ -193,7 +196,8 @@ function runsBox(runs) {
 /**
  * The shape fitted to the sheet: its painted extent (cuts and rotations counted) scaled uniformly so that it is
  * `fit.w` of the sheet's width or `fit.h` of its height (the smaller scale when both are given), centred on
- * (`fit.cx`, `fit.cy`). Returns null when the ops paint nothing.
+ * (`fit.cx`, `fit.cy`). Without either, as large as fits inside SHAPE_ROOM, on its bottom margin, so it never
+ * bleeds. Returns null when the ops paint nothing.
  * @param {Shape} shape
  * @returns {Mask | null}
  */
@@ -209,11 +213,16 @@ export function shapeMask(shape) {
   if (!probe) return null;
   const box = { left: raw.left + probe.left / p, top: raw.top + probe.top / p, w: (probe.right - probe.left) / p, h: (probe.bottom - probe.top) / p };
   const { width: W, height: H } = SHEET;
-  const fit = { ...SHAPE_FIT, ...shape.fit };
-  const given = shape.fit && (shape.fit.w !== undefined || shape.fit.h !== undefined) ? shape.fit : SHAPE_FIT;
-  const s = Math.min(...[given.w !== undefined && (given.w * W) / box.w, given.h !== undefined && (given.h * H) / box.h].filter(Boolean));
-  const tx = fit.cx * W - (box.left + box.w / 2) * s;
-  const ty = fit.cy * H - (box.top + box.h / 2) * s;
+  const given = shape.fit ?? {};
+  const R = SHAPE_ROOM;
+  const sized = given.w !== undefined || given.h !== undefined;
+  const s = sized
+    ? Math.min(...[given.w !== undefined && (given.w * W) / box.w, given.h !== undefined && (given.h * H) / box.h].filter(Boolean))
+    : Math.min((W - R.left - R.right) / box.w, (H - R.top - R.bottom) / box.h);
+  const cx = given.cx ?? (sized ? SHAPE_FIT.cx : (R.left + (W - R.left - R.right) / 2) / W);
+  const cy = given.cy ?? (sized ? SHAPE_FIT.cy : (H - R.bottom - (box.h * s) / 2) / H);
+  const tx = cx * W - (box.left + box.w / 2) * s;
+  const ty = cy * H - (box.top + box.h / 2) * s;
   const runs = paintRows(ops, s, tx, ty, H).map((row) => row.map(([l, r]) => [Math.max(0, l), Math.min(W, r)]).filter(([l, r]) => r > l));
   const area = runs.reduce((sum, row) => sum + row.reduce((a, [l, r]) => a + r - l, 0), 0);
   const placed = { left: box.left * s + tx, top: box.top * s + ty, right: (box.left + box.w) * s + tx, bottom: (box.top + box.h) * s + ty };

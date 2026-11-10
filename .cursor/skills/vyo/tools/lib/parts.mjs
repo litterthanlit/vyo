@@ -30,14 +30,15 @@ export function unplainName(name) {
 
 /**
  * Every non-generated line of the repo in at most `maxParts` parts, each an area of the scan, in tree order.
- * A file starts in its nearest leaf area (or its own area when no leaf holds it); a part under `minShare`
- * of the lines merges into its parent area, deepest first, until it is big enough or sits at the top level;
- * then the smallest parts merge up until there are at most `maxParts`.
+ * A file starts in its nearest leaf area (or its own area when no leaf holds it), except under a leaf named in
+ * `split`, where it starts in its own area; a part under `minShare` of the lines merges into its parent area,
+ * deepest first, until it is big enough or sits at the top level; then the smallest parts merge up until there
+ * are at most `maxParts`.
  * @param {{ facts: { id: string, kind: string, name: string, meta?: { leaf?: boolean } }[], files: Record<string, { area: string, loc: number, gen?: number }> }} facts
- * @param {{ minShare?: number, maxParts?: number, names?: Record<string, string> }} [o]
+ * @param {{ minShare?: number, maxParts?: number, split?: string[], names?: Record<string, string> }} [o]
  * @returns {{ id: string, name: string, loc: number, files: number, order: number }[]}
  */
-export function partsFromFacts(facts, { minShare = PART_DEFAULTS.minShare, maxParts = PART_DEFAULTS.maxParts, names = {} } = {}) {
+export function partsFromFacts(facts, { minShare = PART_DEFAULTS.minShare, maxParts = PART_DEFAULTS.maxParts, split = [], names = {} } = {}) {
   const areas = new Map(facts.facts.filter((f) => f.kind === "area").map((a) => [a.id, a]));
   const parentOf = (id) => {
     const segs = segmentsOf(id);
@@ -48,7 +49,7 @@ export function partsFromFacts(facts, { minShare = PART_DEFAULTS.minShare, maxPa
     return null;
   };
   const leafOf = (id) => {
-    for (let a = id; a; a = parentOf(a)) if (areas.get(a)?.meta?.leaf) return a;
+    for (let a = id; a; a = parentOf(a)) if (areas.get(a)?.meta?.leaf) return split.includes(a) ? id : a;
     return id;
   };
 
@@ -79,6 +80,25 @@ export function partsFromFacts(facts, { minShare = PART_DEFAULTS.minShare, maxPa
   return [...parts]
     .sort(([a], [b]) => treeOrder(a, b))
     .map(([id, p], order) => ({ id, name: names[id] ?? areas.get(id)?.name ?? id.slice(5), loc: p.loc, files: p.files, order }));
+}
+
+// A part over `share` of the lines, or fewer than `parts` parts, draws a shape as one slab. The cold runs' flask
+// (62% accent, in rings) and train (58%, in bands) read well; Got's bone (95%) was one orange haze.
+export const DOMINANT = { share: 0.75, parts: 4 };
+
+/**
+ * When one part is most of the code, or there are too few parts, which part to split and what splitting it gives:
+ * `{ part, share, count, split: { id, count, largest } | null }`, or null when the parts are fine. `split` is null
+ * when the part has no folders inside it to split into.
+ */
+export function dominance(facts, options = {}) {
+  const parts = partsFromFacts(facts, options);
+  const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
+  const big = parts.reduce((a, b) => (b.loc > a.loc ? b : a), parts[0]);
+  if (!big || (big.loc / total <= DOMINANT.share && parts.length >= DOMINANT.parts)) return null;
+  const finer = partsFromFacts(facts, { ...options, split: [...(options.split ?? []), big.id] });
+  const largest = Math.max(...finer.map((p) => p.loc)) / total;
+  return { part: big, share: big.loc / total, count: parts.length, split: finer.length > parts.length ? { id: big.id, count: finer.length, largest } : null };
 }
 
 /** Groups of two or more parts whose names read the same, ignoring case: a reader cannot tell them apart. */

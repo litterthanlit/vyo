@@ -10,25 +10,29 @@ import { maskGrid, opRings, opKind, paintRows, intersectRuns } from "../mask.mjs
 // inscribed radius that is rounded. pillow: the px each stratum rounds off its seams. fold: a crease's width.
 // rim: px inside the outline that never fade. light: toward the light, x right, y down, z up. phase: how far each
 // line's names shift. accent, share, tone: the floors the findings hold, the tone floors set between good forms
-// (lit 0.46 to 0.59, spread 0.36 to 0.42) and dim or flat ones (lit under 0.32, spread under 0.2).
+// (lit 0.46 to 0.59, spread 0.36 to 0.42) and dim or flat ones (lit under 0.32, spread under 0.2). slab: the accent's
+// share of the shape past which shape-dominant (DOMINANT.share in parts.mjs) speaks for the tone.
 export const RELIEF = {
   size: 6, leading: 1.04, cell: 2, bevel: 0.7, pillow: 12, fold: 14, rim: 5, light: [-0.62, -0.78, 0.75], phase: 7,
-  accent: 40, share: { points: 0.6, part: 0.2 },
+  accent: 40, share: { points: 0.6, part: 0.2 }, slab: 0.75,
   tone: { lit: 0.38, spread: 0.3 },
 };
 // Per theme: the field's own token, the letters' colour, the underlay (the shading in `levels` soft steps under
 // the letters, its alpha running from `from` in the shadow to `to` in the light), the glow under the accent and
-// the shadow the form casts down and right. On the dark sheet the letters are the light and the underlay a faint
-// haze of it. On paper, letters lit the same way on paper alone fade into it, so the form is a body in a deep
-// cool ink, darkest in its shadow, and the letters are paper.
+// the shadow the form casts down and right, and how the accent stratum is drawn. On the dark sheet the letters are
+// the light and the underlay a faint haze of it, and the accent glows. On paper, letters lit the same way on paper
+// alone fade into it, so the form is a body in a deep cool ink, darkest in its shadow, and the letters are paper;
+// an accent glowing over that body read as a muddy orange haze, so it is a solid stratum of the accent with dark
+// letters, shaded by `shade` steps of the body's ink where it turns from the light, over a narrow glow.
 export const RELIEF_TONES = {
   light: {
     tokens: { shade: "#2A3446" }, glyph: "paper", underlay: { tone: "shade", levels: 5, from: 0.97, to: 0.62 },
-    glow: { spread: 10, blur: 14, alpha: 0.5 }, shadow: { tone: "shade", alpha: 0.22, blur: 14, at: [0.04, 0.06] },
+    glow: { spread: 6, blur: 8, alpha: 0.35 }, shadow: { tone: "shade", alpha: 0.22, blur: 14, at: [0.04, 0.06] },
+    accent: { glyph: "on-hot", shade: [[0.8, 0.1], [0.6, 0.1], [0.4, 0.1]] },
   },
   dark: {
     tokens: {}, glyph: "ink", underlay: { tone: "ink", levels: 6, from: 0, to: 0.3 },
-    glow: { spread: 12, blur: 18, alpha: 0.6 }, shadow: null,
+    glow: { spread: 12, blur: 18, alpha: 0.6 }, shadow: null, accent: null,
   },
 };
 // Ink a glyph lays on its cell, as a share of the cell, for the thumbnail the sketch predicts.
@@ -236,7 +240,7 @@ function reliefGlyph(ch, gap, v) {
 
 /** A cell's look: its alpha in tenths, weight and colour token. */
 function reliefLook(v, b, hot, theme) {
-  if (hot) return { alpha: Math.round(10 * (0.6 + 0.4 * b)) / 10, weight: 700, tone: "hot" };
+  if (hot) return { alpha: Math.round(10 * (0.6 + 0.4 * b)) / 10, weight: 700, tone: RELIEF_TONES[theme].accent?.glyph ?? "hot" };
   return { alpha: Math.round(10 * (0.24 + 0.76 * Math.pow(v, 1.1))) / 10, weight: v > 0.45 ? 700 : 400, tone: RELIEF_TONES[theme].glyph };
 }
 
@@ -429,6 +433,15 @@ export function reliefStyle(mask, parts, { measure, theme = "light", tokens, reg
   if (hi >= 0) {
     const hot = label.map((l) => (l === hi ? 1 : 0));
     ground.push({ part: parts[hi].id, hot: true, tone: "hot", rows: reliefRuns(reliefGrow(hot, w, h, tones.glow.spread, C), w, h, C), alpha: tones.glow.alpha, blur: tones.glow.blur });
+    if (tones.accent) {
+      // The stratum itself, on the mask's own edge where it meets the outline, then its shading in a few steps.
+      const clip = (on) => reliefRuns(on, w, h, C).map(([y, spans]) => [y, intersectRuns(spans, mask.runs[y])]).filter(([, sp]) => sp.length);
+      ground.push({ part: parts[hi].id, hot: true, tone: "hot", rows: clip(hot) });
+      for (const [below, alpha] of tones.accent.shade) {
+        const dim = hot.map((on, i) => (on && reliefInk(light[i], dIn[i]) < below ? 1 : 0));
+        if (dim.some((b) => b)) ground.push({ part: null, hot: false, tone: tones.underlay.tone, rows: clip(dim), alpha, blur: 2 });
+      }
+    }
   }
   const value = { strata: reliefStrataOf(surface, parts, rows), rows, ground, surface, tokens };
   value.findings = (drawn) => reliefFindings(value, parts, drawn, mask, region);
@@ -604,14 +617,30 @@ function reliefFindings(value, parts, drawn, mask, region) {
       out["shape-share"].push(`"${p.name}" has ${got.toFixed(1)}% of the relief's glyphs for ${want.toFixed(1)}% of the lines; its stratum is cut off by the sheet edge or too thin across the glyph lines, so keep the shape on the sheet or turn the strata (strata.angle)`);
     }
   });
+  // An accent stratum over half the shape holds the tone in its own flat fill whatever the hints do (on the Got
+  // bone at 95%, bevel 0.3 to 1 moved the spread 8.6% to 9.7%; at 22% it read 37%). Past `slab` shape-dominant
+  // names the fix, so tone waits; below it, tone names the accent.
+  const accent = strata.filter((s) => s.part.hot).reduce((n, s) => n + s.area, 0);
+  if (accent > L.slab) return out;
   value.tone ??= reliefTone(value, mask, value.tokens);
   const tone = value.tone;
   const bevel = region.bevel ?? L.bevel;
+  const faces = new Set(region.shape.ops.filter((o) => o.add !== undefined && o.face).map((o) => o.face));
+  // What moves the numbers, measured on the bone and the jar: one-sided faces flatten the form, a bevel under the
+  // default flattens its top (0.3 to 0.7 moved the bone's spread 28.9% to 37.1%, 0.7 to 1 by 0.1 points).
+  const lever =
+    accent > 0.5
+      ? `the accent covers ${reliefPct(accent)} of the shape and its flat fill holds the tone whatever the bevel, so put the accent on a smaller part`
+      : faces.size === 1
+      ? `every face is ${[...faces][0]}, which turns the whole form one way: give one add the other face, or drop the faces`
+      : bevel < L.bevel
+        ? `raise bevel (it is ${bevel}) to ${L.bevel} or more, so the form rounds toward the light`
+        : `its ${Math.round(value.surface.R)}px of rounding is too shallow to shade at this size: draw it fatter, or fold it with a crease along its length`;
   if (tone.lit < L.tone.lit) {
-    out["shape-tone"].push(`at thumbnail size the relief's lit side reaches ${reliefPct(tone.lit)} light (90th percentile); it needs ${reliefPct(L.tone.lit)} to read as a bright object, so turn a dim face to lit or drop its face, or raise bevel (it is ${bevel}) so more of the form turns to the light`);
+    out["shape-tone"].push(`at thumbnail size the relief's lit side reaches ${reliefPct(tone.lit)} light (90th percentile); it needs ${reliefPct(L.tone.lit)} to read as a bright object, so ${faces.has("dim") ? "turn a dim face to lit or drop its face" : lever}`);
   }
   if (tone.spread < L.tone.spread) {
-    out["shape-tone"].push(`at thumbnail size the relief's tones span ${reliefPct(tone.spread)} (10th to 90th percentile); it needs ${reliefPct(L.tone.spread)} to read as a volume, so raise bevel (it is ${bevel}) toward 1 or add a lit and a dim face`);
+    out["shape-tone"].push(`at thumbnail size the relief's tones span ${reliefPct(tone.spread)} (10th to 90th percentile); it needs ${reliefPct(L.tone.spread)} to read as a volume, so ${lever}`);
   }
   return out;
 }
