@@ -286,9 +286,22 @@ test("shape-dominant: Got's accent, 95% of its code in 3 parts, is one slab; spl
   assert.equal(shapeReport(split, split.figure.regions[0], got).parts.length, 6);
   const lone = { hash: got.hash, facts: [{ id: "area:app", kind: "area", name: "App", meta: { leaf: true } }, { id: "area:docs", kind: "area", name: "Docs", meta: { leaf: true } }], files: { "app/a.js": { area: "area:app", loc: 900 }, "docs/b.js": { area: "area:docs", loc: 100 } } };
   const one = spec({ accent: "area:app" });
-  assert.deepEqual(shapeFindings(shapeReport(one, one.figure.regions[0], lone))["shape-dominant"], ['the accent "App" holds 90% of the lines and the shape has 2 parts, so every style draws it as one slab; "App" has no folders inside it to split, so put the accent on a smaller part, or keep it in bands, whose type still names every part']);
+  assert.deepEqual(shapeFindings(shapeReport(one, one.figure.regions[0], lone))["shape-dominant"], ['the accent "App" holds 90% of the lines, so relief draws it as one slab of the accent; "App" has no folders inside it to split, so put the accent on a smaller part, or set style to bands, whose type still names every part']);
   const banded = spec({ accent: "area:app", style: "bands" });
   assert.deepEqual(shapeFindings(shapeReport(banded, banded.figure.regions[0], lone))["shape-dominant"], [], "in bands with nothing to split, nothing to say");
+});
+
+test("shape-dominant: a small accent among few parts is fine unless the big part can be split, and then the split keeps the accent", () => {
+  const got = JSON.parse(fs.readFileSync(path.join(HERE, "fixtures", "got-facts.json"), "utf8"));
+  const found = (s, facts) => shapeFindings(shapeReport(s, s.figure.regions[0], facts))["shape-dominant"];
+  // The requests cold run: the accent is the 2% part of two, and the 98% part has no folders. Nothing can change it.
+  const mug = { hash: got.hash, facts: [{ id: "area:.", kind: "area", name: "Root" }, { id: "area:src", kind: "area", name: "Src", meta: { leaf: true } }], files: { "README.py": { area: "area:.", loc: 40 }, "src/a.py": { area: "area:src", loc: 1960 } } };
+  for (const style of ["rings", "relief", "bands"]) assert.deepEqual(found(withShape(jar().figure.regions[0].shape, { style, accent: "area:.", names: {} }), mug), [], `${style}: nothing to say`);
+  // Got with the accent on its documentation: Source is the slab, and splitting Source is the fix.
+  const doc = withShape(jar().figure.regions[0].shape, { style: "rings", accent: "area:documentation", names: {} });
+  assert.deepEqual(found(doc, got), ['"Source" holds 95% of the lines and the shape has 3 parts, so it draws as one slab around the accent; add "split": ["area:source"] to the region to cut "Source" into the folders inside it (6 parts, the largest 63%); the accent stays where it is']);
+  const fixed = withShape(jar().figure.regions[0].shape, { style: "rings", accent: "area:documentation", split: ["area:source"], names: {} });
+  assert.deepEqual(found(fixed, got), [], "the split it names quiets it");
 });
 
 test("shape-simple: the cold run's 11-op locomotive is too busy and its wheels merge; the 3-op flask and the bone's four knobs are fine", () => {

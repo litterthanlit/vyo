@@ -140,6 +140,33 @@ const thinCache = { key: null, value: null };
 const bandOf = (report, part) => report.bands?.find((b) => b.part.id === part.id);
 
 /**
+ * shape-dominant: one part is most of the shape, or there are too few parts. Each case says the one action that
+ * changes the picture, and a case with no such action says nothing:
+ * - the biggest part has folders inside it: split it, and if it is the accent, move the accent onto one of them;
+ * - the accent holds most of the lines and cannot be split: outside bands it is one slab of the accent, so a
+ *   smaller accent or bands (whose type still names every part) is the fix; in bands nothing is wrong;
+ * - few parts, the biggest unsplittable and not the accent alone over the line: the accent shows; nothing to do.
+ */
+function dominantFindings({ dominant: d, parts, region }) {
+  const accents = parts.filter((p) => p.hot);
+  if (!d || !accents.length) return [];
+  const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
+  const hotShare = accents.reduce((s, p) => s + p.loc, 0) / total;
+  const style = region.style ?? "bands";
+  const bigIsAccent = accents.some((p) => p.id === d.part.id);
+  if (d.split) {
+    const add = `add "split": [${[...(region.split ?? []), d.split.id].map((id) => `"${id}"`).join(", ")}] to the region to cut "${d.part.name}" into the folders inside it (${d.split.count} parts, the largest ${pct(d.split.largest)})`;
+    return bigIsAccent
+      ? [`the accent "${d.part.name}" holds ${pct(d.share)} of the lines and the shape has ${parts.length} parts, so every style draws it as one slab; ${add}, then put the accent on the one the story is about (vyo parts <facts> --field shape --split ${d.split.id} lists them)`]
+      : [`"${d.part.name}" holds ${pct(d.share)} of the lines and the shape has ${parts.length} parts, so it draws as one slab around the accent; ${add}; the accent stays where it is`];
+  }
+  if (hotShare > DOMINANT.share && style !== "bands") {
+    return [`the accent "${accents.map((p) => p.name).join('", "')}" holds ${pct(hotShare)} of the lines, so ${style} draws it as one slab of the accent; "${d.part.name}" has no folders inside it to split, so put the accent on a smaller part, or set style to bands, whose type still names every part`];
+  }
+  return [];
+}
+
+/**
  * Every finding on a shape region, by check id. `rows` are the rows as drawn (the page's, or Node's for the
  * sketch); `blocks` are the text blocks, each `{ id, left, top, right, bottom }`.
  * @returns {Record<(typeof SHAPE_CHECKS)[number], string[]>}
@@ -154,20 +181,7 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
   const own = typeof report.findings === "function" ? report.findings(rows) : report.findings ?? {};
   for (const [id, messages] of Object.entries(own)) out[id].push(...messages);
 
-  const d = report.dominant;
-  const accents = parts.filter((p) => p.hot);
-  const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
-  const hotShare = accents.reduce((s, p) => s + p.loc, 0) / total;
-  // Bands set every part's name in type however big the accent is, so with nothing to split they are the fix.
-  const stuck = !d?.split && (region.style ?? "bands") === "bands";
-  if (d && !stuck && accents.length && (hotShare > DOMINANT.share || parts.length < DOMINANT.parts)) {
-    const what = `${hotShare > DOMINANT.share ? `the accent "${accents.map((p) => p.name).join('", "')}" holds ${pct(hotShare)} of the lines` : `the accent holds ${pct(hotShare)} of the lines`} and the shape has ${parts.length} parts, so every style draws it as one slab`;
-    out["shape-dominant"].push(
-      d.split
-        ? `${what}; add "split": [${[...(region.split ?? []), d.split.id].map((id) => `"${id}"`).join(", ")}] to the region to cut "${d.part.name}" into the folders inside it (${d.split.count} parts, the largest ${pct(d.split.largest)}), then put the accent on the one the story is about (vyo parts <facts> --field shape --split ${d.split.id} lists them)`
-        : `${what}; "${d.part.name}" has no folders inside it to split, so put the accent on a smaller part, or keep it in bands, whose type still names every part`,
-    );
-  }
+  out["shape-dominant"].push(...dominantFindings(report));
 
   const drawn = region.shape.ops.map((op, i) => ({ op, i })).filter(({ op }) => op.crease === undefined);
   if (drawn.length > SHAPE_SIMPLE.ops) {
