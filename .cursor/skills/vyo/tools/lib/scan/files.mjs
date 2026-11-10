@@ -7,6 +7,7 @@ import { basename, cmp, countLoc, dirname, extname } from "./util.mjs";
 export const SOURCE_EXT = new Set([
   ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts", ".vue", ".svelte", ".astro",
   ".py", ".go", ".rb", ".rs", ".php", ".java", ".kt", ".swift", ".sql", ".prisma", ".mdx",
+  ".cs", ".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hh", ".dart", ".scala", ".ex", ".exs", ".lua", ".zig",
 ]);
 // Files whose `import` lines are parsed JS-style. .mdx is content, but its ESM blocks are code.
 export const JS_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts", ".vue", ".svelte", ".astro", ".mdx"]);

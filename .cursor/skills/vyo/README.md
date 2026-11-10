@@ -26,6 +26,10 @@ Ask your agent: "Explain this app as a poster." It follows the skill, runs `vyo 
 
 To steer the result, copy `project-context.example.md` from the skill folder to `project-context.md` beside it, and fill in the product's name, its audience and the story you want told.
 
+## Languages
+
+JavaScript, TypeScript and Python get full detection: screens, requests and saved records. Every other listed language (Go, Ruby, Rust, PHP, Java, Kotlin, Swift, C#, C and C++, Dart, Scala, Elixir, Lua and Zig) is drawn by size.
+
 ## Requirements
 
 Node.js 20 or later (Playwright needs it), and Chromium for `render` and `check`. The other commands need no browser.

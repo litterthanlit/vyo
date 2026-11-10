@@ -1204,6 +1204,27 @@ describe("exclusions drop nothing silently", () => {
     assert.equal(facts.excluded.by["test/"].files, 1);
   });
 
+  test("C#, C, C++, Dart, Scala, Elixir, Lua and Zig files are counted and drawn as parts", () => {
+    const cs = "using System;\n// it's a comment with a quote\nnamespace App.Orders {\n  public class Cart {\n    public string Sql = @\"select 1\";\n    /* block\n       comment */\n    public int Total() { return 1; }\n  }\n}\n";
+    const { facts } = scanTree({
+      "Orders/Cart.cs": cs,
+      "Orders/Pay.cs": cs,
+      "native/a.c": "int main() { return 0; }\n",
+      "native/a.h": "int main();\n",
+      "native/b.cpp": "int f() { return 1; }\n",
+      "app/a.dart": "void main() {}\n",
+      "app/a.scala": "object A {}\n",
+      "app/a.ex": "defmodule A do\nend\n",
+      "app/a.lua": "-- it's lua\nprint(1)\n",
+      "app/a.zig": "pub fn main() void {}\n",
+    });
+    assert.deepEqual(Object.keys(facts.files).length, 10);
+    const lines = Object.values(facts.files).reduce((s, f) => s + f.loc, 0);
+    assert.ok(lines > 0);
+    assert.ok(facts.files["Orders/Cart.cs"].loc === 10 && facts.files["Orders/Pay.cs"].loc === 10, "blank-free lines, comments included");
+    assert.ok(draftParts(facts).length >= 1);
+  });
+
   test("the CLI says how many files and lines it left out", () => {
     const { stderr } = scanTree({ "src/a.go": body, "tests/t.go": body, "tests/u.go": body }, { cli: true });
     assert.match(stderr, /Left out 2 source files \(8 lines\).*tests\/ 2 files\/8 lines/);
