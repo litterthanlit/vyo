@@ -7,7 +7,10 @@ import { SHEET, parsePath } from "./geometry.mjs";
  * @typedef {[number, number]} Point
  * @typedef {{ add?: string, cut?: string, rotate?: number, at?: Point, r?: number | Point, size?: Point, round?: number,
  *             from?: Point | number, to?: Point | number, width?: number, points?: Point[], d?: string }} ShapeOp
- * @typedef {{ ops: ShapeOp[], rotate?: number, fit?: { w?: number, h?: number, cx?: number, cy?: number }, room?: { top: number } }} Shape
+ * @typedef {{ ops?: ShapeOp[], mask?: string, rotate?: number, fit?: { w?: number, h?: number, cx?: number, cy?: number }, room?: { top: number } }} Shape
+ *   A shape is drawn from `ops`, or traced from `mask`, a PNG whose dark pixels are the silhouette.
+ * @typedef {{ w: number, h: number, runs: [number, number][][] }} MaskImage
+ *   A traced PNG's dark pixels as spans per image row, trimmed to their box.
  * @typedef {{ runs: [number, number][][], area: number, box: { left: number, top: number, right: number, bottom: number },
  *             fit: { w: number, h: number }, xf: { s: number, tx: number, ty: number } }} Mask
  *   runs[y]: where the shape is inside on the pixel row y to y + 1 (sampled at y + 0.5), as sorted, disjoint
@@ -107,11 +110,22 @@ function ringBox(rings) {
   return b;
 }
 
+// Where a traced shape's image comes from: Node reads the PNG (lib/png-mask.mjs sets this when it loads), and the
+// page reads the images render embeds in the figure (fill.js sets it), since the page cannot read a file.
+let maskImage = (name) => {
+  throw new Error(`shape mask ${name}: no image loader; import lib/png-mask.mjs`);
+};
+/** @param {(name: string) => MaskImage} load */
+export const setMaskImages = (load) => {
+  maskImage = load;
+};
+export const shapeImage = (shape) => maskImage(shape.mask);
+
 /** An op's verb and kind: the one of `add`, `cut` and `crease` it has. */
 export const opKind = (op) => ("add" in op ? ["add", op.add] : "crease" in op ? ["crease", op.crease] : ["cut", op.cut]);
 
 /** Every op as `{ verb, cut, rings }` in shape units: its own rotate about its centre (a path's: its box's), then the shape's. */
-export function opRings(shape, ops = shape.ops) {
+export function opRings(shape, ops = shape.ops ?? []) {
   return ops.map((op) => {
     const [verb, kind] = opKind(op);
     let rings = KIND_RINGS[kind](op);
@@ -183,6 +197,14 @@ export function paintRows(ops, s, tx, ty, rows) {
   return runs;
 }
 
+/** A traced image's spans scaled by `s` and moved by (tx, ty) into `rows` pixel rows, each row sampled at its centre. */
+function paintImage(image, s, tx, ty, rows) {
+  return Array.from({ length: rows }, (_, y) => {
+    const iy = Math.floor((y + 0.5 - ty) / s);
+    return iy >= 0 && iy < image.h ? image.runs[iy].map(([l, r]) => [l * s + tx, r * s + tx]) : [];
+  });
+}
+
 /** The extent of painted spans, in their own pixels. */
 function runsBox(runs) {
   const rows = runs.map((r, y) => [r, y]).filter(([r]) => r.length);
@@ -204,16 +226,23 @@ function runsBox(runs) {
  * @returns {Mask | null}
  */
 export function shapeMask(shape) {
+  const image = shape.mask !== undefined ? shapeImage(shape) : null;
   // A crease folds the relief style's surface; it never changes the silhouette.
-  const ops = opRings(shape).filter((o) => o.verb !== "crease");
-  const raw = ringBox(ops.filter((o) => !o.cut).flatMap((o) => o.rings));
-  const span = Math.max(raw.right - raw.left, raw.bottom - raw.top);
-  if (!(span > 0) || !Number.isFinite(span)) return null;
-  // Measure the painted extent on a 1000px probe first: cuts can trim it.
-  const p = 1000 / span;
-  const probe = runsBox(paintRows(ops, p, -raw.left * p, -raw.top * p, Math.ceil((raw.bottom - raw.top) * p) + 1));
-  if (!probe) return null;
-  const box = { left: raw.left + probe.left / p, top: raw.top + probe.top / p, w: (probe.right - probe.left) / p, h: (probe.bottom - probe.top) / p };
+  const ops = image ? [] : opRings(shape).filter((o) => o.verb !== "crease");
+  let box;
+  if (image) {
+    if (!image.w || !image.h) return null;
+    box = { left: 0, top: 0, w: image.w, h: image.h };
+  } else {
+    const raw = ringBox(ops.filter((o) => !o.cut).flatMap((o) => o.rings));
+    const span = Math.max(raw.right - raw.left, raw.bottom - raw.top);
+    if (!(span > 0) || !Number.isFinite(span)) return null;
+    // Measure the painted extent on a 1000px probe first: cuts can trim it.
+    const p = 1000 / span;
+    const probe = runsBox(paintRows(ops, p, -raw.left * p, -raw.top * p, Math.ceil((raw.bottom - raw.top) * p) + 1));
+    if (!probe) return null;
+    box = { left: raw.left + probe.left / p, top: raw.top + probe.top / p, w: (probe.right - probe.left) / p, h: (probe.bottom - probe.top) / p };
+  }
   const { width: W, height: H } = SHEET;
   const given = shape.fit ?? {};
   const R = SHAPE_ROOM;
@@ -226,7 +255,8 @@ export function shapeMask(shape) {
   const cy = given.cy ?? (sized ? SHAPE_FIT.cy : shape.room ? (top + H - R.bottom) / 2 / H : (H - R.bottom - (box.h * s) / 2) / H);
   const tx = cx * W - (box.left + box.w / 2) * s;
   const ty = cy * H - (box.top + box.h / 2) * s;
-  const runs = paintRows(ops, s, tx, ty, H).map((row) => row.map(([l, r]) => [Math.max(0, l), Math.min(W, r)]).filter(([l, r]) => r > l));
+  const painted = image ? paintImage(image, s, tx, ty, H) : paintRows(ops, s, tx, ty, H);
+  const runs = painted.map((row) => row.map(([l, r]) => [Math.max(0, l), Math.min(W, r)]).filter(([l, r]) => r > l));
   const area = runs.reduce((sum, row) => sum + row.reduce((a, [l, r]) => a + r - l, 0), 0);
   const placed = { left: box.left * s + tx, top: box.top * s + ty, right: (box.left + box.w) * s + tx, bottom: (box.top + box.h) * s + ty };
   return { runs, area, box: placed, fit: { w: (box.w * s) / W, h: (box.h * s) / H }, xf: { s, tx, ty } };

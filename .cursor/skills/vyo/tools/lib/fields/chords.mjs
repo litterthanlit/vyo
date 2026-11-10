@@ -29,11 +29,12 @@ function noise(x, y) {
 
 /**
  * For the symbol fill: a function from a chord's index and a run to the run's text, one symbol per
- * column of `adv` px. Each cell's character comes from how much of the shape surrounds it, so the
- * middle of a form is `#` and its edges `-`; smooth noise leaves gaps, more of them near the edges,
- * so the form breaks into clusters.
+ * column of `adv` px. Each cell's character comes from its depth in the form, by default how much of the
+ * shape surrounds it, so the middle of a form is `#` and its edges `-`; smooth noise leaves gaps, more of
+ * them near the edges, so the form breaks into clusters. `depthAt(x, y)`, 0 to 1 at a cell's centre,
+ * replaces the default depth: a drawn shape passes its lit volume.
  */
-function symbolTexts(chords, adv, cw) {
+function symbolTexts(chords, adv, cw, depthAt) {
   const cols = Math.ceil(SHEET.width / adv);
   const on = chords.map((row) => {
     const line = new Uint8Array(cols);
@@ -56,7 +57,7 @@ function symbolTexts(chords, adv, cw) {
     const first = Math.ceil(l / adv);
     let text = "";
     for (let c = first; c * adv + cw <= r && c < cols; c++) {
-      const d = near(j, c);
+      const d = depthAt ? depthAt(c * adv + cw / 2, chords[j].y) : near(j, c);
       const n = noise(c / 2.4, j / 1.25);
       const keep = n > 0.3 + 0.45 * (1 - d) ** 1.4;
       text += keep ? SYMBOLS.ramp[Math.min(SYMBOLS.ramp.length - 1, Math.floor((0.75 * d + 0.4 * n) * SYMBOLS.ramp.length))] : " ";
@@ -73,7 +74,7 @@ function symbolTexts(chords, adv, cw) {
  * @param {{ y: number, runs: [number, number, number?][] }[]} chords
  * @param {{ id: string, name: string, loc: number, hot: boolean }[]} parts
  */
-export function rowsFromChords(chords, parts, { size, pitch, measure, theme = "light", frame, blocks = [], behindTexts = true, sentence, every = 5, digits = false, labelled = false, toneOf = {}, symbols = false }) {
+export function rowsFromChords(chords, parts, { size, pitch, measure, theme = "light", frame, blocks = [], behindTexts = true, sentence, every = 5, digits = false, labelled = false, toneOf = {}, symbols = false, depthAt }) {
   if (!parts.length) return [];
   const slots = [];
   chords.forEach((row, j) => {
@@ -86,7 +87,7 @@ export function rowsFromChords(chords, parts, { size, pitch, measure, theme = "l
   const counts = rowsPerPart(parts, slots.length);
   const rows = labelled ? slots.map(() => null) : parts.flatMap((p, i) => Array(counts[i] || 0).fill(p)).slice(0, slots.length);
   const cw = Math.round(measure(digits ? "0" : "M", size) * 20) / 20;
-  const symbolText = symbols && symbolTexts(chords, cw + SYMBOLS.spacing, cw);
+  const symbolText = symbols && symbolTexts(chords, cw + SYMBOLS.spacing, cw, depthAt);
   const tones = toneSet(theme, frame);
   const out = [];
   rows.forEach((rowPart, i) => {

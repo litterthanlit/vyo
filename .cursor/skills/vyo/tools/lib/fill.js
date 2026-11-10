@@ -33,6 +33,8 @@ const GLYPHS = {
 };
 
 const F = JSON.parse(document.getElementById("figure").textContent);
+// A traced shape's image comes in the figure, read by render in Node.
+setMaskImages((name) => F.images[name]);
 const isHot = (w) => !!F.hot && window.hasWord(w, F.hot);
 
 function el(className, data, style, text) {

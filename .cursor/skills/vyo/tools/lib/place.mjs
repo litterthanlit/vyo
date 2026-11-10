@@ -180,7 +180,8 @@ export function placeTexts(spec, facts) {
   // A highlighter mark is laid over type the agent placed, so it always carries its own x and y.
   const loose = spec.figure.texts.filter((t) => t.role !== "mark" && (t.x === undefined || t.y === undefined));
   if (!region || !loose.length || !hasRecord(spec)) return spec;
-  const fixed = spec.figure.texts.filter((t) => !loose.includes(t)).map((t) => estimateText({ w: PLACE.w[t.role]?.[1] ?? 300, ...t }, spec, facts));
+  // A mark lies over type, so it takes no room from the blocks.
+  const fixed = spec.figure.texts.filter((t) => !loose.includes(t) && t.role !== "mark").map((t) => estimateText({ w: PLACE.w[t.role]?.[1] ?? 300, ...t }, spec, facts));
   const rec = recordRect(recordOf(spec, facts));
   const todo = [...loose].sort((a, b) => ORDER.indexOf(a.role) - ORDER.indexOf(b.role));
   const lead = todo.filter((t) => ["label", "headline", "legend"].includes(t.role));

@@ -19,7 +19,7 @@ import { ROLES, FRAMES, RECORD_FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
 import { cornersLine } from "./lib/geometry.mjs";
 import { runChecks, CHECKS } from "./lib/check.mjs";
 import { NoBrowser } from "./lib/browser.mjs";
-import { MaskFailure } from "./lib/png-mask.mjs";
+import { MaskFailure, BUNDLED_MASKS } from "./lib/png-mask.mjs";
 import { init, chooseEditors, EDITORS } from "./lib/init.mjs";
 import { FIELDS } from "./lib/fields/index.mjs";
 import { partsFromFacts, partOptions, regionParts, accentIds, unplainName, sameNames, dominance, PART_DEFAULTS } from "./lib/parts.mjs";
@@ -260,12 +260,13 @@ function shapeNotes() {
   const R = SHAPE_ROOM;
   return [
     'shape: replace the placeholder with your silhouette, ops painted in order into one mask: { "ops": [...], "rotate": deg, "fit": { "w", "h", "cx", "cy" } }',
+    `  or trace it from a PNG instead of ops: { "mask": "${BUNDLED_MASKS.join('" or "')}" or a path, "fit": ... }; its dark pixels are the silhouette.`,
     `  each op is { "add": kind, ... } or { "cut": kind, ... }, the first an add. Kinds: ${kinds}.`,
     '  example: { "add": "rect", "at": [16, 0], "size": [68, 16], "round": 3 }. ellipse r is [rx, ry]; arc from and to are degrees clockwise from twelve o\'clock; any op takes rotate about its own centre.',
     "  Coordinates are free units, y down: the engine measures what you painted and fits it.",
     `  Leave fit out: the shape is then as large as fits ${R.left}px in from the sides, ${R.top}px below the top (room for the words) and ${R.bottom}px above the bottom, and never bleeds; the engine then centres it in the room the words leave.`,
     "  fit.w or fit.h sets its share of the sheet's width or height instead (over 1 bleeds off, and the sketch says which edges), fit.cx and fit.cy its centre.",
-    '  style: "bands" (the default) cuts it top to bottom and suits any outline; "rings" sets the names round the outline, ring inside ring, for a fat, round object, with "echo": 0 to 12 faded outlines; "relief" draws any outline as a lit volume.',
+    '  style: "bands" (the default) cuts it top to bottom and suits any outline; "rings" sets the names round the outline, ring inside ring, for a fat, round object, with "echo": 0 to 12 faded outlines; "relief" draws any outline as a lit volume in fine type; "symbols" draws it in shaded clusters of - : = + #, like ASCII art.',
     '  Relief reads optional hints: "face": "lit" or "dim" on an add, { "crease": kind, ... } ops (a fold, never the outline), region "bevel" 0 to 1 and "strata" { "by": "angle", "angle" } or { "by": "depth" }.',
   ];
 }

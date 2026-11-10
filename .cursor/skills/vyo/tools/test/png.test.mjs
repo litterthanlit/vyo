@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { decodePng, encodePng } from "../lib/png.mjs";
-import { traceChords, MaskFailure } from "../lib/png-mask.mjs";
+import { loadMaskImage, MaskFailure } from "../lib/png-mask.mjs";
 
 test("a 16 by 16 rectangle round-trips through the PNG codec", () => {
   const width = 16;
@@ -73,8 +73,8 @@ test("malformed or hostile PNGs fail with a png: message, never a crash or a hug
   for (const [name, buf] of bad) assert.throws(() => decodePng(buf), /^Error: png: /, name);
 });
 
-test("a trace mask that is a folder or not a PNG fails with its path named", () => {
+test("a shape mask that is a folder or not a PNG fails with its path named", () => {
   const here = fileURLToPath(import.meta.url);
-  assert.throws(() => traceChords({ mask: here }, 1000), (e) => e instanceof MaskFailure && /^trace mask .*png\.test\.mjs: png: not a PNG$/.test(e.message));
-  assert.throws(() => traceChords({ mask: fileURLToPath(new URL(".", import.meta.url)) }, 1000), (e) => e instanceof MaskFailure && /^trace mask not found/.test(e.message));
+  assert.throws(() => loadMaskImage(here), (e) => e instanceof MaskFailure && /^shape mask .*png\.test\.mjs: png: not a PNG$/.test(e.message));
+  assert.throws(() => loadMaskImage(fileURLToPath(new URL(".", import.meta.url))), (e) => e instanceof MaskFailure && /^shape mask not found/.test(e.message));
 });

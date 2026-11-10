@@ -16,9 +16,10 @@ import { bleedRows } from "../lib/fields/bleed.mjs";
 import { slabsRows } from "../lib/fields/slabs.mjs";
 import { spiralRows } from "../lib/fields/spiral.mjs";
 import { contourRows } from "../lib/fields/contour.mjs";
-import { traceRows } from "../lib/fields/trace.mjs";
 import { encodePng } from "../lib/png.mjs";
-import { traceChords } from "../lib/png-mask.mjs";
+import "../lib/png-mask.mjs";
+import { shapeMask } from "../lib/mask.mjs";
+import { shapeLayout, SHAPE_STYLES } from "../lib/fields/shape.mjs";
 import { PAGE_MODULES } from "../lib/render.mjs";
 import { regionParts, partTies } from "../lib/parts.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
@@ -33,12 +34,11 @@ const frame = (over = {}) => ({ floor: 900, mirror: false, blocks: [masthead, as
 const touches = (it, b, pad) => it.x < b.right + pad && it.x + it.width > b.left - pad && it.y < b.bottom + pad && it.y + it.height > b.top - pad;
 
 test("the registry names each field once, with its layout and the options only it takes", () => {
-  assert.deepEqual(Object.keys(FIELDS), ["wave", "terrain", "river", "shape", "radial", "sphere", "scatter", "shatter", "glyph", "bleed", "slabs", "spiral", "contour", "trace"]);
+  assert.deepEqual(Object.keys(FIELDS), ["wave", "terrain", "river", "shape", "radial", "sphere", "scatter", "shatter", "glyph", "bleed", "slabs", "spiral", "contour"]);
   assert.deepEqual(FIELDS.river.options, ["seed"]);
   assert.deepEqual(FIELDS.wave.options, ["sentence", "every", "seed"]);
   assert.deepEqual(FIELDS.terrain.options, ["seed"]);
   assert.deepEqual(FIELDS.glyph.options, ["letter", "seed", "symbols"]);
-  assert.deepEqual(FIELDS.trace.options, ["mask", "seed", "symbols"]);
   for (const f of ["scatter", "shatter", "bleed", "slabs", "spiral", "contour"]) assert.deepEqual(FIELDS[f].options, ["seed", "symbols"], f);
 });
 
@@ -390,44 +390,45 @@ test("contour: nested rings, several runs on one row", () => {
   assert.ok(rings >= 4, `a row crosses ${rings} ring edges`);
 });
 
-test("trace: a disc stays round, and no seed swaps the shape for its background", () => {
+// A traced shape: shape.mask names a PNG, and its dark pixels are the silhouette every style fills.
+const maskBox = (mask) => {
+  const rows = mask.runs.map((r, y) => [r, y]).filter(([r]) => r.length);
+  const xs = rows.flatMap(([r]) => r.flatMap(([l, rr]) => [l, rr]));
+  return { w: Math.max(...xs) - Math.min(...xs), h: rows.at(-1)[1] + 1 - rows[0][1] };
+};
+
+test("a traced shape: a disc stays round", () => {
   const n = 64;
   const disc = Buffer.from(Array.from({ length: n * n }, (_, i) => ((i % n) - 31.5) ** 2 + (Math.floor(i / n) - 31.5) ** 2 < 28 ** 2 ? [0, 0, 0, 255] : [255, 255, 255, 255]).flat());
   const file = path.join(HERE, ".trace-disc.png");
   fs.writeFileSync(file, encodePng(n, n, disc));
   try {
-    const box = (chords) => {
-      const on = chords.filter((c) => c.runs.length);
-      const xs = on.flatMap((c) => c.runs.flatMap(([l, r]) => [l, r]));
-      return { w: Math.max(...xs) - Math.min(...xs), h: on.at(-1).y - on[0].y, area: on.reduce((s, c) => s + c.runs.reduce((a, [l, r]) => a + r - l, 0), 0) };
-    };
-    const plain = box(traceChords({ mask: file, seed: 0 }, 1190).chords);
-    assert.ok(Math.abs(plain.w / plain.h - 1) < 0.08, `the disc is ${plain.w} by ${plain.h}`);
-    for (let seed = 1; seed <= 24; seed++) {
-      const posed = box(traceChords({ mask: file, seed }, 1190).chords);
-      assert.ok(posed.area < plain.area * 2, `seed ${seed} fills ${posed.area}, the disc ${plain.area}`);
-    }
+    const b = maskBox(shapeMask({ mask: file }));
+    assert.ok(Math.abs(b.w / b.h - 1) < 0.08, `the disc is ${b.w} by ${b.h}`);
   } finally {
     fs.rmSync(file, { force: true });
   }
 });
 
-test("trace: chords follow the PNG, not the whole sheet", () => {
+test("a traced shape follows the PNG, not the whole sheet, in every style", () => {
   const parts = recipeParts();
   const png = encodePng(32, 32, Buffer.from(Array.from({ length: 32 * 32 }, (_, i) => (i % 32 < 16 ? [0, 0, 0, 255] : [255, 255, 255, 255])).flat()));
   const file = path.join(HERE, ".trace-mask.png");
   fs.writeFileSync(file, png);
   try {
-    const traced = traceChords({ mask: file, seed: 0 }, 1000, false);
-    const items = traceRows({ chords: traced.chords, pitch: traced.pitch }, parts, open());
-    onSheet(items, 1000);
-    for (const p of parts) assert.ok(items.some((i) => i.part === p.id), p.id);
-    assert.ok(items.some((i) => i.hot));
-    const right = Math.max(...items.map((i) => i.x + i.width));
-    const left = Math.min(...items.map((i) => i.x));
-    const top = Math.min(...items.map((i) => i.y));
-    const bottom = Math.max(...items.map((i) => i.y + i.height));
-    assert.ok(Math.abs((right - left) / (bottom - top) - 0.5) < 0.06, `the dark half, 16 by 32, draws ${right - left} by ${bottom - top}`);
+    const mask = shapeMask({ mask: file });
+    const b = maskBox(mask);
+    assert.ok(Math.abs(b.w / b.h - 0.5) < 0.03, `the dark half, 16 by 32, is ${b.w} by ${b.h}`);
+    for (const style of Object.keys(SHAPE_STYLES)) {
+      const { rows } = shapeLayout({ shape: { mask: file }, style }, parts, { theme: "dark", measure: fixedMeasure });
+      assert.ok(rows.length > 0, `${style} draws something`);
+      const inside = (x, y) => (mask.runs[Math.max(0, Math.min(1189, Math.round(y)))] ?? []).some(([l, r]) => x >= l - 8 && x <= r + 8);
+      for (const r of rows) {
+        const [x, y] = r.glyphs ? r.glyphs[0] : [r.x, r.y + r.height / 2];
+        assert.ok(inside(x, y), `${style}: a row at ${Math.round(x)},${Math.round(y)} is inside the traced shape`);
+      }
+      assert.ok(rows.some((r) => r.hot), `${style} draws the accent`);
+    }
   } finally {
     fs.rmSync(file, { force: true });
   }
@@ -445,7 +446,7 @@ test("symbols: a mask field drawn in shaded symbols with gaps, every part and th
   const gaps = (all.match(/ /g) || []).length / all.length;
   assert.ok(gaps > 0.15 && gaps < 0.7, `gaps are ${Math.round(gaps * 100)}% of the cells`);
   assert.deepEqual(items, scatterRows({ symbols: true }, parts, open()), "the same every time");
-  const wings = traceChords({ mask: "wings", symbols: true }, 1190);
-  const traced = traceRows({ chords: wings.chords, pitch: wings.pitch, symbols: true }, parts, open({ floor: 1190 }));
-  assert.ok(traced.length > 100 && traced.every((i) => /^[-:=+# ]+$/.test(i.text)), "the bundled wings mask fills with symbols");
+  const traced = shapeLayout({ shape: { mask: "wings" }, style: "symbols" }, parts, { theme: "dark", frame: "signal", measure: fixedMeasure }).rows;
+  assert.ok(traced.length > 100 && traced.every((i) => /^[-:=+# ]+$/.test(i.text)), "the bundled wings mask fills with symbols in the symbols style");
+  assert.ok(traced.some((i) => i.hot) && parts.every((p) => traced.some((i) => i.part === p.id)), "every part and the accent keep their rows");
 });

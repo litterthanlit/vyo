@@ -17,15 +17,16 @@ vyo draws a codebase as one poster that someone who does not code can read. Your
 
 <p align="center">The same two products in the three looks. Pantry is a recipe planner kept as a test fixture. Hypher is a tool for handing work from one coding agent to the next.</p>
 
-## The three looks
+## The looks
 
-A shape poster has one `style`. You pick it, or your agent does.
+A shape poster has one `style`. You pick it, or your agent does. The shape is drawn from a few ops, or traced from a PNG.
 
 - **bands** cuts the shape top to bottom into one band per part. Part names read from across a room.
 - **rings** sets the names along the outline, ring inside ring. It suits a fat, round object.
 - **relief** draws the outline as a lit, sculpted volume in dense small type. The object itself is the pull.
+- **symbols** draws the outline in shaded clusters of `- : = + #`, like ASCII art.
 
-vyo also draws three other fields: a wave, a terrain and a river. The shape field is the one shown here.
+Any of them sits in the default frame shown here or in the high-contrast `signal` frame: a charcoal or paper ground, one signal colour, a grotesque headline, metadata and highlighter marks. vyo also generates fields when no one object fits the product, such as a wave, a terrain, a river, a coil or one giant letter, and `vyo render --gif` animates a poster.
 
 ## Install and make a poster
 

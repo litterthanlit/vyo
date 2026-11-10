@@ -49,10 +49,11 @@ Without installing it, write `npx -y @litterthanlit/vyo` wherever this file says
 
 A look is three choices: what draws the form, the frame around it, and the sheet.
 
-**Draw a shape or generate a field.** Draw a `shape` when one object a stranger would name in a second stands for the product (a jar for a pantry, a paper plane for a hand-off), or the owner asks for a picture. It is the strongest poster the tool makes, and its `style` sets the look over your silhouette:
+**Draw a shape or generate a field.** Draw a `shape` when one object a stranger would name in a second stands for the product (a jar for a pantry, a paper plane for a hand-off), or the owner asks for a picture. It is the strongest poster the tool makes. Draw it from `ops`, or trace it from a PNG with `"mask"` (see "Draw the shape"). Its `style` sets the look over the silhouette:
 
 - `relief`: a lit volume in fine 6px type, each part a layer of its own name, the accent glowing. The object is the poster's pull, with quiet space around it.
-- `bands`: the default. The shape cut top to bottom, one band per part, the type as big as its share. Choose it when the part names must read from across a room.
+- `symbols`: the silhouette in shaded clusters of `- : = + #`, like ASCII art, lit from the top left, the accent's rows in the accent colour. On charcoal in the signal frame with one orange accent it is the Vorflux look. The parts' names do not print, so add the parts list.
+- `bands`: the default. The shape cut top to bottom, one band per part, the type as big as its share. Choose it when the part names must read from across a room, and for the brutalist paper sheet.
 - `rings`: the names along the outline, ring inside ring. Only for a fat, round object.
 
 Generate a field when no single object fits. Pick the one whose form is the story; the `fits` check wants a word that starts with one of its keywords. `npx vyo shapes` lists them with when each was last used; take one you have not used lately, and never default to wave.
@@ -69,9 +70,8 @@ Generate a field when no single object fits. Pick the one whose form is the stor
 - **slabs**: stacked slabs with staggered ends. Layers. "stack", "slab", "bar", "layer".
 - **spiral**: a coil. "spin", "coil", "spiral", "turn".
 - **contour**: nested rings around a few hills. "contour", "level", "map", "ridge".
-- **trace**: a silhouette traced from a PNG (`mask`: `"wings"`, `"trace"` or a path). "trace", "mask", "image", "from".
 
-Every field from scatter to trace takes `symbols: true`: the form drawn in sparse clusters of `- : = + #`, shaded by depth, like ASCII art. `seed` moves a generated field's composition; compose writes one, and `0` is the field's own form. A field preference in `project-context.md` wins.
+Every field from scatter to contour takes `symbols: true`: the form drawn in sparse clusters of `- : = + #`, shaded by depth, like ASCII art. `seed` moves a generated field's composition; compose writes one, and `0` is the field's own form. A field preference in `project-context.md` wins.
 
 **The frame.** `loose` (the default) is serif words in the room the field leaves, and a record line. `signal` is the high-contrast frame: a charcoal or paper ground, one signal colour, a grotesque headline, an archival `meta` line and highlighter `mark`s (see "Signal frame"). `swiss` is a masthead over a footer of notes, for a repo with no git history. A shape draws in loose or signal.
 
@@ -81,11 +81,12 @@ Every field from scatter to trace takes `symbols: true`: the form drawn in spars
 
 1. Pick one object a stranger would name in a second, tied to the story. Never a heart, a plain circle or a box. Simple reads: a 3-op flask was legible at once, an 11-op locomotive half legible.
 2. Name the one feature that makes it that object, like the jar's lid and shoulders. Draw it in 3 to 6 ops in a 100-unit box, y down, with that feature large, about as tall as it is wide or taller. Leave out small repeated details such as wheels or windows: they merge at thumbnail size. Keep a post or stem short: a long thin limb takes the object's height and reads as a pole with a small head. `compose --field shape` prints the format.
-3. Leave `fit` out: the engine fits the shape inside the sheet and centres it in the room the words leave. Set `fit` only to bleed it off an edge on purpose. Leave `x` and `y` out of the text blocks too: the engine places them in the room the shape leaves. Pin a block with `x` and `y` only for a reason, like a hole cut for the legend or a `mark` laid over it.
-4. If `shape-dominant` says to split a part, add the `"split"` it gives to the region and run `parts --field shape --split <its id>`. Its folders become parts; if it was the accent, put the accent on the one the story is about.
-5. Set the `style` (see "Choose the look"). Rings want a fat, round object with a hole cut where the legend should sit, and `"echo": 6` adds faded outlines; a thin or spiky shape starves them, so take bands or relief, or fatten it until `shape-rings` is quiet.
-6. Sketch, then open `<name>-sketch.png`; big lines of type show as bars. Say in one word what you see. If that word is not the object, redraw it simpler. Fix every `✗` and `!` line: each gives the number to change.
-7. Render and look at the thumbnail again.
+3. To trace an image instead, write `"shape": { "mask": "wings" }` (a bundled mask, `wings` or `trace`) or a path to a PNG, absolute or relative to where you run vyo. Its pixels darker than mid grey are the silhouette, and every style and check works on it as on ops. A traced shape takes `fit` but no `ops` or `rotate`.
+4. Leave `fit` out: the engine fits the shape inside the sheet and centres it in the room the words leave. Set `fit` only to bleed it off an edge on purpose. Leave `x` and `y` out of the text blocks too: the engine places them in the room the shape leaves. Pin a block with `x` and `y` only for a reason, like a hole cut for the legend or a `mark` laid over it.
+5. If `shape-dominant` says to split a part, add the `"split"` it gives to the region and run `parts --field shape --split <its id>`. Its folders become parts; if it was the accent, put the accent on the one the story is about.
+6. Set the `style` (see "Choose the look"). Rings want a fat, round object with a hole cut where the legend should sit, and `"echo": 6` adds faded outlines; a thin or spiky shape starves them, so take bands or relief, or fatten it until `shape-rings` is quiet.
+7. Sketch, then open `<name>-sketch.png`; big lines of type show as bars, symbols as their shading. Say in one word what you see. If that word is not the object, redraw it simpler. Fix every `✗` and `!` line: each gives the number to change.
+8. Render and look at the thumbnail again.
 
 A relief needs no hints: the default is a rounded volume lit from the top left. Add one only for a feature the outline cannot show, and sketch again after each:
 
@@ -97,7 +98,7 @@ A relief needs no hints: the default is a rounded volume lit from the top left. 
 ## The words
 
 - **Headline.** One plain sentence about the outcome for the user, at most 72 characters. It is the only large type.
-- **Legend.** Required. One or two sentences, at most 180 characters, that say what the picture encodes. Name the accent part by its plain name and the measure: "code" or "lines" for most fields, plus "files" or "wide" for a terrain, "merge", "join" or "flow" for a river, and "code" plus "type", "size" or "bigger" for a shape ("area" for rings; a relief: "as big as its code"). Example: "Every peak is a part of Pantry, as tall as its code and as wide as its files. The orange peak is the plan."
+- **Legend.** Required. One or two sentences, at most 180 characters, that say what the picture encodes. Name the accent part by its plain name and the measure: "code" or "lines" for most fields, plus "files" or "wide" for a terrain, "merge", "join" or "flow" for a river, and "code" plus "type", "size" or "bigger" for a shape ("area" for rings; a relief or symbols: "as big as its code"). Example: "Every peak is a part of Pantry, as tall as its code and as wide as its files. The orange peak is the plan."
 - **Fits.** On the field region, at most 160 characters, never drawn. Say why this field matches the product's story, with the field's keyword. Example: "Pantry merges many saved recipes into one week, so every part of its code joins one river."
 - **Paragraphs.** 0 to 2, each at most 2 sentences and 220 characters. Each does a job the picture cannot: how it works, what stays private, what runs on its own, or proof.
 - **Parts list.** `parts: true` prints the parts' plain names in tree order. Keep it when the field prints no names, as a river or a symbols fill does.
@@ -115,19 +116,18 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 | `product.name` | The customer-facing name, capitalised as the product's docs write it. `product-name` warns while it is the folder name; keep it if the docs write it that way |
 | `product.commit` | The short hash. `compose --repo` fills it, and the record line needs it |
 | `headline` | At most 72 characters |
-| region `field` | `shape`, `wave`, `terrain`, `river`, `radial`, `sphere`, `scatter`, `shatter`, `glyph`, `bleed`, `slabs`, `spiral`, `contour` or `trace`. One field per figure |
+| region `field` | `shape`, `wave`, `terrain`, `river`, `radial`, `sphere`, `scatter`, `shatter`, `glyph`, `bleed`, `slabs`, `spiral` or `contour`. One field per figure |
 | region `fits` | Why this field matches the story, with its keyword, at most 160 characters |
 | region `accent` | The accent part's id from `vyo parts` |
 | region `names` | Part id to plain name, at most 24 characters each |
 | region `sentence` | Wave only, at most 40 characters, set in every 5th row |
-| region `shape` | Shape only: `{ ops, rotate?, fit? }`, the silhouette you draw (see "Draw the shape") |
-| region `style`, `echo` | Shape only: `bands` (default), `rings` or `relief`; `echo` 0 to 12 faded outlines, rings only |
+| region `shape` | Shape only: `{ ops, rotate?, fit? }`, the silhouette you draw, or `{ mask, fit? }`, one traced from a PNG (see "Draw the shape") |
+| region `style`, `echo` | Shape only: `bands` (default), `rings`, `relief` or `symbols`; `echo` 0 to 12 faded outlines, rings only |
 | region `bevel`, `strata` | Relief only, optional: how rounded the form is, and which way its layers run |
 | region `split` | Shape only, optional: part ids whose folders become parts, for a part that is most of the code |
 | region `seed` | Generated fields: whole number 0 to 2147483647. 0 keeps the field's own form. Compose writes a non-zero seed |
 | region `letter` | Glyph only: one character, A–Z or 0–9. Compose uses the first character of the repo name |
-| region `mask` | Trace only: `"wings"` or `"trace"` for a bundled mask, or a path to a PNG, absolute or relative to the working directory |
-| region `symbols` | Scatter to trace: `true` draws the form in shaded `- : = + #` with gaps, instead of part names |
+| region `symbols` | Scatter to contour: `true` draws the form in shaded `- : = + #` with gaps, instead of part names |
 | `figure.texts` | Exactly one `label` and one `headline` (they print the name and the headline), exactly one `legend`, 0 to 2 `paragraph`, 0 or 1 `list`, 0 or 1 `rule`; the signal frame adds `meta`, `display` and `mark`. Each has `x`, `y`, `w` and optional `size` and `align`; a shape poster leaves `x`, `y` and `w` out and the engine places it, except a `mark` |
 | `motion` | Optional, for `--gif`: `{ kind: "nodes" \| "resolve" \| "wipe", frames: 8 to 36, fps: 6 to 24 }` |
 | `record` | Optional, `bottom` or `left`, to force the record line's side |
@@ -136,7 +136,7 @@ A loose or signal spec has no `notes`, `notBuilt`, `hot` or `figure.fits`. [exam
 
 ## Signal frame
 
-Charcoal or cream, one signal colour (lime `#C8FF00` unless the spec's `accent` says otherwise), a grotesque headline, metadata as drawing material. `compose --frame signal`. Its `list` is a stepped list of bold capitals; set `size` up to 44 for the brutalist sheet. Extra roles: `meta` (one archival line, at most 80 characters, no sequential "01/02/03" markers), `display` (a huge word, at most 8 characters), and `mark` (a block of the signal colour laid over type like a highlighter: no text, needs `x`, `y`, `w` and `h`, at most 3). On cream the accent part's rows are highlighted the same way, so the legend says "highlighted". Keep a quiet zone: not every area should hold type.
+Charcoal or cream, one signal colour (lime `#C8FF00` unless the spec's `accent` says otherwise), a grotesque headline, metadata as drawing material. `compose --frame signal`, with a drawn shape (`--style`) or a generated field. Two looks it was made for: charcoal with `"accent": "#FF5A1F"` and a `symbols` shape; and the brutalist sheet, paper with lime, a `bands` shape, a `meta` line, the stepped list and marks. Its `list` is a stepped list of bold capitals; set `size` up to 44 for the brutalist sheet. Extra roles: `meta` (one archival line, at most 80 characters, no sequential "01/02/03" markers), `display` (a huge word, at most 8 characters), and `mark` (a block of the signal colour laid over type like a highlighter: no text, needs `x`, `y`, `w` and `h`, at most 3). Around a shape the engine places the words, so sketch first, read where it put each block on the `texts:` line, and lay the marks over those boxes; a mark never moves a block. On cream the accent part's rows are highlighted the same way, so the legend says "highlighted". Keep a quiet zone: not every area should hold type.
 
 ## Motion
 

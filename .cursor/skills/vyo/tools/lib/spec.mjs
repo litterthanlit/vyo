@@ -6,6 +6,8 @@ import { WAVE } from "./fields/wave.mjs";
 import { SHAPE_STYLES } from "./fields/shape.mjs";
 import { RINGS } from "./fields/shape-rings.mjs";
 import { SHAPE_KINDS, opKind, shapeMask } from "./mask.mjs";
+// Loads a traced shape's image for shapeMask, in Node.
+import "./png-mask.mjs";
 import { ROLES as FRAME_ROLES, FRAMES, RECORD_FRAMES, frameOf, sizeRange, LIST } from "./frame.mjs";
 
 /**
@@ -17,7 +19,7 @@ import { ROLES as FRAME_ROLES, FRAMES, RECORD_FRAMES, frameOf, sizeRange, LIST }
  *                     band?: 1 | 2 | 3 | 4, size?: 7 | 8 | 9 | 10 | 11 | 12, hot?: boolean }} FillRegion
  * @typedef {{ kind: "dots", id: string, lines: string[], x: number, y: number, cell: number, tones: (ToneName | "hot")[] }} DotsRegion
  * @typedef {{ kind: "field", id: string, field: keyof typeof FIELDS, fits: string, accent?: string, names?: Record<string, string>,
- *             sentence?: string, every?: number, seed?: number, letter?: string, mask?: string, minShare?: number, maxParts?: number }} FieldRegion  drawn from facts.json at render
+ *             sentence?: string, every?: number, seed?: number, letter?: string, symbols?: boolean, minShare?: number, maxParts?: number }} FieldRegion  drawn from facts.json at render
  * @typedef {{ role: string, id: string, text?: string, x: number, y: number, w: number, size?: number,
  *             align?: "left" | "right" | "center", hot?: boolean, parts?: true, items?: string[] }} Text  roles per frame in lib/frame.mjs
  * @typedef {{
@@ -69,7 +71,7 @@ const KEYS = {
     signal: ["role", "id", "text", "x", "y", "w", "h", "size", "align", "parts", "items"],
   },
   ellipse: ["cx", "cy", "rx", "ry"],
-  shape: ["ops", "rotate", "fit"],
+  shape: ["ops", "mask", "rotate", "fit"],
   fit: ["w", "h", "cx", "cy"],
 };
 export const ROUTE_TONES = [...TONES, "hot"];
@@ -259,7 +261,21 @@ function checkShapeSpec(f, shape, err) {
       }
     }
   }
-  if (!Array.isArray(shape.ops) || shape.ops.length < 1 || shape.ops.length > LIMITS.ops) return err(`${f}.ops: a list of 1 to ${LIMITS.ops} ops, each { "add", "cut" or "crease": kind, ... }`);
+  if (shape.mask !== undefined) {
+    // A traced shape is its image: no ops to paint over it, and no turn (turn the image itself).
+    if (shape.ops !== undefined) err(`${f}: give ops or mask, not both; a mask is the whole silhouette`);
+    if (shape.rotate !== undefined) err(`${f}.rotate: a traced mask is not turned; turn the image itself`);
+    if (err.count() !== before) return;
+    let mask;
+    try {
+      mask = shapeMask(shape);
+    } catch (e) {
+      return err(`${f}.mask: ${e.message}`);
+    }
+    if (!mask?.area) err(`${f}.mask: the image has no dark pixels on the sheet; the silhouette is its pixels darker than mid grey`);
+    return;
+  }
+  if (!Array.isArray(shape.ops) || shape.ops.length < 1 || shape.ops.length > LIMITS.ops) return err(`${f}.ops: a list of 1 to ${LIMITS.ops} ops, each { "add", "cut" or "crease": kind, ... }, or a mask: a bundled name or a path to a PNG`);
   const kinds = Object.keys(SHAPE_KINDS).join(", ");
   shape.ops.forEach((op, i) => {
     const o = `${f}.ops[${i}]`;
@@ -325,7 +341,6 @@ function checkField(f, r, err, copy, frame) {
   if (r.sentence !== undefined) plain(`${f}.sentence`, r.sentence, LIMITS.sentence, "one plain sentence, or remove it");
   if (r.seed !== undefined && !(Number.isInteger(r.seed) && inRange(r.seed, 0, 2147483647))) err(`${f}.seed: a whole number, 0 to 2147483647`);
   if (r.letter !== undefined && kind.options.includes("letter") && !/^[A-Z0-9]$/.test(r.letter)) err(`${f}.letter: one character A to Z or 0 to 9`);
-  if (r.mask !== undefined && kind.options.includes("mask") && !(isStr(r.mask) && r.mask.trim())) err(`${f}.mask: a path to a PNG`);
   if (r.symbols !== undefined && kind.options.includes("symbols") && typeof r.symbols !== "boolean") err(`${f}.symbols: true or false`);
   plain(`${f}.fits`, r.fits, LIMITS.fits, "one sentence on why this field matches the product's story");
   const whole = (k) => {
@@ -594,6 +609,7 @@ function fieldRegion(field, { accent, parts, seed, letter }) {
 const SHAPE_LEGEND = {
   bands: { unit: "band", measure: "its type as big as its share of the code" },
   rings: { unit: "ring", measure: "its area as big as its share of the code" },
+  symbols: { unit: "band of marks", measure: "as big as its share of the code" },
   relief: { unit: "layer", measure: "as big as its code" },
 };
 

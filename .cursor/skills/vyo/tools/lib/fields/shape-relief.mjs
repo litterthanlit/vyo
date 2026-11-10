@@ -135,7 +135,7 @@ function reliefSurface(mask, parts, region) {
   const shape = region.shape;
   const face = new Int8Array(w * h);
   const crease = new Uint8Array(w * h);
-  for (const op of shape.ops) {
+  for (const op of shape.ops ?? []) {
     const [verb] = opKind(op);
     if (verb === "add" && (op.face === "lit" || op.face === "dim")) {
       const g = reliefOpGrid(shape, op, mask);
@@ -591,7 +591,7 @@ function reliefFindings(value, parts, drawn, mask, region, theme) {
   value.tone ??= reliefTone(value, mask, value.tokens);
   const tone = value.tone;
   const bevel = region.bevel ?? L.bevel;
-  const faces = new Set(region.shape.ops.filter((o) => o.add !== undefined && o.face).map((o) => o.face));
+  const faces = new Set((region.shape.ops ?? []).filter((o) => o.add !== undefined && o.face).map((o) => o.face));
   // What moves the numbers, measured on the bone and the jar: one-sided faces flatten the form, a bevel under the
   // default flattens its top (0.3 to 0.7 moved the bone's spread 28.9% to 37.1%, 0.7 to 1 by 0.1 points).
   const lever =

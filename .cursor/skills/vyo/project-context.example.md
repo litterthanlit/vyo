@@ -32,7 +32,7 @@ Copy this file into the target app's repo beside the skill, at `.cursor/skills/v
 
 ## Field preference
 
-<!-- shape | wave | terrain | river | radial | sphere | scatter | shatter | glyph | bleed | slabs | spiral | contour | trace.
+<!-- shape | wave | terrain | river | radial | sphere | scatter | shatter | glyph | bleed | slabs | spiral | contour.
      shape for one object that stands for the product (name it under "The picture"); the rest are generated.
      Wave is not the fallback. Leave blank and the skill picks: a drawn shape when one object fits the story,
      else an unused generated field (vyo shapes), never wave unless you write it here. -->

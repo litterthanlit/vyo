@@ -15,7 +15,6 @@ import { bleedRows } from "./bleed.mjs";
 import { slabsRows } from "./slabs.mjs";
 import { spiralRows } from "./spiral.mjs";
 import { contourRows } from "./contour.mjs";
-import { traceRows } from "./trace.mjs";
 
 const cornerTexts = (floor) => ({ headline: { x: 56, y: 150, w: 360 }, aside: { x: 56, y: floor - 120, w: 240 } });
 
@@ -65,7 +64,8 @@ export const FIELDS = {
     ground: shapeGround,
     // Marks on the sheet itself, outside the shape: never figure, so no check reads them.
     sheet: shapeSheet,
-    tokens: (theme) => ({ ...SHAPE_TONES[theme].tokens, ...RELIEF_TONES[theme].tokens }),
+    // The symbols style tints its rows like the generated fields, so it takes their tokens too.
+    tokens: (theme, frame) => ({ ...toneSet(theme, frame).tokens, ...SHAPE_TONES[theme].tokens, ...RELIEF_TONES[theme].tokens }),
     behindTexts: false,
     // The words sit in the room the silhouette leaves, so only the frames with a record line draw one.
     frames: ["loose", "signal"],
@@ -156,16 +156,6 @@ export const FIELDS = {
     measure: [["code", "lines"]],
     fits: ["contour", "level", "map", "ridge"],
     layout: contourRows,
-    tokens: (theme, frame) => toneSet(theme, frame).tokens,
-    behindTexts: true,
-    texts: (floor) => cornerTexts(floor),
-  },
-  trace: {
-    about: "part names filling a shape traced from a PNG mask",
-    options: ["mask", "seed", "symbols"],
-    measure: [["code", "lines"]],
-    fits: ["trace", "mask", "image", "from"],
-    layout: traceRows,
     tokens: (theme, frame) => toneSet(theme, frame).tokens,
     behindTexts: true,
     texts: (floor) => cornerTexts(floor),

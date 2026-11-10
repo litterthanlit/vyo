@@ -53,7 +53,7 @@ export function sketchImage(given, facts) {
   const region = spec.figure.regions.find((r) => r.kind === "field" && r.field === "shape");
   if (!region) return null;
   const report = shapeReport(spec, region, facts);
-  const tokens = { ...tokensOf(spec), ...FIELDS.shape.tokens(spec.theme) };
+  const tokens = { ...tokensOf(spec), ...FIELDS.shape.tokens(spec.theme, frameOf(spec)) };
   // Bands fill each row once, so a row's last band is its fill; rings lay fills over each other, so each row keeps
   // them all, the last on top, and the letters show as a texture in their tone.
   const glyphs = report.rows.filter((r) => r.glyphs);
@@ -96,7 +96,7 @@ export function sketchImage(given, facts) {
   }
   // Creases as lines in the paper's tone: they fold the relief's light, which a third of the size hides.
   const { s: k, tx, ty } = report.mask.xf;
-  for (const op of region.shape.ops.filter((o) => opKind(o)[0] === "crease")) {
+  for (const op of (region.shape.ops ?? []).filter((o) => opKind(o)[0] === "crease")) {
     const kind = op.crease;
     const thin = kind === "capsule" ? { r: 1.5 / k } : kind === "arc" ? { width: 3 / k } : {};
     const runs = paintRows(opRings(region.shape, [{ ...op, ...thin, add: kind, crease: undefined }]).map((o) => ({ ...o, cut: false })), k, tx, ty, SHEET.height);

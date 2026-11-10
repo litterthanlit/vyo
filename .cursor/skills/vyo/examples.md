@@ -20,7 +20,7 @@ Write the product's story in one sentence, then pick the silhouette that acts it
 
 | Field | When to use it | Keywords |
 |---|---|---|
-| shape | One object stands for the product; you draw it | object, thing, picture, shape, looks |
+| shape | One object stands for the product; you draw it, or trace it from a PNG with `mask` | object, thing, picture, shape, looks |
 | wave | Something moves or is handed on | travel, flow, hand, move |
 | terrain | What is big is what matters | big, weight, matters, most |
 | river | Many things merge into one | merge, join, many, one |
@@ -33,7 +33,6 @@ Write the product's story in one sentence, then pick the silhouette that acts it
 | slabs | Layers, stacked | stack, slab, bar, layer |
 | spiral | It turns | spin, coil, spiral, turn |
 | contour | Levels, a ridge, a map | contour, level, map, ridge |
-| trace | The silhouette comes from an image | trace, mask, image, from |
 
 Then run `vyo parts` with that field and put the accent on the part the story is about. For a high-contrast poster, set `frame: "signal"`.
 
@@ -1528,6 +1527,6 @@ Rendered posters for Pantry, the `recipe` fixture, live in `examples/posters/` o
 | `slabs.png` | Swiss slabs, stacked bars |
 | `spiral.png` / `spiral.gif` | Charcoal coil, resolve GIF |
 | `contour.png` | Charcoal contour rings |
-| `trace.png` | Dark loose trace of a keyhole |
+| `wings-relief.png` | Dark loose relief of a shape traced from the bundled wings mask |
 | `brutal.png` | Paper signal: posed slabs, a highlighted accent slab, the stepped capitals list and an archive line |
-| `wings.png` | Charcoal signal trace of the bundled wings mask in `symbols`, orange accent band |
+| `wings.png` | Charcoal signal shape traced from the bundled wings mask, in the `symbols` style, orange accent band; `wings.gif` resolves it from the top |

@@ -7,6 +7,7 @@ import { maskGrid, edt, SHAPE_ROOM, opRings, paintRows } from "./mask.mjs";
 import { shapeLayout, nameWidth } from "./fields/shape.mjs";
 import { regionParts, partOptions, dominance, DOMINANT } from "./parts.mjs";
 import { tokensOf } from "./render.mjs";
+import { frameOf } from "./frame.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { RELIEF } from "./fields/shape-relief.mjs";
 
@@ -33,8 +34,8 @@ const CELL = 2;
 /** A shape region laid out in Node: its parts, mask, bands, rows and ground. */
 export function shapeReport(spec, region, facts) {
   const parts = regionParts(region, facts);
-  const tokens = { ...tokensOf(spec), ...FIELDS.shape.tokens(spec.theme) };
-  return { region, parts, dominant: dominance(facts, partOptions(region)), ...shapeLayout(region, parts, { theme: spec.theme, measure: fixedMeasure, tokens }) };
+  const tokens = { ...tokensOf(spec), ...FIELDS.shape.tokens(spec.theme, frameOf(spec)) };
+  return { region, parts, dominant: dominance(facts, partOptions(region)), ...shapeLayout(region, parts, { theme: spec.theme, frame: frameOf(spec), measure: fixedMeasure, tokens }) };
 }
 
 /** Squared distance, in cells, from every cell to the nearest cell where `on` is false. */
@@ -213,7 +214,7 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
 
   out["shape-dominant"].push(...dominantFindings(report));
 
-  const drawn = region.shape.ops.map((op, i) => ({ op, i })).filter(({ op }) => op.crease === undefined);
+  const drawn = (region.shape.ops ?? []).map((op, i) => ({ op, i })).filter(({ op }) => op.crease === undefined);
   if (drawn.length > SHAPE_SIMPLE.ops) {
     out["shape-simple"].push(`the shape has ${drawn.length} ops; past ${SHAPE_SIMPLE.ops} a silhouette stops reading as one object at thumbnail size, so simplify it: one object with one telling feature, in 3 to 6 ops`);
   }

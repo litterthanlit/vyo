@@ -10,7 +10,7 @@ import { frameOf, hasRecord, textSize, lineHeight, ruleText, recordSpot, RECORD 
 import { bandCounts, bandLine, provenance } from "./band.mjs";
 import { regionParts, partTies } from "./parts.mjs";
 import { FIELDS } from "./fields/index.mjs";
-import { traceChords } from "./png-mask.mjs";
+import { loadMaskImage } from "./png-mask.mjs";
 import { launchChromium } from "./browser.mjs";
 import { placeTexts } from "./place.mjs";
 
@@ -166,7 +166,7 @@ export const recordText = (product) => `${provenance(product)}. Drawn by Vyo`;
 
 /** The field's rows as Node lays them out with Commit Mono's fixed advance, around `blocks`. */
 export function fieldItems(spec, region, facts, blocks, measure = fixedMeasure) {
-  const r = fieldInput(region, facts, spec);
+  const r = fieldInput(region, facts);
   return FIELDS[region.field].layout(r, r.parts, { ...fieldFrame(spec), blocks, measure });
 }
 
@@ -174,21 +174,17 @@ export function fieldItems(spec, region, facts, blocks, measure = fixedMeasure) 
 export function fieldGround(spec, region, facts) {
   const ground = FIELDS[region.field].ground;
   if (!ground) return [];
-  const r = fieldInput(region, facts, spec);
+  const r = fieldInput(region, facts);
   return ground(r, r.parts, { ...fieldFrame(spec), blocks: [], measure: fixedMeasure });
 }
 
 /** Ground fills as one rect per span, for the corners and the record line to keep clear of. */
 export const groundRects = (ground) => ground.flatMap((g) => g.rows.flatMap(([y, spans]) => spans.map(([l, r]) => ({ left: l, top: y, right: r, bottom: y + 1 }))));
 
-/** A field region as its layout reads it: parts, import ties, and for a trace the chords of its PNG. */
-function fieldInput(region, facts, spec) {
+/** A field region as its layout reads it: with its parts and the imports that tie them, both from facts.json. */
+function fieldInput(region, facts) {
   const parts = regionParts(region, facts);
-  const base = { ...region, parts, ties: partTies(parts, facts) };
-  if (region.field !== "trace") return base;
-  const frame = spec ? fieldFrame(spec) : { floor: 1190, mirror: false };
-  const traced = traceChords(region, frame.floor, frame.mirror);
-  return { ...base, chords: traced.chords, pitch: traced.pitch };
+  return { ...region, parts, ties: partTies(parts, facts) };
 }
 
 /**
@@ -265,9 +261,10 @@ export function fieldFrame(spec) {
   return { floor: floorOf(spec), mirror: !!m && m.x + m.w / 2 > SHEET.width / 2, theme: spec.theme, frame: frameOf(spec) };
 }
 
-/** The figure as the page reads it: field regions carry their parts, computed from facts.json. */
+/** The figure as the page reads it: field regions carry their parts, computed from facts.json, and a traced shape its image. */
 const figureData = (spec, facts) => ({
-  regions: spec.figure.regions.map((r) => (r.kind === "field" ? fieldInput(r, facts, spec) : r.kind === "routes" ? routeData(r) : r)),
+  regions: spec.figure.regions.map((r) => (r.kind === "field" ? fieldInput(r, facts) : r.kind === "routes" ? routeData(r) : r)),
+  images: Object.fromEntries(spec.figure.regions.filter((r) => r.shape?.mask !== undefined).map((r) => [r.shape.mask, loadMaskImage(r.shape.mask)])),
   hot: spec.hot ?? null,
   motion: spec.motion ?? null,
   ...fieldFrame(spec),

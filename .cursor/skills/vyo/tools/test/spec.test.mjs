@@ -26,7 +26,7 @@ const rejects = (mutate, re, base) => {
 };
 
 test("every preset is a valid spec", () => {
-  assert.deepEqual(IDS.sort(), ["bleed", "contour", "eye", "glyph", "hourglass", "radial", "ribbon", "river", "scatter", "shape", "shape-relief", "shape-rings", "shatter", "signal-paper", "signal-wave", "slabs", "sphere", "spiral", "terrain", "trace", "warm-start", "wave", "wave-swiss", "wings"]);
+  assert.deepEqual(IDS.sort(), ["bleed", "contour", "eye", "glyph", "hourglass", "radial", "ribbon", "river", "scatter", "shape", "shape-relief", "shape-rings", "shape-traced", "shatter", "signal-paper", "signal-wave", "slabs", "sphere", "spiral", "terrain", "warm-start", "wave", "wave-swiss", "wings"]);
   for (const id of IDS) assert.deepEqual(validateSpec(preset(id)), [], id);
 });
 
@@ -176,7 +176,6 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
   assert.deepEqual(validateSpec(withField({ seed: 0 })()), []);
   assert.deepEqual(validateSpec(withField({ seed: 2147483647 })()), []);
   assert.deepEqual(validateSpec(withField({ field: "glyph", letter: "Q" })()), []);
-  assert.deepEqual(validateSpec(withField({ field: "trace", mask: "masks/trace.png" })()), []);
   assert.deepEqual(validateSpec(withField({ field: "terrain" })()), [], "accent and hot are optional");
   const cases = [
     [{ field: "lake" }, new RegExp(`^figure\\.regions\\[0\\]\\.field: "lake" is not a field; use ${Object.keys(FIELDS).join(" or ")}$`)],
@@ -192,10 +191,9 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
     [{ seed: 1.5 }, /seed: a whole number, 0 to 2147483647/],
     [{ seed: 2147483648 }, /seed: a whole number, 0 to 2147483647/],
     [{ letter: "A" }, /letter: a wave field has no letter; only glyph takes it/],
-    [{ mask: "mark.png" }, /mask: a wave field has no mask; only trace takes it/],
+    [{ mask: "mark.png" }, /^figure\.regions\[0\]\.mask: unknown field$/],
     [{ field: "glyph", letter: "a" }, /letter: one character A to Z or 0 to 9/],
     [{ field: "glyph", letter: "AA" }, /letter: one character A to Z or 0 to 9/],
-    [{ field: "trace", mask: "  " }, /mask: a path to a PNG/],
     [{ words: ["a", "b"] }, /^figure\.regions\[0\]\.words: unknown field$/],
   ];
   for (const [region, re] of cases) rejects(() => {}, re, withField(region));

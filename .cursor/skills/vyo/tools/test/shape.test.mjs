@@ -14,6 +14,7 @@ import { sketch, sketchImage } from "../lib/sketch.mjs";
 import { regionParts } from "../lib/parts.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
 import { fixedMeasure, SHEET } from "../lib/geometry.mjs";
+import { encodePng } from "../lib/png.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const recipe = scanRepo(path.join(HERE, "fixtures", "recipe"));
@@ -408,4 +409,37 @@ test("the sketch PNG draws large type as bars, so the big words show before rend
   const creased = count(relief);
   relief.figure.regions[0].shape.ops = relief.figure.regions[0].shape.ops.filter((o) => !o.crease);
   assert.ok(creased > count(relief) + 200, "the relief's creases show as lines of paper across the form");
+});
+
+test("a traced shape: a bundled or path mask validates; ops beside it, a turn, a missing file or a blank image are refused", () => {
+  const f = "figure.regions[0].shape";
+  assert.deepEqual(validateSpec(withShape({ mask: "wings" })), []);
+  assert.deepEqual(validateSpec(withShape({ mask: "wings", fit: { h: 0.8 } })), []);
+  assert.ok(validateSpec(withShape({ mask: "wings", ops: [rect([0, 0], [10, 10])] })).includes(`${f}: give ops or mask, not both; a mask is the whole silhouette`));
+  assert.ok(validateSpec(withShape({ mask: "wings", rotate: 10 })).includes(`${f}.rotate: a traced mask is not turned; turn the image itself`));
+  assert.ok(validateSpec(withShape({ mask: "no-such.png" })).some((e) => e.startsWith(`${f}.mask: shape mask not found: no-such.png`)));
+  const white = path.join(HERE, ".blank-mask.png");
+  fs.writeFileSync(white, encodePng(4, 4, Buffer.alloc(4 * 4 * 3, 255)));
+  try {
+    assert.ok(validateSpec(withShape({ mask: white })).includes(`${f}.mask: the image has no dark pixels on the sheet; the silhouette is its pixels darker than mid grey`));
+  } finally {
+    fs.rmSync(white, { force: true });
+  }
+});
+
+test("the symbols style: the drawn mask in shaded symbols, every part a band of rows by its lines, the accent's rows in the accent", () => {
+  const spec = jar();
+  const region = { ...spec.figure.regions[0], style: "symbols" };
+  const report = shapeReport({ ...spec, frame: "signal", theme: "dark" }, region, recipe);
+  const rows = report.rows;
+  assert.ok(rows.length > 50 && rows.every((r) => /^[-:=+# ]+$/.test(r.text)), "only the ramp's symbols and gaps");
+  for (const p of report.parts) assert.ok(rows.some((r) => r.part === p.id), `${p.id} has rows`);
+  assert.ok(rows.filter((r) => r.hot).every((r) => r.tone === "hot"), "the accent's rows take the accent colour on charcoal");
+  const tops = report.parts.map((p) => Math.min(...rows.filter((r) => r.part === p.id).map((r) => r.y)));
+  assert.deepEqual(tops, [...tops].sort((a, b) => a - b), "the parts run top to bottom in tree order");
+  for (const r of rows) assert.ok(report.mask.runs[Math.floor(r.y + r.height / 2)].some(([l, rr]) => r.x >= l - 1 && r.x <= rr), `a row at ${r.x},${r.y} starts inside the mask`);
+  const found = shapeFindings(report);
+  assert.deepEqual(found["shape-name"], [], "symbols draw no names, so shape-name does not apply");
+  const sketch = sketchImage({ ...spec, frame: "signal", figure: { ...spec.figure, regions: [region] } }, recipe);
+  assert.ok(sketch && sketch.length > 1000, "the sketch PNG draws the symbols");
 });
