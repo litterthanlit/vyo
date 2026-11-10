@@ -6,9 +6,11 @@
 import { SHEET, ADVANCE } from "../geometry.mjs";
 import { maskGrid, opRings, opKind, paintRows, intersectRuns } from "../mask.mjs";
 
-// size, leading: the glyph grid. cell: the px of the height field. fold: a crease's half width and depth. bevel: the default share of the shape's
-// inscribed radius that is rounded. pillow: the px each stratum rounds off its seams. rim: px inside the outline
-// that never fade. light: toward the light, x right, y down, z up. accent, tone: the floors the findings hold.
+// size, leading: the glyph grid. cell: the px of the height field. bevel: the default share of the shape's
+// inscribed radius that is rounded. pillow: the px each stratum rounds off its seams. fold: a crease's width.
+// rim: px inside the outline that never fade. light: toward the light, x right, y down, z up. phase: how far each
+// line's names shift. accent, share, tone: the floors the findings hold, the tone floors set between good forms
+// (lit 0.46 to 0.59, spread 0.36 to 0.42) and dim or flat ones (lit under 0.32, spread under 0.2).
 export const RELIEF = {
   size: 6, leading: 1.04, cell: 2, bevel: 0.7, pillow: 12, fold: 14, rim: 5, light: [-0.62, -0.78, 0.75], phase: 7,
   accent: 40, share: { points: 0.6, part: 0.2 },
@@ -24,7 +26,10 @@ export const RELIEF_TONES = {
     tokens: { shade: "#2A3446" }, glyph: "paper", underlay: { tone: "shade", levels: 5, from: 0.97, to: 0.62 },
     glow: { spread: 10, blur: 14, alpha: 0.5 }, shadow: { tone: "shade", alpha: 0.22, blur: 14, at: [0.04, 0.06] },
   },
-  dark: { tokens: {}, glyph: "ink", underlay: { tone: "ink", levels: 6, from: 0, to: 0.3 }, glow: { spread: 12, blur: 18, alpha: 0.6 }, shadow: null },
+  dark: {
+    tokens: {}, glyph: "ink", underlay: { tone: "ink", levels: 6, from: 0, to: 0.3 },
+    glow: { spread: 12, blur: 18, alpha: 0.6 }, shadow: null,
+  },
 };
 // Ink a glyph lays on its cell, as a share of the cell, for the thumbnail the sketch predicts.
 const RELIEF_COVER = { letter: [0.2, 0.3], dot: [0.035, 0.06], colon: [0.07, 0.11] };
@@ -91,10 +96,24 @@ function reliefCut(items, keyOf, parts) {
   const order = items.map((_, k) => k).sort((p, q) => keyOf(items[p]) - keyOf(items[q]) || p - q);
   const label = new Int16Array(items.length);
   const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
-  let [acc, k] = [0, 0];
+  // A cut where many items share a key (every cell of one row, for level strata) would split that row between
+  // two parts, a step in the seam. So a cut lands where the key changes by half a cell or more, within about one
+  // glyph line of exact, at the place that keeps both the running total and this part's own count nearest exact.
+  // A ring of equal depth too big to fit that window keeps the exact cut.
+  const gap = (j) => j <= 0 || j >= order.length || keyOf(items[order[j]]) - keyOf(items[order[j - 1]]) >= 0.5;
+  let [acc, k, before] = [0, 0, 0];
   parts.forEach((p, pi) => {
     acc += p.loc;
-    const end = pi === parts.length - 1 ? order.length : Math.round((acc / total) * order.length);
+    const exact = Math.round((acc / total) * order.length);
+    let end = exact;
+    if (pi < parts.length - 1) {
+      let best = Infinity;
+      for (let e = Math.max(k + 1, exact - 240); e <= Math.min(order.length - 1, exact + 240); e++) {
+        const miss = Math.max(Math.abs(e - exact), Math.abs(e - k - (exact - before)));
+        if (gap(e) && miss < best) [best, end] = [miss, e];
+      }
+    } else end = order.length;
+    before = exact;
     for (; k < end; k++) label[order[k]] = pi;
   });
   return label;
@@ -412,7 +431,7 @@ export function reliefStyle(mask, parts, { measure, theme = "light", tokens }, r
     ground.push({ part: parts[hi].id, hot: true, tone: "hot", rows: reliefRuns(reliefGrow(hot, w, h, tones.glow.spread, C), w, h, C), alpha: tones.glow.alpha, blur: tones.glow.blur });
   }
   const value = { strata: reliefStrataOf(surface, parts, rows), rows, ground, surface, tokens };
-  value.findings = (drawn) => reliefFindings(value, parts, drawn, mask, region, theme);
+  value.findings = (drawn) => reliefFindings(value, parts, drawn, mask, region);
   value.ascii = (x, y) => {
     const i = cellAt(x, y);
     if (!inside[i]) return null;
@@ -557,7 +576,7 @@ function reliefSummary(value, region) {
 const reliefPicture = (value) => Uint8Array.from(reliefThumb(value, value.tokens).rgb, (v) => Math.round(v));
 
 /** The relief's own findings, by check id; `drawn` are the rows as drawn, each { part, text, width }. */
-function reliefFindings(value, parts, drawn, mask, region, theme) {
+function reliefFindings(value, parts, drawn, mask, region) {
   const out = { "shape-accent": [], "shape-name": [], "shape-share": [], "shape-tone": [] };
   const strata = value.strata;
   const L = RELIEF;

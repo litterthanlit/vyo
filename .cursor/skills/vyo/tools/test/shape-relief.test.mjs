@@ -103,6 +103,14 @@ test("every word is whole: a row holds only its part's whole name and tone marks
   }
 });
 
+test("level strata split between glyph lines, never along one, so their seams do not step", () => {
+  const r = report(relief({ strata: { by: "angle", angle: 90 } }));
+  const byLine = new Map();
+  for (const row of r.rows) byLine.set(row.y, new Set([...(byLine.get(row.y) ?? []), row.part]));
+  const split = [...byLine].filter(([, parts]) => parts.size > 1);
+  assert.deepEqual(split.map(([y]) => Math.round(y)), [], "lines that hold two parts");
+});
+
 test("a part too thin for its name borrows one line's cells, and only one", () => {
   const thin = relief({ strata: { by: "angle", angle: 135 }, shape: { ops: [{ add: "polygon", points: [[0, 400], [1000, 0], [430, 600]] }, { add: "polygon", points: [[430, 600], [1000, 0], [740, 1000]] }], fit: { h: 0.83, cx: 0.52, cy: 0.58 }, rotate: -14 } });
   const r = report(thin);
