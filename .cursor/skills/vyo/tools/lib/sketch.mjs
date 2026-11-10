@@ -10,6 +10,7 @@ import { figureStats, regionStats, SILHOUETTE, REGION, boxMessage, thinMessage }
 import { shapeReport, shapeFindings, SHAPE_LIMITS } from "./shape-report.mjs";
 import { encodePng } from "./png.mjs";
 import { estimateText, placeTexts } from "./place.mjs";
+import { opKind, opRings, paintRows } from "./mask.mjs";
 
 const CELL = 20;
 const COLS = SHEET.width / CELL;
@@ -33,13 +34,16 @@ function shapeSummary({ mask, bands, summary }) {
   ];
 }
 
-// The sketch PNG is the sheet at a third of its size: 280px wide, like the render's thumbnail.
+// The sketch PNG is the sheet at a third of its size: 280px wide, like the render's thumbnail. Type at BAR_SIZE px
+// or more is drawn as bars.
 const IMAGE_SCALE = 3;
+const BAR_SIZE = 12;
 const hexRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
 /**
  * The silhouette as the poster will fill it, without a browser: each band in its fill, the accent band in the
- * accent, the gaps between bands in paper, and the text blocks outlined. Null when the figure has no drawn shape.
+ * accent, the gaps between bands in paper, its large lines of type as bars, its creases as lines, and the text
+ * blocks outlined. Null when the figure has no drawn shape.
  * @returns {Buffer | null}
  */
 export function sketchImage(given, facts) {
@@ -81,6 +85,26 @@ export function sketchImage(given, facts) {
       const i = (Math.floor(y / S) * w + Math.floor(x / S)) * 3;
       if (i >= 0 && i < rgb.length) for (let k = 0; k < 3; k++) rgb[i + k] = Math.round(rgb[i + k] * 0.6 + c[k] * 0.4);
     }
+  }
+  // Large type as solid bars across its x-height, in its tone, so the sketch shows where the big words fall.
+  for (const r of report.rows.filter((q) => !q.glyphs && q.size >= BAR_SIZE)) {
+    const c = hexRgb(tokens[r.tone] ?? tokens.paper);
+    for (let py = Math.round((r.y + 0.42 * r.size) / S); py <= Math.round((r.y + 0.78 * r.size) / S); py++)
+      for (let px = Math.round(r.x / S); px <= Math.round((r.x + r.width) / S); px++) if (px >= 0 && py >= 0 && px < w && py < h) rgb.set(c, (py * w + px) * 3);
+  }
+  // Creases as lines in the paper's tone: they fold the relief's light, which a third of the size hides.
+  const { s: k, tx, ty } = report.mask.xf;
+  for (const op of region.shape.ops.filter((o) => opKind(o)[0] === "crease")) {
+    const kind = op.crease;
+    const thin = kind === "capsule" ? { r: 1.5 / k } : kind === "arc" ? { width: 3 / k } : {};
+    const runs = paintRows(opRings(region.shape, [{ ...op, ...thin, add: kind, crease: undefined }]).map((o) => ({ ...o, cut: false })), k, tx, ty, SHEET.height);
+    const ink = (x, y) => y >= 0 && y < runs.length && runs[y].some(([l, r]) => x >= l && x < r);
+    const line = hexRgb(tokens.paper);
+    for (let py = 0; py < h; py++)
+      for (let px = 0; px < w; px++) {
+        const [x, y] = [px * S + 1.5, py * S + 1];
+        if (["capsule", "arc"].includes(kind) ? ink(x, y) : ink(x, y) !== ink(x + S, y) || ink(x, y) !== ink(x, y + S)) rgb.set(line, (py * w + px) * 3);
+      }
   }
   const mid = hexRgb(tokens.mid);
   const dot = (x, y) => x >= 0 && y >= 0 && x < w && y < h && rgb.set(mid, (y * w + x) * 3);

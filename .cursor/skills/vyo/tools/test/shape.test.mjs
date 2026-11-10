@@ -317,3 +317,26 @@ test("the sketch PNG is a 280px picture of the silhouette with its accent band, 
   for (const hex of ["eae8e2", "161616", "5f7389", "ff4f12"]) assert.ok(pixels.has(hex), `the paper, both fills and the accent appear (${hex})`);
   assert.equal(sketchImage(JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "wave.json"), "utf8")), recipe), null, "no PNG without a drawn shape");
 });
+
+/** The sketch PNG's pixels as hex strings, row by row. */
+function sketchPixels(spec) {
+  const png = sketchImage(spec, recipe);
+  const raw = zlib.inflateSync(png.subarray(png.indexOf("IDAT") + 4, png.indexOf("IEND") - 8));
+  return Array.from({ length: 397 }, (_, y) => Array.from({ length: 280 }, (_, x) => raw.subarray(y * 841 + 1 + x * 3, y * 841 + 4 + x * 3).toString("hex")));
+}
+
+test("the sketch PNG draws large type as bars, so the big words show before render, and draws creases", () => {
+  const px = sketchPixels(jar());
+  const big = shapeReport(jar(), jar().figure.regions[0], recipe).rows.filter((r) => r.size >= 12);
+  assert.ok(big.length);
+  for (const r of big) {
+    const [x, y] = [Math.round((r.x + r.width / 2) / 3), Math.round((r.y + 0.6 * r.size) / 3)];
+    assert.equal(px[y][x], r.tone === "on-hot" ? "161616" : "eae8e2", `"${r.text}" is a bar in its letters' tone at ${x},${y}`);
+  }
+  const relief = JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "shape-relief.json"), "utf8"));
+  relief.facts = recipe.hash;
+  const count = (spec) => sketchPixels(spec).flat().filter((c) => c === "0e1424").length;
+  const creased = count(relief);
+  relief.figure.regions[0].shape.ops = relief.figure.regions[0].shape.ops.filter((o) => !o.crease);
+  assert.ok(creased > count(relief) + 200, "the relief's creases show as lines of paper across the form");
+});

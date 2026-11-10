@@ -148,7 +148,9 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
   const accents = parts.filter((p) => p.hot);
   const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
   const hotShare = accents.reduce((s, p) => s + p.loc, 0) / total;
-  if (d && accents.length && (hotShare > DOMINANT.share || parts.length < DOMINANT.parts)) {
+  // Bands set every part's name in type however big the accent is, so with nothing to split they are the fix.
+  const stuck = !d?.split && (region.style ?? "bands") === "bands";
+  if (d && !stuck && accents.length && (hotShare > DOMINANT.share || parts.length < DOMINANT.parts)) {
     const what = `${hotShare > DOMINANT.share ? `the accent "${accents.map((p) => p.name).join('", "')}" holds ${pct(hotShare)} of the lines` : `the accent holds ${pct(hotShare)} of the lines`} and the shape has ${parts.length} parts, so every style draws it as one slab`;
     out["shape-dominant"].push(
       d.split

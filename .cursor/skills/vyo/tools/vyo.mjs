@@ -16,7 +16,7 @@ import { SHAPE_KINDS, SHAPE_ROOM } from "./lib/mask.mjs";
 import { buildPage, renderPage, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
 import { ROLES, FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
 import { cornersLine } from "./lib/geometry.mjs";
-import { runChecks } from "./lib/check.mjs";
+import { runChecks, CHECKS } from "./lib/check.mjs";
 import { NoBrowser } from "./lib/browser.mjs";
 import { init, chooseEditors, EDITORS } from "./lib/init.mjs";
 import { FIELDS } from "./lib/fields/index.mjs";
@@ -360,6 +360,15 @@ function cmdSketch(argv) {
   const fields = spec.figure.regions.some((r) => r.kind === "field");
   const facts = fields ? factsFor(pos[0], spec, opt) : undefined;
   process.stdout.write(sketch(spec, facts));
+  // Every rule that needs no browser runs here too, so a wording error costs no render. The shape checks are
+  // already among the sketch's own lines, measured on its layout.
+  for (const e of validateSpec(spec).filter((x) => !blocking.includes(x))) process.stdout.write(`✗ spec: ${e}\n`);
+  if (facts) {
+    const frame = spec.frame ?? "loose";
+    for (const c of CHECKS.filter((x) => x.stage === "spec" && x.id !== "spec" && !x.id.startsWith("shape-") && (!x.frames || x.frames.includes(frame)))) {
+      for (const m of c.run({ spec, facts, presets: loadPresets() })) process.stdout.write(`${c.level === "fail" ? "✗" : "!"} ${c.id}: ${m}\n`);
+    }
+  }
   const image = fields && sketchImage(spec, facts);
   if (image) {
     const file = path.join(path.dirname(pos[0]), `${spec.product.repo}-sketch.png`);
