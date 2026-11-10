@@ -8,7 +8,7 @@ import { parseArgs } from "node:util";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { stableStringify, factsHash } from "./lib/hash.mjs";
 import { scanRepoDetailed } from "./lib/scan/index.mjs";
-import { showFacts } from "./lib/scan/show.mjs";
+import { showFacts, hiddenCodeHint } from "./lib/scan/show.mjs";
 import { scaffoldSpec, validateSpec, THEMES } from "./lib/spec.mjs";
 import { sketch, sketchImage } from "./lib/sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE, SHEET } from "./lib/geometry.mjs";
@@ -119,6 +119,13 @@ function cmdScan(argv) {
     `${Object.keys(facts.files).length} files, ${loc} lines${out === "-" ? "" : ` → ${out}`} (hash ${facts.hash})`;
   (out === "-" ? process.stderr : process.stdout).write(summary + "\n");
   if (facts.empty) warn("No screens, endpoints, tables, services, AI or jobs found: nothing to count.");
+  const hidden = hiddenCodeHint(facts);
+  if (hidden) warn(hidden);
+  const x = facts.excluded;
+  if (x.files) {
+    const top = Object.entries(x.by).sort((a, b) => b[1].lines - a[1].lines || (a[0] < b[0] ? -1 : 1)).slice(0, 5);
+    warn(`Left out ${x.files} source file${x.files === 1 ? "" : "s"} (${x.lines} lines) as tests, build output, vendored or hidden code: ${top.map(([k, v]) => `${k} ${v.files} files/${v.lines} lines`).join(", ")}${Object.keys(x.by).length > top.length ? ", …" : ""}`);
+  }
   const s = diag.skipped;
   if (s.big || s.binary || s.unreadable || s.capped) warn(`Skipped files: ${s.big} over 512 KB, ${s.binary} binary, ${s.unreadable} unreadable, ${s.capped} past the 20000-file cap`);
   if (diag.parseFailures.length) warn(`Could not parse ${diag.parseFailures.length} config file(s): ${diag.parseFailures.slice(0, 3).join(", ")}`);
@@ -290,7 +297,7 @@ function cmdCompose(argv) {
   const twins = new Set(sameNames(parts).flat());
   const unplain = parts.filter((p) => unplainName(p.name) || twins.has(p));
   const notes = preset ? preset.notes.length : 3;
-  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, unplain };
+  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, parts };
   let space;
   if (frame === "loose") {
     // Lay the field out on its own sheet, then fill the corners it leaves.
@@ -306,7 +313,7 @@ function cmdCompose(argv) {
   const from = preset ? `the ${opt.from} preset's geometry and its words taken out` : `a ${field} field of ${parts.length} parts${opt.accent ? ` with ${opt.accent} in the accent` : ""}`;
   const lines = [
     `Wrote ${out}: a scaffold with ${from}. Replace every "…" value, then run vyo sketch ${out}, adjust, sketch again, then vyo render ${out}`,
-    ...(field ? [`vyo parts ${pos[0]}${field === "wave" ? "" : ` --field ${field}`} lists the parts: pick the accent by its id${unplain.length ? ` and name the ${unplain.length} flagged part${unplain.length === 1 ? "" : "s"} in names` : ""}.`] : []),
+    ...(field ? [`vyo parts ${pos[0]}${field === "wave" ? "" : ` --field ${field}`} lists the parts: pick the accent by its id and give every part a plain name in names${unplain.length ? ` (${unplain.length} flagged by vyo parts must not keep their scanned name)` : ""}.`] : []),
     ...(frame === "loose" ? looseNotes(field, space) : authoringNotes(notes, field)),
   ];
   process.stdout.write(lines.join("\n") + "\n");
@@ -318,6 +325,7 @@ function factsFor(specFile, spec, opt) {
   const repo = spec && spec.product && typeof spec.product.repo === "string" ? spec.product.repo : null;
   const file = opt.facts ?? (repo ? path.join(path.dirname(specFile), `${repo}-facts.json`) : null);
   if (!file) throw new Failure("product.repo is missing, so the facts file cannot be found; pass --facts");
+  if (opt.facts === undefined && !fs.existsSync(file)) throw new Failure(`cannot read ${file}: ENOENT; if the facts file has another name or place, pass --facts <path>`);
   return readFacts(file);
 }
 
@@ -345,7 +353,7 @@ function cmdSketch(argv) {
 
 function report(found) {
   for (const f of found) (f.level === "fail" ? fail : warn)(`${f.id}: ${f.message}`);
-  return found.some((f) => f.level === "fail");
+  return found.filter((f) => f.level === "fail").length;
 }
 
 async function poster(specFile, opt, outDir, files) {
@@ -353,7 +361,8 @@ async function poster(specFile, opt, outDir, files) {
   const facts = factsFor(specFile, spec, opt);
   const repo = spec.product.repo;
   const input = { spec, facts, presets: loadPresets() };
-  if (report(runChecks("spec", input))) return 1;
+  const specFails = report(runChecks("spec", input));
+  if (specFails) return specFails;
   const base = path.join(outDir, `${repo}-poster`);
   let html;
   try {
@@ -362,8 +371,7 @@ async function poster(specFile, opt, outDir, files) {
     throw new Failure(e.message);
   }
   const page = await renderPage({ html, base, ...files });
-  const failed = report(runChecks("page", { ...input, page }));
-  return failed ? 1 : 0;
+  return report(runChecks("page", { ...input, page }));
 }
 
 async function cmdRender(argv) {
@@ -374,13 +382,15 @@ async function cmdRender(argv) {
   );
   if (!PAPERS.includes(opt.paper)) throw new Usage(`--paper must be ${PAPERS.join(", ")}`);
   const outDir = opt.out ?? path.dirname(pos[0]);
-  const code = await poster(pos[0], opt, outDir, { png: !opt["no-png"], pdf: !opt["no-pdf"], paper: opt.paper });
+  const fails = await poster(pos[0], opt, outDir, { png: !opt["no-png"], pdf: !opt["no-pdf"], paper: opt.paper });
+  const code = fails ? 1 : 0;
   const repo = readJson(pos[0], "poster spec").product.repo;
   const made = ["html", ...(opt["no-png"] ? [] : ["png", "thumb"]), ...(opt["no-pdf"] ? [] : ["pdf"])]
     .map((x) => path.join(outDir, x === "thumb" ? `${repo}-poster-thumb.png` : `${repo}-poster.${x}`))
     .filter(fs.existsSync);
   if (made.length) process.stdout.write(`${code ? "Wrote, with failures" : "Wrote"}: ${made.join(", ")}\n`);
   if (!code) process.stdout.write("PASS\n");
+  else err(`POSTER NOT FINISHED: fix the ${fails} ✗ line${fails === 1 ? "" : "s"} above, then run vyo render again. Any files written above are a failed draft, not the result.`);
   return code;
 }
 
@@ -388,7 +398,7 @@ async function cmdCheck(argv) {
   const { pos, opt } = args(argv, { facts: { type: "string" } }, 1);
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-check-"));
   try {
-    const code = await poster(pos[0], opt, tmp, { png: false, pdf: false });
+    const code = (await poster(pos[0], opt, tmp, { png: false, pdf: false })) ? 1 : 0;
     if (!code) process.stdout.write("PASS\n");
     return code;
   } finally {

@@ -37,7 +37,7 @@ Without installing it, write `npx -y @litterthanlit/vyo` wherever this file says
    ```bash
    npx vyo compose <facts> --field wave --accent area:lib/plan --repo <repo> --out <repo>/vyo/<name>-poster.json
    ```
-   `--accent` refuses an id that `parts` did not list. `--repo` gives the record line its commit. Compose finds the corners the field leaves empty, puts the label, headline, legend, a paragraph and the parts list into them, and prints the corners and each text role's size.
+   `--accent` refuses an id that `parts` did not list. Compose refuses to overwrite an existing spec, which may hold your words, unless you pass `--force`. `--repo` gives the record line its commit. Compose finds the corners the field leaves empty, puts the label, headline, legend, a paragraph and the parts list into them, and prints the corners and each text role's size.
 7. Replace every `…` value: the product name, the field's `fits`, the headline, the legend, the paragraph, the names, for a wave the `sentence`, and for a shape the `shape` (see "Draw the shape"). Render rejects any placeholder left.
 8. Sketch: `npx vyo sketch <repo>/vyo/<name>-poster.json`. It prints the sheet, the text boxes and the corners. Act on every `!` line. If a corner is cramped, or two text boxes touch, move a block into a corner with room or delete the paragraph. Sketch does not flag two text boxes that overlap, so look at the boxes yourself.
 9. Render: `npx vyo render <repo>/vyo/<name>-poster.json`.

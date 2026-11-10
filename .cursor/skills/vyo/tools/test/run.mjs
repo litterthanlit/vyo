@@ -192,6 +192,28 @@ vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
   result(r.status === 1 && r.stderr === `✗ ${BROWSER_NOTE}\n` && !fs.existsSync(path.join(OUT, "recipe-poster.png")), "render with no browser prints the browser note and exits 1", `exit ${r.status}\n${r.stderr}`);
 }
 
+{
+  const spec = preset("terrain");
+  spec.figure.regions[0].accent = "area:nowhere";
+  const file = path.join(OUT, "render-fails.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("render", file, "--facts", factsFile);
+  const last = r.stderr.trimEnd().split("\n").at(-1);
+  result(
+    r.status === 1 && /^Wrote, with failures: /m.test(r.stdout) && /^POSTER NOT FINISHED: fix the 1 ✗ line above, then run vyo render again\./.test(last),
+    "a render with a failing check exits 1 and ends on a line that says the poster is not finished",
+    `exit ${r.status}\n${r.stdout}\n${r.stderr}`,
+  );
+}
+{
+  const spec = preset("wave");
+  spec.figure.texts = spec.figure.texts.filter((t) => t.role !== "legend");
+  const file = path.join(OUT, "render-spec-fails.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = spawnSync(process.execPath, [VYO, "render", file, "--facts", factsFile], { encoding: "utf8", env: { ...process.env, VYO_CHROMIUM: path.join(OUT, "no-such-chromium") } });
+  result(r.status === 1 && /^POSTER NOT FINISHED: fix the 1 ✗ line above/.test(r.stderr.trimEnd().split("\n").at(-1)), "a failing spec exits 1 with a nonexistent VYO_CHROMIUM and ends on the not-finished line", `exit ${r.status}\n${r.stderr}`);
+}
+
 console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length + SHAPE_WARNINGS.length} planted bugs caught`);
 
 const pack = spawnSync(process.execPath, ["--test", path.join(HERE, "pack.test.mjs")], { stdio: "inherit" });

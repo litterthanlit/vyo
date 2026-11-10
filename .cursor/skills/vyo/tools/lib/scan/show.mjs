@@ -19,6 +19,15 @@ function section(title, lines) {
   return lines.length ? ["", title, ...lines] : [];
 }
 
+// When nothing was kept but hidden folders hold source: a line naming the folder to scan instead. Else null.
+export function hiddenCodeHint(facts) {
+  const x = facts.excluded;
+  if (!x || !x.hidden || Object.keys(facts.files).length) return null;
+  const [reason, dir] = Object.entries(x.hidden).sort((a, b) => x.by[b[0]].lines - x.by[a[0]].lines || cmp(a[0], b[0]))[0];
+  const by = x.by[reason];
+  return `No code outside hidden folders. ${reason.replace(" (hidden)", "")} holds ${by.files} source files (${by.lines} lines) and is skipped by default; scan that folder directly: vyo scan <repo>/${dir} --out <facts.json>`;
+}
+
 export function showFacts(facts) {
   const of = (k) => facts.facts.filter((f) => f.kind === k).sort((a, b) => cmp(a.id, b.id));
   const screens = of("screen");
@@ -53,6 +62,8 @@ export function showFacts(facts) {
   const via = { http: 0, orm: 0, package: 0 };
   for (const u of facts.uses) via[u[2]]++;
   out.push(`Uses found: ${via.http} http, ${via.orm} orm, ${via.package} package`);
+  const hidden = hiddenCodeHint(facts);
+  if (hidden) out.push("", hidden);
   if (facts.empty) out.push("", "No screens, endpoints, tables, services, AI or jobs were found: this repo is too small or too unusual to draw.");
 
   const grouped = (list, kind, render) => {
