@@ -14,7 +14,7 @@ const OUT = path.join(HERE, ".out");
 const VYO = path.join(TOOLS, "vyo.mjs");
 const PRESETS = fs.readdirSync(path.join(TOOLS, "presets")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
 
-const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "shape", "docs", "init"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
+const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "shape", "rings", "docs", "init"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
@@ -118,6 +118,19 @@ const SHAPE_WARNINGS = [
   ["a tiny jar", (s) => (s.fit = { h: 0.3, cx: 0.52, cy: 0.64 }), /^! shape-cover: the shape covers 7% of the sheet; it needs 35% to read as the picture, so scale it up 2\.\d+x \(set fit\.h to 0\.\d+, it is 0\.3\) or draw it fatter$/m],
   ["a jar cut in two", (s) => s.ops.push({ cut: "rect", at: [-10, 70], size: [120, 4] }), /^! shape-split: the band of "[a-z ]+" \(y \d+ to \d+\) falls on 2 separate pieces of the shape/m],
 ];
+const RINGS_WARNINGS = [
+  ["a thin bar in rings", { ops: [{ add: "rect", at: [0, 0], size: [100, 12], round: 4 }], fit: { w: 0.9 } }, /^! shape-rings: the shape is \d+px across at its thickest, room for \d rings of 7px; its 12 parts need about 18, so draw it fatter/m],
+  ["a bar of rings turned 45 degrees", { ops: [{ add: "rect", at: [0, 0], size: [40, 100], round: 2 }], rotate: 45, fit: { h: 0.7 } }, /^! shape-upright: part "[a-z ]+" never reads upright: none of its \d+ names leans under 30 degrees/m],
+];
+for (const [name, shape, expect] of RINGS_WARNINGS) {
+  const spec = preset("shape-rings");
+  spec.figure.regions[0].shape = shape;
+  const file = path.join(OUT, "planted-rings.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(expect.test(r.stderr), `planted rings flaw (${name}) warns with ${expect}`, `exit ${r.status}\n${r.stderr}`);
+}
+
 for (const [name, mutate, expect] of SHAPE_WARNINGS) {
   const spec = preset("shape");
   const shape = jarShape();
@@ -214,7 +227,7 @@ vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
   result(r.status === 1 && /^POSTER NOT FINISHED: fix the 1 ✗ line above/.test(r.stderr.trimEnd().split("\n").at(-1)), "a failing spec exits 1 with a nonexistent VYO_CHROMIUM and ends on the not-finished line", `exit ${r.status}\n${r.stderr}`);
 }
 
-console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length + SHAPE_WARNINGS.length} planted bugs caught`);
+console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length + SHAPE_WARNINGS.length + RINGS_WARNINGS.length} planted bugs caught`);
 
 const pack = spawnSync(process.execPath, ["--test", path.join(HERE, "pack.test.mjs")], { stdio: "inherit" });
 

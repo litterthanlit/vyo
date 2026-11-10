@@ -5,14 +5,16 @@
 import { SHEET, ADVANCE } from "../geometry.mjs";
 import { edt } from "../mask.mjs";
 
-// Rings sit `gap` px apart, set in `size` px type. A ring is rounded over up to `round` px. A ring whose loops run
-// more than `fold` of their length over the skeleton (where the field's slope drops under `slope`) is the first
-// that would pile up, so the core starts there. The accent gets at least `accent` rings, every other part one.
-// A name reads upright when it leans at most `upright` degrees; it is dropped where it turns more than `bend`
-// degrees between two letters. Echoes sit `echoGap` rings apart outside the outline, kept `clear` px off text.
-export const RINGS = { gap: 7, size: 6.6, round: 14, fold: 0.3, core: 0.1, slope: 0.55, accent: 2, upright: 30, bend: 24, hairline: 0.32, echoGap: 1.4, clear: 16, maxEcho: 12 };
+// Rings sit `gap` px apart, set in `size` px type, rounded over up to `round` px. A loop that runs more than `fold`
+// of its length within reach of the skeleton (where the field's slope drops under `slope`) would pile up, so what
+// it encloses is a core; so is the innermost `core` of the shape's area. The accent spans at least `accent`
+// rings, so its band shows at thumbnail size; a shape wants `perPart` rings per part. A name reads upright when
+// it leans at most `upright` degrees, and is dropped where it turns more than `bend` degrees between two letters.
+// Hairlines are `hairline` px either side of their line. Echoes sit `echoGap` rings apart outside the outline,
+// kept `clear` px off text, at most `maxEcho` of them.
+export const RINGS = { gap: 7, size: 6.6, round: 14, fold: 0.3, core: 0.1, perPart: 1.5, slope: 0.55, accent: 2, upright: 30, bend: 24, hairline: 0.32, echoGap: 1.4, clear: 16, maxEcho: 12 };
 const RING_SEP = " · ";
-// Per theme: the fill under the whole shape, the type on it, the hairlines, and how strong the echoes are. On
+// Per theme: the fill under the whole shape, the core's fill, the type, the hairlines, and how strong the echoes are. On
 // paper, ink type on paper read as a grey outline at thumbnail size, so the light shape is solid ink with type
 // reversed out, like the dark theme's sheet.
 export const RING_TONES = {
@@ -536,12 +538,10 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
     return out;
   };
 
-  /**
-   * The pixels of ring i whose nearest point on the ring lies between ring coordinates u0 and u1, as [y, spans]:
-   * the strip a part holds when it holds the ring only part way round.
-   */
-  const arcRows = (i, u0, u1) => {
-    const [a, b] = [Math.max(0, u0 - i) * ringLength[i], Math.min(1, u1 - i) * ringLength[i]];
+  /** The ring a pixel inside the shape belongs to, or -1 in a core. */
+  const ringOf = (c) => (coreFrom[c] >= 0 ? -1 : Math.min(R - 1, Math.floor(field.sd[c] / gap)));
+  /** For ring i: how far round the ring, from its seam, the ring point nearest (x, y) lies. */
+  const arcOf = (i) => {
     const cell = 8;
     const near = new Map();
     let at = 0;
@@ -553,22 +553,30 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
       }
       at += walk.length;
     }
+    return (x, y) => {
+      let [best, arc] = [Infinity, 0];
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          for (const [px, py, s] of near.get(`${Math.floor(x / cell) + dx},${Math.floor(y / cell) + dy}`) ?? []) {
+            const dd = (px - x - 0.5) ** 2 + (py - y - 0.5) ** 2;
+            if (dd < best) [best, arc] = [dd, s];
+          }
+        }
+      }
+      return arc;
+    };
+  };
+  /** The pixels of ring i between ring coordinates u0 and u1, as [y, spans]: a part's strip of a ring it holds part way round. */
+  const arcRows = (i, u0, u1) => {
+    const [a, b] = [Math.max(0, u0 - i) * ringLength[i], Math.min(1, u1 - i) * ringLength[i]];
+    const arc = arcOf(i);
     const out = [];
     for (let y = box[1]; y < box[3]; y++) {
       const spans = [];
       for (let x = box[0]; x < box[2]; x++) {
-        const d = field.sd[y * W + x];
-        if (Math.min(R - 1, Math.floor(d / gap)) !== i || d <= 0 || coreFrom[y * W + x] >= 0) continue;
-        let [best, arc] = [Infinity, 0];
-        for (let dx = -1; dx <= 1; dx++) {
-          for (let dy = -1; dy <= 1; dy++) {
-            for (const [px, py, s] of near.get(`${Math.floor(x / cell) + dx},${Math.floor(y / cell) + dy}`) ?? []) {
-              const dd = (px - x - 0.5) ** 2 + (py - y - 0.5) ** 2;
-              if (dd < best) [best, arc] = [dd, s];
-            }
-          }
-        }
-        if (arc < a || arc >= b) continue;
+        if (field.sd[y * W + x] <= 0 || ringOf(y * W + x) !== i) continue;
+        const s = arc(x, y);
+        if (s < a || s >= b) continue;
         const last = spans[spans.length - 1];
         if (last && last[1] === x) last[1] = x + 1;
         else spans.push([x, x + 1]);
@@ -576,6 +584,25 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
       if (spans.length) out.push([y, spans]);
     }
     return out;
+  };
+  /** Each pixel's part index as drawn, by its ring and how far round, or its core row; -1 outside the shape. */
+  const owners = () => {
+    const own = new Int16Array(W * field.H).fill(-1);
+    const arcs = new Map();
+    const partAt = (u) => Math.max(0, allot.findIndex((p, k) => u < p.to || k === allot.length - 1));
+    for (let y = box[1]; y < box[3]; y++) {
+      for (let x = box[0]; x < box[2]; x++) {
+        const c = y * W + x;
+        if (field.sd[c] <= 0) continue;
+        const i = ringOf(c);
+        if (i < 0) own[c] = allot.findIndex((p) => p.core && y >= p.core[0] && y < p.core[1]);
+        else {
+          if (!arcs.has(i)) arcs.set(i, ringLength[i] ? arcOf(i) : () => 0);
+          own[c] = partAt(i + arcs.get(i)(x, y) / (ringLength[i] || 1));
+        }
+      }
+    }
+    return own;
   };
 
   const rows = [];
@@ -591,7 +618,7 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
   // The rings, outline first, so an outer name wins where two would meet.
   for (let i = 0; i < R; i++) {
     for (const b of bands) {
-      if (b.to <= i || b.from >= i + 1) continue;
+      if (b.to <= i || b.from >= i + 1 || !ringLength[i]) continue;
       b.lines++;
       const name = b.part.name.toLowerCase();
       for (const [walk, a, z] of arcs(i, b.from, b.to)) {
@@ -718,5 +745,27 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
     if (paths.length) ground.unshift({ part: null, hot: false, tone: "soft", rows: [], path: paths.join(""), alpha: Math.round(tones.echo * (1 - e / echo) * 100) / 100 });
   }
 
-  return { bands, rows, ground, rings: { levels: R, deepest: field.deepest, cores, lines } };
+  // What the sketch and the checks say: rings per part against its share, and what to change when it fails.
+  const P = parts.length;
+  // A ring and a half per part: fewer, and the outer parts take whole rings while the inner ones are crushed into the core.
+  const need = Math.ceil(RINGS.perPart * P);
+  const pct = (n) => `${Math.round(n * 1000) / 10}%`;
+  const loc = parts.reduce((t, p) => t + p.loc, 0) || 1;
+  const across = Math.round(2 * field.deepest);
+  for (const b of bands) {
+    b.rings = ringLength.filter((len, i) => len > 0 && i < b.to && i + 1 > b.from).length;
+    b.missing = b.rings || b.core
+      ? `its ${b.rings} rings${b.core ? " and its core lines" : ""} hold no whole copy of "${b.part.name.toLowerCase()}" (${Math.ceil(nameArc(b.part))}px with its dot), where they run short or fold; make the shape fatter there or give the part a shorter name`
+      : `the shape ran out of rings before it (${R} rings of ${gap}px fit); draw it fatter or use style bands`;
+  }
+  const findings = {
+    "shape-rings": R < need ? [`the shape is ${across}px across at its thickest, room for ${R} rings of ${gap}px; its ${P} parts need about ${need}, so draw it fatter (about ${2 * need * gap}px across at its thickest), raise fit.h, or use style bands`] : [],
+    "shape-upright": bands.filter((b) => b.names && !b.upright).map((b) => `part "${b.part.name}" never reads upright: none of its ${b.names} names leans under ${RINGS.upright} degrees; turn the shape (shape.rotate) so more of its outline runs level, or draw it rounder`),
+  };
+  const summary = [
+    `rings: ${R} rings of ${gap}px fit (the shape is ${across}px across at its thickest; ${P} parts want about ${need})${cores.length ? `, then ${cores.length === 1 ? "a core" : `${cores.length} cores`} of ${lines.length} level lines` : ""}`,
+    "parts, outline in (* the accent): rings, core lines, share of the shape's area for share of the lines",
+    ...bands.map((b) => `  ${b.part.hot ? "*" : " "} ${b.part.name.toLowerCase().padEnd(24)} ${String(b.rings).padStart(2)} ${b.rings === 1 ? "ring" : "rings"}${b.core ? `, ${b.lines - b.rings} core lines` : ""}, ${pct(b.share)} of the area for ${pct(b.part.loc / loc)} of the lines`),
+  ];
+  return { bands, rows, ground, findings, summary, owners, rings: { levels: R, deepest: field.deepest, cores, lines } };
 }

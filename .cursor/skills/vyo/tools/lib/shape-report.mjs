@@ -126,12 +126,15 @@ const bandOf = (report, part) => report.bands.find((b) => b.part.id === part.id)
 /**
  * Every finding on a shape region, by check id. `rows` are the rows as drawn (the page's, or Node's for the
  * sketch); `blocks` are the text blocks, each `{ id, left, top, right, bottom }`.
- * @returns {Record<"shape-thin" | "shape-cover" | "shape-accent" | "shape-name" | "shape-split" | "shape-room", string[]>}
+ * @returns {Record<"shape-thin" | "shape-cover" | "shape-accent" | "shape-name" | "shape-split" | "shape-room" | "shape-rings" | "shape-upright", string[]>}
  */
 export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) {
   const { mask, bands, parts, region } = report;
   const L = SHAPE_LIMITS;
-  const out = { "shape-thin": [], "shape-cover": [], "shape-accent": [], "shape-name": [], "shape-split": [], "shape-room": [] };
+  const out = { "shape-thin": [], "shape-cover": [], "shape-accent": [], "shape-name": [], "shape-split": [], "shape-room": [], "shape-rings": [], "shape-upright": [] };
+  // A style that is not cut top to bottom judges its own depth and reading; the band checks are the bands'.
+  const banded = (region.style ?? "bands") === "bands";
+  for (const [id, messages] of Object.entries(report.findings ?? {})) out[id].push(...messages);
 
   for (const t of thinFeatures(mask)) {
     out["shape-thin"].push(
@@ -148,7 +151,7 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
     out["shape-cover"].push(`the shape covers ${pct(cover)} of the sheet; it needs ${pct(L.cover)} to read as the picture, so scale it up ${share(k)}x (set fit.${by} to ${share(mask.fit[by] * k)}, it is ${share(mask.fit[by])}) or draw it fatter`);
   }
 
-  const hot = bands.filter((b) => b.part.hot).sort((a, b) => b.y1 - b.y0 - (a.y1 - a.y0))[0];
+  const hot = !banded ? null : bands.filter((b) => b.part.hot).sort((a, b) => b.y1 - b.y0 - (a.y1 - a.y0))[0];
   if (hot && hot.y1 - hot.y0 < L.accent) {
     const h = hot.y1 - hot.y0;
     out["shape-accent"].push(`the accent band "${hot.part.name}" is ${h}px tall (y ${hot.y0} to ${hot.y1}); it needs ${L.accent}px to show in the thumbnail, so scale the shape up ${share(L.accent / h)}x, narrow it where the band falls, or put the accent on a bigger part`);
@@ -160,12 +163,16 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
     if (mine.some((r) => (r.text ?? "").includes(name))) continue;
     const b = bandOf(report, p);
     if (!b) continue;
+    if (!banded) {
+      out["shape-name"].push(`part "${p.name}" never shows its whole name: ${b.missing}`);
+      continue;
+    }
     const need = Math.ceil(nameWidth(name, b.size));
     const widest = px(Math.max(0, ...mine.map((r) => r.width)));
     out["shape-name"].push(`part "${p.name}" never shows its whole name: its band (y ${b.y0} to ${b.y1}) holds ${widest}px of ${b.size.toFixed(1)}px type and the name needs ${need}px; widen the shape there to at least ${need}px or give the part a shorter name`);
   }
 
-  for (const b of bands) {
+  for (const b of banded ? bands : []) {
     const pieces = piecesBetween(mask, b.y0, b.y1);
     const total = pieces.reduce((s, q) => s + q.area, 0);
     const big = pieces.filter((q) => q.area >= L.piece * total);

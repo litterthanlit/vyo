@@ -41,15 +41,15 @@ export function estimateText(t, spec, facts) {
 
 const share = (n) => Math.round(n * 100) / 100;
 
-/** A drawn shape in numbers: how much of the sheet it covers, its fit and bleed, and each band. */
-function shapeSummary({ mask, bands }) {
+/** A drawn shape in numbers: how much of the sheet it covers, its fit and bleed, and each band (or the style's own lines). */
+function shapeSummary({ mask, bands, summary }) {
   const { width: W, height: H } = SHEET;
   const b = mask.box;
   const bleeds = [["left", b.left < 0], ["top", b.top < 0], ["right", b.right > W], ["bottom", b.bottom > H]].filter(([, off]) => off).map(([side]) => side);
   return [
     `shape: covers ${Math.round((mask.area / (W * H)) * 100)}% of the sheet (needs ${SHAPE_LIMITS.cover * 100}%), ${Math.round(b.right - b.left)} by ${Math.round(b.bottom - b.top)}px (fit.w ${share(mask.fit.w)}, fit.h ${share(mask.fit.h)}), bleeds ${bleeds.join(", ") || "nowhere"}`,
-    "bands, top to bottom (* the accent):",
-    ...bands.map((d) => `  ${d.part.hot ? "*" : " "} ${d.part.name.toLowerCase().padEnd(24)} y ${d.y0} to ${d.y1}, ${d.y1 - d.y0}px tall, ${d.lines} ${d.lines === 1 ? "line" : "lines"} of ${d.size.toFixed(1)}px type`),
+    ...(summary ?? ["bands, top to bottom (* the accent):"]),
+    ...(summary ? [] : bands).map((d) => `  ${d.part.hot ? "*" : " "} ${d.part.name.toLowerCase().padEnd(24)} y ${d.y0} to ${d.y1}, ${d.y1 - d.y0}px tall, ${d.lines} ${d.lines === 1 ? "line" : "lines"} of ${d.size.toFixed(1)}px type`),
   ];
 }
 
@@ -67,8 +67,14 @@ export function sketchImage(spec, facts) {
   if (!region) return null;
   const report = shapeReport(spec, region, facts);
   const tokens = { ...tokensOf(spec), ...FIELDS.shape.tokens(spec.theme) };
+  // Bands fill each row once, so a row's last band is its fill; rings lay fills over each other, so each row keeps
+  // them all, the last on top, and the letters show as a texture in their tone.
+  const glyphs = report.rows.filter((r) => r.glyphs);
   const toneAt = new Map();
-  for (const g of report.ground) if (g.part) for (const [y, spans] of g.rows) toneAt.set(y, [hexRgb(tokens[g.tone]), spans]);
+  for (const g of report.ground) {
+    if (!g.part && !glyphs.length) continue;
+    for (const [y, spans] of g.rows) toneAt.set(y, glyphs.length ? [...(toneAt.get(y) ?? []), [hexRgb(tokens[g.tone]), spans]] : [[hexRgb(tokens[g.tone]), spans]]);
+  }
   const S = IMAGE_SCALE;
   const [w, h] = [Math.ceil(SHEET.width / S), Math.ceil(SHEET.height / S)];
   const paper = hexRgb(tokens.paper);
@@ -78,14 +84,21 @@ export function sketchImage(spec, facts) {
       const sum = [0, 0, 0];
       for (let sy = 0; sy < S; sy++) {
         const y = py * S + sy;
-        const [fill, spans] = toneAt.get(y) ?? [paper, []];
+        const fills = toneAt.get(y) ?? [];
         for (let sx = 0; sx < S; sx++) {
           const x = px * S + sx + 0.5;
-          const c = spans.some(([l, r]) => x >= l && x < r) ? fill : paper;
+          const c = fills.findLast(([, spans]) => spans.some(([l, r]) => x >= l && x < r))?.[0] ?? paper;
           for (let k = 0; k < 3; k++) sum[k] += c[k];
         }
       }
       rgb.set(sum.map((v) => Math.round(v / (S * S))), (py * w + px) * 3);
+    }
+  }
+  for (const r of glyphs) {
+    const c = hexRgb(tokens[r.tone]);
+    for (const [x, y] of r.glyphs) {
+      const i = (Math.floor(y / S) * w + Math.floor(x / S)) * 3;
+      if (i >= 0 && i < rgb.length) for (let k = 0; k < 3; k++) rgb[i + k] = Math.round(rgb[i + k] * 0.6 + c[k] * 0.4);
     }
   }
   const mid = hexRgb(tokens.mid);
@@ -133,9 +146,13 @@ export function sketch(spec, facts) {
       for (let r = 0; r < ROWS; r++) {
         const y = Math.min(SHEET.height - 1, r * CELL + CELL / 2);
         const band = report.bands.find((b) => y >= b.y0 && y < b.y1);
-        for (let c = 0; c < COLS; c++) if (report.mask.runs[y].some(([l, rr]) => c * CELL + CELL / 2 >= l && c * CELL + CELL / 2 < rr)) put(r, c, band?.part.hot ? "@" : mark);
+        const hot = report.ground.filter((g) => g.hot).flatMap((g) => g.rows.filter(([gy]) => gy === y).flatMap(([, spans]) => spans));
+        for (let c = 0; c < COLS; c++) {
+          const x = c * CELL + CELL / 2;
+          if (report.mask.runs[y].some(([l, rr]) => x >= l && x < rr)) put(r, c, (band ? band.part.hot : hot.some(([l, rr]) => x >= l && x < rr)) ? "@" : mark);
+        }
       }
-      legend.push(`${mark} ${region.id} (shape, ${report.parts.length} bands; @ marks the accent band)`);
+      legend.push(`${mark} ${region.id} (shape, ${report.parts.length} ${report.summary ? "parts" : "bands"}; @ marks the accent band)`);
       shapeLines.push(...shapeSummary(report));
       const findings = shapeFindings(report, { blocks: spec.figure.texts.map((t) => estimateText(t, spec, facts)) });
       notes.push(...Object.values(findings).flat());
