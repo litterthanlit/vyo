@@ -471,7 +471,7 @@ Before rendering, `vyo sketch` printed 22 rings of 7px for 12 parts, the accent'
 
 ### shape, relief
 
-The same jar as a lit volume, on the dark sheet: `"style": "relief"`, which `compose --field shape --style relief --theme dark` writes. The jar is drawn upright this time, with a 3-unit cut between the lid and the neck so the lid reads as a separate piece. Two creases ridge the lid and a creased rectangle is the label; both fold the surface and leave the outline alone. `bevel` 0.8 rounds the body almost to a cylinder, and `strata` at 90 degrees stacks the parts from the lid down like layers of preserves; a part too small for a whole glyph line takes part of one, so every layer keeps its share. Each layer repeats its part's name in 6px type, every word whole, lit from the top left. The plan glows; on the light sheet it would be a solid orange layer with dark letters. The legend names the measure as "size" and "lines of code".
+The same jar as a lit volume, on the dark sheet: `"style": "relief"`, which `compose --field shape --style relief --theme dark` writes. The jar is drawn upright this time, with a 3-unit cut between the lid and the neck so the lid reads as a separate piece. Two creases ridge the lid and a creased rectangle is the label; both fold the surface and leave the outline alone. `bevel` 0.8 rounds the body almost to a cylinder, and `strata` at 90 degrees stacks the parts from the lid down like layers of preserves; a part too small for a whole glyph line takes part of one, so every layer keeps its share. Only the type draws the jar, lit from the top left: no outline, no fill. Each line is set word by word in 6px type. A word runs across a layer's edge to its end and belongs to the layer it is owed, so the layers' edges step where names begin and end, and a line enters and leaves the jar partway through a name. The plan's letters glow orange, on paper too, and a faint dot grid on the sheet carries the jar's shadow. The engine sets the headline top left, as large as it fits in at most four lines. The legend names the measure as "big" and "code".
 
 Before rendering, `vyo sketch` printed each stratum's share of the area against its share of the lines, the accent's thickness, the predicted thumbnail's lit side and spread, and wrote the shaded `recipe-sketch.png`. It printed no `!` line. Without the creases, `bevel` and `strata`, the jar still renders as a rounded volume; the hints only add the folds.
 
@@ -533,7 +533,7 @@ Before rendering, `vyo sketch` printed each stratum's share of the area against 
       {
         "role": "legend",
         "id": "legend",
-        "text": "Every layer of the jar is a part of Pantry, its size set by its lines of code. The glowing layer is the plan."
+        "text": "Every layer in the jar is a part of Pantry, as big as its code. The orange layer is the plan."
       }
     ]
   }

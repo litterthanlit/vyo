@@ -55,7 +55,7 @@
       {
         "role": "legend",
         "id": "legend",
-        "text": "Every layer of the jar is a part of Pantry, its size set by its lines of code. The glowing layer is the plan."
+        "text": "Every layer in the jar is a part of Pantry, as big as its code. The orange layer is the plan."
       }
     ]
   }
