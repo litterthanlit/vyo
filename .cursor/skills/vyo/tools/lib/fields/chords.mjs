@@ -119,31 +119,82 @@ function digitsTo(room, cw, spacing) {
   return { text, width: text.length ? text.length * cw + (text.length - 1) * spacing : 0 };
 }
 
-/** Pose a mask and fill it, with part names or, when `region.symbols`, with symbols. `own.mirror: false` keeps it unflipped. New primitives draw the mask, then call this. */
+// A pose softens in steps: first without crop or void, then also at the unposed size and without rotation.
+const ladder = (pose) => {
+  const soft = { ...pose, crop: [0, 0, 0, 0], voidR: 0 };
+  return [pose, soft, { ...soft, scale: 1, rotation: 0 }];
+};
+function extent(rows) {
+  if (!rows.length) return { w: 0, h: 0, left: 0, right: 0, top: 0, bottom: 0 };
+  const left = Math.min(...rows.map((r) => r.x));
+  const right = Math.max(...rows.map((r) => r.x + r.width));
+  const top = Math.min(...rows.map((r) => r.y));
+  const bottom = Math.max(...rows.map((r) => r.y + r.height));
+  return { w: right - left, h: bottom - top, left, right, top, bottom };
+}
+// What the silhouette check asks of a figure: 55% of the height above the floor and 60% of the width.
+const minimum = (floor) => ({ w: 0.6 * SHEET.width, h: 0.55 * floor });
+/** Whether rows span the silhouette minimum, or as much as `base` did when `base` falls short of it. */
+function reaches(rows, base, floor) {
+  const a = extent(rows);
+  const b = extent(base);
+  const need = minimum(floor);
+  return a.h >= Math.min(need.h, b.h) - 1 && a.w >= Math.min(need.w, b.w) - 1;
+}
+
+/**
+ * Pose a mask and fill it, with part names or, when `region.symbols`, with symbols. `own.mirror: false` keeps it
+ * unflipped. A pose that leaves the form under the silhouette minimum softens, and a seeded form that is under it
+ * on its own grows. New primitives draw the mask, then call this.
+ */
 export function fillMask(mask, region, parts, opts, own) {
   const { size, pitch } = region.symbols ? SYMBOLS : own;
+  const fill = (pose) => {
+    if (own.mirror === false) pose.mirror = false;
+    else if (opts.mirror) pose.mirror = !pose.mirror;
+    const step = Math.round(pitch * pose.density * 10) / 10;
+    const chords = applyPoseToMask(mask, pose, { floor: opts.floor, pitch: step });
+    return rowsFromChords(chords, parts, {
+      size,
+      pitch: step,
+      measure: opts.measure,
+      theme: opts.theme,
+      frame: opts.frame,
+      blocks: opts.blocks,
+      behindTexts: true,
+      symbols: !!region.symbols,
+    });
+  };
   const pose = poseOf(region.seed);
-  if (own.mirror === false) pose.mirror = false;
-  else if (opts.mirror) pose.mirror = !pose.mirror;
-  const step = Math.round(pitch * pose.density * 10) / 10;
-  const chords = applyPoseToMask(mask, pose, { floor: opts.floor, pitch: step });
-  return rowsFromChords(chords, parts, {
-    size,
-    pitch: step,
-    measure: opts.measure,
-    theme: opts.theme,
-    frame: opts.frame,
-    blocks: opts.blocks,
-    behindTexts: true,
-    symbols: !!region.symbols,
-  });
+  if (pose.identity) return fill(pose);
+  const need = minimum(opts.floor);
+  const big = (rows) => extent(rows).w >= need.w - 1 && extent(rows).h >= need.h - 1;
+  for (const p of ladder(pose)) {
+    const rows = fill({ ...p });
+    if (big(rows)) return rows;
+  }
+  // The seed's own form is under the minimum (a tight coil, a few small clouds, a form off an edge): grow it.
+  const base = fill(poseOf(0));
+  const b = extent(base);
+  if (!b.w || !b.h) return base;
+  // Grow about the point that splits the free paper on each side in proportion, so the grown form stays on the sheet.
+  const fixed = (lo, hi, size) => lo + (hi - lo) * (lo / Math.max(1, lo + (size - hi)));
+  const anchor = { x: fixed(b.left, b.right, SHEET.width) / SHEET.width, y: fixed(b.top, b.bottom, opts.floor) / opts.floor };
+  let scale = 1;
+  let rows = base;
+  for (let i = 0; i < 4 && !big(rows) && scale < 2; i++) {
+    const now = extent(rows);
+    scale = Math.min(2, scale * Math.max(1.05, (1.04 * need.w) / now.w, (1.04 * need.h) / now.h));
+    rows = fill({ ...poseOf(0), identity: false, scale, anchor });
+  }
+  return rows;
 }
 
 /**
  * Run an existing field's own layout, then pose that silhouette, each run keeping the part that drew it.
  * Seed 0 returns the layout unchanged. The masthead mirror is already in the raster, so the pose does not
- * flip a second time. A pose that crops a part away softens (no crop or void, then no scale or rotation),
- * and the unposed layout is the last resort, so every part the field draws stays drawn.
+ * flip a second time. A pose that crops a part away or shrinks the form under the silhouette minimum softens,
+ * and the unposed layout is the last resort.
  */
 export function relayout(region, parts, opts, identity, { size, pitch, behindTexts, digits = false }) {
   const pose = poseOf(region.seed);
@@ -155,8 +206,7 @@ export function relayout(region, parts, opts, identity, { size, pitch, behindTex
   for (const it of items) toneOf[it.part] ??= it.tone;
   const drawn = new Set(items.map((it) => it.part));
   const mask = maskFromItems(items, opts.floor, (it) => index.get(it.part) ?? 0);
-  const soft = { ...pose, crop: [0, 0, 0, 0], voidR: 0 };
-  for (const p of [pose, soft, { ...soft, scale: 1, rotation: 0 }]) {
+  for (const p of ladder(pose)) {
     const step = Math.round(pitch * p.density * 10) / 10;
     const chords = applyPoseToMask(mask, p, { floor: opts.floor, pitch: step });
     const rows = rowsFromChords(chords, parts, {
@@ -174,7 +224,7 @@ export function relayout(region, parts, opts, identity, { size, pitch, behindTex
       toneOf,
     });
     const kept = new Set(rows.map((r) => r.part));
-    if ([...drawn].every((id) => kept.has(id))) return rows;
+    if ([...drawn].every((id) => kept.has(id)) && reaches(rows, items, opts.floor)) return rows;
   }
-  return identity(region, parts, opts);
+  return identity({ ...region, seed: 0 }, parts, opts);
 }

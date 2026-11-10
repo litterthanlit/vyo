@@ -51,6 +51,14 @@ test("every field module except the PNG reader is inlined into the page", () => 
   assert.ok(!PAGE_MODULES.includes("fields/png.mjs"));
 });
 
+test("the inlined page script compiles: no two modules declare the same top-level name", async () => {
+  const vm = await import("node:vm");
+  const lib = path.join(HERE, "..", "lib");
+  const code = [...PAGE_MODULES.map((f) => fs.readFileSync(path.join(lib, f), "utf8").replace(/^import .*\n/gm, "").replace(/^export /gm, "")), fs.readFileSync(path.join(lib, "fill.js"), "utf8")].join("\n");
+  // The page runs it as a module, where a repeated top-level name is an error; a strict block has the same rule.
+  assert.doesNotThrow(() => new vm.Script(`"use strict"; {\n${code}\n}`), "a clash such as two `spans` fails every poster with a page error");
+});
+
 for (const [name, facts] of [["recipe", recipe], ["hypher", hypher]]) {
   test(`wave on ${name}: 7.9px rows from the top edge to the floor, every part on a row, the band unbroken behind the text blocks`, () => {
     const parts = regionParts({ accent: "area:hypher-web/shared" }, facts);
@@ -286,6 +294,20 @@ test("shatter: disjoint cells, not one band", () => {
   for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) if (near(items[i], items[j])) parent[find(i)] = find(j);
   const clusters = new Set(items.map((_, i) => find(i)));
   assert.ok(clusters.size >= 8, `broken into ${clusters.size} clusters`);
+});
+
+test("no seed shrinks a field under the silhouette minimum that its unposed form meets", () => {
+  const parts = recipeParts();
+  const span = (rows) => ({ w: Math.max(...rows.map((r) => r.x + r.width)) - Math.min(...rows.map((r) => r.x)), h: Math.max(...rows.map((r) => r.y + r.height)) - Math.min(...rows.map((r) => r.y)) });
+  const fields = { scatter: scatterRows, shatter: shatterRows, glyph: glyphRows, bleed: bleedRows, bands: bandsRows, spiral: spiralRows, contour: contourRows, terrain: terrainRows, river: riverRows, sphere: sphereRows, radial: radialRows, wave: waveRows };
+  for (const [name, layout] of Object.entries(fields)) {
+    const ties = partTies(parts, recipe);
+    const base = span(layout({ ties, letter: "P" }, parts, open({ blocks: [] })));
+    for (let seed = 1; seed <= 40; seed++) {
+      const s = span(layout({ ties, letter: "P", seed }, parts, open({ blocks: [] })));
+      assert.ok(s.h >= Math.min(550, base.h) - 1 && s.w >= Math.min(504, base.w) - 1, `${name} seed ${seed}: ${Math.round(s.w)} by ${Math.round(s.h)}, unposed ${Math.round(base.w)} by ${Math.round(base.h)}`);
+    }
+  }
 });
 
 test("glyph: no seed or masthead draws the letter backwards", () => {

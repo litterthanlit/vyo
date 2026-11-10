@@ -20,7 +20,10 @@ function form(floor, pose) {
     if (edge === 0 || edge === 2) cx = pose.rnd() < 0.5 ? -off * 0.4 : SHEET.width + off * 0.4;
     else cy = pose.rnd() < 0.5 ? -off * 0.3 : floor + off * 0.3;
   }
-  return { cx, cy, rx, ry };
+  if (pose.identity) return { cx, cy, rx, ry };
+  // Reach far enough past the edge that the part left on the sheet meets the silhouette minimum (60% wide, 55% tall).
+  const over = (c, size) => (c < 0 ? -c : c > size ? c - size : 0);
+  return { cx, cy, rx: Math.max(rx, 0.64 * SHEET.width + over(cx, SHEET.width)), ry: Math.max(ry, 0.6 * floor + over(cy, floor)) };
 }
 
 /** Rows of the on-sheet part of an off-canvas ellipse. */
