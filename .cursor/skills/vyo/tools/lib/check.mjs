@@ -292,8 +292,10 @@ export const CHECKS = [
     run: ({ page }) => page.blocks.filter((b) => !inside(b.rect, page.sheet)).map((b) => `${b.name} runs off the sheet (bottom at ${round(b.rect.bottom)}px of ${page.sheet.bottom}px)`),
   },
   {
-    id: "silhouette", level: "fail", stage: "page", about: "the figure covers 15% of the sheet above the footer and spans 55% of its height and 60% of its width",
-    run: ({ page }) => {
+    id: "silhouette", level: "fail", stage: "page", about: "the figure covers 15% of the sheet above the footer and spans 55% of its height and 60% of its width (a drawn shape is judged by shape-cover instead)",
+    run: ({ spec, page }) => {
+      // A shape's rows are type inside a silhouette the mask already measures; their extent is not the figure's.
+      if (fieldsOf(spec).some((r) => r.field === "shape")) return [];
       const s = figureStats(page.rows.map((r) => r.rect), page.dots.map((d) => d.rect), page.footerTop);
       const out = [];
       if (s.coverage < SILHOUETTE.coverage) out.push(`the figure covers ${pct(s.coverage)} of the sheet above the footer; it needs ${pct(SILHOUETTE.coverage)}, so enlarge the shapes`);

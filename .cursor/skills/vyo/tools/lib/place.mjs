@@ -38,9 +38,10 @@ export function estimateText(t, spec, facts, em = 1) {
 // The room: 40px from the sheet's edges, 16px from the shape plus 4 for antialiasing, 10px from the record line.
 // Blocks in a column sit `after` px below the one above (the label closer to its headline). Each role's widest
 // and narrowest column, and `em`, the advance the room is reserved for: Newsreader's average at 0.45 em
-// underestimates a line of long words.
+// underestimates a line of long words. A headline column narrower than `roomy` is tried only after every grouping
+// fails at that width: a headline squeezed into a gap in the shape read worse than one split from the legend.
 export const PLACE = {
-  inset: 40, clear: 20, record: 10, cell: 4, em: 1.12, after: { label: 10, other: 22 },
+  inset: 40, clear: 20, record: 10, cell: 4, em: 1.12, after: { label: 10, other: 22 }, roomy: 400,
   w: { label: [120, 300], headline: [240, 520], legend: [190, 300], paragraph: [190, 300], list: [140, 240], rule: [120, 300] },
 };
 const ORDER = ["label", "headline", "legend", "paragraph", "list", "rule"];
@@ -114,12 +115,12 @@ function findSpot(room, width, height, centre) {
 }
 
 /** Try to place `blocks` as one column, widest first and the headline from its default size down. */
-function placeColumn(spec, facts, room, blocks, centre) {
+function placeColumn(spec, facts, room, blocks, centre, roomy) {
   const head = blocks.find((t) => t.role === "headline");
   const [, lo, hi] = head ? sizeRange(spec, head) : [0, 0, 0];
   const sizes = head && head.size === undefined ? [textSize(spec, head), 38, 35, lo].filter((s, i, a) => s >= lo && s <= hi && a.indexOf(s) === i) : [undefined];
   const widest = Math.max(...blocks.map((t) => Math.min(t.w ?? PLACE.w[t.role][1], PLACE.w[t.role][1])));
-  const narrowest = Math.max(...blocks.map((t) => PLACE.w[t.role][0]));
+  const narrowest = Math.max(...blocks.map((t) => (roomy && t.role === "headline" ? PLACE.roomy : PLACE.w[t.role][0])));
   for (const size of sizes) {
     for (let width = widest; width >= narrowest; width -= 20) {
       for (const align of ["left", "right"]) {
@@ -147,14 +148,15 @@ export function placeTexts(spec, facts) {
   const rec = recordRect(recordOf(spec, facts));
   const todo = [...loose].sort((a, b) => ORDER.indexOf(a.role) - ORDER.indexOf(b.role));
   const placed = new Map();
-  // One column, then the label and headline apart from the rest, then each block alone.
+  // One column, then the label and headline apart from the rest, then each block alone; each with a roomy headline first.
   const groups = [[todo], [todo.filter((t) => ["label", "headline"].includes(t.role)), todo.filter((t) => !["label", "headline"].includes(t.role))], todo.map((t) => [t])];
-  for (const tries of groups) {
+  for (const [roomy, tries] of [true, false].flatMap((r) => groups.map((g) => [r, g]))) {
+    if (placed.size) break;
     const parts = tries.filter((g) => g.length);
     const trial = roomGrid(mask, rec, fixed);
     const got = [];
     for (const g of parts) {
-      const col = placeColumn(spec, facts, trial, g, centre);
+      const col = placeColumn(spec, facts, trial, g, centre, roomy);
       if (!col) break;
       for (const t of col) {
         const e = estimateText(t, spec, facts, PLACE.em);
@@ -162,10 +164,7 @@ export function placeTexts(spec, facts) {
       }
       got.push(...col);
     }
-    if (got.length === todo.length) {
-      for (const t of got) placed.set(t.id, t);
-      break;
-    }
+    if (got.length === todo.length) for (const t of got) placed.set(t.id, t);
   }
   // No room anywhere: the blocks go top left in reading order, and shape-room says how much to shrink the shape.
   if (!placed.size) {

@@ -22,8 +22,8 @@ export const SHAPE_TONES = {
 };
 const SHADOW = 14;
 
-/** Letter-spacing in em: tight for display sizes, a little open for texture. */
-const trackOf = (size) => (size > 40 ? -0.06 : size > 14 ? -0.03 : 0.02);
+/** Letter-spacing in em: tight for display sizes, a little open for texture. Tighter than -0.03 em, Commit Mono's m runs into the next letter. */
+const trackOf = (size) => (size > 14 ? -0.03 : 0.02);
 
 /** Covered px per sheet row. */
 const rowAreas = (mask) => mask.runs.map((row) => row.reduce((a, [l, r]) => a + r - l, 0));

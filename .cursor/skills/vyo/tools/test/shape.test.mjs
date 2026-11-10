@@ -241,6 +241,10 @@ test("findings: the jar has none, and each planted shape trips its own, with a n
   assert.match(tiny["shape-cover"][0], /^the shape covers 7% of the sheet; it needs 35% to read as the picture, so scale it up 2\.\d+x \(set fit\.h to 0\.6\d, it is 0\.3\) or draw it fatter$/);
   assert.match(tiny["shape-accent"][0], /^the accent band "the plan" is \d\dpx tall \(y \d+ to \d+\); it needs 40px to show in the thumbnail, so scale the shape up 1\.\d+x, narrow it where the band falls, or put the accent on a bigger part$/);
 
+  // A cup's handle is joined to the cup above and below the bands that cross its hole: one piece, not a split.
+  const cup = findings(withShape({ ops: [{ add: "polygon", points: [[8, 4], [82, 4], [74, 84], [16, 84]], round: 5 }, { add: "arc", at: [80, 32], r: 15, from: 0, to: 180, width: 8 }, { add: "ellipse", at: [45, 88], r: [46, 7] }] }));
+  assert.deepEqual(cup["shape-split"], []);
+
   // The cold run's flask: fit h 0.76 at cy 0.63 runs 12px off the bottom.
   const flask = findings(withShape({ ops: [{ add: "circle", at: [50, 66], r: 34 }, rect([39, 12], [22, 34]), rect([33, 4], [34, 10], { round: 3 })], fit: { h: 0.76, cx: 0.6, cy: 0.63 } }));
   assert.match(flask["shape-edge"][0], /^the shape runs 1\dpx off the bottom edge, too little to read as a bleed, so it looks cut by mistake; leave out fit\.w and fit\.h to fit it inside the sheet, or move it \d+px up \(fit\.cy 0\.6\d to 0\.5\d\), or bleed it boldly/);

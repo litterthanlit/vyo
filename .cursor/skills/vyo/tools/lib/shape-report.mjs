@@ -85,31 +85,37 @@ export function thinFeatures(mask) {
   return out;
 }
 
-/** The separate pieces of the mask between rows y0 and y1, by runs that touch from one row to the next. */
-export function piecesBetween(mask, y0, y1) {
-  const pieces = [];
+/** Each run of the mask with the piece of the whole shape it belongs to, by runs that touch from row to row. */
+function runPieces(mask) {
+  const parent = [];
+  const find = (i) => (parent[i] === i ? i : (parent[i] = find(parent[i])));
   let prev = [];
-  for (let y = y0; y < y1; y++) {
-    const here = mask.runs[y].map(([l, r]) => {
-      const touching = [...new Set(prev.filter((p) => p.l < r && p.r > l).map((p) => p.piece.root()))];
-      let piece = touching[0];
-      if (!piece) {
-        piece = { area: 0, left: l, right: r, top: y, bottom: y + 1, parent: null, root() { return this.parent ? this.parent.root() : this; } };
-        pieces.push(piece);
-      }
-      for (const other of touching.slice(1)) other.parent = piece;
-      Object.assign(piece, { area: piece.area + r - l, left: Math.min(piece.left, l), right: Math.max(piece.right, r), bottom: y + 1 });
-      return { l, r, piece };
+  const rows = mask.runs.map((row) => {
+    const here = row.map(([l, r]) => {
+      const id = parent.push(parent.length) - 1;
+      for (const p of prev) if (p.l < r && p.r > l) parent[find(p.id)] = find(id);
+      return { l, r, id };
     });
     prev = here;
+    return here;
+  });
+  return rows.map((row) => row.map((run) => ({ ...run, piece: find(run.id) })));
+}
+
+/**
+ * The pieces of the shape that rows y0 to y1 cross, each with its area, left and right within those rows. Two
+ * spans are one piece when the shape joins them anywhere, so a cup's handle is not a piece apart from the cup.
+ */
+export function piecesBetween(mask, y0, y1) {
+  const runs = runPieces(mask);
+  const pieces = new Map();
+  for (let y = y0; y < y1; y++) {
+    for (const { l, r, piece } of runs[y]) {
+      const q = pieces.get(piece) ?? { area: 0, left: l, right: r, top: y, bottom: y + 1 };
+      pieces.set(piece, { area: q.area + r - l, left: Math.min(q.left, l), right: Math.max(q.right, r), top: q.top, bottom: y + 1 });
+    }
   }
-  const roots = new Map();
-  for (const p of pieces) {
-    const root = p.root();
-    if (root !== p) Object.assign(root, { area: root.area + p.area, left: Math.min(root.left, p.left), right: Math.max(root.right, p.right), top: Math.min(root.top, p.top), bottom: Math.max(root.bottom, p.bottom) });
-    roots.set(root, root);
-  }
-  return [...roots.values()].sort((a, b) => b.area - a.area).map(({ area, left, right, top, bottom }) => ({ area, left, right, top, bottom }));
+  return [...pieces.values()].sort((a, b) => b.area - a.area);
 }
 
 /** The empty corners the shape leaves, kept `clear` px off it. */
