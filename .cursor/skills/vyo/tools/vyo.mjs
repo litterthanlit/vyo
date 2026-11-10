@@ -246,6 +246,7 @@ function shapeNotes() {
     `  each op is { "add": kind, ... } or { "cut": kind, ... }, the first an add. Kinds: ${kinds}.`,
     '  example: { "add": "rect", "at": [16, 0], "size": [68, 16], "round": 3 }. ellipse r is [rx, ry]; arc from and to are degrees clockwise from twelve o\'clock; any op takes rotate about its own centre.',
     "  Coordinates are free units, y down: the engine measures what you painted and fits it.",
+    '  "style": "relief" on the region draws it as a lit volume. Optional hints it reads: "face": "lit" or "dim" on an add, { "crease": kind, ... } ops (a fold, never the outline), region "bevel" 0 to 1 and "strata" { "by": "angle", "angle" } or { "by": "depth" }.',
     `  fit.w and fit.h are its share of the sheet's width and height (over 1 bleeds off), fit.cx and fit.cy place its centre; without them w ${f.w}, h ${f.h}, cx ${f.cx}, cy ${f.cy}.`,
     "  The corners above assume that default box; vyo sketch prints the real ones once the shape is drawn.",
   ];

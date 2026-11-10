@@ -53,6 +53,7 @@ Pick the field whose shape is the story. The `fits` check wants a word that star
 - **terrain** stands each part up as a peak, as tall as its code and as wide as its files. Choose it when the story is what is big and what matters. Keywords "big", "weight", "matters", "most".
 - **river** runs one stream of digits per part in from the left and merges them into one channel. Choose it when the story is many things merging into one. Keywords "merge", "join", "many", "one".
 - **shape** cuts a silhouette you draw into one band per part, as much area as its code, the type as big as its share. Choose it when one object stands for the product, or the owner asks for a picture. Keywords "object", "thing", "picture", "shape", "looks".
+  - `"style": "relief"` draws the same silhouette as a lit, sculpted volume in dense 6px type, each part a layer of its own name and the accent glowing. Choose relief when the object itself should be the poster's pull, solid at thumbnail size. Keep the default bands when the part names must read from across a room.
 
 If you cannot decide, take wave. A field preference in `project-context.md` wins.
 
@@ -64,10 +65,17 @@ If you cannot decide, take wave. A field preference in `project-context.md` wins
 4. Sketch, then open `<name>-sketch.png`. Say in one word what you see. If that word is not the object, redraw it. Fix every `!` line: each gives the number to change.
 5. Render and look at the thumbnail again.
 
+A relief needs no hints: the default is a rounded volume lit from the top left. Add one only for a feature the outline cannot show, and sketch again after each:
+
+- `"face": "lit"` or `"dim"` on an add makes it a flat facet toward or away from the light, like a paper plane's wing and keel.
+- `{ "crease": kind, ... }` folds the surface along that kind's outline, or along a capsule's or arc's centre line, like a lid's ridges. It never changes the silhouette.
+- Region `bevel` (0 to 1, default 0.7) is how much of the form is rounded: 0.2 for a flat top, 1 for a dome.
+- Region `strata` turns the layers: `{ "by": "angle", "angle": 135 }` across a diagonal form, `{ "by": "depth" }` for shells from the outline in.
+
 ## The words
 
 - **Headline.** One plain sentence about the outcome for the user, at most 72 characters. It is the only large type.
-- **Legend.** Required. One or two sentences, at most 180 characters, that say what the picture encodes. Name the accent part by its plain name and the measure: "code" or "lines" for a wave or terrain, plus "files" or "wide" for a terrain, "merge", "join" or "flow" for a river, and "code" plus "type" or "bigger" for a shape. Example: "Every peak is a part of Pantry, as tall as its code and as wide as its files. The orange peak is the plan."
+- **Legend.** Required. One or two sentences, at most 180 characters, that say what the picture encodes. Name the accent part by its plain name and the measure: "code" or "lines" for a wave or terrain, plus "files" or "wide" for a terrain, "merge", "join" or "flow" for a river, and "code" plus "type", "size" or "bigger" for a shape (a relief: "its size set by its lines of code"). Example: "Every peak is a part of Pantry, as tall as its code and as wide as its files. The orange peak is the plan."
 - **Fits.** On the field region, at most 160 characters, never drawn. Say why this field matches the product's story, with the field's keyword. Example: "Pantry merges many saved recipes into one week, so every part of its code joins one river."
 - **Paragraphs.** 0 to 2, each at most 2 sentences and 220 characters. Each does a job the picture cannot: how it works, what stays private, what runs on its own, or proof.
 - **Parts list.** `parts: true` prints the parts' plain names in tree order. Keep it when the field prints no names, as a river does.
@@ -91,6 +99,8 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 | region `names` | Part id to plain name, at most 24 characters each |
 | region `sentence` | Wave only, at most 40 characters, set in every 5th row |
 | region `shape` | Shape only: `{ ops, rotate?, fit? }`, the silhouette you draw (see "Draw the shape") |
+| region `style` | Shape only: `bands` (the default) or `relief` |
+| region `bevel`, `strata` | Relief only, optional: how rounded the form is, and which way its layers run |
 | `figure.texts` | Exactly one `label` and one `headline` (they print the name and the headline), exactly one `legend`, 0 to 2 `paragraph`, 0 or 1 `list`, 0 or 1 `rule`. Each has `x`, `y`, `w` and optional `size` and `align` |
 | `record` | Optional, `bottom` or `left`, to force the record line's side |
 

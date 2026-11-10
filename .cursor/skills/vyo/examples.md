@@ -30,7 +30,7 @@ Tally is made up. Pantry is the `recipe` test fixture. Hypher's parts come from 
 
 Pantry is the `recipe` test fixture. It has 6 screens (recipes, a recipe, a new recipe, the weekly plan, settings, home), recipes with ingredients, a weekly plan, a shopping list, AI suggestions, and a weekly email every Monday at 8. It has payment code but no checkout screen, so the chat reply lists "paid plans" as not built.
 
-Each block below is the preset file in the package's `tools/presets/`. `compose --field <id>` writes the same shape with placeholders and its own text positions. The `facts` value is a placeholder: yours is the hash from your own scan, and `compose` writes it. The commit is made up, since the fixture is not a git repo. Each spec names every part, not only the flagged ones, because the scanned names repeat ("Plan", "Recipes", "Main app").
+Each block below is the preset file in the package's `tools/presets/` (the relief one is `shape-relief.json`). `compose --field <id>` writes the same shape with placeholders and its own text positions. The `facts` value is a placeholder: yours is the hash from your own scan, and `compose` writes it. The commit is made up, since the fixture is not a git repo. Each spec names every part, not only the flagged ones, because the scanned names repeat ("Plan", "Recipes", "Main app").
 
 The legend names the accent part as the poster colours it. On a light wave the accent rows are black. On dark, and on a terrain or river, they are orange.
 
@@ -350,6 +350,81 @@ Before rendering, `vyo sketch` printed the jar's bands, its 62% of the sheet and
 }
 ```
 
+### shape, relief
+
+The same jar as a lit volume, on the dark sheet: `"style": "relief"`. The jar is drawn upright this time, with a 3-unit cut between the lid and the neck so the lid reads as a separate piece. Two creases ridge the lid and a creased rectangle is the label; both fold the surface and leave the outline alone. `bevel` 0.8 rounds the body almost to a cylinder, and `strata` at 90 degrees stacks the parts from the lid down like layers of preserves. Each layer repeats its part's name in 6px type, every word whole, lit from the top left. The plan glows. The legend names the measure as "size" and "lines of code".
+
+Before rendering, `vyo sketch` printed each stratum's share of the area against its share of the lines, the accent's thickness, the predicted thumbnail's lit side and spread, and wrote the shaded `recipe-sketch.png`. It printed no `!` line. Without the creases, `bevel` and `strata`, the jar still renders as a rounded volume; the hints only add the folds.
+
+```json
+{
+  "version": 3,
+  "frame": "loose",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "shape",
+        "field": "shape",
+        "style": "relief",
+        "fits": "Pantry keeps a week of recipes the way a jar keeps preserves, so the picture is a jar of its code.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "bevel": 0.8,
+        "strata": { "by": "angle", "angle": 90 },
+        "shape": {
+          "fit": { "h": 0.74, "cx": 0.5, "cy": 0.6 },
+          "ops": [
+            { "add": "rect", "at": [12, 0], "size": [76, 16], "round": 4 },
+            { "add": "rect", "at": [20, 15], "size": [60, 10] },
+            { "add": "rect", "at": [0, 24], "size": [100, 112], "round": 26 },
+            { "cut": "rect", "at": [0, 14], "size": [100, 3] },
+            { "crease": "capsule", "from": [16, 6], "to": [84, 6] },
+            { "crease": "capsule", "from": [16, 10], "to": [84, 10] },
+            { "crease": "rect", "at": [12, 58], "size": [76, 42], "round": 4 }
+          ]
+        }
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 40, "y": 40, "w": 220, "align": "left" },
+      { "role": "headline", "id": "headline", "x": 40, "y": 72, "w": 420, "align": "left" },
+      {
+        "role": "legend",
+        "id": "legend",
+        "x": 540,
+        "y": 40,
+        "w": 260,
+        "align": "right",
+        "text": "Every layer of the jar is a part of Pantry, its size set by its lines of code. The glowing layer is the plan."
+      }
+    ]
+  }
+}
+```
+
 ## Sample chat reply
 
 ```markdown
@@ -557,7 +632,7 @@ Write the main moment as one sentence. Find its verb. The verb gives the shape.
 
 Pantry is the same fixture as above. `npx vyo presets` lists these four beside wave, terrain, river and wave-swiss. `compose --from <id>` copies one with its words replaced by placeholders. A poster that keeps a preset's geometry unchanged gets the `preset-copy` warning, so use them to learn from or to bend, not to ship as they are.
 
-Each block below is the preset file in the package's `tools/presets/`, with the same words and geometry. Only the layout of the number lists is tighter.
+Each block below is the preset file in the package's `tools/presets/` (the relief one is `shape-relief.json`). with the same words and geometry. Only the layout of the number lists is tighter.
 
 #### hourglass
 
