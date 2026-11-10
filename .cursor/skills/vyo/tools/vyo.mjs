@@ -353,7 +353,7 @@ function cmdSketch(argv) {
 
 function report(found) {
   for (const f of found) (f.level === "fail" ? fail : warn)(`${f.id}: ${f.message}`);
-  return found.some((f) => f.level === "fail");
+  return found.filter((f) => f.level === "fail").length;
 }
 
 async function poster(specFile, opt, outDir, files) {
@@ -361,7 +361,8 @@ async function poster(specFile, opt, outDir, files) {
   const facts = factsFor(specFile, spec, opt);
   const repo = spec.product.repo;
   const input = { spec, facts, presets: loadPresets() };
-  if (report(runChecks("spec", input))) return 1;
+  const specFails = report(runChecks("spec", input));
+  if (specFails) return specFails;
   const base = path.join(outDir, `${repo}-poster`);
   let html;
   try {
@@ -370,8 +371,7 @@ async function poster(specFile, opt, outDir, files) {
     throw new Failure(e.message);
   }
   const page = await renderPage({ html, base, ...files });
-  const failed = report(runChecks("page", { ...input, page }));
-  return failed ? 1 : 0;
+  return report(runChecks("page", { ...input, page }));
 }
 
 async function cmdRender(argv) {
@@ -382,13 +382,15 @@ async function cmdRender(argv) {
   );
   if (!PAPERS.includes(opt.paper)) throw new Usage(`--paper must be ${PAPERS.join(", ")}`);
   const outDir = opt.out ?? path.dirname(pos[0]);
-  const code = await poster(pos[0], opt, outDir, { png: !opt["no-png"], pdf: !opt["no-pdf"], paper: opt.paper });
+  const fails = await poster(pos[0], opt, outDir, { png: !opt["no-png"], pdf: !opt["no-pdf"], paper: opt.paper });
+  const code = fails ? 1 : 0;
   const repo = readJson(pos[0], "poster spec").product.repo;
   const made = ["html", ...(opt["no-png"] ? [] : ["png", "thumb"]), ...(opt["no-pdf"] ? [] : ["pdf"])]
     .map((x) => path.join(outDir, x === "thumb" ? `${repo}-poster-thumb.png` : `${repo}-poster.${x}`))
     .filter(fs.existsSync);
   if (made.length) process.stdout.write(`${code ? "Wrote, with failures" : "Wrote"}: ${made.join(", ")}\n`);
   if (!code) process.stdout.write("PASS\n");
+  else err(`POSTER NOT FINISHED: fix the ${fails} ✗ line${fails === 1 ? "" : "s"} above, then run vyo render again. Any files written above are a failed draft, not the result.`);
   return code;
 }
 
@@ -396,7 +398,7 @@ async function cmdCheck(argv) {
   const { pos, opt } = args(argv, { facts: { type: "string" } }, 1);
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-check-"));
   try {
-    const code = await poster(pos[0], opt, tmp, { png: false, pdf: false });
+    const code = (await poster(pos[0], opt, tmp, { png: false, pdf: false })) ? 1 : 0;
     if (!code) process.stdout.write("PASS\n");
     return code;
   } finally {
