@@ -18,7 +18,7 @@ const recipe = scanRepo(path.join(HERE, "fixtures", "recipe"));
 const hypher = JSON.parse(fs.readFileSync(path.join(HERE, "..", "..", "..", "..", "..", "explorations", "2026-11-07-abstract-fields", "hypher-facts.json"), "utf8"));
 const jar = () => ({ ...JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "shape-rings.json"), "utf8")), facts: recipe.hash });
 // Hypher's twelve parts in a paper plane: a dart with a fold slit, the shape the proof poster uses.
-const PLANE = { fit: { h: 0.79, cx: 0.5, cy: 0.585 }, ops: [{ add: "polygon", points: [[0, 50], [82, 0], [66, 100], [44, 62]], round: 5 }, { cut: "capsule", from: [74, 15], to: [60, 42], r: 1.4 }] };
+const PLANE = { rotate: -5, fit: { h: 0.83, cx: 0.5, cy: 0.58 }, ops: [{ add: "polygon", points: [[0, 50], [82, 0], [66, 100], [44, 62]], round: 5 }, { cut: "capsule", from: [74, 15], to: [60, 42], r: 1.4 }] };
 const plane = (theme = "dark") => {
   const s = jar();
   s.facts = hypher.hash;
@@ -50,7 +50,7 @@ test("the rings preset and a plane in rings are valid specs; echo is checked", (
 });
 
 for (const [name, specOf, facts] of CASES) {
-  test(`${name}: every part's area, measured pixel by pixel, is within one point of its share of lines`, () => {
+  test(`${name}: the accent is a closed band of whole rings one ring in, and every part's area, measured pixel by pixel, tracks its share of lines`, () => {
     const report = reportOf(specOf(), facts);
     const own = report.owners();
     const counts = report.parts.map(() => 0);
@@ -62,9 +62,18 @@ for (const [name, specOf, facts] of CASES) {
     }
     const loc = report.parts.reduce((s, p) => s + p.loc, 0);
     assert.ok(inside >= 0.99 * report.mask.area, `every pixel of the shape belongs to a part (${inside} of ${report.mask.area})`);
+    const hot = report.bands.find((b) => b.part.hot);
+    const rim = report.bands.find((b) => b.runs.some((r) => r.from === 0));
+    assert.ok(!rim.part.hot && rim.runs.find((r) => r.from === 0).to === 1, "another part's outermost ring is the rim");
+    assert.equal(hot.runs.length, 1, "the accent is one run");
+    assert.ok(hot.runs[0].from === 1 && Number.isInteger(hot.runs[0].to) && hot.runs[0].to >= 1 + RINGS.accent, "of whole rings, from one ring in");
     report.parts.forEach((p, k) => {
       const [area, lines] = [counts[k] / inside, p.loc / loc];
-      assert.ok(Math.abs(area - lines) <= 0.01, `${p.name}: ${(area * 100).toFixed(1)}% of the area for ${(lines * 100).toFixed(1)}% of the lines`);
+      const say = `${p.name}: ${(area * 100).toFixed(1)}% of the area for ${(lines * 100).toFixed(1)}% of the lines`;
+      // Whole rings miss the accent's share by up to half a ring, unless the two-ring floor holds it up; the parts
+      // inside the rim and the accent share the difference.
+      if (p.hot) assert.ok(Math.abs(area - lines) <= area / hot.rings / 2 + 0.002 || (hot.rings === RINGS.accent && area > lines), say);
+      else assert.ok(Math.abs(area - lines) <= 0.02, say);
     });
   });
 
@@ -154,6 +163,8 @@ test("the sketch prints each part's rings and shares, and the sketch PNG shows t
   assert.match(out, /^rings: \d+ rings of 7px fit \(the shape is \d+px across at its thickest; 12 parts want about 18\), then \d cores? of \d+ level lines$/m);
   assert.match(out, /^ {2}\* the plan +\d+ rings?(, \d+ core lines)?, [\d.]+% of the area for [\d.]+% of the lines$/m);
   assert.match(out, /@/);
+  assert.match(out, /^the accent's share fills under 2 rings, too thin to show at thumbnail size, so it takes 2 \(14px\) and more area than its share$/m, "the jar's plan is held up by the two-ring floor, and the sketch says so");
+  assert.doesNotMatch(sketch(plane(), hypher), /^the accent's share fills under/m, "Hypher's handoff note fills its rings on its own");
   const png = sketchImage(jar(), recipe);
   assert.equal(png.readUInt32BE(16), Math.ceil(SHEET.width / 3));
 });

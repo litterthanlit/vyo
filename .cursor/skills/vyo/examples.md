@@ -352,9 +352,9 @@ Before rendering, `vyo sketch` printed the jar's bands, its 62% of the sheet and
 
 ### shape in rings
 
-The same jar, set in rings. Pantry's jar is fat and round, so its outline has room for rings: the lid floats 3 units above the neck and gets rings of its own, and a cut in the body makes the label, a hole the legend sits in. `"style": "rings"` runs the parts' names round the outline, ring inside ring, in tree order from the outline in, each part as much of the jar's area as its code. Where the rings would fold, past the shoulders, they stop, and the cores in the lid and above and below the label are set in level lines on a tone of their own. The plan is a solid orange band with its name reversed out. `"echo": 4` draws four faded outlines around the jar. The legend names the measure as "area".
+The same jar, set in rings. Pantry's jar is fat and round, so its outline has room for rings: the lid floats 3 units above the neck and gets rings of its own, and a cut in the body makes the label, a hole the legend sits in. `"style": "rings"` runs the parts' names round the outline, ring inside ring, each part as much of the jar's area as its code; the order of the rings means nothing. The plan's band runs one ring in, under a rim of screen pieces, so the orange draws the jar, its lid and its label. Where the rings would fold, past the shoulders, they stop, and the cores in the lid and above and below the label are set in level lines on a tone of their own. The plan is a solid orange band with its name reversed out. Its share is under two rings, so it takes two, and the sketch says so. `"echo": 4` draws four faded outlines around the jar. The legend names the measure as "area".
 
-Before rendering, `vyo sketch` printed 22 rings of 7px for 12 parts, one line per part with its rings and its share of the area beside its share of the lines, and no `!` line.
+Before rendering, `vyo sketch` printed 22 rings of 7px for 12 parts, the accent's two-ring floor, one line per part with its rings and its share of the area beside its share of the lines, and no `!` line.
 
 ```json
 {
