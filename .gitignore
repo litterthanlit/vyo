@@ -1,0 +1,4 @@
+node_modules/
+.claude/worktrees/
+tools/test/.out/
+.DS_Store
