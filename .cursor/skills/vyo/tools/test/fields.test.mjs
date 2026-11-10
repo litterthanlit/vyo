@@ -238,6 +238,28 @@ test("seed 0 is the identity pose, and a non-zero seed is reproducible and diffe
   assert.notDeepEqual(sig(scatterRows({ seed: 1 }, parts, open())), sig(scatterRows({ seed: 2 }, parts, open())));
 });
 
+test("a seed poses terrain, river and sphere without reassigning their area or the accent's tone", () => {
+  const parts = recipeParts();
+  const share = (items) => {
+    const area = new Map();
+    for (const it of items) area.set(it.part, (area.get(it.part) ?? 0) + it.width * it.height);
+    const total = [...area.values()].reduce((a, b) => a + b, 0);
+    return new Map([...area].map(([k, v]) => [k, v / total]));
+  };
+  for (const [name, layout] of [["terrain", terrainRows], ["river", riverRows], ["sphere", sphereRows]]) {
+    const ties = partTies(parts, recipe);
+    const plain = layout({ ties }, parts, open());
+    for (const seed of [7, 905663158]) {
+      const posed = layout({ ties, seed }, parts, open());
+      const a = share(plain);
+      const b = share(posed);
+      for (const p of parts) assert.ok(Math.abs((a.get(p.id) ?? 0) - (b.get(p.id) ?? 0)) < 0.1, `${name} seed ${seed}: ${p.id} keeps its share of the drawing`);
+      const hotTone = new Set(plain.filter((i) => i.hot).map((i) => i.tone));
+      for (const it of posed.filter((i) => i.hot)) assert.ok(hotTone.has(it.tone), `${name} seed ${seed}: the accent keeps tone ${[...hotTone]}`);
+    }
+  }
+});
+
 test("scatter: clouds with gaps, every part drawn, the accent hot", () => {
   const parts = recipeParts();
   const items = scatterRows({}, parts, open());
