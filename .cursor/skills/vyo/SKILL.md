@@ -59,7 +59,7 @@ If you cannot decide, take wave. A field preference in `project-context.md` wins
 ## Draw the shape
 
 1. Pick one object a stranger would name in a second, tied to the story: a jar for a pantry, a paper plane for a hand-off. Never a heart, a plain circle or a box. Simple reads: a 3-op flask was legible at once, an 11-op locomotive half legible.
-2. Name the one feature that makes it that object, like the jar's lid and shoulders. Draw it in 3 to 6 ops in a 100-unit box, y down, with that feature large, about as tall as it is wide or taller. Leave out small repeated details such as wheels or windows: they merge at thumbnail size. `compose --field shape` prints the format.
+2. Name the one feature that makes it that object, like the jar's lid and shoulders. Draw it in 3 to 6 ops in a 100-unit box, y down, with that feature large, about as tall as it is wide or taller. Leave out small repeated details such as wheels or windows: they merge at thumbnail size. Keep a post or stem short: a long thin limb takes the object's height and reads as a pole with a small head. `compose --field shape` prints the format.
 3. Leave `fit` out: the engine fits the shape inside the sheet and centres it in the room the words leave. Set `fit` only to bleed it off an edge on purpose. Leave `x` and `y` out of the text blocks too: the engine places them in the room the shape leaves. Pin a block with `x` and `y` only for a reason, like a hole cut for the legend.
 4. If `parts --field shape` or the sketch says the accent holds most of the code, add `"split": ["<its id>"]` to the region and run `parts --field shape --split <its id>`.
    Its folders become parts; put the accent on the one the story is about.

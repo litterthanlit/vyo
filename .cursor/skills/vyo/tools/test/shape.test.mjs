@@ -346,6 +346,20 @@ test("sketch of the jar: the mask at 20px with the accent band, each band's numb
   assert.match(tiny, /^! shape-cover: the shape covers 7% of the sheet; it needs 35%/m);
 });
 
+test("shape-limb: the cold run's mailbox on a long bare post reads as a signpost; a short post, a flask's neck and a tapering tip pass", () => {
+  const limb = (shape) => shapeFindings(shapeReport(withShape(shape), withShape(shape).figure.regions[0], recipe))["shape-limb"];
+  const head = [rect([10, 0], [80, 70], { round: 38 }), rect([10, 40], [80, 42], { round: 4 })];
+  assert.deepEqual(limb({ ops: [...head, rect([41, 80], [18, 40]), rect([88, 12], [8, 36], { round: 2 })] }).map((m) => m.replace(/\d+/g, "#")), [
+    "a thin limb at the bottom (y # to #, #px wide) takes #% of the shape's height for #% of its area; at thumbnail size the object reads as a post with a small head, and its bands there are too narrow to read, so shorten it to under #% of the height or drop it",
+  ]);
+  assert.match(limb({ ops: [...head, rect([41, 80], [18, 40])] })[0], /takes 3\d% of the shape's height for 1\d% of its area;.* shorten it to under 25% of the height or drop it$/);
+  assert.deepEqual(limb({ ops: [...head, rect([41, 80], [18, 20])] }), [], "a short post");
+  assert.deepEqual(limb({ ops: [{ add: "circle", at: [50, 66], r: 34 }, rect([39, 12], [22, 34]), rect([33, 4], [34, 10], { round: 3 })] }), [], "the flask's neck");
+  assert.deepEqual(limb({ ops: [{ add: "polygon", points: [[0, 0], [100, 0], [50, 120]] }] }), [], "a tapering tip");
+  const post = withShape({ ops: [...head, rect([41, 80], [18, 40])] });
+  assert.match(sketch(post, recipe), /^! shape-limb: a thin limb at the bottom/m, "the sketch warns");
+});
+
 test("the sketch prints each shape finding at the level render gives it: a block on the shape is a ✗ in both", () => {
   for (const id of SHAPE_CHECKS) assert.ok(CHECKS.some((c) => c.id === id), `${id} is a check`);
   const s = jar();
