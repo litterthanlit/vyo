@@ -350,6 +350,17 @@ export function reliefStyle(mask, parts, { measure, theme = "light" }, region) {
   }
   const value = { strata: reliefStrataOf(surface, parts, rows), rows, ground, surface };
   value.findings = (drawn) => reliefFindings(value, parts, drawn, mask, region, theme);
+  value.ascii = (x, y) => {
+    const i = cellAt(x, y);
+    if (!inside[i]) return null;
+    return label[i] === hi ? "@" : " ·:-=+*#"[Math.min(7, Math.floor(reliefInk(light[i], 99, "dark") * 8))];
+  };
+  // The thumbnail prediction is only for the sketch and the checks, so the page never pays for it.
+  value.summary = () => {
+    value.tone ??= reliefTone(value, mask);
+    return reliefSummary(value, region);
+  };
+  value.picture = (tokens) => reliefPicture(value, tokens);
   Object.assign(reliefCache, { key, value });
   return value;
 }
@@ -443,6 +454,30 @@ export function reliefTone(value, mask, scale = 3) {
 }
 
 const reliefPct = (n) => `${(Math.round(n * 1000) / 10).toFixed(1)}%`;
+
+/** The sketch's lines for a relief: how it is lit and the predicted thumbnail's tone, then each stratum. */
+function reliefSummary(value, region) {
+  const st = region.strata?.by === "depth" ? "by depth, outline in" : `at ${region.strata?.angle ?? 90} degrees`;
+  const t = value.tone;
+  return [
+    `relief: bevel ${region.bevel ?? RELIEF.bevel} (${Math.round(value.surface.R)}px rounded), strata ${st}; thumbnail ink ${reliefPct(t.mean)} on average (needs ${reliefPct(RELIEF.tone.bright)}), spread ${reliefPct(t.spread)} (needs ${reliefPct(RELIEF.tone.spread)})`,
+    "strata, in tree order (* the accent; ASCII tones ·:-=+*# from dark to lit, @ the accent):",
+    ...value.strata.map((s) => `  ${s.part.hot ? "*" : " "} ${s.part.name.toLowerCase().padEnd(24)} ${reliefPct(s.area)} of the area for ${reliefPct(s.lines)} of the lines, ${s.glyphs} glyph cells, whole name ${s.whole}x${s.part.hot ? `, ${s.thick}px thick` : ""}`),
+  ];
+}
+
+/** The predicted thumbnail as RGB at a third of the sheet: ink and the accent over the paper. */
+function reliefPicture(value, tokens) {
+  const t = reliefThumb(value);
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [paper, ink, hot] = [hex(tokens.paper), hex(tokens.ink), hex(tokens.hot)];
+  const rgb = new Uint8Array(t.w * t.h * 3);
+  for (let i = 0; i < t.w * t.h; i++) {
+    const [a, b] = [Math.min(1, t.ink[i]), Math.min(1, t.hot[i])];
+    for (let k = 0; k < 3; k++) rgb[i * 3 + k] = Math.round((paper[k] * (1 - a) + ink[k] * a) * (1 - b) + hot[k] * b);
+  }
+  return rgb;
+}
 
 /** The relief's own findings, by check id; `drawn` are the rows as drawn, each { part, text, width }. */
 function reliefFindings(value, parts, drawn, mask, region, theme) {
