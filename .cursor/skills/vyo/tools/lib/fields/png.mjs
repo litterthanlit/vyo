@@ -61,8 +61,14 @@ const paeth = (a, b, c) => {
   return c;
 };
 
+// A mask is sampled down to about 420 by 600 cells, so a larger image only costs memory.
+const MAX_SIDE = 4096;
+const CHANNELS = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 };
+const DEPTHS = { 0: [1, 2, 4, 8, 16], 2: [8, 16], 3: [1, 2, 4, 8], 4: [8, 16], 6: [8, 16] };
+
 /**
- * Decode an 8-bit gray, rgb or rgba PNG (no interlacing) to luminance 0–255.
+ * Decode a non-interlaced PNG of any colour type and bit depth to luminance 0–255, with any alpha
+ * composited on white. Throws `png: …` on anything malformed or larger than 4096 on a side.
  * @returns {{ width: number, height: number, gray: Uint8Array }}
  */
 export function decodePng(buf) {
@@ -70,72 +76,101 @@ export function decodePng(buf) {
   if (src.length < 8 || !src.subarray(0, 8).equals(SIG)) throw new Error("png: not a PNG");
   let width = 0;
   let height = 0;
+  let depth = 0;
   let colorType = -1;
+  let palette = null;
+  let alphas = null;
   const idat = [];
   let o = 8;
   while (o + 8 <= src.length) {
     const len = src.readUInt32BE(o);
     const type = src.toString("ascii", o + 4, o + 8);
-    const data = src.subarray(o + 8, o + 8 + len);
     if (o + 12 + len > src.length) throw new Error("png: truncated chunk");
+    const data = src.subarray(o + 8, o + 8 + len);
     o += 12 + len;
     if (type === "IHDR") {
+      if (len < 13) throw new Error("png: short IHDR");
       width = data.readUInt32BE(0);
       height = data.readUInt32BE(4);
-      if (data[8] !== 8) throw new Error("png: only 8-bit samples");
+      depth = data[8];
       colorType = data[9];
-      if (![0, 2, 4, 6].includes(colorType)) throw new Error(`png: colour type ${colorType} is not supported`);
+      if (!CHANNELS[colorType] || colorType === 1) throw new Error(`png: colour type ${colorType} is not supported`);
+      if (!DEPTHS[colorType].includes(depth)) throw new Error(`png: bit depth ${depth} is not valid for colour type ${colorType}`);
       if (data[12] !== 0) throw new Error("png: interlaced images are not supported");
-    } else if (type === "IDAT") idat.push(data);
+      if (!width || !height || width > MAX_SIDE || height > MAX_SIDE) throw new Error(`png: ${width} by ${height} is outside 1 to ${MAX_SIDE} on a side`);
+    } else if (type === "PLTE") palette = data;
+    else if (type === "tRNS") alphas = data;
+    else if (type === "IDAT") idat.push(data);
     else if (type === "IEND") break;
   }
-  if (!width || !height || !idat.length) throw new Error("png: missing image data");
-  const bpp = { 0: 1, 2: 3, 4: 2, 6: 4 }[colorType];
-  const inflated = zlib.inflateSync(Buffer.concat(idat));
-  const stride = width * bpp;
+  if (!width || !idat.length) throw new Error("png: missing image data");
+  if (colorType === 3 && (!palette || palette.length < 3)) throw new Error("png: palette image without a palette");
+  const channels = CHANNELS[colorType];
+  const stride = Math.ceil((width * channels * depth) / 8);
+  const bpp = Math.max(1, (channels * depth) / 8);
+  const want = height * (stride + 1);
+  let inflated;
+  try {
+    inflated = zlib.inflateSync(Buffer.concat(idat), { maxOutputLength: want });
+  } catch (e) {
+    throw new Error(`png: image data does not inflate to ${want} bytes (${e.code || e.message})`);
+  }
+  if (inflated.length < want) throw new Error(`png: image data is ${inflated.length} bytes; ${width} by ${height} needs ${want}`);
   const pix = Buffer.alloc(height * stride);
   let s = 0;
   for (let y = 0; y < height; y++) {
     const filter = inflated[s++];
+    if (filter > 4) throw new Error(`png: filter ${filter}`);
     const row = y * stride;
     for (let i = 0; i < stride; i++) {
       const v = inflated[s++];
       const a = i >= bpp ? pix[row + i - bpp] : 0;
       const b = y ? pix[row - stride + i] : 0;
       const c = y && i >= bpp ? pix[row - stride + i - bpp] : 0;
-      let out = v;
-      if (filter === 1) out = v + a;
-      else if (filter === 2) out = v + b;
-      else if (filter === 3) out = v + ((a + b) >> 1);
-      else if (filter === 4) out = v + paeth(a, b, c);
-      else if (filter !== 0) throw new Error(`png: filter ${filter}`);
-      pix[row + i] = out & 255;
+      const pred = [0, a, b, (a + b) >> 1, paeth(a, b, c)][filter];
+      pix[row + i] = (v + pred) & 255;
     }
   }
+  const max = (1 << depth) - 1;
+  // The i-th sample of row y, scaled to 0–255 (16-bit samples keep their high byte).
+  const sample = (y, i) => {
+    const row = y * stride;
+    if (depth === 16) return pix[row + i * 2];
+    if (depth === 8) return pix[row + i];
+    const bit = i * depth;
+    return (pix[row + (bit >> 3)] >> (8 - depth - (bit & 7))) & max;
+  };
+  const luma = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const onWhite = (l, alpha) => Math.round(l * (alpha / 255) + 255 * (1 - alpha / 255));
+  const scale = depth < 8 ? 255 / max : 1;
   const gray = new Uint8Array(width * height);
-  for (let i = 0; i < gray.length; i++) {
-    if (colorType === 0) gray[i] = pix[i];
-    else if (colorType === 4) gray[i] = pix[i * 2];
-    else if (colorType === 2) {
-      const p = i * 3;
-      gray[i] = Math.round(0.2126 * pix[p] + 0.7152 * pix[p + 1] + 0.0722 * pix[p + 2]);
-    } else {
-      const p = i * 4;
-      const al = pix[p + 3] / 255;
-      const r = pix[p] * al + 255 * (1 - al);
-      const g = pix[p + 1] * al + 255 * (1 - al);
-      const b = pix[p + 2] * al + 255 * (1 - al);
-      gray[i] = Math.round(0.2126 * r + 0.7152 * g + 0.0722 * b);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const k = x * channels;
+      let l;
+      if (colorType === 3) {
+        const idx = sample(y, x);
+        const p = idx * 3;
+        const rgb = p + 2 < palette.length ? luma(palette[p], palette[p + 1], palette[p + 2]) : 0;
+        l = onWhite(rgb, alphas && idx < alphas.length ? alphas[idx] : 255);
+      } else if (colorType === 0) l = Math.round(sample(y, k) * scale);
+      else if (colorType === 4) l = onWhite(sample(y, k), sample(y, k + 1));
+      else if (colorType === 2) l = Math.round(luma(sample(y, k), sample(y, k + 1), sample(y, k + 2)));
+      else l = onWhite(luma(sample(y, k), sample(y, k + 1), sample(y, k + 2)), sample(y, k + 3));
+      gray[y * width + x] = l;
     }
   }
   return { width, height, gray };
 }
 
+/** A trace mask that is missing or is not a PNG this decoder reads. */
+export class MaskFailure extends Error {}
+
 /** Absolute path, cwd-relative path, or the bundled sample when `mask` is omitted. */
 export function resolveMask(mask) {
   if (!mask) return BUNDLED;
   const abs = path.isAbsolute(mask) ? mask : path.resolve(process.cwd(), mask);
-  if (!fs.existsSync(abs)) throw new Error(`trace mask not found: ${mask}`);
+  if (!fs.existsSync(abs) || !fs.statSync(abs).isFile()) throw new MaskFailure(`trace mask not found: ${mask} (a path is absolute or relative to the working directory)`);
   return abs;
 }
 
@@ -158,7 +193,13 @@ function imageToMask(img, floor, invert) {
  * @returns {{ chords: { y: number, runs: [number, number][] }[], pitch: number }}
  */
 export function traceChords(region, floor, mirror = false) {
-  const img = decodePng(fs.readFileSync(resolveMask(region.mask)));
+  const file = resolveMask(region.mask);
+  let img;
+  try {
+    img = decodePng(fs.readFileSync(file));
+  } catch (e) {
+    throw new MaskFailure(`trace mask ${region.mask}: ${e.message}`);
+  }
   const pose = poseOf(region.seed);
   if (mirror) pose.mirror = !pose.mirror;
   const invert = !pose.identity && pose.rnd() < 0.5;

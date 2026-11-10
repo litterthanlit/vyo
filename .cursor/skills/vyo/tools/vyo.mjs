@@ -17,6 +17,7 @@ import { ROLES, FRAMES, RECORD_FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
 import { cornersLine } from "./lib/geometry.mjs";
 import { runChecks } from "./lib/check.mjs";
 import { NoBrowser } from "./lib/browser.mjs";
+import { MaskFailure } from "./lib/fields/png.mjs";
 import { init, chooseEditors, EDITORS } from "./lib/init.mjs";
 import { FIELDS } from "./lib/fields/index.mjs";
 import { partsFromFacts, partOptions, regionParts, accentIds, unplainName, sameNames, PART_DEFAULTS } from "./lib/parts.mjs";
@@ -440,7 +441,7 @@ export async function main(argv) {
       err(USAGE);
       return 2;
     }
-    if (e instanceof Failure || e instanceof NoBrowser || e instanceof GifFailure) {
+    if (e instanceof Failure || e instanceof NoBrowser || e instanceof GifFailure || e instanceof MaskFailure) {
       fail(e.message);
       return 1;
     }
