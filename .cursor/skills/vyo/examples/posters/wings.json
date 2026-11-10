@@ -11,6 +11,7 @@
   "theme": "dark",
   "accent": "#FF5A1F",
   "headline": "A week of dinners, planned in one go.",
+  "motion": { "kind": "resolve", "frames": 24, "fps": 12 },
   "figure": {
     "regions": [
       {
