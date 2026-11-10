@@ -524,12 +524,11 @@ function fieldRegion(field, { accent, parts }) {
   };
 }
 
-// A shape's legend by style: what one part is drawn as, the measure in the words the legend check wants, and
-// how the accent looks (a dark relief's accent glows; every other is orange).
+// A shape's legend by style: what one part is drawn as, and the measure in the words the legend check wants.
 const SHAPE_LEGEND = {
-  bands: { unit: "band", measure: "its type as big as its share of the code", hot: () => "orange" },
-  rings: { unit: "ring", measure: "its area as big as its share of the code", hot: () => "orange" },
-  relief: { unit: "layer", measure: "its size set by its lines of code", hot: (theme) => (theme === "dark" ? "glowing" : "orange") },
+  bands: { unit: "band", measure: "its type as big as its share of the code" },
+  rings: { unit: "ring", measure: "its area as big as its share of the code" },
+  relief: { unit: "layer", measure: "as big as its code" },
 };
 
 /**
@@ -537,12 +536,12 @@ const SHAPE_LEGEND = {
  * the corners the field leaves empty (`places`, from lib/frame.mjs). The legend's placeholder spells out its rule.
  * @param {{ accent?: string, accentNames: string[], parts: { id: string, name: string }[], places: Record<string, object> }} o
  */
-function looseFigure(field, { accent, split, style, theme, accentNames, parts, places }) {
+function looseFigure(field, { accent, split, style, accentNames, parts, places }) {
   const name = accentNames.length ? quoted(accentNames) : "the accent part by the plain name you give it in names";
   const measure = FIELDS[field].measure.map(quoted).join(", and ");
   const look = field === "shape" && SHAPE_LEGEND[style ?? "bands"];
   const legend = look
-    ? `at most 2 sentences and ${FRAME_ROLES.loose.legend.max} characters, like "Every ${look.unit} is a part of <product>, ${look.measure}. The ${look.hot(theme)} ${look.unit} is <the accent's plain name>."`
+    ? `at most 2 sentences and ${FRAME_ROLES.loose.legend.max} characters, like "Every ${look.unit} is a part of <product>, ${look.measure}. The orange ${look.unit} is <the accent's plain name>."`
     : `what the picture encodes, at most 2 sentences and ${FRAME_ROLES.loose.legend.max} characters: name ${name} and the measure (${measure})`;
   return {
     regions: [{ ...fieldRegion(field, { accent, parts }), ...(split ? { split } : {}), ...(style ? { style } : {}) }],
@@ -592,7 +591,7 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
     ...(preset?.accent ? { accent: preset.accent } : {}),
     headline: hold(`one plain sentence about the outcome, at most ${LIMITS.headline} characters`),
     ...(preset ? { hot: hold("the one word set in the accent colour: a word of a fill region, a dots line or a hot label") } : {}),
-    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, split, style, theme, accentNames, parts, places }) : fieldFigure(field, floor, { accent, parts }),
+    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, split, style, accentNames, parts, places }) : fieldFigure(field, floor, { accent, parts }),
     ...(loose
       ? {}
       : {

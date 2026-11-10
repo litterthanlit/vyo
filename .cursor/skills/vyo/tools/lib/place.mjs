@@ -45,11 +45,12 @@ export function estimateText(t, spec, facts, em = 1) {
 // A shape the engine fits keeps `gap` px below the words above it, and shrinks to at most `shrink` of its size
 // to keep the label, headline and legend in one column above it.
 // A relief stacks its headline: the largest size, `step` px at a time, at which some column at most `lines` lines
-// tall holds it, the narrowest such column, with the legend under it as wide as the column within `legend`.
+// tall holds it, in the narrowest such column, `label` px under the label (large type wants more air), with the
+// legend under it as wide as the column within `legend`.
 export const PLACE = {
   inset: 40, clear: 20, record: 10, cell: 4, em: 1.12, after: { label: 10, other: 22 }, roomy: 400, gap: 32, shrink: 0.85,
   w: { label: [120, 300], headline: [240, 520], legend: [190, 300], paragraph: [190, 300], list: [140, 240], rule: [120, 300] },
-  stacked: { lines: 4, step: 4, legend: [240, 330] },
+  stacked: { lines: 4, step: 4, legend: [240, 330], label: 18 },
 };
 const ORDER = ["label", "headline", "legend", "paragraph", "list", "rule"];
 
@@ -88,7 +89,7 @@ function roomGrid(mask, rec, fixed) {
  * Stack `blocks` in a column `width` px wide: each block as wide as its role allows within it, flush to the
  * column's side `align`, `size` overriding the headline's default. Returns each placed text and the column's height.
  */
-function stack(spec, facts, blocks, width, align, headSize, widths = {}) {
+function stack(spec, facts, blocks, width, align, headSize, { widths = {}, label = PLACE.after.label } = {}) {
   let y = 0;
   const out = blocks.map((t, i) => {
     const [, most] = PLACE.w[t.role];
@@ -97,7 +98,7 @@ function stack(spec, facts, blocks, width, align, headSize, widths = {}) {
     const placed = { ...t, w, ...(size !== undefined ? { size } : {}), align: t.align ?? align };
     const est = estimateText({ ...placed, x: 0, y: 0 }, spec, facts, PLACE.em);
     const top = y;
-    y += est.bottom + (i < blocks.length - 1 ? (t.role === "label" ? PLACE.after.label : PLACE.after.other) : 0);
+    y += est.bottom + (i < blocks.length - 1 ? (t.role === "label" ? label : PLACE.after.other) : 0);
     return { placed, top, dx: align === "right" ? width - w : 0 };
   });
   return { out, height: y };
@@ -136,7 +137,7 @@ function placeColumn(spec, facts, room, blocks, centre, roomy, stacked) {
         const legend = Math.min(S.legend[1], Math.max(S.legend[0], width));
         const column = Math.max(width, ...blocks.filter((t) => t.role === "legend").map(() => legend));
         for (const align of ["left", "right"]) {
-          const col = stack(spec, facts, blocks, column, align, size, { headline: width, legend });
+          const col = stack(spec, facts, blocks, column, align, size, { widths: { headline: width, legend }, label: S.label });
           const spot = findSpot(room, column, col.height, centre);
           if (!spot || spot.align !== align) continue;
           return col.out.map(({ placed, top, dx }) => ({ ...placed, x: spot.x + dx, y: spot.y + top }));

@@ -143,7 +143,7 @@ test("compose --field shape --style writes the style and a legend placeholder in
     const relief = compose(path.join(dir, "relief.json"), "--field", "shape", "--style", "relief", "--theme", "dark");
     assert.equal(relief.spec.figure.regions[0].style, "relief");
     assert.equal(relief.spec.theme, "dark");
-    assert.equal(legendOf(relief.spec), '… at most 2 sentences and 180 characters, like "Every layer is a part of <product>, its size set by its lines of code. The glowing layer is <the accent\'s plain name>."');
+    assert.equal(legendOf(relief.spec), '… at most 2 sentences and 180 characters, like "Every layer is a part of <product>, as big as its code. The orange layer is <the accent\'s plain name>."');
     const rings = compose(path.join(dir, "rings.json"), "--field", "shape", "--style", "rings");
     assert.match(legendOf(rings.spec), /like "Every ring is a part of <product>, its area as big as its share of the code\. The orange ring is/);
     const bands = compose(path.join(dir, "bands.json"), "--field", "shape");

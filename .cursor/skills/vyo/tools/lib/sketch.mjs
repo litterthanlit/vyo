@@ -7,7 +7,7 @@ import { frameOf, recordRect } from "./frame.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { regionParts } from "./parts.mjs";
 import { figureStats, regionStats, SILHOUETTE, REGION, boxMessage, thinMessage, CHECKS } from "./check.mjs";
-import { shapeReport, shapeFindings, SHAPE_LIMITS } from "./shape-report.mjs";
+import { shapeReport, shapeFindings, coverFloor } from "./shape-report.mjs";
 import { encodePng } from "./png.mjs";
 import { estimateText, placeTexts } from "./place.mjs";
 import { opKind, opRings, paintRows } from "./mask.mjs";
@@ -23,12 +23,12 @@ const share = (n) => Math.round(n * 100) / 100;
 export const findingLine = (id, message) => `${CHECKS.find((c) => c.id === id).level === "fail" ? "✗" : "!"} ${id}: ${message}`;
 
 /** A drawn shape in numbers: how much of the sheet it covers, its fit and bleed, and each band (or the style's own lines). */
-function shapeSummary({ mask, bands, summary }) {
+function shapeSummary({ mask, bands, summary, region }) {
   const { width: W, height: H } = SHEET;
   const b = mask.box;
   const bleeds = [["left", b.left < 0], ["top", b.top < 0], ["right", b.right > W], ["bottom", b.bottom > H]].filter(([, off]) => off).map(([side]) => side);
   return [
-    `shape: covers ${Math.round((mask.area / (W * H)) * 100)}% of the sheet (needs ${SHAPE_LIMITS.cover * 100}%), ${Math.round(b.right - b.left)} by ${Math.round(b.bottom - b.top)}px (fit.w ${share(mask.fit.w)}, fit.h ${share(mask.fit.h)}), bleeds ${bleeds.join(", ") || "nowhere"}`,
+    `shape: covers ${Math.round((mask.area / (W * H)) * 100)}% of the sheet (needs ${coverFloor(region) * 100}%), ${Math.round(b.right - b.left)} by ${Math.round(b.bottom - b.top)}px (fit.w ${share(mask.fit.w)}, fit.h ${share(mask.fit.h)}), bleeds ${bleeds.join(", ") || "nowhere"}`,
     // A style without bands says what it drew in its own lines; relief's are a function, so the page never
     // pays for its thumbnail prediction.
     ...(typeof summary === "function" ? summary() : summary ?? ["bands, top to bottom (* the accent):"]),

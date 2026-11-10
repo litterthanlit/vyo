@@ -15,6 +15,8 @@ import { RELIEF } from "./fields/shape-relief.mjs";
 // the accent band needs `accent` px to show in the thumbnail; text keeps `clear` px off the shape; a band's
 // piece counts once it holds `piece` of the band's area; a bleed under `bleed` of the shape's extent is a mistake.
 export const SHAPE_LIMITS = { thin: 18, thinArea: 324, cover: 0.35, accent: 40, clear: 16, piece: 0.1, bleed: 0.05 };
+/** The share of the sheet a shape must cover: a relief, drawn by its type over a dot grid, reads at less. */
+export const coverFloor = (region) => (region.style === "relief" ? RELIEF.cover : SHAPE_LIMITS.cover);
 // Past `ops` adds and cuts a silhouette stops reading as one object at thumbnail size (the cold runs' 11-op
 // locomotive was half legible, the 3-op flask instant); `repeat` or more ops of one kind and about one size
 // (within `alike`), each under `small` of the shape, are details like wheels or windows that merge there.
@@ -243,7 +245,7 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
   const fit = region.shape.fit ?? {};
   const sized = fit.w !== undefined || fit.h !== undefined;
   const cover = mask.area / (SHEET.width * SHEET.height);
-  const floor = region.style === "relief" ? RELIEF.cover : L.cover;
+  const floor = coverFloor(region);
   if (cover < floor) {
     // A little over the bare ratio, so the suggested fit clears the floor after rounding.
     const k = Math.sqrt(floor / cover) * 1.02;
