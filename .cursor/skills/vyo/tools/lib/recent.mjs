@@ -25,16 +25,18 @@ export function recordShape(file, name) {
 }
 
 /**
- * A field that is not wave. Prefer a candidate absent from the log; if every non-wave field is in
- * it, take the least recently used. Never returns wave.
+ * A field that is not wave. Prefer a candidate absent from the log, chosen by `key` so two repos
+ * with empty logs start on different shapes; if every non-wave field is in it, take the least
+ * recently used. Never returns wave.
  * @param {string[]} names registry order
  * @param {string[]} recent newest last
+ * @param {number} key a whole number from the facts, such as its hash
  */
-export function pickField(names, recent) {
+export function pickField(names, recent, key = 0) {
   const candidates = names.filter((n) => n !== "wave");
   const used = new Set(recent);
   const fresh = candidates.filter((n) => !used.has(n));
-  if (fresh.length) return fresh[0];
+  if (fresh.length) return fresh[Math.abs(Math.trunc(key)) % fresh.length];
   let best = candidates[0];
   let bestAt = Infinity;
   for (const n of candidates) {

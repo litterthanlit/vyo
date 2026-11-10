@@ -245,7 +245,7 @@ function glyphLetter(name) {
 
 function cmdShapes(argv) {
   const { opt } = args(argv, { log: { type: "string" }, "shapes-log": { type: "string" } }, 0);
-  const file = opt.log ?? opt["shapes-log"] ?? path.join(process.cwd(), "recent-shapes.json");
+  const file = opt.log ?? opt["shapes-log"] ?? path.join(process.cwd(), "vyo", "recent-shapes.json");
   const { shapes } = readRecent(file);
   const lines = Object.entries(FIELDS).map(([name, field]) => {
     const ago = usedAgo(shapes, name);
@@ -303,12 +303,10 @@ function cmdCompose(argv) {
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
   const logFile = preset ? null : (opt["shapes-log"] ?? path.join(path.dirname(path.resolve(out)), "recent-shapes.json"));
   let field = preset ? undefined : opt.field;
-  let avoided = null;
-  if (!preset && field === undefined) {
-    avoided = readRecent(logFile).shapes;
-    field = pickField(Object.keys(FIELDS), avoided);
-  }
-  if (!preset && seed === undefined) seed = (parseInt(String(facts.hash).slice(0, 8), 16) % 2147483646) + 1;
+  const avoided = !preset && field === undefined ? readRecent(logFile).shapes : null;
+  const hashKey = parseInt(String(facts.hash).slice(0, 8), 16) || 0;
+  if (avoided) field = pickField(Object.keys(FIELDS), avoided, hashKey + avoided.length);
+  if (!preset && seed === undefined) seed = (hashKey % 2147483646) + 1;
   const letter = field === "glyph" ? glyphLetter(facts.repo.name) : undefined;
   const parts = partsFromFacts(facts, partOptions({ field }));
   if (opt.accent !== undefined && !accentIds(parts, opt.accent).size) throw new Usage(`--accent ${opt.accent} names no part; vyo parts ${pos[0]} lists the part ids`);

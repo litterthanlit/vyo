@@ -66,7 +66,7 @@ Pick the field whose shape is the story. The `fits` check wants a word that star
 
 ### Do not repeat the last shape
 
-Never default to wave. Run `vyo shapes` or read `recent-shapes.json` beside the spec, and pick a primitive that is not in the last few. Match keywords only among those. `compose` without `--field` already does this: it will not pick wave, it prefers a field absent from the log, and it prints the pick. Still pass `--field` when the story clearly matches. A field preference in `project-context.md` wins, and wave is not the fallback when that line is blank. For a high-contrast poster (charcoal or paper, one signal colour, grotesque headline), set `frame: "signal"`; `compose --frame signal`. `seed` moves the composition; `0` is the identity.
+Never default to wave. Run `npx vyo shapes` from the repo, which reads `vyo/recent-shapes.json` beside the spec,, and pick a primitive that is not in the last few. Match keywords only among those. `compose` without `--field` already does this: it will not pick wave, it picks a field absent from the log (which one depends on the repo), and it prints the pick. Still pass `--field` when the story clearly matches. A field preference in `project-context.md` wins, and wave is not the fallback when that line is blank. For a high-contrast poster (charcoal or paper, one signal colour, grotesque headline), set `frame: "signal"`; `compose --frame signal`. `seed` moves the composition; `0` is the identity.
 
 ## The words
 
