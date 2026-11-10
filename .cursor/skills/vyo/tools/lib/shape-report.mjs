@@ -3,7 +3,7 @@
 // pieces, a text block on the shape. `vyo sketch` prints these as `!` lines and lib/check.mjs runs them as checks;
 // every message says what to change, with a number.
 import { SHEET, corners, CORNERS, fixedMeasure } from "./geometry.mjs";
-import { maskGrid, edt } from "./mask.mjs";
+import { maskGrid, edt, SHAPE_ROOM } from "./mask.mjs";
 import { shapeLayout, nameWidth } from "./fields/shape.mjs";
 import { regionParts } from "./parts.mjs";
 import { tokensOf } from "./render.mjs";
@@ -12,8 +12,10 @@ import { FIELDS } from "./fields/index.mjs";
 // A feature narrower than `thin` px is under 3px at a sixth of the size and does not read as form; a thin piece
 // counts once it is `thinArea` px² (a sharp corner's tip is less). The shape should cover `cover` of the sheet;
 // the accent band needs `accent` px to show in the thumbnail; text keeps `clear` px off the shape; a band's
-// piece counts once it holds `piece` of the band's area.
-export const SHAPE_LIMITS = { thin: 18, thinArea: 324, cover: 0.35, accent: 40, clear: 16, piece: 0.1 };
+// piece counts once it holds `piece` of the band's area; a bleed under `bleed` of the shape's extent is a mistake.
+export const SHAPE_LIMITS = { thin: 18, thinArea: 324, cover: 0.35, accent: 40, clear: 16, piece: 0.1, bleed: 0.05 };
+// Every check id the findings fill, in the order the sketch prints them.
+export const SHAPE_CHECKS = ["shape-thin", "shape-cover", "shape-edge", "shape-accent", "shape-name", "shape-split", "shape-room", "shape-rings", "shape-upright", "shape-share", "shape-tone"];
 const CELL = 2;
 
 /** A shape region laid out in Node: its parts, mask, bands, rows and ground. */
@@ -130,12 +132,12 @@ const bandOf = (report, part) => report.bands?.find((b) => b.part.id === part.id
 /**
  * Every finding on a shape region, by check id. `rows` are the rows as drawn (the page's, or Node's for the
  * sketch); `blocks` are the text blocks, each `{ id, left, top, right, bottom }`.
- * @returns {Record<"shape-thin" | "shape-cover" | "shape-accent" | "shape-name" | "shape-split" | "shape-room" | "shape-rings" | "shape-upright" | "shape-share" | "shape-tone", string[]>}
+ * @returns {Record<(typeof SHAPE_CHECKS)[number], string[]>}
  */
 export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) {
   const { mask, bands = [], parts, region } = report;
   const L = SHAPE_LIMITS;
-  const out = { "shape-thin": [], "shape-cover": [], "shape-accent": [], "shape-name": [], "shape-split": [], "shape-room": [], "shape-rings": [], "shape-upright": [], "shape-share": [], "shape-tone": [] };
+  const out = Object.fromEntries(SHAPE_CHECKS.map((id) => [id, []]));
   // A style that is not cut top to bottom judges its own depth and reading; the band checks are the bands'.
   const banded = (region.style ?? "bands") === "bands";
   // Rings' findings are fixed by the layout; relief's read the rows as drawn, so they are a function of them.
@@ -153,11 +155,34 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
     );
   }
 
+  const fit = region.shape.fit ?? {};
+  const sized = fit.w !== undefined || fit.h !== undefined;
   const cover = mask.area / (SHEET.width * SHEET.height);
   if (cover < L.cover) {
-    const k = Math.sqrt(L.cover / cover);
-    const by = region.shape.fit?.w !== undefined && region.shape.fit?.h === undefined ? "w" : "h";
-    out["shape-cover"].push(`the shape covers ${pct(cover)} of the sheet; it needs ${pct(L.cover)} to read as the picture, so scale it up ${share(k)}x (set fit.${by} to ${share(mask.fit[by] * k)}, it is ${share(mask.fit[by])}) or draw it fatter`);
+    // A little over the bare ratio, so the suggested fit clears the floor after rounding.
+    const k = Math.sqrt(L.cover / cover) * 1.02;
+    const by = fit.w !== undefined && fit.h === undefined ? "w" : "h";
+    const [now, next] = [share(mask.fit[by]), share(mask.fit[by] * k)];
+    const [w, h] = [px(mask.box.right - mask.box.left), px(mask.box.bottom - mask.box.top)];
+    const say = `the shape covers ${pct(cover)} of the sheet; it needs ${pct(L.cover)} to read as the picture, so `;
+    out["shape-cover"].push(
+      sized && next > now && mask.fit.w * k <= 1 && mask.fit.h * k <= 1
+        ? `${say}scale it up ${share(k)}x (set fit.${by} to ${next}, it is ${now}) or draw it fatter`
+        : `${say}draw it fatter: it fills ${pct(mask.area / (w * h))} of its ${w} by ${h}px box${sized ? "" : ", already as large as the room the text leaves"}; thicken its thin parts or make it closer to as tall as it is wide`,
+    );
+  }
+
+  // A deliberate bleed runs well off the sheet; a sliver off one edge reads as a mistake.
+  const { width: W, height: H } = SHEET;
+  const b = mask.box;
+  for (const [edge, over, extent, key, sign] of [["left", -b.left, b.right - b.left, "cx", 1], ["right", b.right - W, b.right - b.left, "cx", -1], ["top", -b.top, b.bottom - b.top, "cy", 1], ["bottom", b.bottom - H, b.bottom - b.top, "cy", -1]]) {
+    if (over <= 0.5 || over >= L.bleed * extent) continue;
+    const size = key === "cx" ? W : H;
+    const centre = key === "cx" ? (b.left + b.right) / 2 / W : (b.top + b.bottom) / 2 / H;
+    const move = Math.ceil(over) + SHAPE_ROOM.bottom;
+    out["shape-edge"].push(
+      `the shape runs ${Math.ceil(over)}px off the ${edge} edge, too little to read as a bleed, so it looks cut by mistake; ${sized ? `leave out fit.w and fit.h to fit it inside the sheet, or move it ${move}px ${sign > 0 ? (key === "cx" ? "right" : "down") : key === "cx" ? "left" : "up"} (fit.${key} ${share(centre)} to ${share(centre + (sign * move) / size)})` : `move fit.${key} back toward the middle`}, or bleed it boldly, by a fifth of the shape or more`,
+    );
   }
 
   const hot = !banded ? null : bands.filter((b) => b.part.hot).sort((a, b) => b.y1 - b.y0 - (a.y1 - a.y0))[0];

@@ -174,6 +174,7 @@ export const CHECKS = [
   },
   shapeCheck("shape-thin", "warn", "spec", `no feature of a drawn shape, and no cut in it, is under ${SHAPE_LIMITS.thin}px across, a hairline at thumbnail size`),
   shapeCheck("shape-cover", "warn", "spec", `a drawn shape covers at least ${SHAPE_LIMITS.cover * 100}% of the sheet`),
+  shapeCheck("shape-edge", "warn", "spec", `a drawn shape that runs off an edge runs off by at least ${SHAPE_LIMITS.bleed * 100}% of its own size, so the bleed reads as meant`),
   shapeCheck("shape-accent", "warn", "spec", `the accent band of a drawn shape is at least ${SHAPE_LIMITS.accent}px tall, so it shows in the thumbnail`),
   shapeCheck("shape-split", "warn", "spec", "no band of a drawn shape falls on two separate pieces of it"),
   shapeCheck("shape-rings", "warn", "spec", `a shape in rings is deep enough for ${RINGS.perPart} rings per part`),

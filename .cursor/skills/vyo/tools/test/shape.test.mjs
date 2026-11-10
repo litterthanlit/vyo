@@ -6,7 +6,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { validateSpec } from "../lib/spec.mjs";
-import { shapeMask, maskGrid, runsPath } from "../lib/mask.mjs";
+import { shapeMask, maskGrid, runsPath, SHAPE_ROOM } from "../lib/mask.mjs";
 import { shapeBands, bandsStyle, nameWidth, BANDS } from "../lib/fields/shape.mjs";
 import { shapeReport, shapeFindings, thinFeatures } from "../lib/shape-report.mjs";
 import { sketch, sketchImage } from "../lib/sketch.mjs";
@@ -103,7 +103,13 @@ test("the mask fits the painted extent: fit.w, fit.h, the default, the centre an
   const both = shapeMask({ ops: [rect([0, 0], [10, 10])], fit: { w: 0.5, h: 0.2 } });
   near(both.box.bottom - both.box.top, 0.2 * H, 1, "with both, the smaller scale wins");
   const tall = shapeMask({ ops: [rect([0, 0], [10, 40])] });
-  near(tall.fit.h, 0.74, 0.01, "with no fit, the default height");
+  near(tall.box.top, SHAPE_ROOM.top, 1, "with no fit, a tall shape fills the room's height, below the words");
+  near(tall.box.bottom, H - SHAPE_ROOM.bottom, 1, "and stands on the bottom margin");
+  for (const ops of [[rect([0, 0], [400, 40])], [rect([0, 0], [100, 100])], [{ add: "circle", at: [0, 0], r: 5 }, rect([-50, 0], [100, 2])]]) {
+    const m = shapeMask({ ops });
+    assert.ok(m.box.left >= SHAPE_ROOM.left - 0.5 && m.box.right <= W - SHAPE_ROOM.right + 0.5 && m.box.top >= SHAPE_ROOM.top - 0.5 && m.box.bottom <= H - SHAPE_ROOM.bottom + 0.5, `whatever its aspect, the default keeps it inside the margins (${JSON.stringify(m.box)})`);
+    assert.ok(m.box.right - m.box.left > W - 81 || m.box.bottom - m.box.top > H - SHAPE_ROOM.top - SHAPE_ROOM.bottom - 1, "and as large as they allow");
+  }
   const bleed = shapeMask({ ops: [rect([0, 0], [10, 10])], fit: { w: 1.4, cx: 0.5, cy: 0.5 } });
   assert.ok(bleed.box.left < 0 && bleed.box.right > W, "over 1 runs off the sheet");
   assert.ok(bleed.runs.every((row) => row.every(([l, r]) => l >= 0 && r <= W)), "runs are clipped to the sheet");
@@ -234,6 +240,17 @@ test("findings: the jar has none, and each planted shape trips its own, with a n
   const tiny = findings(withShape({ ...base, fit: { h: 0.3 } }));
   assert.match(tiny["shape-cover"][0], /^the shape covers 7% of the sheet; it needs 35% to read as the picture, so scale it up 2\.\d+x \(set fit\.h to 0\.6\d, it is 0\.3\) or draw it fatter$/);
   assert.match(tiny["shape-accent"][0], /^the accent band "the plan" is \d\dpx tall \(y \d+ to \d+\); it needs 40px to show in the thumbnail, so scale the shape up 1\.\d+x, narrow it where the band falls, or put the accent on a bigger part$/);
+
+  // The cold run's flask: fit h 0.76 at cy 0.63 runs 12px off the bottom.
+  const flask = findings(withShape({ ops: [{ add: "circle", at: [50, 66], r: 34 }, rect([39, 12], [22, 34]), rect([33, 4], [34, 10], { round: 3 })], fit: { h: 0.76, cx: 0.6, cy: 0.63 } }));
+  assert.match(flask["shape-edge"][0], /^the shape runs 1\dpx off the bottom edge, too little to read as a bleed, so it looks cut by mistake; leave out fit\.w and fit\.h to fit it inside the sheet, or move it \d+px up \(fit\.cy 0\.6\d to 0\.5\d\), or bleed it boldly/);
+  assert.deepEqual(findings(withShape({ ...base, fit: undefined }))["shape-edge"], [], "the default fit never bleeds");
+  // A shape as large as the sheet allows cannot be scaled up: the advice is to draw it fatter, never a fit it already has.
+  const wide = findings(withShape({ ops: [rect([0, 0], [100, 14], { round: 7 })], fit: { w: 0.96 } }))["shape-cover"][0];
+  assert.match(wide, /so draw it fatter: it fills \d+% of its \d+ by \d+px box; thicken its thin parts/);
+  const lean = findings(withShape({ ops: [rect([0, 0], [100, 14], { round: 7 })] }))["shape-cover"][0];
+  assert.match(lean, /already as large as the room the text leaves/);
+  for (const m of [wide, lean]) assert.doesNotMatch(m, /scale it up 1x|set fit\.\w to ([\d.]+), it is \1\)/);
 
   const stem = findings(withShape({ ops: [rect([0, 0], [6, 120]), rect([-40, 120], [84, 60], { round: 10 })], fit: { h: 0.8 } }));
   assert.match(stem["shape-name"][0], /^part "saved recipes" never shows its whole name: its band \(y \d+ to \d+\) holds \d+px of 5\.0px type and the name needs \d+px; widen the shape there to at least \d+px or give the part a shorter name$/);
