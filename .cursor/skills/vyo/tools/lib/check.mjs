@@ -172,7 +172,8 @@ export const CHECKS = [
         .filter((r) => !FIELDS[r.field].fits.some((w) => startsWord(r.fits, w)))
         .map((r) => `region ${r.id}: fits must say why a ${r.field} matches the product's story; use ${anyOf(FIELDS[r.field].fits)}`),
   },
-  shapeCheck("shape-dominant", "warn", "spec", "a drawn shape's accent part holds at most half the lines, among at least 4 parts, so the accent is not one slab"),
+  shapeCheck("shape-dominant", "warn", "spec", "a drawn shape's accent part holds at most 75% of the lines, among at least 4 parts, so the accent is not one slab"),
+  shapeCheck("shape-simple", "warn", "spec", "a drawn shape has at most 8 ops and no run of small repeated details that merge at thumbnail size"),
   shapeCheck("shape-thin", "warn", "spec", `no feature of a drawn shape, and no cut in it, is under ${SHAPE_LIMITS.thin}px across, a hairline at thumbnail size`),
   shapeCheck("shape-cover", "warn", "spec", `a drawn shape covers at least ${SHAPE_LIMITS.cover * 100}% of the sheet`),
   shapeCheck("shape-edge", "warn", "spec", `a drawn shape that runs off an edge runs off by at least ${SHAPE_LIMITS.bleed * 100}% of its own size, so the bleed reads as meant`),

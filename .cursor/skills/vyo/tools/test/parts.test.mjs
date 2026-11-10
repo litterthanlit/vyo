@@ -93,6 +93,8 @@ test("dominance names the part that is most of the code and what splitting it gi
   assert.ok(d.share > 0.9);
   assert.deepEqual([d.count, d.split.id, d.split.count], [3, "area:source", 6]);
   assert.ok(d.split.largest < 0.7);
-  assert.equal(dominance(got, { maxParts: 12, split: ["area:source"] }).split, null, "core has no folder inside it left to split");
+  assert.equal(dominance(got, { maxParts: 12, split: ["area:source"] }), null, "split, no part is three quarters of the code");
+  const lone = { facts: [{ id: "area:app", kind: "area", name: "App", meta: { leaf: true } }, { id: "area:docs", kind: "area", name: "Docs", meta: { leaf: true } }], files: { "app/a.js": { area: "area:app", loc: 900 }, "docs/b.js": { area: "area:docs", loc: 100 } } };
+  assert.deepEqual(dominance(lone), { part: partsFromFacts(lone)[0], share: 0.9, count: 2, split: null }, "a part with no folders inside has nothing to split");
   assert.equal(dominance(recipe), null, "the recipe fixture's parts are fine");
 });

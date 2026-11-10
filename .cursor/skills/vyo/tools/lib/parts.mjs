@@ -82,8 +82,9 @@ export function partsFromFacts(facts, { minShare = PART_DEFAULTS.minShare, maxPa
     .map(([id, p], order) => ({ id, name: names[id] ?? areas.get(id)?.name ?? id.slice(5), loc: p.loc, files: p.files, order }));
 }
 
-// A part over `share` of the lines, or fewer than `parts` parts, draws a shape as one slab.
-export const DOMINANT = { share: 0.5, parts: 4 };
+// A part over `share` of the lines, or fewer than `parts` parts, draws a shape as one slab. The cold runs' flask
+// (62% accent, in rings) and train (58%, in bands) read well; Got's bone (95%) was one orange haze.
+export const DOMINANT = { share: 0.75, parts: 4 };
 
 /**
  * When one part is most of the code, or there are too few parts, which part to split and what splitting it gives:

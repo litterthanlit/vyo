@@ -3,7 +3,7 @@
 // pieces, a text block on the shape. `vyo sketch` prints these as `!` lines and lib/check.mjs runs them as checks;
 // every message says what to change, with a number.
 import { SHEET, corners, CORNERS, fixedMeasure } from "./geometry.mjs";
-import { maskGrid, edt, SHAPE_ROOM } from "./mask.mjs";
+import { maskGrid, edt, SHAPE_ROOM, opRings, paintRows } from "./mask.mjs";
 import { shapeLayout, nameWidth } from "./fields/shape.mjs";
 import { regionParts, partOptions, dominance, DOMINANT } from "./parts.mjs";
 import { tokensOf } from "./render.mjs";
@@ -14,8 +14,12 @@ import { FIELDS } from "./fields/index.mjs";
 // the accent band needs `accent` px to show in the thumbnail; text keeps `clear` px off the shape; a band's
 // piece counts once it holds `piece` of the band's area; a bleed under `bleed` of the shape's extent is a mistake.
 export const SHAPE_LIMITS = { thin: 18, thinArea: 324, cover: 0.35, accent: 40, clear: 16, piece: 0.1, bleed: 0.05 };
+// Past `ops` adds and cuts a silhouette stops reading as one object at thumbnail size (the cold runs' 11-op
+// locomotive was half legible, the 3-op flask instant); `repeat` or more ops of one kind and about one size
+// (within `alike`), each under `small` of the shape, are details like wheels or windows that merge there.
+export const SHAPE_SIMPLE = { ops: 8, repeat: 3, alike: 0.3, small: 0.1 };
 // Every check id the findings fill, in the order the sketch prints them.
-export const SHAPE_CHECKS = ["shape-dominant", "shape-thin", "shape-cover", "shape-edge", "shape-accent", "shape-name", "shape-split", "shape-room", "shape-rings", "shape-upright", "shape-share", "shape-tone"];
+export const SHAPE_CHECKS = ["shape-dominant", "shape-simple", "shape-thin", "shape-cover", "shape-edge", "shape-accent", "shape-name", "shape-split", "shape-room", "shape-rings", "shape-upright", "shape-share", "shape-tone"];
 const CELL = 2;
 
 /** A shape region laid out in Node: its parts, mask, bands, rows and ground. */
@@ -157,6 +161,22 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
         ? `${what}; add "split": [${[...(region.split ?? []), d.split.id].map((id) => `"${id}"`).join(", ")}] to the region to cut "${d.part.name}" into the folders inside it (${d.split.count} parts, the largest ${pct(d.split.largest)}), then put the accent on the one the story is about (vyo parts <facts> --field shape --split ${d.split.id} lists them)`
         : `${what}; "${d.part.name}" has no folders inside it to split, so put the accent on a smaller part, or keep it in bands, whose type still names every part`,
     );
+  }
+
+  const drawn = region.shape.ops.map((op, i) => ({ op, i })).filter(({ op }) => op.crease === undefined);
+  if (drawn.length > SHAPE_SIMPLE.ops) {
+    out["shape-simple"].push(`the shape has ${drawn.length} ops; past ${SHAPE_SIMPLE.ops} a silhouette stops reading as one object at thumbnail size, so simplify it: one object with one telling feature, in 3 to 6 ops`);
+  }
+  const { s, tx, ty } = mask.xf;
+  const alone = opRings(region.shape).map((o) => paintRows([{ ...o, cut: false }], s, tx, ty, SHEET.height).reduce((a, row) => a + row.reduce((n, [l, r]) => n + r - l, 0), 0) / mask.area);
+  const seen = new Set();
+  for (const { op, i } of drawn) {
+    if (seen.has(i) || alone[i] >= SHAPE_SIMPLE.small) continue;
+    const kind = op.add ?? op.cut;
+    const like = drawn.filter((d) => (d.op.add ?? d.op.cut) === kind && alone[d.i] < SHAPE_SIMPLE.small && Math.abs(alone[d.i] - alone[i]) <= SHAPE_SIMPLE.alike * alone[i]);
+    if (like.length < SHAPE_SIMPLE.repeat) continue;
+    like.forEach((d) => seen.add(d.i));
+    out["shape-simple"].push(`ops ${like.map((d) => d.i).join(", ")} are ${like.length} ${kind}s of about ${pct(alone[i])} of the shape each: small repeated details like wheels or windows merge at thumbnail size, so drop them or draw them as one shape`);
   }
 
   // Every shape check asks for these findings; the opening is the slow part and depends on the shape alone.

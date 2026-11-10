@@ -271,13 +271,36 @@ test("shape-dominant: Got's accent, 95% of its code in 3 parts, is one slab; spl
   ]);
   // The cold run's bone at bevel 1 with faces stayed at a 14% spread: no hint moves a 95% accent, so tone waits for the split.
   const slab = spec({ accent: "area:source", bevel: 1 });
+  assert.match(found(spec({ split: ["area:source"], accent: "area:source/core" })).join(""), /^$/, "63% is under the slab line");
+  const big = spec({ split: ["area:source"], accent: "area:source/core" });
+  assert.match(shapeFindings(shapeReport(big, big.figure.regions[0], got))["shape-tone"].join("\n"), /so put the accent on a smaller part/, "a 63% accent's tone names the accent");
   assert.deepEqual(shapeFindings(shapeReport(slab, slab.figure.regions[0], got))["shape-tone"], []);
   const split = spec({ split: ["area:source"], accent: "area:source/core/utils" });
   assert.deepEqual(shapeFindings(shapeReport(split, split.figure.regions[0], got))["shape-tone"], [], "split, the bone shades as a volume");
   assert.deepEqual(validateSpec({ ...split, facts: got.hash }).filter((e) => /split/.test(e)), []);
   assert.deepEqual(found(split), [], "the accent on one folder of six is quiet");
   assert.equal(shapeReport(split, split.figure.regions[0], got).parts.length, 6);
-  assert.match(found(spec({ split: ["area:source"], accent: "area:source/core" }))[0], /holds 63% of the lines .*"Inner workings" has no folders inside it to split, so put the accent on a smaller part/);
+  const lone = { hash: got.hash, facts: [{ id: "area:app", kind: "area", name: "App", meta: { leaf: true } }, { id: "area:docs", kind: "area", name: "Docs", meta: { leaf: true } }], files: { "app/a.js": { area: "area:app", loc: 900 }, "docs/b.js": { area: "area:docs", loc: 100 } } };
+  const one = spec({ accent: "area:app" });
+  assert.deepEqual(shapeFindings(shapeReport(one, one.figure.regions[0], lone))["shape-dominant"], ['the accent "App" holds 90% of the lines and the shape has 2 parts, so every style draws it as one slab; "App" has no folders inside it to split, so put the accent on a smaller part, or keep it in bands, whose type still names every part']);
+  const banded = spec({ accent: "area:app", style: "bands" });
+  assert.deepEqual(shapeFindings(shapeReport(banded, banded.figure.regions[0], lone))["shape-dominant"], [], "in bands with nothing to split, nothing to say");
+});
+
+test("shape-simple: the cold run's 11-op locomotive is too busy and its wheels merge; the 3-op flask and the bone's four knobs are fine", () => {
+  const simple = (shape) => shapeFindings(shapeReport(withShape(shape), withShape(shape).figure.regions[0], recipe))["shape-simple"];
+  const loco = {
+    ops: [
+      { add: "capsule", from: [20, 52], to: [72, 52], r: 22 }, rect([66, 12], [32, 64], { round: 2 }), rect([62, 6], [40, 9]), rect([22, 6], [12, 26]), rect([16, 0], [24, 8]),
+      { add: "circle", at: [48, 30], r: 10 }, rect([8, 72], [94, 12]), ...[28, 58, 84].map((x) => ({ add: "circle", at: [x, 92], r: 16 })), { add: "polygon", points: [[10, 70], [0, 104], [26, 104], [26, 70]] },
+    ],
+  };
+  assert.deepEqual(simple(loco), [
+    "the shape has 11 ops; past 8 a silhouette stops reading as one object at thumbnail size, so simplify it: one object with one telling feature, in 3 to 6 ops",
+    "ops 7, 8, 9 are 3 circles of about 9% of the shape each: small repeated details like wheels or windows merge at thumbnail size, so drop them or draw them as one shape",
+  ]);
+  assert.deepEqual(simple({ ops: [{ add: "circle", at: [50, 66], r: 34 }, rect([39, 12], [22, 34]), rect([33, 4], [34, 10], { round: 3 })] }), []);
+  assert.deepEqual(simple({ ops: [{ add: "capsule", from: [22, 50], to: [78, 50], r: 19 }, ...[[13, 38], [13, 62], [87, 38], [87, 62]].map((at) => ({ add: "circle", at, r: 13 }))], rotate: -50 }), []);
 });
 
 test("a sharp tip is not a thin feature, a bleed is not thin, and a 10px bar is", () => {

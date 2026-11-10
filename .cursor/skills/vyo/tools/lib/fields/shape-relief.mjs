@@ -10,10 +10,11 @@ import { maskGrid, opRings, opKind, paintRows, intersectRuns } from "../mask.mjs
 // inscribed radius that is rounded. pillow: the px each stratum rounds off its seams. fold: a crease's width.
 // rim: px inside the outline that never fade. light: toward the light, x right, y down, z up. phase: how far each
 // line's names shift. accent, share, tone: the floors the findings hold, the tone floors set between good forms
-// (lit 0.46 to 0.59, spread 0.36 to 0.42) and dim or flat ones (lit under 0.32, spread under 0.2).
+// (lit 0.46 to 0.59, spread 0.36 to 0.42) and dim or flat ones (lit under 0.32, spread under 0.2). slab: the accent's
+// share of the shape past which shape-dominant (DOMINANT.share in parts.mjs) speaks for the tone.
 export const RELIEF = {
   size: 6, leading: 1.04, cell: 2, bevel: 0.7, pillow: 12, fold: 14, rim: 5, light: [-0.62, -0.78, 0.75], phase: 7,
-  accent: 40, share: { points: 0.6, part: 0.2 },
+  accent: 40, share: { points: 0.6, part: 0.2 }, slab: 0.75,
   tone: { lit: 0.38, spread: 0.3 },
 };
 // Per theme: the field's own token, the letters' colour, the underlay (the shading in `levels` soft steps under
@@ -617,8 +618,10 @@ function reliefFindings(value, parts, drawn, mask, region) {
     }
   });
   // An accent stratum over half the shape holds the tone in its own flat fill whatever the hints do (on the Got
-  // bone at 95%, bevel 0.3 to 1 moved the spread 8.6% to 9.7%); shape-dominant names the fix, so tone waits.
-  if (strata.filter((s) => s.part.hot).reduce((n, s) => n + s.area, 0) > 0.5) return out;
+  // bone at 95%, bevel 0.3 to 1 moved the spread 8.6% to 9.7%; at 22% it read 37%). Past `slab` shape-dominant
+  // names the fix, so tone waits; below it, tone names the accent.
+  const accent = strata.filter((s) => s.part.hot).reduce((n, s) => n + s.area, 0);
+  if (accent > L.slab) return out;
   value.tone ??= reliefTone(value, mask, value.tokens);
   const tone = value.tone;
   const bevel = region.bevel ?? L.bevel;
@@ -626,7 +629,9 @@ function reliefFindings(value, parts, drawn, mask, region) {
   // What moves the numbers, measured on the bone and the jar: one-sided faces flatten the form, a bevel under the
   // default flattens its top (0.3 to 0.7 moved the bone's spread 28.9% to 37.1%, 0.7 to 1 by 0.1 points).
   const lever =
-    faces.size === 1
+    accent > 0.5
+      ? `the accent covers ${reliefPct(accent)} of the shape and its flat fill holds the tone whatever the bevel, so put the accent on a smaller part`
+      : faces.size === 1
       ? `every face is ${[...faces][0]}, which turns the whole form one way: give one add the other face, or drop the faces`
       : bevel < L.bevel
         ? `raise bevel (it is ${bevel}) to ${L.bevel} or more, so the form rounds toward the light`
