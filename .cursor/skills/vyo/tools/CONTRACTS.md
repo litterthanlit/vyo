@@ -74,6 +74,7 @@ type FactsFile = {
   imports: [string, string][];   // [fromFile, toFile], both keys of `files`, deduped, sorted
   uses: [string, string, "package" | "http" | "orm"][];  // [file, factId, via], deduped, sorted
   unresolved: Record<string, number>;          // internal-looking specifiers that didn't resolve → count (diagnostics only)
+  excluded: { files: number; lines: number; by: Record<string, { files: number; lines: number }> };  // source files the exclusion rules dropped, by reason
 };
 type FileInfo = {
   area: string;                  // id of the deepest area fact containing the file
@@ -567,7 +568,8 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 | `facts-empty` | ! | `facts.empty` is true: the scan found nothing to count, so the footer shows provenance only |
 | `product-name` | ! | `product.name` equals `facts.repo.name`, the folder name |
 | `preset-copy` | ! | Every region's geometry equals a preset region's geometry, numbers compared exactly. Field regions are left out, and a figure of only a field never trips it |
-| `part-name` | ! | A part a field draws has an unplain name: all caps, a company name the scan knows, or one word ending in a digit. Also a key in `names` that is not a part, and two or more parts with one name, ignoring case: `parts <id> and <id> are all called "<name>"; give each a plain name of its own in names`. Message: `part "<name>" (<id>) looks like a vendor or code name; add a plain name in names` |
+| `part-name` | ! | A part a field draws has the product's name in its name, has no entry in `names`, or shares its name with another part, ignoring case: `parts <id> and <id> are all called "<name>"; give each a plain name of its own in names`. Also a key in `names` that is not a part |
+| `part-unplain` | ✗ | A part a field draws still has an unplain name: all caps, a company name the scan knows, or one word ending in a digit. A scanned name left in place trips it, since `names` replaces the scanned name. Message: `part "<name>" (<id>) looks like a vendor or code name; add a plain name in names` |
 | `accent-part` | ! | A field region has no `accent`. Message: `no accent part in region <id>; set accent to the id of the part the poster is about (vyo parts lists them)` |
 | `legend` | ✗ | Loose only. The legend names the accent part's plain name (case-folded, anywhere in the text) and the field's measure: a word that starts with "code" or "lines"; a terrain also "files" or "wide"; a river "merge", "join" or "flow". Message: `must say what the picture encodes; name the accent part ("<name>") and the measure (<words>)` |
 | `fits` | ✗ | A field region's `fits` has a word that starts with one of the field's keywords: wave "travel", "flow", "hand", "move"; terrain "big", "weight", "matters", "most"; river "merge", "join", "many", "one". Message: `region <id>: fits must say why a <field> matches the product's story; use "<k>" or …` |

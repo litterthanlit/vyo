@@ -481,15 +481,15 @@ const hold = (prompt) => `${PLACEHOLDER} ${prompt}`;
 
 /**
  * The figure `compose` writes by default: one field region and the three usual texts, placed where the field
- * leaves room. Parts with unplain names get a placeholder in `names`.
+ * leaves room. Every part gets a placeholder in `names`.
  * @param {keyof typeof FIELDS} field
  * @param {number} floor
- * @param {{ accent?: string, unplain: { id: string, name: string }[] }} o
+ * @param {{ accent?: string, parts: { id: string, name: string }[] }} o
  */
-function fieldFigure(field, floor, { accent, unplain }) {
+function fieldFigure(field, floor, { accent, parts }) {
   const at = FIELDS[field].texts(floor);
   return {
-    regions: [fieldRegion(field, { accent, unplain })],
+    regions: [fieldRegion(field, { accent, parts })],
     texts: [
       { role: "masthead", id: "masthead", x: 50, y: 36, w: 490 },
       { role: "headline", id: "headline", ...at.headline },
@@ -501,14 +501,14 @@ function fieldFigure(field, floor, { accent, unplain }) {
 const quoted = (words) => words.map((w) => `"${w}"`).join(" or ");
 
 /** The field region a scaffold starts from, in either frame. */
-function fieldRegion(field, { accent, unplain }) {
+function fieldRegion(field, { accent, parts }) {
   return {
     kind: "field",
     id: field,
     field,
     fits: hold(`one sentence on why a ${field} matches the product's story, with ${quoted(FIELDS[field].fits)}, at most ${LIMITS.fits} characters`),
     ...(accent ? { accent } : {}),
-    ...(unplain.length ? { names: Object.fromEntries(unplain.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])) } : {}),
+    ...(parts.length ? { names: Object.fromEntries(parts.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])) } : {}),
     ...(FIELDS[field].options.includes("shape") ? { shape: hold("the silhouette as { ops: [...] }, in the format vyo compose --field shape prints") } : {}),
     ...(FIELDS[field].options.includes("sentence") ? { sentence: hold(`a sentence woven in every ${WAVE.every}th row, at most ${LIMITS.sentence} characters, or remove it`) } : {}),
   };
@@ -517,13 +517,13 @@ function fieldRegion(field, { accent, unplain }) {
 /**
  * The loose figure `compose` writes: the field, and the label, headline, legend, paragraph and parts list in
  * the corners the field leaves empty (`places`, from lib/frame.mjs). The legend's placeholder spells out its rule.
- * @param {{ accent?: string, accentNames: string[], unplain: { id: string, name: string }[], places: Record<string, object> }} o
+ * @param {{ accent?: string, accentNames: string[], parts: { id: string, name: string }[], places: Record<string, object> }} o
  */
-function looseFigure(field, { accent, accentNames, unplain, places }) {
+function looseFigure(field, { accent, accentNames, parts, places }) {
   const name = accentNames.length ? quoted(accentNames) : "the accent part";
   const measure = FIELDS[field].measure.map(quoted).join(", and ");
   return {
-    regions: [fieldRegion(field, { accent, unplain })],
+    regions: [fieldRegion(field, { accent, parts })],
     texts: [
       { role: "label", id: "label", ...places.label },
       { role: "headline", id: "headline", ...places.headline },
@@ -554,11 +554,11 @@ function blankFigure(fig) {
  * where the field's registry entry puts them, above a footer of notes.
  * @param {{ hash: string, repo: { name: string } }} facts
  * @param {{ frame?: "loose" | "swiss", theme: "light" | "dark", commit?: string, date: string, floor: number, preset?: Spec,
- *           field?: keyof typeof FIELDS, accent?: string, accentNames?: string[], unplain?: { id: string, name: string }[],
+ *           field?: keyof typeof FIELDS, accent?: string, accentNames?: string[], parts?: { id: string, name: string }[],
  *           places?: Record<string, object> }} o
  * @returns {Spec}
  */
-export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", theme, commit, date, floor, field = "wave", accent, accentNames = [], unplain = [], places }) {
+export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", theme, commit, date, floor, field = "wave", accent, accentNames = [], parts = [], places }) {
   const loose = frame === "loose";
   const notes = preset ? preset.notes.length : 3;
   return {
@@ -570,7 +570,7 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
     ...(preset?.accent ? { accent: preset.accent } : {}),
     headline: hold(`one plain sentence about the outcome, at most ${LIMITS.headline} characters`),
     ...(preset ? { hot: hold("the one word set in the accent colour: a word of a fill region, a dots line or a hot label") } : {}),
-    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, accentNames, unplain, places }) : fieldFigure(field, floor, { accent, unplain }),
+    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, accentNames, parts, places }) : fieldFigure(field, floor, { accent, parts }),
     ...(loose
       ? {}
       : {

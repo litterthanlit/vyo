@@ -130,13 +130,19 @@ export const CHECKS = [
       fieldsOf(spec).flatMap((r) => {
         const parts = partsFromFacts(facts, partOptions(r));
         return [
-          ...parts.filter((p) => unplainName(p.name)).map((p) => `part "${p.name}" (${p.id}) looks like a vendor or code name; add a plain name in names`),
           ...parts.filter((p) => !unplainName(p.name) && hasProduct(p.name, spec)).map((p) => `part "${p.name}" (${p.id}) is or contains the product name; give it a plain name in names`),
           ...parts.filter((p) => !unplainName(p.name) && !(r.names ?? {})[p.id] && !hasProduct(p.name, spec)).map((p) => `part "${p.name}" (${p.id}) keeps its scanned name; give every part a plain lowercase name in names`),
           ...Object.keys(r.names ?? {}).filter((id) => !parts.some((p) => p.id === id)).map((id) => `names has ${id}, which is not a part of region ${r.id}; vyo parts lists the part ids`),
           ...sameNames(parts).map((g) => `parts ${g.map((p) => p.id).join(" and ")} are all called "${g[0].name}"; give each a plain name of its own in names`),
         ];
       }),
+  },
+  {
+    id: "part-unplain", level: "fail", stage: "spec", about: "no part a field draws still carries a name that looks like a vendor or code name",
+    run: ({ spec, facts }) =>
+      fieldsOf(spec).flatMap((r) =>
+        partsFromFacts(facts, partOptions(r)).filter((p) => unplainName(p.name)).map((p) => `part "${p.name}" (${p.id}) looks like a vendor or code name; add a plain name in names`),
+      ),
   },
   {
     id: "accent-part", level: "warn", stage: "spec", about: "every field sets an accent part",

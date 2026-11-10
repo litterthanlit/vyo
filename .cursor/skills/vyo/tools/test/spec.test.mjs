@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { validateSpec, textProblems, hasWord, scaffoldSpec } from "../lib/spec.mjs";
 import { BANNED, isJargon } from "../lib/jargon.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
+import { partsFromFacts, partOptions } from "../lib/parts.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PRESETS = path.join(HERE, "..", "presets");
@@ -113,7 +114,7 @@ test("a scaffold is rejected until every placeholder is written: a field by defa
   const fillPresets = IDS.filter((id) => !preset(id).figure.regions.some((r) => r.kind === "field"));
   for (const from of [undefined, ...fillPresets]) {
     const p = from && preset(from);
-    const spec = scaffoldSpec(facts, { frame: "swiss", theme: p ? p.theme : "light", date: "2026-10-28", floor: 884, preset: p, unplain: [{ id: "area:lib", name: "Convex" }] });
+    const spec = scaffoldSpec(facts, { frame: "swiss", theme: p ? p.theme : "light", date: "2026-10-28", floor: 884, preset: p, parts: [{ id: "area:lib", name: "Convex" }] });
     const errors = validateSpec(spec);
     const field = p ? [/^hot: still the placeholder/, /still the placeholder; write \d+ to \d+ (nouns|words)/] : [/^figure\.regions\[0\]\.sentence: still the placeholder/, /^figure\.regions\[0\]\.names\["area:lib"\]: still the placeholder/];
     const fits = p ? /^figure\.fits: still the placeholder/ : /^figure\.regions\[0\]\.fits: still the placeholder/;
@@ -125,6 +126,16 @@ test("a scaffold is rejected until every placeholder is written: a field by defa
   }
   const terrain = scaffoldSpec(facts, { frame: "swiss", theme: "dark", date: "2026-10-28", floor: 884, field: "terrain", accent: "area:lib/ai" });
   assert.deepEqual(terrain.figure.regions.map(({ fits, ...r }) => r), [{ kind: "field", id: "terrain", field: "terrain", accent: "area:lib/ai" }]);
+});
+
+test("a loose scaffold names every part with a placeholder, and each one is rejected until written", () => {
+  const facts = scanRepo(path.join(HERE, "fixtures", "recipe"));
+  const parts = partsFromFacts(facts, partOptions({ field: "wave" }));
+  const spec = scaffoldSpec(facts, { theme: "light", date: "2026-11-07", floor: 1190, field: "wave", parts, places: {} });
+  const names = spec.figure.regions[0].names;
+  assert.deepEqual(Object.keys(names).sort(), parts.map((p) => p.id).sort());
+  const errors = validateSpec(spec);
+  for (const p of parts) assert.ok(errors.some((e) => e.startsWith(`figure.regions[0].names["${p.id}"]: still the placeholder`)), `${p.id} is rejected`);
 });
 
 test("isJargon is exact, whole-word tokens", () => {
