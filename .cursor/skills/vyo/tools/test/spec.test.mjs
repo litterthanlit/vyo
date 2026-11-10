@@ -105,6 +105,8 @@ test("copy is free of jargon, file paths and AI tells, in words, texts and notes
   rejects((s) => (s.notes[0].text = "Talks to the API."), /^notes\[0\]\.text: jargon: "api" in "Talks to the API\."/);
   rejects((s) => (s.headline = "01 Plan dinner"), /^headline: a "01\/02\/03" style marker/);
   rejects((s) => (s.notes[2].title = "Fast · simple"), /^notes\[2\]\.title: a middle dot/);
+  rejects((s) => (s.notes[2].text = "Saved at 04186f4 last week."), /^notes\[2\]\.text: a typed commit; the engine prints the commit/);
+  rejects((s) => (s.headline = "Plans set on 2026-11-07"), /^headline: a typed date; the engine prints the date/);
   assert.deepEqual(textProblems("Ask for ideas with OpenAI, Stripe and Clerk."), [], "vendor names are not jargon");
   assert.deepEqual(textProblems("24/7 and either/or"), [], "a slash alone is not a path");
 });

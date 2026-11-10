@@ -39,7 +39,7 @@
       { "role": "label", "id": "label", "x": 40, "y": 40, "w": 200, "align": "left" },
       { "role": "headline", "id": "headline", "x": 40, "y": 1000, "w": 420, "align": "left", "size": 42 },
       { "role": "legend", "id": "legend", "x": 480, "y": 1040, "w": 320, "align": "right", "text": "Every ring is a part of Pantry, as wide as its code. The bright rings are the plan." },
-      { "role": "meta", "id": "meta", "x": 40, "y": 1124, "w": 360, "text": "REF 04186f4 / 2026-11-07 / Archive pantry" }
+      { "role": "meta", "id": "meta", "x": 40, "y": 1124, "w": 360, "text": "Archive N° 31 / Pantry / Observation series" }
     ]
   }
 }

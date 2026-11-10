@@ -137,7 +137,7 @@ Use it when the owner wants a high-contrast poster: charcoal or cream, one signa
 
 Hairline `routes` are a region of open SVG paths with optional nodes. `motion` on the spec is `{ kind: "nodes" | "resolve" | "wipe", frames: 8 to 36, fps: 6 to 24 }`. Then `npx vyo render <spec> --gif` writes a GIF and an MP4. `nodes` travels the dots along the hairlines, `resolve` fades rows in from the top, `wipe` grows the marks.
 
-Worked posters and GIFs: `examples/posters/` in the package (also listed at the end of [examples.md](examples.md)).
+Worked posters and GIFs: `examples/posters/` in the vyo repository, not in the npm package (listed at the end of [examples.md](examples.md)).
 
 ## Draw your own silhouette
 

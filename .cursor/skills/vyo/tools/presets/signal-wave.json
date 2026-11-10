@@ -41,7 +41,7 @@
       { "role": "headline", "id": "headline", "x": 40, "y": 72, "w": 420, "align": "left", "size": 48 },
       { "role": "list", "id": "list", "x": 40, "y": 280, "w": 240, "align": "left", "parts": true },
       { "role": "legend", "id": "legend", "x": 40, "y": 980, "w": 280, "align": "left", "text": "Every row is a part of Pantry, as many rows as it has code. The bright rows are the plan." },
-      { "role": "meta", "id": "meta", "x": 40, "y": 1120, "w": 360, "text": "REF 04186f4 / 2026-11-07 / Archive pantry" }
+      { "role": "meta", "id": "meta", "x": 40, "y": 1120, "w": 360, "text": "Archive N° 31 / Pantry / Observation series" }
     ]
   }
 }

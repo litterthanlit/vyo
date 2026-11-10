@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Render the eight new field posters (and two resolve GIFs) into this folder.
-// Earlier gallery files stay on disk; they are not in this list.
+// Render every poster spec in this folder, and the four signal and field presets the gallery shows, into
+// this folder: <name>.png, plus <name>.gif and <name>.mp4 when the spec has motion.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -42,16 +42,11 @@ run([VYO, "scan", FIXTURE, "--out", FACTS]);
 
 const readPoster = (name) => JSON.parse(fs.readFileSync(path.join(HERE, `${name}.json`), "utf8"));
 
+const fromPreset = (id) => JSON.parse(fs.readFileSync(path.join(TOOLS, "presets", `${id}.json`), "utf8"));
 const posters = [
-  ["scatter", readPoster("scatter"), false],
-  ["shatter", readPoster("shatter"), true],
-  ["glyph", readPoster("glyph"), false],
-  ["bleed", readPoster("bleed"), false],
-  ["bands", readPoster("bands"), false],
-  ["spiral", readPoster("spiral"), true],
-  ["contour", readPoster("contour"), false],
-  ["trace", readPoster("trace"), false],
-];
+  ...fs.readdirSync(HERE).filter((f) => f.endsWith(".json")).sort().map((f) => [f.slice(0, -5), readPoster(f.slice(0, -5))]),
+  ...["radial", "sphere", "signal-paper", "signal-wave"].map((id) => [id, fromPreset(id)]),
+].map(([name, spec]) => [name, spec, !!spec.motion]);
 
 for (const [name, spec, gif] of posters) {
   const file = writeSpec(name, spec);

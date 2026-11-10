@@ -491,7 +491,7 @@ Charcoal, lime accent, the existing wave field. The bright rows are the plan.
       { "role": "headline", "id": "headline", "x": 40, "y": 72, "w": 420, "align": "left", "size": 48 },
       { "role": "list", "id": "list", "x": 40, "y": 280, "w": 240, "align": "left", "parts": true },
       { "role": "legend", "id": "legend", "x": 40, "y": 980, "w": 280, "align": "left", "text": "Every row is a part of Pantry, as many rows as it has code. The bright rows are the plan." },
-      { "role": "meta", "id": "meta", "x": 40, "y": 1120, "w": 360, "text": "REF 04186f4 / 2026-11-07 / Archive pantry" }
+      { "role": "meta", "id": "meta", "x": 40, "y": 1120, "w": 360, "text": "Archive N° 31 / Pantry / Observation series" }
     ]
   }
 }
@@ -545,7 +545,7 @@ The same wave on cream paper. Highlighter `mark`s lie over the label and the met
       { "role": "label", "id": "label", "x": 40, "y": 40, "w": 220, "align": "left" },
       { "role": "headline", "id": "headline", "x": 40, "y": 78, "w": 400, "align": "left", "size": 44 },
       { "role": "legend", "id": "legend", "x": 40, "y": 980, "w": 280, "align": "left", "text": "Every row is a part of Pantry, as many rows as it has code. The highlighted rows are the plan." },
-      { "role": "meta", "id": "meta", "x": 40, "y": 1120, "w": 400, "text": "REF 04186f4 / 2026-11-07 / Archive pantry" },
+      { "role": "meta", "id": "meta", "x": 40, "y": 1120, "w": 400, "text": "Archive N° 31 / Pantry / Observation series" },
       { "role": "mark", "id": "hi-2", "x": 36, "y": 1118, "w": 220, "h": 18 }
     ]
   }
@@ -598,7 +598,7 @@ A triangle of type from an apex. Fits uses "spreads" and "centre".
       { "role": "label", "id": "label", "x": 40, "y": 40, "w": 200, "align": "left" },
       { "role": "headline", "id": "headline", "x": 40, "y": 1000, "w": 420, "align": "left", "size": 42 },
       { "role": "legend", "id": "legend", "x": 480, "y": 1040, "w": 320, "align": "right", "text": "Every ring is a part of Pantry, as wide as its code. The bright rings are the plan." },
-      { "role": "meta", "id": "meta", "x": 40, "y": 1124, "w": 360, "text": "REF 04186f4 / 2026-11-07 / Archive pantry" }
+      { "role": "meta", "id": "meta", "x": 40, "y": 1124, "w": 360, "text": "Archive N° 31 / Pantry / Observation series" }
     ]
   }
 }
@@ -650,7 +650,7 @@ A grid of globes that flatten down the page. Fits uses "round" and "folds".
       { "role": "label", "id": "label", "x": 40, "y": 24, "w": 200, "align": "left" },
       { "role": "headline", "id": "headline", "x": 160, "y": 16, "w": 640, "align": "right", "size": 36 },
       { "role": "legend", "id": "legend", "x": 40, "y": 1088, "w": 400, "align": "left", "text": "Each globe is a part of Pantry, as round as its code. The orange globes are the plan." },
-      { "role": "meta", "id": "meta", "x": 480, "y": 1124, "w": 320, "align": "right", "text": "REF 04186f4 / 2026-11-07 / Archive pantry" }
+      { "role": "meta", "id": "meta", "x": 480, "y": 1124, "w": 320, "align": "right", "text": "Archive N° 31 / Pantry / Observation series" }
     ]
   }
 }
@@ -1249,7 +1249,7 @@ Nightly copies a small office's files every night. Main moment: whatever the off
 
 ## Gallery
 
-Rendered posters for Pantry, the `recipe` fixture, live in `examples/posters/` of the package. Rebuild with `node examples/posters/build.mjs` from the skill directory (`VYO_CHROMIUM` set).
+Rendered posters for Pantry, the `recipe` fixture, live in `examples/posters/` of the repository; the npm package leaves them out. Rebuild with `node examples/posters/build.mjs` from the skill directory (`VYO_CHROMIUM` set).
 
 | File | What it is |
 |---|---|

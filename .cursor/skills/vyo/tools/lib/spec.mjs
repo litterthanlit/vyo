@@ -89,6 +89,9 @@ const PATH = [
   /\b[\w-]+\.(tsx?|jsx?|mjs|cjs|py|rb|go|rs|json|ya?ml|sql|prisma|css|html|mdx?|env)\b/i,
 ];
 const NUMBER_MARKER = /(^|\s)0[1-9](?=[\s.:)]|$)/;
+// The record line and footer print the commit and date from the spec; typed copies go stale.
+const TYPED_COMMIT = /\b(?=[0-9a-f]*\d)(?=[0-9a-f]*[a-f])[0-9a-f]{7,40}\b/i;
+const TYPED_DATE = /\b\d{4}-\d{2}-\d{2}\b/;
 
 /** Problems with poster copy the agent wrote: jargon, file paths, AI tells. */
 export function textProblems(text) {
@@ -98,6 +101,8 @@ export function textProblems(text) {
   if (PATH.some((re) => re.test(text))) out.push("a file path");
   if (NUMBER_MARKER.test(text)) out.push('a "01/02/03" style marker');
   if (text.includes("·")) out.push("a middle dot");
+  if (TYPED_COMMIT.test(text)) out.push("a typed commit; the engine prints the commit, so leave it out");
+  if (TYPED_DATE.test(text)) out.push("a typed date; the engine prints the date, so leave it out");
   return out;
 }
 

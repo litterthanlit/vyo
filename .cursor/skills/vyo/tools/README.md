@@ -171,7 +171,7 @@ Both themes define all five, plus `paper` and `hot`. `accent` in the spec replac
 | `blocks-inside` | ✗ | Every `[data-block]` text block sits inside the sheet |
 | `palette` | ✗ | Every text colour, square background and visible box background is one of the theme's tokens, `cold` and `cool` included; a field's rows may also take the field's own tokens |
 | `hot-tagged` | ✗ | Anything in the hot colour carries `data-hot` |
-| `copy` | ✗ | The visible words hold no banned term, file path, "01/02/03" marker or middle dot. The masthead and the render-owned footer lines are exempt |
+| `copy` | ✗ | The visible words hold no banned term, file path, "01/02/03" marker, middle dot, typed commit hash or typed YYYY-MM-DD date. The masthead and the render-owned footer lines are exempt |
 | `notes` | ✗ | Swiss: the footer shows exactly the notes in `spec.notes`. Loose and signal: 0 to 2 paragraphs and exactly one legend. Message: `the poster shows <n> paragraphs and <n> legends; use 0 to 2 paragraphs and exactly one legend` |
 | `band` | ✗ | The footer counts line equals the line built from `bandCounts(facts)`. Swiss only |
 | `still` | ✗ | The PNG and PDF show the finished poster whatever the spec's `motion`: no row hidden, every `mark` at its full width. The GIF's frames are the only place motion is partial |

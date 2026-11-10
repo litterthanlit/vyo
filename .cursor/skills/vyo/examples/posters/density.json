@@ -64,7 +64,7 @@
       { "role": "label", "id": "label", "x": 40, "y": 36, "w": 220, "align": "left" },
       { "role": "headline", "id": "headline", "x": 40, "y": 64, "w": 760, "align": "left", "size": 44 },
       { "role": "legend", "id": "legend", "x": 40, "y": 980, "w": 360, "align": "left", "text": "The waist is leftovers, squeezed into one week of dinners from your own recipes." },
-      { "role": "meta", "id": "meta", "x": 40, "y": 1120, "w": 400, "text": "REF 04186f4 / 2026-11-07 / Archive pantry" }
+      { "role": "meta", "id": "meta", "x": 40, "y": 1120, "w": 400, "text": "Archive N° 31 / Pantry / Observation series" }
     ]
   }
 }
