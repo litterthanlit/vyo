@@ -73,28 +73,40 @@ function reliefOpGrid(shape, op, mask) {
   return maskGrid({ runs }, RELIEF.cell).bits;
 }
 
-/** Strata: each inside cell to one part, in tree order along the strata direction, area by lines of code. */
-function reliefStrata(inside, dIn, parts, strata, w) {
-  const by = strata?.by ?? "angle";
+/** Where each inside cell falls along the strata: its distance along the direction, or in from the outline. */
+function reliefStrataKey(inside, dIn, strata, w) {
   const a = ((strata?.angle ?? 90) * Math.PI) / 180;
   const [ca, sa] = [Math.cos(a), Math.sin(a)];
-  const cells = [];
   const key = new Float64Array(inside.length);
   for (let i = 0; i < inside.length; i++) {
     if (!inside[i]) continue;
     const [x, y] = [i % w, Math.floor(i / w)];
-    key[i] = by === "depth" ? dIn[i] + 0.001 * (x * ca + y * sa) : x * ca + y * sa + 1e-4 * (y * ca - x * sa);
-    cells.push(i);
+    key[i] = strata?.by === "depth" ? dIn[i] + 0.001 * (x * ca + y * sa) : x * ca + y * sa + 1e-4 * (y * ca - x * sa);
   }
-  cells.sort((i, j) => key[i] - key[j]);
-  const label = new Int16Array(inside.length).fill(-1);
+  return key;
+}
+
+/** Items sorted by key and cut into the parts in tree order, each as many items as its share of the lines. */
+function reliefCut(items, keyOf, parts) {
+  const order = items.map((_, k) => k).sort((p, q) => keyOf(items[p]) - keyOf(items[q]) || p - q);
+  const label = new Int16Array(items.length);
   const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
   let [acc, k] = [0, 0];
   parts.forEach((p, pi) => {
     acc += p.loc;
-    const end = pi === parts.length - 1 ? cells.length : Math.round((acc / total) * cells.length);
-    for (; k < end; k++) label[cells[k]] = pi;
+    const end = pi === parts.length - 1 ? order.length : Math.round((acc / total) * order.length);
+    for (; k < end; k++) label[order[k]] = pi;
   });
+  return label;
+}
+
+/** Strata on the grid: each inside cell to one part, in tree order along the strata, area by lines of code. */
+function reliefStrata(inside, key, parts) {
+  const cells = [];
+  for (let i = 0; i < inside.length; i++) if (inside[i]) cells.push(i);
+  const cut = reliefCut(cells, (i) => key[i], parts);
+  const label = new Int16Array(inside.length).fill(-1);
+  cells.forEach((i, k) => (label[i] = cut[k]));
   return label;
 }
 
@@ -106,7 +118,8 @@ function reliefSurface(mask, parts, region) {
   const C = RELIEF.cell;
   const { w, h, bits: inside } = maskGrid(mask, C);
   const dIn = reliefDistance(inside, w, h, C);
-  const label = reliefStrata(inside, dIn, parts, region.strata, w);
+  const key = reliefStrataKey(inside, dIn, region.strata, w);
+  const label = reliefStrata(inside, key, parts);
   const seam = new Uint8Array(w * h);
   for (let i = 0; i < seam.length; i++) {
     if (label[i] < 0) continue;
@@ -185,7 +198,7 @@ function reliefSurface(mask, parts, region) {
     const lam = nl >= flat ? 0.5 + (0.5 * (nl - flat)) / (1 - flat) : (0.5 * Math.max(0, nl)) / flat;
     light[i] = Math.min(1, lam + 0.45 * spec);
   }
-  return { w, h, inside, label, dIn, light, R };
+  return { w, h, inside, label, key, dIn, light, R };
 }
 
 /**
@@ -263,15 +276,25 @@ export function reliefStyle(mask, parts, { measure, theme = "light", tokens }, r
   const cellAt = (x, y) => Math.min(h - 1, Math.floor(y / C)) * w + Math.min(w - 1, Math.floor(x / C));
   const names = parts.map((p) => p.name.toLowerCase());
 
+  // The type's strata are cut again over the glyph cells, by the same key as the shading's: glyph lines sample
+  // a thin stratum (a 3px shell) unevenly, and each part must hold its share of the glyphs, not of the grid.
+  const glyphCells = [];
+  for (let j = 0; j < lines; j++) for (let c = 0; c < cols; c++) {
+    const i = cellAt(x0 + c * cw + cw / 2, j * lh + lh / 2);
+    if (inside[i]) glyphCells.push(j * cols + c);
+  }
+  const glyphCut = reliefCut(glyphCells, (g) => surface.key[cellAt(x0 + (g % cols) * cw + cw / 2, Math.floor(g / cols) * lh + lh / 2)], parts);
+  const glyphLabel = new Map(glyphCells.map((g, k) => [g, glyphCut[k]]));
+
   // Runs: on each glyph line, the stretches of one part, split where the part changes. A cell whose left
-  // neighbour is another part stays blank, so a seam is a clean groove and no two names touch.
+  // neighbour is another part holds a tone mark and never a letter, so no two names touch across a seam.
   const runs = [];
   for (let j = 0; j < lines; j++) {
     const y = j * lh + lh / 2;
     let run = null;
     for (let c = 0; c < cols; c++) {
       const i = cellAt(x0 + c * cw + cw / 2, y);
-      const pi = inside[i] ? label[i] : -1;
+      const pi = glyphLabel.get(j * cols + c) ?? -1;
       if (run && pi === run.part) {
         run.cells.push(i);
         continue;
@@ -332,7 +355,7 @@ export function reliefStyle(mask, parts, { measure, theme = "light", tokens }, r
       const v = reliefInk(b, dIn[i]);
       const at = k - run.start;
       const p = at >= 0 && at < run.names * (name.length + 2) - 2 ? at % (name.length + 2) : -1;
-      const ch = run.seam && k === 0 ? " " : reliefGlyph(name[p] ?? " ", p < 0 || p >= name.length, v);
+      const ch = reliefGlyph(name[p] ?? " ", p < 0 || p >= name.length, v);
       text += ch;
       const look = reliefLook(v, b, part.hot, theme);
       const last = spans[spans.length - 1];

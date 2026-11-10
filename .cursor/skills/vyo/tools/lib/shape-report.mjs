@@ -153,6 +153,7 @@ export function onShape(mask, rect) {
 const px = (n) => Math.round(n);
 const share = (n) => Math.round(n * 100) / 100;
 const pct = (n) => `${Math.round(n * 100)}%`;
+const thinCache = { key: null, value: null };
 const bandOf = (report, part) => report.bands?.find((b) => b.part.id === part.id);
 
 /**
@@ -167,7 +168,10 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
   // A style that lays out no bands judges its own accent, names, glyph shares and tones.
   if (report.findings) Object.assign(out, report.findings(rows));
 
-  for (const t of thinFeatures(mask)) {
+  // Every shape check asks for these findings; the opening is the slow part and depends on the shape alone.
+  const key = JSON.stringify(region.shape);
+  if (thinCache.key !== key) Object.assign(thinCache, { key, value: thinFeatures(mask) });
+  for (const t of thinCache.value) {
     out["shape-thin"].push(
       t.kind === "part"
         ? `the shape is ${t.width}px thick near ${t.x},${t.y}; under ${L.thin}px it is a hairline at thumbnail size, so make that feature at least ${L.thin}px thick or remove it`
