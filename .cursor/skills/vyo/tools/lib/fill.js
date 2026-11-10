@@ -98,9 +98,9 @@ function drawFill(S, region, blocks) {
 function drawField(S, region, blocks) {
   const frame = { floor: F.floor, mirror: F.mirror, theme: F.theme, blocks, measure };
   for (const g of FIELDS[region.field].ground?.(region, region.parts, frame) ?? []) {
-    // A ground with its own path (an outline traced from the field) fills it even-odd, so a ring band keeps its hole.
+    // A ground may bring its own path, traced from the field, in place of its rows.
     const d = g.path ?? runsPath(g.rows);
-    if (d) S.appendChild(el("ground", { region: region.id, part: g.part ?? false, hot: g.hot }, { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", background: `var(--${g.tone})`, clipPath: g.path ? `path(evenodd, "${d}")` : `path("${d}")`, opacity: g.alpha ?? 1 }));
+    if (d) S.appendChild(el("ground", { region: region.id, part: g.part ?? false, hot: g.hot }, { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", background: `var(--${g.tone})`, clipPath: `path("${d}")`, opacity: g.alpha ?? 1 }));
   }
   const items = FIELDS[region.field].layout(region, region.parts, frame);
   const set = items.some((r) => r.glyphs) && S.appendChild(document.createElementNS("http://www.w3.org/2000/svg", "svg"));

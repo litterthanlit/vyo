@@ -47,10 +47,10 @@ export const FIELDS = {
   },
   shape: {
     about: "a silhouette you draw as ops, cut top to bottom into one band per part, as much area as its lines, the type as big as its share",
-    options: ["shape", "style"],
+    options: ["shape", "style", "echo"],
     // Every band must hold its whole name in readable type, so fewer, bigger parts than a wave.
     parts: { maxParts: 12 },
-    measure: [["code", "lines"], ["type", "size", "bigger", "larger"]],
+    measure: [["code", "lines"], ["type", "size", "bigger", "larger", "area"]],
     fits: ["object", "thing", "picture", "shape", "looks"],
     layout: shapeRows,
     // The silhouette under the rows: one fill per band, as rows of spans.

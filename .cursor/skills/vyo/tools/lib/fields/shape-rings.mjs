@@ -10,14 +10,14 @@ import { edt } from "../mask.mjs";
 // that would pile up, so the core starts there. The accent gets at least `accent` rings, every other part one.
 // A name reads upright when it leans at most `upright` degrees; it is dropped where it turns more than `bend`
 // degrees between two letters. Echoes sit `echoGap` rings apart outside the outline, kept `clear` px off text.
-export const RINGS = { gap: 7, size: 6.6, round: 14, fold: 0.2, slope: 0.55, accent: 2, upright: 30, bend: 24, hairline: 0.32, echoGap: 1.4, clear: 16, maxEcho: 12 };
+export const RINGS = { gap: 7, size: 6.6, round: 14, fold: 0.3, core: 0.1, slope: 0.55, accent: 2, upright: 30, bend: 24, hairline: 0.32, echoGap: 1.4, clear: 16, maxEcho: 12 };
 const RING_SEP = " · ";
 // Per theme: the fill under the whole shape, the type on it, the hairlines, and how strong the echoes are. On
 // paper, ink type on paper read as a grey outline at thumbnail size, so the light shape is solid ink with type
 // reversed out, like the dark theme's sheet.
 export const RING_TONES = {
-  light: { base: "ink", type: "paper", line: "paper", echo: 0.7 },
-  dark: { base: null, type: "ink", line: "ink", echo: 1 },
+  light: { base: "ink", core: "cool", type: "paper", line: "paper", echo: 0.7 },
+  dark: { base: null, core: "cold", type: "ink", line: "ink", echo: 1 },
 };
 // Where a glyph's ink sits around its ring: the baseline this far below the ring, in em, and a glyph's half
 // height for spacing, in em.
@@ -199,7 +199,7 @@ function ribbon(pts, half, closed) {
 }
 
 /** Where `level` <= sd < `upper` on each pixel row from yFrom to yTo, as [y, spans] with sub-pixel ends. */
-function levelRows(field, level, upper, yFrom = 0, yTo = field.H) {
+function levelRows(field, level, upper, yFrom = 0, yTo = field.H, skip = () => false) {
   const { sd, W } = field;
   const rows = [];
   const cross = (x, prev, here) => {
@@ -211,7 +211,7 @@ function levelRows(field, level, upper, yFrom = 0, yTo = field.H) {
     let open = null;
     for (let x = 0; x <= W; x++) {
       const here = x < W ? sd[y * W + x] : -Infinity;
-      const on = here >= level && here < upper;
+      const on = here >= level && here < upper && !skip(y * W + x);
       if (on && open === null) open = x ? cross(x, sd[y * W + x - 1], here) : 0;
       else if (!on && open !== null) {
         spans.push([open, x < W ? cross(x, sd[y * W + x - 1], here) : W]);
@@ -224,54 +224,59 @@ function levelRows(field, level, upper, yFrom = 0, yTo = field.H) {
 }
 
 /**
- * How the parts share the shape: each part a run of rings from the outline in, in tree order, then the core's
- * rows top to bottom, each covering about its share of the shape's area. A ring is indivisible, so a boundary
- * between two parts falls on the ring edge nearest its share; the core is cut by pixel rows. Every part gets at
- * least one ring and the accent `RINGS.accent`, while rings last.
+ * How the parts share the shape, outline in and in tree order, each covering its share of the shape's area. A
+ * place in the rings is a ring coordinate u: ring floor(u), a fraction u - floor(u) of the way round it, so a
+ * part may end part way round a ring and the next part take the rest; the boundary steps in by one ring there.
+ * Past the last ring the core is cut into runs of pixel rows. Every part spans at least `least(k, u)` rings,
+ * which keeps room for its name and the accent's band wide enough to see.
+ * @param {{ loc: number }[]} parts  in tree order
  * @param {number[]} ringAreas  px² of each ring's strip, outline first
  * @param {number[]} coreRows   px² of the core on each sheet row
- * @returns {{ rings: [number, number], core: [number, number] | null }[]}  per part: ring indices [from, to), core rows [from, to)
+ * @param {(k: number, u: number) => number} least  the fewest rings part k may span from u
+ * @returns {{ from: number, to: number, core: [number, number] | null, area: number }[]}
  */
-export function allotRings(parts, ringAreas, coreRows) {
+export function allotRings(parts, ringAreas, coreRows, least = () => 0) {
   const R = ringAreas.length;
+  const cum = [0];
+  for (const a of ringAreas) cum.push(cum[cum.length - 1] + a);
+  const ringTotal = cum[R];
   const coreTotal = coreRows.reduce((s, a) => s + a, 0);
-  const total = ringAreas.reduce((s, a) => s + a, 0) + coreTotal;
+  const total = ringTotal + coreTotal;
   const loc = parts.reduce((s, p) => s + p.loc, 0) || 1;
-  const cumRing = [0];
-  for (const a of ringAreas) cumRing.push(cumRing[cumRing.length - 1] + a);
-  const coreTop = coreRows.findIndex((a) => a > 0);
+  const coreTop = Math.max(0, coreRows.findIndex((a) => a > 0));
   const coreEnd = coreRows.length - [...coreRows].reverse().findIndex((a) => a > 0);
-  const want = (p) => (p.hot ? RINGS.accent : 1);
-  let [ring, row, acc, rowAcc, before] = [0, coreTop, 0, 0, 0];
+  const areaAt = (u) => (u >= R ? ringTotal : cum[Math.floor(u)] + (u - Math.floor(u)) * ringAreas[Math.floor(u)]);
+  const placeOf = (t) => {
+    if (t >= ringTotal) return R;
+    let i = 0;
+    while (cum[i + 1] <= t) i++;
+    return i + (t - cum[i]) / ringAreas[i];
+  };
+  let [u, row, rowArea, before] = [0, coreTop, 0, 0];
   return parts.map((p, k) => {
     before += p.loc;
     const target = (before / loc) * total;
+    const from = u;
     const last = k === parts.length - 1;
-    const from = ring;
-    if (last) ring = R;
+    if (last) u = R;
     else {
-      // The ring edge nearest the target, past this part's minimum, leaving the parts after it theirs.
-      const leave = parts.slice(k + 1).reduce((s, q) => s + want(q), 0);
-      const lo = Math.min(R, from + want(p));
-      const hi = Math.max(lo, R - (coreTotal ? 0 : leave));
-      let best = lo;
-      for (let j = lo; j <= hi; j++) if (Math.abs(cumRing[j] - target) < Math.abs(cumRing[best] - target)) best = j;
-      ring = best;
+      u = Math.min(R, Math.max(placeOf(target), from + least(k, from)));
+      // A boundary a hair from a whole ring takes the whole ring: no sliver of a ring is worth a step.
+      if (Math.abs(u - Math.round(u)) < 0.04) u = Math.round(u);
     }
-    acc = cumRing[ring];
     let core = null;
-    if (coreTotal && (ring === R || last) && (last || target > acc)) {
+    let coreArea = 0;
+    if (coreTotal && u === R && (last || target > ringTotal + rowArea)) {
       const start = row;
       if (last) row = coreEnd;
-      else {
-        const need = target - acc - rowAcc;
-        let got = 0;
-        while (row < coreEnd && got + coreRows[row] / 2 < need) got += coreRows[row++];
-        rowAcc += got;
+      else while (row < coreEnd && ringTotal + rowArea + coreRows[row] / 2 < target) rowArea += coreRows[row++];
+      if (last) for (let y = start; y < row; y++) rowArea += coreRows[y];
+      if (row > start) {
+        core = [start, row];
+        for (let y = start; y < row; y++) coreArea += coreRows[y];
       }
-      if (row > start) core = [start, row];
     }
-    return { rings: [from, ring], core };
+    return { from, to: u, core, area: areaAt(u) - areaAt(from) + coreArea };
   });
 }
 
@@ -342,9 +347,8 @@ function glyphBox(origins, size) {
   return { x: l, y: t, width: r - l, height: b - t };
 }
 
-/** Is any letter centre within reach of the skeleton, where the ring folds back on itself? */
-function onCrease(field, [x, y]) {
-  const reach = RINGS.size * 0.35;
+/** Is the point within `reach` px of the skeleton, where a ring folds back on itself? */
+function onCrease(field, [x, y], reach = RINGS.size * 0.35) {
   for (const [dx, dy] of [[0, 0], [reach, 0], [-reach, 0], [0, reach], [0, -reach]]) {
     const [px, py] = [Math.round(x + dx), Math.round(y + dy)];
     if (px < 0 || py < 0 || px >= field.W || py >= field.H || field.slope[py * field.W + px] < RINGS.slope) return true;
@@ -357,6 +361,45 @@ const ringsBox = (mask, pad) => [
   Math.max(0, Math.floor(mask.box.left - pad)), Math.max(0, Math.floor(mask.box.top - pad)),
   Math.min(SHEET.width, Math.ceil(mask.box.right + pad)), Math.min(SHEET.height, Math.ceil(mask.box.bottom + pad)),
 ];
+
+/** A traced line as a walk that knows which side is deeper in the shape; a closed one starts at its seam. */
+function ringWalk(field, line) {
+  let { pts } = line;
+  if (line.closed) {
+    // The seam, where a part that ends part way round steps in a ring: the bottom of the loop, near its middle.
+    const cx = pts.reduce((sum, p) => sum + p[0], 0) / pts.length;
+    const score = (p) => p[1] - 0.05 * Math.abs(p[0] - cx);
+    const low = pts.reduce((best, p, i) => (score(p) > score(pts[best]) ? i : best), 0);
+    pts = [...pts.slice(low), ...pts.slice(0, low)];
+  }
+  const walk = walkOf({ pts, closed: line.closed });
+  let lean = 0;
+  for (let k = 0; k < 16; k++) {
+    const s = (walk.length * (k + 0.5)) / 16;
+    const [x, y] = walk.pointAt(s);
+    const h = walk.headingAt(s);
+    const [nx, ny] = [-Math.sin(h), Math.cos(h)];
+    lean += field.at(Math.round(x + 2 * nx), Math.round(y + 2 * ny)) - field.at(Math.round(x - 2 * nx), Math.round(y - 2 * ny));
+  }
+  const side = lean >= 0 ? 1 : -1;
+  /** The point `delta` px deeper than the walk at arc length s. */
+  const deeper = (s, delta) => {
+    const [x, y] = walk.pointAt(s);
+    const h = walk.headingAt(s);
+    return [x - side * delta * Math.sin(h), y + side * delta * Math.cos(h)];
+  };
+  /** The walk from a to b, moved `delta` px deeper, as points about 1.5 px apart. */
+  const offset = (a, b, delta) => {
+    const n = Math.max(1, Math.ceil((b - a) / 1.5));
+    return Array.from({ length: n + 1 }, (_, j) => deeper(a + ((b - a) * j) / n, delta));
+  };
+  return { ...walk, pts, offset };
+}
+
+const polyPath = (pts) => `M${pts.map((q) => `${Math.round(q[0] * 100) / 100} ${Math.round(q[1] * 100) / 100}`).join("L")}Z`;
+
+/** A polygon wound clockwise on screen, so every fill path unions under the nonzero rule. */
+const clockwise = (pts) => (loopArea(pts) < 0 ? [...pts].reverse() : pts);
 
 /**
  * The rings style: per part a run of rings of its plain name from the outline in, then the core in level lines,
@@ -377,170 +420,303 @@ let ringsMemo = null;
 function ringsLayout(mask, parts, theme, blocks, echo) {
   const { gap, size } = RINGS;
   const tones = RING_TONES[theme];
+  const adv = ADVANCE * size;
   const field = ringField(mask);
   const box = ringsBox(mask, gap * RINGS.echoGap * (echo + 1) + 2);
   const traced = new Map();
-  const loopsAt = (level) => {
-    if (!traced.has(level)) traced.set(level, isoLoops(field, level, box).map((raw) => smoothLoop(raw, Math.min(Math.abs(level), RINGS.round))).filter((q) => q.pts.length > 4));
+  const walksAt = (level) => {
+    if (!traced.has(level)) {
+      const lines = isoLoops(field, level, box).map((raw) => smoothLoop(raw, Math.min(Math.abs(level), RINGS.round))).filter((q) => q.pts.length > 4);
+      traced.set(level, lines.map((line) => ringWalk(field, line)).sort((a, b) => b.length - a.length));
+    }
     return traced.get(level);
   };
 
-  // Every ring that fits, and how much of each runs over the skeleton; the core starts at the first that folds.
+  // Every ring that fits. Where a ring's loop runs more than `fold` of its length over the skeleton it would pile
+  // up, so it stops there, with every ring inside it: what that loop encloses is a core, set in level lines.
   const levels = [];
   for (let d = gap / 2; d < field.deepest - 1; d += gap) levels.push(d);
-  let R = levels.length;
-  for (let i = 0; i < levels.length; i++) {
-    let [all, folded] = [0, 0];
-    for (const loop of loopsAt(levels[i])) {
-      for (let j = 0; j < loop.pts.length; j += 2) {
+  const R = levels.length;
+  const { W } = field;
+  // The level each core pixel's core starts at, or -1 outside every core.
+  const coreFrom = new Float32Array(W * field.H).fill(-1);
+  const inCore = (walk) => {
+    const [x, y] = walk.pointAt(walk.length / 2).map(Math.round);
+    return coreFrom[y * W + x] >= 0;
+  };
+  const cores = [];
+  const ringWalksAt = [];
+  const deeper = Array(R + 1).fill(0);
+  for (let c = 0; c < field.sd.length; c++) if (field.sd[c] > 0) deeper[Math.min(R, Math.floor(field.sd[c] / gap))]++;
+  for (let i = R - 1; i >= 0; i--) deeper[i] += deeper[i + 1];
+  for (let i = 0; i < R; i++) {
+    const kept = [];
+    // The innermost `core` of the shape's area is a core wherever it lies, folded or not.
+    const inmost = deeper[i] <= RINGS.core * deeper[0];
+    for (const walk of walksAt(levels[i])) {
+      if (inCore(walk)) continue;
+      let [all, folded] = [0, 0];
+      for (let s = 0; s < walk.length; s += 3) {
         all++;
-        if (onCrease(field, loop.pts[j])) folded++;
+        if (onCrease(field, walk.pointAt(s), gap * 0.6)) folded++;
       }
+      if (!inmost && folded / (all || 1) <= RINGS.fold) {
+        kept.push(walk);
+        continue;
+      }
+      // Only what the loop itself encloses: a loop round a hole bounds the shape on its outer side, not a core.
+      const from = i * gap;
+      const limit = walk.closed ? Math.abs(loopArea(walk.pts)) * 1.05 + walk.length * (gap / 2 + 1) + 50 : 0;
+      const [sx, sy] = walk.offset(0, 0, 1.5)[0].map(Math.round);
+      const queue = [sy * W + sx];
+      coreFrom[queue[0]] = from;
+      for (let q = 0; q < queue.length && queue.length <= limit; q++) {
+        const c = queue[q];
+        for (const n of [c - 1, c + 1, c - W, c + W]) {
+          if (n >= 0 && n < coreFrom.length && coreFrom[n] < 0 && field.sd[n] >= from) {
+            coreFrom[n] = from;
+            queue.push(n);
+          }
+        }
+      }
+      if (queue.length > limit) {
+        for (const c of queue) coreFrom[c] = -1;
+        kept.push(walk);
+        continue;
+      }
+      cores.push({ from, size: queue.length });
     }
-    if (all && folded / all > RINGS.fold) {
-      R = i;
-      break;
-    }
+    ringWalksAt.push(kept);
   }
-  const coreLevel = R * gap;
   const ringAreas = Array(R).fill(0);
   const coreRows = Array(field.H).fill(0);
-  for (let y = 0; y < field.H; y++) {
+  for (let y = box[1]; y < box[3]; y++) {
     for (let x = box[0]; x < box[2]; x++) {
-      const d = field.sd[y * field.W + x];
+      const d = field.sd[y * W + x];
       if (d <= 0) continue;
-      // With no core, the last sliver past the deepest ring belongs to it.
-      const i = R === levels.length ? Math.min(R - 1, Math.floor(d / gap)) : Math.floor(d / gap);
-      if (i < R) ringAreas[i]++;
-      else coreRows[y]++;
+      if (coreFrom[y * W + x] >= 0) coreRows[y]++;
+      // Past the deepest ring, the last sliver belongs to it.
+      else ringAreas[Math.min(R - 1, Math.floor(d / gap))]++;
     }
   }
-  const allot = allotRings(parts, ringAreas, coreRows);
-  const bands = parts.map((part, k) => {
-    const { rings, core } = allot[k];
-    const area = ringAreas.slice(...rings).reduce((s, a) => s + a, 0) + (core ? coreRows.slice(...core).reduce((s, a) => s + a, 0) : 0);
-    return { part, rings: rings[1] - rings[0], from: rings[0] * gap, to: rings[1] * gap, core, lines: 0, size, area, names: 0, upright: 0 };
-  });
+  /** The core's pixels on rows y0 to y1 at least `inset` px inside it, as [y, spans]. */
+  const coreSpans = (y0, y1, inset = 0) => {
+    const out = [];
+    for (let y = Math.max(0, y0); y < Math.min(field.H, y1); y++) {
+      const spans = [];
+      let open = null;
+      for (let x = box[0]; x <= box[2]; x++) {
+        const from = x < box[2] ? coreFrom[y * W + x] : -1;
+        const on = from >= 0 && field.sd[y * W + x] >= from + inset;
+        if (on && open === null) open = x;
+        if (!on && open !== null) spans.push([open, x]), (open = null);
+      }
+      if (spans.length) out.push([y, spans]);
+    }
+    return out;
+  };
+  const ringLength = ringWalksAt.map((ws) => ws.reduce((s, w) => s + w.length, 0));
+  const nameArc = (p) => (p.name.length + RING_SEP.length) * adv;
+  // Room for two copies of the name on the ring the part starts on; the accent at least `RINGS.accent` rings.
+  const least = (k, u) => Math.max(parts[k].hot ? RINGS.accent : 0, Math.floor(u) < R ? (2 * nameArc(parts[k])) / (ringLength[Math.floor(u)] || 1) : 0);
+  const allot = allotRings(parts, ringAreas, coreRows, least);
   const total = mask.area || 1;
-  for (const b of bands) b.share = b.area / total;
+  const bands = parts.map((part, k) => ({ part, ...allot[k], rings: allot[k].to - allot[k].from, share: allot[k].area / total, lines: 0, size, names: 0, upright: 0 }));
+
+  /** The arcs of ring i between ring coordinates u0 and u1, loop by loop: [walk, from, to]. */
+  const arcs = (i, u0, u1) => {
+    const [a, b] = [Math.max(0, u0 - i) * ringLength[i], Math.min(1, u1 - i) * ringLength[i]];
+    const out = [];
+    let at = 0;
+    for (const walk of ringWalksAt[i]) {
+      const [lo, hi] = [Math.max(a, at), Math.min(b, at + walk.length)];
+      if (hi - lo > 0.5) out.push([walk, lo - at, hi - at]);
+      at += walk.length;
+    }
+    return out;
+  };
+
+  /**
+   * The pixels of ring i whose nearest point on the ring lies between ring coordinates u0 and u1, as [y, spans]:
+   * the strip a part holds when it holds the ring only part way round.
+   */
+  const arcRows = (i, u0, u1) => {
+    const [a, b] = [Math.max(0, u0 - i) * ringLength[i], Math.min(1, u1 - i) * ringLength[i]];
+    const cell = 8;
+    const near = new Map();
+    let at = 0;
+    for (const walk of ringWalksAt[i]) {
+      for (let s = 0; s < walk.length; s += 1.5) {
+        const [x, y] = walk.pointAt(s);
+        const k = `${Math.floor(x / cell)},${Math.floor(y / cell)}`;
+        (near.get(k) ?? near.set(k, []).get(k)).push([x, y, at + s]);
+      }
+      at += walk.length;
+    }
+    const out = [];
+    for (let y = box[1]; y < box[3]; y++) {
+      const spans = [];
+      for (let x = box[0]; x < box[2]; x++) {
+        const d = field.sd[y * W + x];
+        if (Math.min(R - 1, Math.floor(d / gap)) !== i || d <= 0 || coreFrom[y * W + x] >= 0) continue;
+        let [best, arc] = [Infinity, 0];
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            for (const [px, py, s] of near.get(`${Math.floor(x / cell) + dx},${Math.floor(y / cell) + dy}`) ?? []) {
+              const dd = (px - x - 0.5) ** 2 + (py - y - 0.5) ** 2;
+              if (dd < best) [best, arc] = [dd, s];
+            }
+          }
+        }
+        if (arc < a || arc >= b) continue;
+        const last = spans[spans.length - 1];
+        if (last && last[1] === x) last[1] = x + 1;
+        else spans.push([x, x + 1]);
+      }
+      if (spans.length) out.push([y, spans]);
+    }
+    return out;
+  };
 
   const rows = [];
   const grid = glyphGrid();
-  const typeTone = (p) => (p.hot ? "on-hot" : tones.type);
-  const adv = ADVANCE * size;
   const place = (b, centres, heads, text, lean) => {
     const glyphs = glyphOrigins(centres, heads, size);
-    rows.push({ ...glyphBox(glyphs, size), size, text, glyphs, weight: b.part.hot ? 700 : 400, part: b.part.id, word: b.part.name, hot: b.part.hot, tone: typeTone(b.part), lean });
+    rows.push({ ...glyphBox(glyphs, size), size, text, glyphs, weight: b.part.hot ? 700 : 400, part: b.part.id, word: b.part.name, hot: b.part.hot, tone: b.part.hot ? "on-hot" : tones.type, lean });
     grid.add(centres);
     b.names++;
     if (Math.abs(lean) <= RINGS.upright) b.upright++;
   };
 
   // The rings, outline first, so an outer name wins where two would meet.
-  bands.forEach((b, k) => {
-    const name = b.part.name.toLowerCase();
-    for (let i = allot[k].rings[0]; i < allot[k].rings[1]; i++) {
+  for (let i = 0; i < R; i++) {
+    for (const b of bands) {
+      if (b.to <= i || b.from >= i + 1) continue;
       b.lines++;
-      for (const loop of loopsAt(levels[i])) {
-        const walk = walkOf(loop);
-        const unit = (name.length + RING_SEP.length) * adv;
-        const n = Math.floor(walk.length / unit);
+      const name = b.part.name.toLowerCase();
+      for (const [walk, a, z] of arcs(i, b.from, b.to)) {
+        const whole = walk.closed && a < 0.5 && z > walk.length - 0.5;
+        const unit = nameArc(b.part);
+        let n = Math.floor((z - a) / unit);
+        if (!n && z - a >= (name.length + 1) * adv) n = 1;
         if (!n) continue;
-        // Letters keep their advance and the separators take up the slack, so every ring closes with no seam.
-        const span = walk.length / n;
-        const start = walk.closed ? ((i % 2) * span) / 2 : (span - name.length * adv) / 2;
-        let kept = null;
+        // Letters keep their advance and the separators take up the slack, so a whole ring closes with no seam.
+        const span = (z - a) / n;
+        const gapLen = span - name.length * adv;
+        const start = a + (whole ? ((i % 2) * span) / 2 : gapLen / 2);
+        let kept = false;
         for (let j = 0; j < n; j++) {
           const s = start + j * span;
           const set = setName(walk, name, s, adv);
           if (!set || set.centres.some((c) => onCrease(field, c)) || !grid.clear(set.centres)) {
-            kept = null;
+            kept = false;
             continue;
           }
-          const dot = walk.pointAt(s - (span - name.length * adv) / 2);
+          const dot = walk.pointAt(s - gapLen / 2);
           const sep = kept && grid.clear([dot]) ? [dot] : [];
           place(b, [...set.centres, ...sep], [...set.heads, ...sep.map(() => set.heads[set.heads.length - 1])], `${name}${sep.length ? "·" : ""}`, set.lean);
           kept = true;
         }
       }
     }
-  });
+  }
 
   // The core in level lines, a run of lines per part, each line the whole names its span holds, centred.
-  const ground = [];
   const lines = [];
-  const coreLoops = R < levels.length ? loopsAt(coreLevel) : [];
-  bands.forEach((b) => {
-    if (!b.core) return;
+  for (const b of bands) {
+    if (!b.core) continue;
     const name = b.part.name.toLowerCase();
     const [y0, y1] = b.core;
-    for (let top = y0 + (((y1 - y0) % gap) + gap) / 2 - gap / 2; top + gap <= y1 + 0.01; top += gap) {
-      const yc = top + gap / 2;
-      const [ya, yb] = [Math.floor(yc - glyphRadius), Math.ceil(yc + glyphRadius)];
+    for (let yc = y0 + (((y1 - y0) % gap) + gap) / 2; yc + gap / 2 <= y1 + 0.01; yc += gap) {
       let spans = null;
-      for (let y = ya; y <= yb; y++) {
-        const here = [];
-        let open = null;
-        for (let x = box[0]; x <= box[2]; x++) {
-          const on = x < box[2] && field.sd[y * field.W + x] >= coreLevel + glyphRadius;
-          if (on && open === null) open = x;
-          if (!on && open !== null) here.push([open, x]), (open = null);
-        }
-        spans = spans === null ? here : spans.flatMap(([l, r]) => here.filter(([a, c]) => c > l && a < r).map(([a, c]) => [Math.max(a, l), Math.min(c, r)]));
+      for (const [, here] of coreSpans(Math.floor(yc - glyphRadius), Math.ceil(yc + glyphRadius) + 1, glyphRadius)) {
+        spans = spans === null ? here : spans.flatMap(([l, r]) => here.filter(([p, q]) => q > l && p < r).map(([p, q]) => [Math.max(p, l), Math.min(q, r)]));
       }
+      spans ??= [];
+      if (!spans.length) continue;
       b.lines++;
       lines.push(yc);
-      for (const [l, r] of spans ?? []) {
-        const unit = (name.length + RING_SEP.length) * adv;
+      for (const [l, r] of spans) {
+        const unit = nameArc(b.part);
         const n = Math.floor((r - l + RING_SEP.length * adv) / unit);
-        if (!n) continue;
         let x = l + (r - l - (n * unit - RING_SEP.length * adv)) / 2;
         for (let j = 0; j < n; j++, x += unit) {
           const last = j === n - 1;
-          const text = `${name}${last ? "" : "·"}`;
           const centres = [...name].map((_, c) => [x + (c + 0.5) * adv, yc]);
           if (!last) centres.push([x + (name.length + 1.5) * adv, yc]);
-          if (!grid.clear(centres)) continue;
-          place(b, centres, centres.map(() => 0), text, 0);
+          if (grid.clear(centres)) place(b, centres, centres.map(() => 0), `${name}${last ? "" : "·"}`, 0);
         }
       }
     }
-  });
+  }
 
-  // Fills: the whole shape on paper in the light theme, the accent's rings and core rows, then the hairlines.
+  // Fills: the whole shape in the light theme, then the accent's arcs of rings and its core rows.
+  const ground = [];
   if (tones.base) ground.push({ part: null, hot: false, tone: tones.base, rows: mask.runs.map((s, y) => [y, s]).filter(([, s]) => s.length) });
-  bands.forEach((b, k) => {
-    if (!b.part.hot) return;
-    const [r0, r1] = allot[k].rings;
-    if (r1 > r0) ground.push({ part: b.part.id, hot: true, tone: "hot", rows: levelRows(field, r0 * gap, r1 < levels.length ? r1 * gap : Infinity, box[1], box[3]) });
-    if (b.core) ground.push({ part: b.part.id, hot: true, tone: "hot", rows: levelRows(field, coreLevel, Infinity, ...b.core) });
-  });
+  if (cores.length) ground.push({ part: null, hot: false, tone: tones.core, rows: coreSpans(box[1], box[3]) });
+  for (const b of bands.filter((x) => x.part.hot)) {
+    if (b.to > b.from) {
+      // Whole rings fill between their levels; a ring the part holds only part way round fills along its arc.
+      const [whole0, whole1] = [Math.ceil(b.from), b.to >= R ? R : Math.floor(b.to)];
+      const rows = whole1 > whole0 ? levelRows(field, whole0 * gap, whole1 >= R ? Infinity : whole1 * gap, box[1], box[3], (c) => coreFrom[c] >= 0) : [];
+      for (const i of new Set([Math.floor(b.from), Math.min(R - 1, Math.floor(b.to))])) if (i < whole0 || i >= whole1) rows.push(...arcRows(i, b.from, b.to));
+      ground.push({ part: b.part.id, hot: true, tone: "hot", rows: rows.sort((p, q) => p[0] - q[0]).reduce((out, [y, spans]) => {
+        if (out.length && out[out.length - 1][0] === y) out[out.length - 1][1].push(...spans);
+        else out.push([y, [...spans]]);
+        return out;
+      }, []) });
+    }
+    if (b.core) ground.push({ part: b.part.id, hot: true, tone: "hot", rows: coreSpans(...b.core) });
+  }
+
+  // Hairlines between parts: the edge of the ring a part starts on, stepping in a ring where it starts part way round.
   const edges = [];
+  const hair = (pts, closed) => edges.push(ribbon(pts, RINGS.hairline, closed));
   bands.forEach((b, k) => {
-    const [r0, r1] = allot[k].rings;
-    if (r1 > r0 && r0 > 0) edges.push(...loopsAt(r0 * gap).map((q) => ribbon(q.pts, RINGS.hairline, q.closed)));
-    else if (r1 === r0 && b.core && bands[k - 1]?.core) {
-      for (const [y, spans] of levelRows(field, coreLevel, Infinity, b.core[0], b.core[0] + 1)) for (const [l, r] of spans) edges.push(`M${l} ${y}H${r}V${y + 2 * RINGS.hairline}H${l}Z`);
+    if (!k) return;
+    if (b.from < R) {
+      const i = Math.floor(b.from);
+      const cut = (b.from - i) * ringLength[i];
+      let at = 0;
+      for (const walk of ringWalksAt[i]) {
+        const [lo, hi] = [Math.min(walk.length, Math.max(0, cut - at)), walk.length];
+        if (lo === 0) hair(walk.offset(0, walk.length, -gap / 2), walk.closed);
+        else if (lo >= hi) hair(walk.offset(0, walk.length, gap / 2), walk.closed);
+        else {
+          hair(walk.offset(0, lo, gap / 2), false);
+          hair(walk.offset(lo, hi, -gap / 2), false);
+          hair([walk.offset(lo, lo, -gap / 2)[0], walk.offset(lo, lo, gap / 2)[0]], false);
+        }
+        at += walk.length;
+      }
+    } else if (b.core && bands[k - 1].core) {
+      for (const [y, spans] of coreSpans(b.core[0], b.core[0] + 1)) for (const [l, r] of spans) edges.push(`M${l} ${y}H${r}V${y + 2 * RINGS.hairline}H${l}Z`);
     }
   });
-  if (coreLoops.length && bands.some((b) => b.core)) edges.push(...coreLoops.map((q) => ribbon(q.pts, RINGS.hairline, q.closed)));
+  // Each core's edge: the lines at its level whose deeper side is that core.
+  for (const from of new Set(cores.map((c) => c.from))) {
+    for (const walk of walksAt(from)) {
+      const [x, y] = walk.offset(walk.length / 2, walk.length / 2, 1.5)[0].map(Math.round);
+      if (coreFrom[y * W + x] === from) hair(walk.offset(0, walk.length, 0), walk.closed);
+    }
+  }
   if (edges.length) ground.push({ part: null, hot: false, tone: tones.line, rows: [], path: edges.join("") });
 
   // Echoes, faded outward, broken where they would pass within `clear` px of a text block.
   const near = ([x, y]) => blocks.some((t) => x > t.left - RINGS.clear && x < t.right + RINGS.clear && y > t.top - RINGS.clear && y < t.bottom + RINGS.clear);
   for (let e = 0; e < echo; e++) {
     const paths = [];
-    for (const loop of loopsAt(-gap * RINGS.echoGap * (e + 1))) {
+    for (const walk of walksAt(-gap * RINGS.echoGap * (e + 1))) {
+      const pts = walk.offset(0, walk.length, 0);
       const runs = [[]];
-      for (const p of loop.pts) {
+      for (const p of pts) {
         if (near(p)) runs.push([]);
         else runs[runs.length - 1].push(p);
       }
-      const whole = runs.length === 1 && loop.closed;
-      for (const run of runs) if (run.length > 3) paths.push(ribbon(run, RINGS.hairline * 0.9, whole));
+      for (const run of runs) if (run.length > 3) paths.push(ribbon(run, RINGS.hairline * 0.9, runs.length === 1 && walk.closed));
     }
     if (paths.length) ground.unshift({ part: null, hot: false, tone: "soft", rows: [], path: paths.join(""), alpha: Math.round(tones.echo * (1 - e / echo) * 100) / 100 });
   }
 
-  return { bands, rows, ground, rings: { levels: R, fit: levels.length, deepest: field.deepest, core: R < levels.length ? coreLevel : null, lines } };
+  return { bands, rows, ground, rings: { levels: R, deepest: field.deepest, cores, lines } };
 }
