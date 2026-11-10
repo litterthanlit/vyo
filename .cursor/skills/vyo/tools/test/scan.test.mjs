@@ -352,6 +352,23 @@ describe("output rules", () => {
   });
 });
 
+describe("a facts file with another name", () => {
+  test("sketch and check say to pass --facts", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "scan-facts-name-"));
+    try {
+      const spec = path.join(tmp, "pantry-spec.json");
+      fs.copyFileSync(path.join(TOOLS, "presets", "wave.json"), spec);
+      for (const cmd of ["sketch", "check", "render"]) {
+        const r = spawnSync("node", [CLI, cmd, spec], { encoding: "utf8" });
+        assert.equal(r.status, 1, cmd);
+        assert.match(r.stderr, /cannot read .*-facts\.json: ENOENT.*pass --facts <path>/, cmd);
+      }
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("show and draft", () => {
   test("show prints fact ids next to every item", () => {
     const text = showFacts(recipe);

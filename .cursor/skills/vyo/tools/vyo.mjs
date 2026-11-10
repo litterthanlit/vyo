@@ -325,6 +325,7 @@ function factsFor(specFile, spec, opt) {
   const repo = spec && spec.product && typeof spec.product.repo === "string" ? spec.product.repo : null;
   const file = opt.facts ?? (repo ? path.join(path.dirname(specFile), `${repo}-facts.json`) : null);
   if (!file) throw new Failure("product.repo is missing, so the facts file cannot be found; pass --facts");
+  if (opt.facts === undefined && !fs.existsSync(file)) throw new Failure(`cannot read ${file}: ENOENT; if the facts file has another name or place, pass --facts <path>`);
   return readFacts(file);
 }
 
