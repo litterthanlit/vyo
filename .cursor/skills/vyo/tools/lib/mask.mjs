@@ -7,7 +7,7 @@ import { SHEET, parsePath } from "./geometry.mjs";
  * @typedef {[number, number]} Point
  * @typedef {{ add?: string, cut?: string, rotate?: number, at?: Point, r?: number | Point, size?: Point, round?: number,
  *             from?: Point | number, to?: Point | number, width?: number, points?: Point[], d?: string }} ShapeOp
- * @typedef {{ ops: ShapeOp[], rotate?: number, fit?: { w?: number, h?: number, cx?: number, cy?: number } }} Shape
+ * @typedef {{ ops: ShapeOp[], rotate?: number, fit?: { w?: number, h?: number, cx?: number, cy?: number }, room?: { top: number } }} Shape
  * @typedef {{ runs: [number, number][][], area: number, box: { left: number, top: number, right: number, bottom: number },
  *             fit: { w: number, h: number }, xf: { s: number, tx: number, ty: number } }} Mask
  *   runs[y]: where the shape is inside on the pixel row y to y + 1 (sampled at y + 0.5), as sorted, disjoint
@@ -27,7 +27,9 @@ export const SHAPE_KINDS = {
 };
 // With no fit.w or fit.h, the shape is as large as fits in the sheet less these margins, standing on the bottom
 // one: the top margin is room for the label, headline and legend, the bottom one for the record line. A fit.w or
-// fit.h without a centre centres it across at cx and at cy down.
+// fit.h without a centre centres it across at cx and at cy down. lib/place.mjs may set `room` on a shape with
+// neither: the top of the room its words leave, which the shape then grows into and centres in, down to the
+// bottom margin. Authors never write `room`; the spec rejects it.
 export const SHAPE_ROOM = { left: 40, right: 40, top: 250, bottom: 56 };
 export const SHAPE_FIT = { cx: 0.5, cy: 0.61 };
 const QUARTER = 16;
@@ -216,11 +218,12 @@ export function shapeMask(shape) {
   const given = shape.fit ?? {};
   const R = SHAPE_ROOM;
   const sized = given.w !== undefined || given.h !== undefined;
+  const top = sized ? R.top : shape.room?.top ?? R.top;
   const s = sized
     ? Math.min(...[given.w !== undefined && (given.w * W) / box.w, given.h !== undefined && (given.h * H) / box.h].filter(Boolean))
-    : Math.min((W - R.left - R.right) / box.w, (H - R.top - R.bottom) / box.h);
+    : Math.min((W - R.left - R.right) / box.w, (H - top - R.bottom) / box.h);
   const cx = given.cx ?? (sized ? SHAPE_FIT.cx : (R.left + (W - R.left - R.right) / 2) / W);
-  const cy = given.cy ?? (sized ? SHAPE_FIT.cy : (H - R.bottom - (box.h * s) / 2) / H);
+  const cy = given.cy ?? (sized ? SHAPE_FIT.cy : shape.room ? (top + H - R.bottom) / 2 / H : (H - R.bottom - (box.h * s) / 2) / H);
   const tx = cx * W - (box.left + box.w / 2) * s;
   const ty = cy * H - (box.top + box.h / 2) * s;
   const runs = paintRows(ops, s, tx, ty, H).map((row) => row.map(([l, r]) => [Math.max(0, l), Math.min(W, r)]).filter(([l, r]) => r > l));

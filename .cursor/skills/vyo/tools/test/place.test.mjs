@@ -48,7 +48,7 @@ for (const [name, shape] of Object.entries(SHAPES)) {
     const spec = bare(shape);
     const placed = placeTexts(spec, recipe);
     assert.deepEqual(placeTexts(spec, recipe), placed, "deterministic");
-    const mask = shapeMask(shape);
+    const mask = shapeMask(placed.figure.regions[0].shape);
     const rec = recordRect(recordOf(placed, recipe));
     const rects = placed.figure.texts.map((t) => ({ t, r: estimateText(t, placed, recipe, PLACE.em) }));
     for (const { t, r } of rects) {
@@ -61,11 +61,41 @@ for (const [name, shape] of Object.entries(SHAPES)) {
     const at = Object.fromEntries(rects.map(({ t, r }) => [t.id, r]));
     assert.ok(at.label.bottom <= at.headline.top, "the label sits above the headline");
     assert.deepEqual(findingsOf(placed)["shape-room"], [], "shape-room agrees");
-    assert.match(sketch(spec, recipe), new RegExp(`texts: label ${Math.round(at.label.left)},${Math.round(at.label.top)} to `), "the sketch prints the placed blocks");
+    const label = estimateText(placed.figure.texts.find((t) => t.id === "label"), placed, recipe);
+    assert.match(sketch(spec, recipe), new RegExp(`texts: label ${Math.round(label.left)},${Math.round(label.top)} to `), "the sketch prints the placed blocks");
     const html = buildPage(spec, recipe);
     for (const t of placed.figure.texts) assert.ok(html.includes(`data-block="${t.id}" data-role="${t.role}" data-owner="figure" style="left:${t.x}px;top:${t.y}px;width:${t.w}px;`), `the page puts ${t.id} where the sketch does`);
   });
 }
+
+test("a shape the engine fits centres in the room the words leave, and the page draws it where the sketch does", () => {
+  const spec = bare(SHAPES.train);
+  const placed = placeTexts(spec, recipe);
+  const words = Math.max(...placed.figure.texts.map((t) => estimateText(t, placed, recipe, PLACE.em).bottom));
+  const before = shapeMask(SHAPES.train);
+  const after = shapeMask(placed.figure.regions[0].shape);
+  assert.ok(before.box.top - words > 2 * PLACE.gap, `the shape stood on the bottom margin ${Math.round(before.box.top - words)}px below the words`);
+  const above = after.box.top - words;
+  const below = SHEET.height - 56 - after.box.bottom;
+  assert.ok(above >= PLACE.gap && Math.abs(above - PLACE.gap - below) <= 2, `centred in the room: ${Math.round(above)}px below the words, ${Math.round(below)}px above the margin`);
+  assert.ok(after.xf.s >= before.xf.s, "never smaller for it");
+  const html = buildPage(spec, recipe);
+  const figure = JSON.parse(/<script type="application\/json" id="figure">(.*?)<\/script>/s.exec(html)[1]);
+  assert.deepEqual(figure.regions[0].shape, placed.figure.regions[0].shape, "the page draws the moved shape");
+  assert.deepEqual(shapeReport(placed, placed.figure.regions[0], recipe).mask.box, after.box, "the sketch measures the moved shape");
+  const pinned = bare({ ...SHAPES.train, fit: { w: 0.9 } });
+  assert.deepEqual(placeTexts(pinned, recipe).figure.regions[0].shape, pinned.figure.regions[0].shape, "a shape with a fit stays where its author put it");
+});
+
+test("the label, headline and legend stay one column above a tall shape, which shrinks a little to make room", () => {
+  for (const name of ["flask", "jar"]) {
+    const placed = placeTexts(bare(SHAPES[name]), recipe);
+    const at = Object.fromEntries(placed.figure.texts.map((t) => [t.id, estimateText(t, placed, recipe, PLACE.em)]));
+    assert.equal(at.legend.left, at.headline.left, `${name}: the legend lines up under the headline`);
+    assert.ok(at.legend.top - at.headline.bottom <= PLACE.after.other + 1, `${name}: the legend follows the headline`);
+    assert.ok(shapeMask(placed.figure.regions[0].shape).xf.s >= PLACE.shrink * shapeMask(SHAPES[name]).xf.s, `${name}: shrunk by at most ${PLACE.shrink}`);
+  }
+});
 
 const findingsOf = (spec) => shapeFindings(shapeReport(spec, spec.figure.regions[0], recipe), { blocks: spec.figure.texts.map((t) => estimateText(t, spec, recipe)) });
 

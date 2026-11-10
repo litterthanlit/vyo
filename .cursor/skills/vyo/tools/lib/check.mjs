@@ -9,6 +9,7 @@ import { FIELDS } from "./fields/index.mjs";
 import { shapeReport, shapeFindings, SHAPE_LIMITS } from "./shape-report.mjs";
 import { RINGS } from "./fields/shape-rings.mjs";
 import { RELIEF } from "./fields/shape-relief.mjs";
+import { placeTexts } from "./place.mjs";
 
 const rgb = (hex) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(", ")})`;
 const overlap = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
@@ -90,8 +91,17 @@ const pageRegionStats = (page) => regionStats(fillRowsOf(page).map((r) => ({ reg
  */
 const shapeCheck = (id, level, stage, about, drawn = () => ({})) => ({
   id, level, stage, frames: ["loose"], about,
-  run: (i) => fieldsOf(i.spec).filter((r) => r.field === "shape").flatMap((r) => shapeFindings(shapeReport(i.spec, r, i.facts), drawn(i))[id]),
+  run: (i) => {
+    const spec = placedSpec(i);
+    return fieldsOf(spec).filter((r) => r.field === "shape").flatMap((r) => shapeFindings(shapeReport(spec, r, i.facts), drawn(i))[id]);
+  },
 });
+// The spec as render and sketch draw it, with the texts placed and the shape moved for them; once per spec.
+const placed = new WeakMap();
+const placedSpec = ({ spec, facts }) => {
+  if (!placed.has(spec)) placed.set(spec, placeTexts(spec, facts));
+  return placed.get(spec);
+};
 
 /**
  * @typedef {{ spec: any, facts: any, presets: Record<string, any>, page?: any }} CheckInput
