@@ -31,8 +31,9 @@ Copy this file into the target app's repo beside the skill, at `.cursor/skills/v
 
 ## Field preference
 
-<!-- wave | terrain | river. Wave for a story of flow or hand-off, terrain for what is big and what
-     matters, river for many things merging into one. Leave blank to let the skill choose. -->
+<!-- wave | terrain | river | shape. Wave for a story of flow or hand-off, terrain for what is big and what
+     matters, river for many things merging into one, shape for one object that stands for the product
+     (name it under "The picture"). Leave blank to let the skill choose. -->
 
 ## Accent part
 
