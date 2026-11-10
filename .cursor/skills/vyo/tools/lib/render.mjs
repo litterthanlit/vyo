@@ -118,7 +118,10 @@ const ROLE_PAGE = {
     headline: { style: `font-weight:700;letter-spacing:-.04em;font-family:${esc(MAST_FONT)}`, body: (spec) => esc(spec.headline) },
     paragraph: { style: `font-family:${esc(MAST_FONT)};letter-spacing:-.01em`, body: (spec, t) => line(t.text) },
     legend: { style: "letter-spacing:.04em", body: (spec, t) => line(t.text) },
-    list: { style: "white-space:pre;letter-spacing:.14em;text-transform:uppercase", body: (spec, t, facts) => listItems(spec, t, facts).map((s, i) => `${"  ".repeat(i % 4)}${esc(s)}`).join("\n") },
+    list: {
+      style: `white-space:pre;font-family:${esc(MAST_FONT)};font-weight:700;letter-spacing:-.02em;text-transform:uppercase`,
+      body: (spec, t, facts) => listItems(spec, t, facts).map((s, i) => `<span style="padding-left:${(i % 4) * 0.9}em">\u2022\u2009${esc(s)}</span>`).join("\n"),
+    },
     rule: { style: "white-space:nowrap;overflow:hidden", body: (spec, t) => esc(ruleText(t)) },
     meta: { style: "letter-spacing:.16em;white-space:nowrap;text-transform:uppercase", body: (spec, t) => esc(t.text) },
     display: { style: `font-weight:700;letter-spacing:-.05em;font-family:${esc(MAST_FONT)}`, body: (spec, t) => esc(t.text) },

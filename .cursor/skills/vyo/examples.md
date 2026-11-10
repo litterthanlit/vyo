@@ -1269,4 +1269,5 @@ Rendered posters for Pantry, the `recipe` fixture, live in `examples/posters/` o
 | `spiral.png` / `spiral.gif` | Charcoal coil, resolve GIF |
 | `contour.png` | Charcoal contour rings |
 | `trace.png` | Dark loose trace of a keyhole |
+| `brutal.png` | Paper signal: posed bands, a highlighted accent band, the stepped capitals list and an archive line |
 | `wings.png` | Charcoal signal trace of the bundled wings mask in `symbols`, orange accent band |

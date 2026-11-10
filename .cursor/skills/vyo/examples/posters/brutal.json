@@ -1,0 +1,48 @@
+{
+  "version": 3,
+  "frame": "signal",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "light",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "bands",
+        "field": "bands",
+        "fits": "A week stacks up in layers, so Pantry's code is a stack of bands, one bar per share.",
+        "accent": "area:lib/plan",
+        "seed": 12,
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      { "role": "mark", "id": "hi-label", "x": 36, "y": 36, "w": 112, "h": 22 },
+      { "role": "label", "id": "label", "x": 40, "y": 40, "w": 200 },
+      { "role": "headline", "id": "headline", "x": 40, "y": 76, "w": 520, "size": 56 },
+      { "role": "list", "id": "list", "x": 430, "y": 700, "w": 400, "size": 28, "parts": true },
+      { "role": "legend", "id": "legend", "x": 560, "y": 1064, "w": 250, "text": "Every bar is a part of Pantry, as many rows as it has code. The highlighted rows are the plan." },
+      { "role": "meta", "id": "meta", "x": 560, "y": 1134, "w": 270, "text": "Archive N° 31 / Week 46" },
+      { "role": "mark", "id": "hi-meta", "x": 556, "y": 1131, "w": 120, "h": 18 }
+    ]
+  }
+}

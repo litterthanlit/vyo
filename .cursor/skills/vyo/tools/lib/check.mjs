@@ -254,7 +254,13 @@ export const CHECKS = [
   },
   {
     id: "blocks-inside", level: "fail", stage: "page", about: "every text block is inside the sheet",
-    run: ({ page }) => page.blocks.filter((b) => !inside(b.rect, page.sheet)).map((b) => `${b.name} runs off the sheet (bottom at ${round(b.rect.bottom)}px of ${page.sheet.bottom}px)`),
+    run: ({ page }) =>
+      page.blocks
+        .filter((b) => !inside(b.rect, page.sheet))
+        .map((b) => {
+          const edge = ["right", "bottom", "left", "top"].find((k) => (k === "right" || k === "bottom" ? b.rect[k] > page.sheet[k] : b.rect[k] < page.sheet[k])) ?? "bottom";
+          return `${b.name} runs off the sheet (its ${edge} edge at ${round(b.rect[edge])}px, the sheet's at ${round(page.sheet[edge])}px)`;
+        }),
   },
   {
     id: "silhouette", level: "fail", stage: "page", about: "the figure covers 15% of the sheet above the footer and spans 55% of its height and 60% of its width",
