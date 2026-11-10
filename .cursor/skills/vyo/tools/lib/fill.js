@@ -61,13 +61,22 @@ function drawRow(S, r, data, height, weight, tone) {
       left: r.x + "px", top: r.y + "px", width: Math.ceil(r.width) + 1 + "px", letterSpacing: r.spacing + "px",
       color: `var(--${tone})`, fontWeight: weight, opacity: r.alpha ?? 1,
     },
-    text.slice(0, -1),
+    r.spans ? undefined : text.slice(0, -1),
   );
-  // The last letter carries no tracking, so the letters span the run exactly.
-  const last = document.createElement("span");
-  last.style.letterSpacing = "0";
-  last.textContent = text.slice(-1);
-  e.appendChild(last);
+  // A row with spans shades its letters span by span; its width leaves room for the last letter's tracking.
+  for (const s of r.spans ?? []) {
+    const span = document.createElement("span");
+    span.style.cssText = `opacity:${s.alpha};font-weight:${s.weight};color:var(--${s.tone})`;
+    span.textContent = s.text.replace(/ /g, " ");
+    e.appendChild(span);
+  }
+  if (!r.spans) {
+    // The last letter carries no tracking, so the letters span the run exactly.
+    const last = document.createElement("span");
+    last.style.letterSpacing = "0";
+    last.textContent = text.slice(-1);
+    e.appendChild(last);
+  }
   S.appendChild(e);
 }
 
@@ -85,7 +94,12 @@ function drawField(S, region, blocks) {
   const frame = { floor: F.floor, mirror: F.mirror, theme: F.theme, blocks, measure };
   for (const g of FIELDS[region.field].ground?.(region, region.parts, frame) ?? []) {
     const d = runsPath(g.rows);
-    if (d) S.appendChild(el("ground", { region: region.id, part: g.part ?? false, hot: g.hot }, { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", background: `var(--${g.tone})`, clipPath: `path("${d}")` }));
+    if (!d) continue;
+    const fill = el("ground", { region: region.id, part: g.part ?? false, hot: g.hot }, { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", background: `var(--${g.tone})`, clipPath: `path("${d}")`, opacity: g.alpha ?? 1 });
+    // A blur on the clipped fill itself would be clipped too, so a soft ground blurs a wrapper.
+    const soft = g.blur && el("", {}, { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", filter: `blur(${g.blur}px)` });
+    if (soft) soft.appendChild(fill);
+    S.appendChild(soft || fill);
   }
   const items = FIELDS[region.field].layout(region, region.parts, frame);
   for (const r of items) drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, r.weight ?? 400, r.tone);

@@ -67,10 +67,10 @@ test("every shape error is reported at once, by op index, in the house style", (
     `${f}.fit.h: 0.05 to 3, a share of the sheet's height (over 1 bleeds off)`,
     `${f}.fit.cx: -0.5 to 1.5, where the centre sits as a share of the sheet's width`,
     `${f}.ops[1].add: "square" is not a kind; use circle, ellipse, rect, capsule, arc, polygon, path`,
-    `${f}.ops[2]: give exactly one of add or cut (found add, cut)`,
+    `${f}.ops[2]: give exactly one of add, cut or crease (found add, cut)`,
     `${f}.ops[3].size: must be two numbers above 0`,
     `${f}.ops[4].r: missing; it must be a number above 0`,
-    `${f}.ops[5].radius: a circle takes at, r and rotate`,
+    `${f}.ops[5].radius: a circle takes at, r, rotate and face`,
     `${f}.ops[6].points: must be 3 to 40 points of [x, y]`,
     `${f}.ops[7].d: does not parse: cannot read "X 3"`,
     `${f}.ops[8].from: must be a number of degrees, clockwise from twelve o'clock`,
@@ -84,7 +84,7 @@ test("a shape that paints nothing, a placeholder, a missing shape, a swiss shape
   assert.deepEqual(validateSpec(withShape({ ops: [rect([0, 0], [10, 10]), { cut: "rect", at: [-1, -1], size: [12, 12] }] })), [`${f}.shape: the ops paint nothing on the sheet; the cuts remove all of it, or fit.cx and fit.cy move it off`]);
   assert.match(validateSpec(withShape("… the silhouette"))[0], /^figure\.regions\[0\]\.shape: still the placeholder; draw the silhouette as \{ ops: \[\.\.\.\] \}/);
   assert.match(validateSpec(withShape(undefined)).join("\n"), /^figure\.regions\[0\]\.shape: missing; draw the silhouette/m);
-  assert.ok(validateSpec(withShape(jar().figure.regions[0].shape, { style: "rings" })).includes(`${f}.style: "rings" is not a style; use bands, or leave it out`));
+  assert.ok(validateSpec(withShape(jar().figure.regions[0].shape, { style: "stripes" })).includes(`${f}.style: "stripes" is not a style; use bands or relief, or leave it out`));
   const swiss = { ...jar(), frame: "swiss" };
   assert.ok(validateSpec(swiss).includes(`${f}.field: a shape field draws only in the loose frame; remove frame or set it to loose`));
   const wave = JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "wave.json"), "utf8"));

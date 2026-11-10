@@ -5,6 +5,7 @@ import { waveRows, WAVE_TONES } from "./wave.mjs";
 import { terrainRows } from "./terrain.mjs";
 import { riverRows } from "./river.mjs";
 import { shapeRows, shapeGround, SHAPE_TONES } from "./shape.mjs";
+import { RELIEF_TONES } from "./shape-relief.mjs";
 
 export const FIELDS = {
   wave: {
@@ -47,7 +48,7 @@ export const FIELDS = {
   },
   shape: {
     about: "a silhouette you draw as ops, cut top to bottom into one band per part, as much area as its lines, the type as big as its share",
-    options: ["shape", "style"],
+    options: ["shape", "style", "bevel", "strata"],
     // Every band must hold its whole name in readable type, so fewer, bigger parts than a wave.
     parts: { maxParts: 12 },
     measure: [["code", "lines"], ["type", "size", "bigger", "larger"]],
@@ -55,7 +56,7 @@ export const FIELDS = {
     layout: shapeRows,
     // The silhouette under the rows: one fill per band, as rows of spans.
     ground: shapeGround,
-    tokens: (theme) => SHAPE_TONES[theme].tokens,
+    tokens: (theme) => ({ ...SHAPE_TONES[theme].tokens, ...RELIEF_TONES[theme].tokens }),
     behindTexts: false,
     // The words sit in the room the silhouette leaves, so only the loose frame draws one.
     frames: ["loose"],
