@@ -6,6 +6,8 @@ import { SHEET, corners, CORNERS, fixedMeasure } from "./geometry.mjs";
 import { maskGrid } from "./mask.mjs";
 import { shapeLayout, nameWidth } from "./fields/shape.mjs";
 import { regionParts } from "./parts.mjs";
+import { tokensOf } from "./render.mjs";
+import { FIELDS } from "./fields/index.mjs";
 
 // A feature narrower than `thin` px is under 3px at a sixth of the size and does not read as form; a thin piece
 // counts once it is `thinArea` px² (a sharp corner's tip is less). The shape should cover `cover` of the sheet;
@@ -17,7 +19,8 @@ const CELL = 2;
 /** A shape region laid out in Node: its parts, mask, bands, rows and ground. */
 export function shapeReport(spec, region, facts) {
   const parts = regionParts(region, facts);
-  return { region, parts, ...shapeLayout(region, parts, { theme: spec.theme, measure: fixedMeasure }) };
+  const tokens = { ...tokensOf(spec), ...FIELDS.shape.tokens(spec.theme) };
+  return { region, parts, ...shapeLayout(region, parts, { theme: spec.theme, measure: fixedMeasure, tokens }) };
 }
 
 // Felzenszwalb and Huttenlocher's exact squared Euclidean distance transform, in place, on a w by h grid.
@@ -150,7 +153,7 @@ export function onShape(mask, rect) {
 const px = (n) => Math.round(n);
 const share = (n) => Math.round(n * 100) / 100;
 const pct = (n) => `${Math.round(n * 100)}%`;
-const bandOf = (report, part) => report.bands.find((b) => b.part.id === part.id);
+const bandOf = (report, part) => report.bands?.find((b) => b.part.id === part.id);
 
 /**
  * Every finding on a shape region, by check id. `rows` are the rows as drawn (the page's, or Node's for the

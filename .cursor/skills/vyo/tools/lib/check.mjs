@@ -172,7 +172,7 @@ export const CHECKS = [
   shapeCheck("shape-cover", "warn", "spec", `a drawn shape covers at least ${SHAPE_LIMITS.cover * 100}% of the sheet`),
   shapeCheck("shape-accent", "warn", "spec", `the accent band of a drawn shape is at least ${SHAPE_LIMITS.accent}px tall, so it shows in the thumbnail`),
   shapeCheck("shape-split", "warn", "spec", "no band of a drawn shape falls on two separate pieces of it"),
-  shapeCheck("shape-tone", "warn", "spec", `a relief lays at least ${RELIEF.tone.bright * 100}% ink on average at thumbnail size and its tones span ${RELIEF.tone.spread * 100}%, so it reads as a bright volume`),
+  shapeCheck("shape-tone", "warn", "spec", `at thumbnail size a relief's lit side reaches ${RELIEF.tone.lit * 100}% light and its tones span ${RELIEF.tone.spread * 100}%, so it reads as a bright volume`),
   shapeCheck("shape-share", "fail", "page", `every part of a relief has its share of the glyphs within ${RELIEF.share.part * 100}% of its share of the lines`, ({ page }) => ({ rows: page.rows.map((r) => ({ part: r.part, text: r.text, width: r.rect.width })) })),
   shapeCheck("shape-name", "fail", "page", "every band of a drawn shape shows its part's whole name at least once", ({ page }) => ({ rows: page.rows.map((r) => ({ part: r.part, text: r.text, width: r.rect.width })) })),
   shapeCheck("shape-room", "fail", "page", `every text block sits in the room a drawn shape leaves, ${SHAPE_LIMITS.clear}px clear of it`, ({ page }) => ({

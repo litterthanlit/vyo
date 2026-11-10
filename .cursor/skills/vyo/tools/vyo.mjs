@@ -346,7 +346,7 @@ function cmdSketch(argv) {
   if (image) {
     const file = path.join(path.dirname(pos[0]), `${spec.product.repo}-sketch.png`);
     fs.writeFileSync(file, image);
-    process.stdout.write(`sketch PNG: ${path.resolve(file)}, the silhouette at a third of its size with its bands; open it and check it reads as the object\n`);
+    process.stdout.write(`sketch PNG: ${path.resolve(file)}, the silhouette at a third of its size with its bands or its shading; open it and check it reads as the object\n`);
   }
   return 0;
 }
