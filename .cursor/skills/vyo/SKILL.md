@@ -33,7 +33,7 @@ Without installing it, write `npx -y @litterthanlit/vyo` wherever this file says
 A cover is the quickest strong poster: one ready object, turning slowly, the part the product is about as its orange outline. Follow these steps in order; you need nothing else in this file except "Reply in chat".
 
 1. `npx vyo scan <repo> --out <facts>`
-2. `npx vyo compose <facts> --frame cover --repo <repo> --out <repo>/vyo/<name>-poster.json`. It prints every part with its share of the code; `*` marks the parts that make a good orange outline.
+2. `npx vyo compose <facts> --frame cover --repo <repo> --out <repo>/vyo/<name>-poster.json`. It prints every part with its share of the code; `*` marks the parts that make a good orange accent, and it picks the strata.
 3. Read the repo's README. In the spec, replace every value that starts with `…`:
    - `product.name`: the name customers see, as the README writes it.
    - `headline`: one plain sentence, at most 72 characters, on what the product does for a person.
