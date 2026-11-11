@@ -504,6 +504,13 @@ export function coverCells(m, f) {
     a = e;
   }
   const P = PARTS.length;
+  // An outline: the accent takes the outer shell, and inside it the other parts stack in bands top to bottom.
+  // Shells all the way in made every small part a ring a glyph or two thick, too thin to print its share.
+  if (m.strata.outline && m.hot >= 0 && P > 1) {
+    const shell = Math.round(PARTS[m.hot].share * look.length);
+    const inner = byKey.slice(shell).sort((a, b) => S.y[look[a].j] - S.y[look[b].j] || S.x[look[a].j] - S.x[look[b].j] || look[a].i - look[b].i);
+    byKey.splice(shell, inner.length, ...inner);
+  }
   let [acc, k] = [0, 0];
   m.order.forEach((pi, at) => {
     acc += PARTS[pi].share;

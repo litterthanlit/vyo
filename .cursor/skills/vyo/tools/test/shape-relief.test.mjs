@@ -15,7 +15,7 @@ import { scanRepo } from "../lib/scan/index.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const recipe = scanRepo(path.join(HERE, "fixtures", "recipe"));
-const preset = () => ({ ...JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "shape-relief.json"), "utf8")), facts: recipe.hash });
+const preset = () => ({ ...JSON.parse(fs.readFileSync(path.join(HERE, "fixtures", "relief-jar.json"), "utf8")), facts: recipe.hash });
 /** The relief preset with its region changed by `over` (a shape replaces the preset's). */
 const relief = (over = {}, theme = "dark") => {
   const s = preset();

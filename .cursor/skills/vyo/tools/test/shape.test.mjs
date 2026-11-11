@@ -323,7 +323,7 @@ function sketchPixels(spec) {
 }
 
 test("the sketch PNG draws creases", () => {
-  const relief = JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "shape-relief.json"), "utf8"));
+  const relief = JSON.parse(fs.readFileSync(path.join(HERE, "fixtures", "relief-jar.json"), "utf8"));
   relief.facts = recipe.hash;
   const count = (spec) => sketchPixels(spec).flat().filter((c) => c === "0e1424").length;
   const creased = count(relief);

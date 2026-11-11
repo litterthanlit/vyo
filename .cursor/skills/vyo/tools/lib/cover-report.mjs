@@ -29,7 +29,7 @@ export function accentCandidates(cover, limit = 3) {
   const L = COVER_LIMITS;
   return model.parts
     .map((p) => ({ ...p, px: at ? at(p.share) : null }))
-    .filter((p) => !p.hot && p.share <= L.share && (outline && at ? p.px >= L.thin : p.share >= L.least))
+    .filter((p) => !p.hot && p.share <= L.share && (outline && at ? Math.round(p.px) >= L.thin : p.share >= L.least))
     .sort((a, b) => Math.abs(a.share - (outline ? L.ideal : L.band)) - Math.abs(b.share - (outline ? L.ideal : L.band)))
     .slice(0, limit)
     .map((p) => `${p.id} ("${region.names?.[p.id] ?? p.name}", ${pct(p.share)}${p.px !== null ? `, a ${Math.round(p.px)}px shell` : ""})`);
@@ -97,7 +97,7 @@ export function coverFindings(cover, { still = cover.still, loop = null, cells =
     if (seam > most * COVER.seam) out["cover-seam"].push(`the step from the last frame back to the first changes ${seam} glyphs where the largest step inside the loop changes ${most}, so the GIF jumps at its seam; this is an engine fault, so render without --gif and report it`);
   }
   if (shell && hot.length === 1) {
-    if (shell.px < COVER_LIMITS.thin) {
+    if (Math.round(shell.px) < COVER_LIMITS.thin) {
       out["cover-shell"].push(`the orange shell is ${Math.round(shell.px)}px thick (${pct(shell.share)} of the code); under ${COVER_LIMITS.thin}px it reads as a hairline, not a shell, at thumbnail size, so ${accentFix(cover)}`);
     } else if (shell.share > COVER_LIMITS.share) {
       const split = facts && splits(facts, region);

@@ -27,7 +27,8 @@ if (scan.status !== 0) {
   process.exit(1);
 }
 const hash = JSON.parse(fs.readFileSync(factsFile, "utf8")).hash;
-const preset = (id) => ({ ...JSON.parse(fs.readFileSync(path.join(TOOLS, "presets", `${id}.json`), "utf8")), facts: hash });
+// The relief jar on the dark sheet is a test fixture, not a preset: in the presets it was the light jar's twin.
+const preset = (id) => ({ ...JSON.parse(fs.readFileSync(id === "relief-jar" ? path.join(HERE, "fixtures", "relief-jar.json") : path.join(TOOLS, "presets", `${id}.json`), "utf8")), facts: hash });
 
 let failed = 0;
 const result = (ok, name, detail) => {
@@ -38,7 +39,7 @@ const result = (ok, name, detail) => {
   }
 };
 
-for (const id of PRESETS) {
+for (const id of [...PRESETS, "relief-jar"]) {
   const dir = path.join(OUT, id);
   fs.mkdirSync(dir, { recursive: true });
   const specFile = path.join(dir, "recipe-poster.json");
@@ -148,7 +149,7 @@ const RELIEF_WARNINGS = [
   ["a flat strip", (r) => (r.shape = { ops: [{ add: "rect", at: [0, 0], size: [100, 40] }], fit: { w: 0.95 } }), /^! shape-accent: the accent stratum "the plan" is \d+px thick at its thickest; it needs 40px to show in the thumbnail, so turn the strata \(strata\.angle\) to cut across the shape's narrow side/m],
 ];
 for (const [name, mutate, expect] of RELIEF_WARNINGS) {
-  const spec = preset("shape-relief");
+  const spec = preset("relief-jar");
   mutate(spec.figure.regions[0]);
   const file = path.join(OUT, "planted-relief.json");
   fs.writeFileSync(file, JSON.stringify(spec, null, 2));
@@ -186,7 +187,7 @@ for (const [name, id, mutate, expect] of PLANTED) {
 // The sketch lays a field out in Node with Commit Mono's fixed advance; the page measures the font. Given the
 // page's own text blocks, both must place every row within 2px.
 const facts = JSON.parse(fs.readFileSync(factsFile, "utf8"));
-for (const id of PRESETS.filter((p) => preset(p).figure.regions.some((r) => r.kind === "field"))) {
+for (const id of PRESETS.filter((p) => preset(p).frame !== "cover" && preset(p).figure.regions.some((r) => r.kind === "field"))) {
   const spec = preset(id);
   const page = await renderPage({ html: buildPage(spec, facts), base: path.join(OUT, `${id}-twin`), png: false, pdf: false });
   const blocks = page.blocks.filter((b) => b.role).map((b) => b.rect);

@@ -422,7 +422,8 @@ function cmdCompose(argv) {
   if (field && FIELDS[field].options.includes("seed") && seed === undefined) seed = (hashKey % 2147483646) + 1;
   if (field && !FIELDS[field].options.includes("seed")) seed = undefined;
   const letter = field === "glyph" ? glyphLetter(facts.repo.name) : undefined;
-  const parts = partsFromFacts(facts, partOptions({ field, ...(opt.split ? { split: opt.split } : {}) }));
+  // Parts as the style compose writes will draw them: rings and symbols hold fewer than a relief.
+  const parts = partsFromFacts(facts, partOptions({ field, ...(field === "shape" ? { style: opt.style ?? DEFAULT_STYLE } : {}), ...(opt.split ? { split: opt.split } : {}) }));
   if (opt.accent !== undefined && !accentIds(parts, opt.accent).size) throw new Usage(`--accent ${opt.accent} names no part; vyo parts ${pos[0]} lists the part ids`);
   if (field && !parts.length) throw new Failure(`no parts to draw; the scan found no code. Compose a fill poster instead: vyo compose ${pos[0]} --from <preset> (vyo presets lists them)`);
   const twins = new Set(sameNames(parts).flat());

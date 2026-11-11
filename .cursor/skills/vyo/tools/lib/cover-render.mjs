@@ -101,7 +101,7 @@ html, body { background: var(--paper) }
 <div class="t" data-block="record" data-owner="render" style="left:${B.record.left}px;top:${B.record.top}px">${lines(B.record.lines)}</div>
 <div class="t" data-block="headline" data-role="headline" data-owner="figure" style="left:${B.headline.left}px;top:${B.headline.top}px">${lines(B.headline.lines)}</div>
 <div class="t" data-block="series" data-owner="render" style="right:${SHEET.width - B.series.right}px;top:${B.series.top}px">Vyo</div>
-<div data-owner="render" style="position:absolute;left:${B.series.rule}px;top:${COVER.margin + 0.5}px;width:1px;height:12px;background:var(--ink);opacity:.5"></div>
+${B.series.number ? `<div data-owner="render" style="position:absolute;left:${B.series.rule}px;top:${COVER.margin + 0.5}px;width:1px;height:12px;background:var(--ink);opacity:.5"></div>` : ""}
 ${B.series.number ? `<div class="t" data-block="number" data-owner="render" style="right:${SHEET.width - B.series.rule + 10}px;top:${B.series.top}px">${esc(B.series.number)}</div>` : ""}
 <div class="t" data-block="legend" data-role="legend" data-owner="figure" style="left:${B.legend.left}px;top:${B.legend.top}px">${lines(B.legend.lines)}</div>
 <div class="t" data-block="name" data-owner="render" style="left:${B.name.left}px;top:${B.name.top}px;font-family:'Inter Display',sans-serif;font-weight:600;font-size:${B.name.size}px;line-height:${B.name.size}px;letter-spacing:${(COVER.track * B.name.size).toFixed(2)}px">${esc(spec.product.name)}</div>
