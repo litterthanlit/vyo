@@ -334,9 +334,9 @@ The legend names "the plan" and the measure "merge". The fits sentence passes wi
 ```
 ### shape
 
-Pantry keeps a week of recipes the way a jar keeps preserves, so the poster draws one jar and fills it with Pantry's code. The lid and the shoulders make it a jar at thumbnail size: a rounded lid, a narrow neck, and a body with 24-unit corners, three ops in a 100 by 130 box. It is turned 9 degrees and bleeds off the bottom on purpose: `fit` asks for it (leave `fit` out and the engine fits the jar below the label, headline and legend and centres it in the room they leave). The bands run from the lid down in tree order, each as much of the jar as its code. The more code, the bigger the type, so "screens" is one huge line, "recipe cards" two lines across the body, and "buttons" texture; every line holds whole names only. The orange band is the plan. The texts have no coordinates: the engine sets the label, headline and legend in the room the jar leaves, top right.
+Pantry keeps a week of recipes the way a jar keeps preserves, so the poster draws one jar and fills it with Pantry's code. The lid and the shoulders make it a jar at thumbnail size: a rounded lid, a narrow neck, and a body with 24-unit corners, three ops in a 100 by 130 box. It is turned 9 degrees and bleeds off the bottom on purpose: `fit` asks for it (leave `fit` out and the engine fits the jar below the label, headline and legend and centres it in the room they leave). `"style": "relief"` is the default, so `compose --field shape` writes it without being asked: a lit volume in 6px type on paper. The layers run from the lid down in tree order, each as much of the jar as its code, so "screens" is the thickest and "buttons" the thinnest; every part keeps a whole name somewhere. The orange layer is the plan. The texts have no coordinates: the engine sets the label, headline and legend in the room the jar leaves, top right. The legend names the measure as "big" and "code".
 
-Before rendering, `vyo sketch` printed the jar's bands, its 62% of the sheet and where it placed each text block, and wrote `recipe-sketch.png` with the big lines of type as bars. It printed no `!` line.
+Before rendering, `vyo sketch` printed the jar's strata, its 62% of the sheet and where it placed each text block, and wrote `recipe-sketch.png` with the shaded thumbnail it predicts. It printed no `!` line.
 
 ```json
 {
@@ -357,6 +357,7 @@ Before rendering, `vyo sketch` printed the jar's bands, its 62% of the sheet and
         "kind": "field",
         "id": "shape",
         "field": "shape",
+        "style": "relief",
         "fits": "Pantry keeps a week of recipes the way a jar keeps preserves, so the picture is a jar of its code.",
         "accent": "area:lib/plan",
         "names": {
@@ -390,7 +391,7 @@ Before rendering, `vyo sketch` printed the jar's bands, its 62% of the sheet and
       {
         "role": "legend",
         "id": "legend",
-        "text": "Every band is a part of Pantry, its type as big as its share of the code. The orange band is the plan."
+        "text": "Every layer in the jar is a part of Pantry, as big as its code. The orange layer is the plan."
       }
     ]
   }

@@ -96,5 +96,5 @@ export function symbolsStyle(mask, parts, { measure, theme = "light", frame }) {
     });
     return rgb;
   };
-  return { bands: [], rows, ground: [], findings, summary, picture };
+  return { rows, ground: [], findings, summary, picture };
 }

@@ -200,13 +200,12 @@ for (const id of PRESETS.filter((p) => preset(p).figure.regions.some((r) => r.ki
 
 // A halo drawn line by line covered the y of "type" with the stroke of "The" below it; text-clear must see that.
 {
-  const spec = preset("shape");
-  spec.figure.texts.find((t) => t.role === "legend").text = "Every band is a part of Hypher, its type as big as its share of the code. The orange band is the handoff note.";
+  const spec = preset("river");
   const html = buildPage(spec, facts);
   const stroked = html.replace("[data-role] { z-index: 2 }", "[data-role] { z-index: 2; -webkit-text-stroke: 12px var(--paper); paint-order: stroke fill }");
   const covered = async (h) => runChecks("page", { spec, facts, presets: {}, page: await renderPage({ html: h, base: path.join(OUT, "halo"), png: false, pdf: false }) }).filter((f) => f.id === "text-clear");
   const [now, then] = [await covered(html), await covered(stroked)];
-  result(stroked !== html && !now.length && /^\d+ px of the legend's letters are painted over near \d+,\d+;/.test(then[0]?.message ?? ""), "text-clear passes the halo and catches a stroke that covers the line above", `now ${JSON.stringify(now)}\nthen ${JSON.stringify(then)}`);
+  result(stroked !== html && !now.length && /^\d+ px of the (legend|paragraph)'s letters are painted over near \d+,\d+;/.test(then[0]?.message ?? ""), "text-clear passes the halo and catches a stroke that covers the line above", `now ${JSON.stringify(now)}\nthen ${JSON.stringify(then)}`);
 }
 
 const emptyFacts = path.join(OUT, "empty-facts.json");

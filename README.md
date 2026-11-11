@@ -4,26 +4,23 @@ vyo draws a codebase as one poster that someone who does not code can read. Your
 
 <table align="center">
   <tr>
-    <td align="center" valign="top"><img src="docs/posters/bands-pantry-dark-web.png" width="280" alt="A dark poster headed 'A week of dinners, planned in one go.' A white storage jar is cut into horizontal bands. Each band repeats the plain name of one part of the code, such as 'screens', 'recipe cards' and 'week view', in type as big as that part's share of the code. One band, 'the plan', is orange."></td>
     <td align="center" valign="top"><img src="docs/posters/rings-pantry-dark-web.png" width="280" alt="A dark poster headed 'A week of dinners, planned in one go.' A jar outline is filled with rings inside rings. Each ring is lines of small type naming one part of the code. The orange rings are the plan. Faint outlines echo the jar around it."></td>
     <td align="center" valign="top"><img src="docs/posters/relief-pantry-dark-web.png" width="280" alt="A dark poster headed 'A week of dinners, planned in one go.' A jar rendered as a lit, rounded volume in dense small type. Each layer is the name of one part of the code. The layer for the plan glows orange near the bottom."></td>
   </tr>
   <tr>
-    <td align="center" valign="top"><img src="docs/posters/bands-hypher-light-web.png" width="280" alt="A pale poster headed 'Switch agents without starting over.' A notebook shape with a ribbon at the bottom is cut into bands in slate and black. The words 'server', 'screen pieces' and 'web helpers' fill the big bands. The 'handoff note' band is orange."></td>
     <td align="center" valign="top"><img src="docs/posters/rings-hypher-dark-web.png" width="280" alt="A dark poster headed 'Switch agents without starting over.' A large paper-plane shape is filled with rings of small type, one ring per part of the code. The orange outer rings read 'handoff note'. The core is drawn in level lines."></td>
     <td align="center" valign="top"><img src="docs/posters/relief-hypher-dark-web.png" width="280" alt="A dark poster headed 'Switch agents without starting over.' A paper plane with lit, folded wings, drawn in dense small type. Each band is the name of one part of the code. A band named 'handoff note' glows orange across the wing."></td>
   </tr>
 </table>
 
-<p align="center">The same two products in the three looks. Pantry is a recipe planner kept as a test fixture. Hypher is a tool for handing work from one coding agent to the next.</p>
+<p align="center">The same two products in two of the looks. Pantry is a recipe planner kept as a test fixture. Hypher is a tool for handing work from one coding agent to the next.</p>
 
 ## The looks
 
 A shape poster has one `style`. You pick it, or your agent does. The shape is drawn from a few ops, or traced from a PNG.
 
-- **bands** cuts the shape top to bottom into one band per part. Part names read from across a room.
+- **relief**, the default, draws the outline as a lit, sculpted volume in dense small type. The object itself is the pull.
 - **rings** sets the names along the outline, ring inside ring. It suits a fat, round object.
-- **relief** draws the outline as a lit, sculpted volume in dense small type. The object itself is the pull.
 - **symbols** draws the outline in shaded clusters of `- : = + #`, like ASCII art.
 
 Any of them sits in the default frame shown here or in the high-contrast `signal` frame: a charcoal or paper ground, one signal colour, a grotesque headline, metadata and highlighter marks. vyo also generates fields when no one object fits the product, such as a wave, a terrain, a river, a coil or one giant letter, and `vyo render --gif` animates a poster.
