@@ -1,0 +1,27 @@
+{
+  "facts": "../facts/express-facts.json",
+  "product": "Express",
+  "number": "04/04",
+  "commit": "43fca52",
+  "date": "2026-11-02",
+  "headline": "Fast, minimal web servers for Node: a router and little else.",
+  "legend": "Every band of the bolt is a part of Express, as big as its share of the code. The white band is the router.",
+  "accent": "area:lib",
+  "names": {
+    "area:.": "entry",
+    "area:examples": "examples",
+    "area:examples/auth": "sign-in demo",
+    "area:examples/mvc": "pages demo",
+    "area:examples/route-separation": "routes demo",
+    "area:examples/view-locals": "views demo",
+    "area:lib": "the router"
+  },
+  "ground": "#FF4FA8",
+  "ink": "#0E0E0E",
+  "signal": "#F4F1E8",
+  "shape": { "ops": [
+    { "add": "polygon", "points": [[62, 0], [16, 58], [46, 58], [32, 100], [86, 38], [56, 38], [74, 0]] }
+  ] },
+  "solid": { "kind": "extrude", "depth": 0.16 },
+  "seed": 4
+}
