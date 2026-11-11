@@ -17,10 +17,10 @@ import { SHEET } from "../lib/geometry.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const recipe = scanRepo(path.join(HERE, "fixtures", "recipe"));
 const jar = () => ({ ...JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "shape.json"), "utf8")), facts: recipe.hash });
-const legendText = "Every band is a part of Pantry, its type as big as its share of the code. The orange band is the plan.";
+const legendText = "Every band of marks is a part of Pantry, as big as its code share. The orange band of marks is the plan.";
 const bare = (shape, style) => {
   const s = jar();
-  Object.assign(s.figure.regions[0], { shape, ...(style ? { style } : {}) });
+  Object.assign(s.figure.regions[0], { shape, style: style ?? "symbols" });
   s.figure.texts = [{ role: "label", id: "label" }, { role: "headline", id: "headline" }, { role: "legend", id: "legend", text: legendText }, { role: "paragraph", id: "how", text: "Pick recipes once and the week plans itself." }];
   return s;
 };
@@ -132,6 +132,6 @@ test("a relief stacks its headline top left: the largest size the room holds in 
   assert.equal(estimateText({ ...head, w: head.w - 20 }, spec("relief"), recipe).lines, 5, "the narrowest column that holds it in four");
   const legend = placed.find((t) => t.role === "legend");
   assert.ok(legend.x === head.x && legend.w >= PLACE.stacked.legend[0] && legend.w <= PLACE.stacked.legend[1] && legend.y > est.bottom, "the legend under it");
-  // Bands keep the default size.
+  // Symbols keep the default size.
   assert.equal(placeTexts(spec(), recipe).figure.texts.find((t) => t.role === "headline").size, 42);
 });

@@ -2,6 +2,7 @@
 import { VENDORS } from "./scan/detect-services.mjs";
 import { matchGlob } from "./scan/glob.mjs";
 import { FIELDS } from "./fields/index.mjs";
+import { DEFAULT_STYLE } from "./fields/shape.mjs";
 
 export const PART_DEFAULTS = { minShare: 0.02, maxParts: 14 };
 const ROOT = "area:.";
@@ -83,7 +84,7 @@ export function partsFromFacts(facts, { minShare = PART_DEFAULTS.minShare, maxPa
 }
 
 // A part over `share` of the lines, or fewer than `parts` parts, draws a shape as one slab. The cold runs' flask
-// (62% accent, in rings) and train (58%, in bands) read well; Got's bone (95%) was one orange haze.
+// (62% accent, in rings) and train (58%) read well; Got's bone (95%) was one orange haze.
 export const DOMINANT = { share: 0.75, parts: 4 };
 
 /**
@@ -125,7 +126,7 @@ export function accentIds(parts, accent) {
 }
 
 /** A region's part options: its field's defaults, its style's, then its own. */
-export const partOptions = (region) => ({ ...FIELDS[region.field]?.parts, ...FIELDS[region.field]?.styleParts?.[region.style], ...region });
+export const partOptions = (region) => ({ ...FIELDS[region.field]?.parts, ...FIELDS[region.field]?.styleParts?.[region.style ?? (region.field === "shape" ? DEFAULT_STYLE : undefined)], ...region });
 
 /** The part that holds `area`: the deepest part that is the area itself or one of its ancestors. */
 function partOfArea(ids, area) {

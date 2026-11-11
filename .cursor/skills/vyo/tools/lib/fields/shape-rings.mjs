@@ -791,10 +791,10 @@ function ringsLayout(mask, parts, theme, blocks, echo) {
     b.rings = ringLength.filter((len, i) => len > 0 && b.runs.some((r) => i < r.to && i + 1 > r.from)).length;
     b.missing = b.rings || b.core
       ? `its ${b.rings} rings${b.core ? " and its core lines" : ""} hold no whole copy of "${b.part.name.toLowerCase()}" (${Math.ceil(nameArc(b.part))}px with its dot), where they run short or fold; make the shape fatter there or give the part a shorter name`
-      : `the shape ran out of rings before it (${R} rings of ${gap}px fit); draw it fatter or use style bands`;
+      : `the shape ran out of rings before it (${R} rings of ${gap}px fit); draw it fatter or use style relief`;
   }
   const findings = {
-    "shape-rings": R < need ? [`the shape is ${across}px across at its thickest, room for ${R} rings of ${gap}px; its ${P} parts need about ${need}, so draw it fatter (about ${2 * need * gap}px across at its thickest), raise fit.h, or use style bands`] : [],
+    "shape-rings": R < need ? [`the shape is ${across}px across at its thickest, room for ${R} rings of ${gap}px; its ${P} parts need about ${need}, so draw it fatter (about ${2 * need * gap}px across at its thickest), raise fit.h, or use style relief`] : [],
     "shape-upright": bands.filter((b) => b.names && !b.upright).map((b) => `part "${b.part.name}" never reads upright: none of its ${b.names} names leans under ${RINGS.upright} degrees; turn the shape (shape.rotate) so more of its outline runs level, or draw it rounder`),
   };
   const summary = [

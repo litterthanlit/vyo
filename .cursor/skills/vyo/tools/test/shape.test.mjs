@@ -1,4 +1,4 @@
-// The shape field: its validation, its mask and fit, its bands, its feedback in sketch and the checks.
+// The shape field: its validation, its mask and fit, its feedback in sketch and the checks.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -7,7 +7,6 @@ import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { validateSpec } from "../lib/spec.mjs";
 import { shapeMask, maskGrid, runsPath, SHAPE_ROOM } from "../lib/mask.mjs";
-import { shapeBands, bandsStyle, nameWidth, BANDS } from "../lib/fields/shape.mjs";
 import { shapeReport, shapeFindings, thinFeatures, SHAPE_CHECKS } from "../lib/shape-report.mjs";
 import { CHECKS } from "../lib/check.mjs";
 import { sketch, sketchImage } from "../lib/sketch.mjs";
@@ -86,7 +85,8 @@ test("a shape that paints nothing, a placeholder, a missing shape, a swiss shape
   assert.deepEqual(validateSpec(withShape({ ops: [rect([0, 0], [10, 10]), { cut: "rect", at: [-1, -1], size: [12, 12] }] })), [`${f}.shape: the ops paint nothing on the sheet; the cuts remove all of it, or fit.cx and fit.cy move it off`]);
   assert.match(validateSpec(withShape("… the silhouette"))[0], /^figure\.regions\[0\]\.shape: still the placeholder; draw the silhouette as \{ ops: \[\.\.\.\] \}/);
   assert.match(validateSpec(withShape(undefined)).join("\n"), /^figure\.regions\[0\]\.shape: missing; draw the silhouette/m);
-  assert.ok(validateSpec(withShape(jar().figure.regions[0].shape, { style: "spiral" })).some((e) => /^figure\.regions\[0\]\.style: "spiral" is not a style; use bands or rings\b.*, or leave it out$/.test(e)));
+  assert.ok(validateSpec(withShape(jar().figure.regions[0].shape, { style: "spiral" })).some((e) => /^figure\.regions\[0\]\.style: "spiral" is not a style; use rings or relief or symbols, or leave it out$/.test(e)));
+  assert.ok(validateSpec(withShape(jar().figure.regions[0].shape, { style: "bands" })).includes(`${f}.style: "bands" is not a style; use rings or relief or symbols, or leave it out`), "bands no longer ships");
   const swiss = { ...jar(), frame: "swiss" };
   assert.ok(validateSpec(swiss).includes(`${f}.field: a shape field draws only in the loose or signal frame; remove frame or set it to loose`));
   const wave = JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "wave.json"), "utf8"));
@@ -153,80 +153,6 @@ test("the mask is a grid for pixel work and a smooth SVG path for the page", () 
   assert.equal(d, "M10 0H20V0.5H10ZM10 0.5H20L21 1.5H11ZM11 1.5H21V2H11Z", "neighbouring rows join centre to centre, half rows close the ends");
 });
 
-test("bands: one per part in tree order, areas within 15% of line shares, type by weight", () => {
-  const spec = jar();
-  const parts = regionParts(spec.figure.regions[0], recipe);
-  const mask = shapeMask(spec.figure.regions[0].shape);
-  const bands = shapeBands(mask, parts);
-  assert.deepEqual(bands.map((b) => b.part.id), parts.map((p) => p.id));
-  const total = parts.reduce((s, p) => s + p.loc, 0);
-  for (const b of bands) {
-    const area = mask.runs.slice(b.y0, b.y1).reduce((s, row) => s + row.reduce((a, [l, r]) => a + r - l, 0), 0);
-    const share = b.part.loc / total;
-    if (b.y1 - b.y0 > BANDS.minBand) near(area / mask.area, share, 0.15 * share + 0.004, `${b.part.name}'s area`);
-    assert.ok(b.y1 - b.y0 >= BANDS.minBand, `${b.part.name} is at least ${BANDS.minBand}px tall`);
-  }
-  for (const [a, b] of bands.slice(1).map((b, i) => [bands[i], b])) assert.equal(a.y1, b.y0, "bands touch, top to bottom");
-  const { bands: drawn } = bandsStyle(mask, parts, { measure: fixedMeasure });
-  const big = drawn.reduce((a, b) => (b.part.loc > a.part.loc ? b : a));
-  for (const b of drawn) {
-    assert.ok(b.size >= BANDS.min, `${b.part.name} at ${b.size}px is at least 5px`);
-    if (b.part.loc < big.part.loc / 4) assert.ok(b.size < big.size / 2, `${b.part.name}, a small part, is set much smaller than ${big.part.name}`);
-  }
-});
-
-test("every line sits where the mask covers its whole glyph height, and every part shows its whole name", () => {
-  const spec = jar();
-  const parts = regionParts(spec.figure.regions[0], recipe);
-  const mask = shapeMask(spec.figure.regions[0].shape);
-  const { rows } = bandsStyle(mask, parts, { measure: fixedMeasure });
-  for (const r of rows) {
-    for (let y = Math.ceil(r.y + 0.04 * r.size); y < Math.floor(r.y + Math.min(0.99 * r.size, r.height)); y++) {
-      assert.ok(mask.runs[y].some(([l, rr]) => l <= r.x + 0.01 && rr >= r.x + r.width - 0.01), `"${r.text.slice(0, 12)}" at ${Math.round(r.x)},${Math.round(r.y)} is inside the mask on row ${y}`);
-    }
-  }
-  for (const p of parts) assert.ok(rows.some((r) => r.part === p.id && r.text.includes(p.name.toLowerCase())), `${p.name} is drawn whole`);
-  for (const r of rows) {
-    const name = parts.find((p) => p.id === r.part).name.toLowerCase();
-    assert.equal(r.text, Array(r.text.split(name).length - 1).fill(name).join(" "), `"${r.text}" holds whole names only`);
-  }
-  assert.equal(nameWidth("abc", 10), 3 * 0.62 * 10 - 0.2, "a name's width counts its tracking between letters");
-});
-
-test("a tall band broken up by wheels holds its name large on several lines, whole names only, inside the sheet", () => {
-  // The cold run's locomotive: a boiler, a cab, a chimney and three wheels, the accent the biggest part at the bottom.
-  const loco = shapeMask({ ops: [{ add: "capsule", from: [20, 52], to: [72, 52], r: 22 }, rect([66, 12], [32, 64]), rect([22, 6], [12, 26]), rect([8, 72], [94, 12]), ...[28, 58, 84].map((x) => ({ add: "circle", at: [x, 92], r: 16 }))], fit: { w: 1.05, cy: 0.62 } });
-  const parts = [["area:.", "front door", 10], ["area:examples", "sample apps", 1000], ["area:lib", "request handling", 2300]].map(([id, name, loc]) => ({ id, name, loc, hot: id === "area:lib" }));
-  const { bands, rows } = bandsStyle(loco, parts, { measure: fixedMeasure });
-  const hot = bands.find((b) => b.part.hot);
-  assert.ok(hot.y1 - hot.y0 > 300, `the accent band is tall (${hot.y1 - hot.y0}px)`);
-  const mine = rows.filter((r) => r.hot);
-  assert.ok(new Set(mine.map((r) => r.y)).size >= 3, `its name is set on 3 lines or more (${mine.length} rows)`);
-  assert.ok(hot.size >= 40, `in large type (${hot.size.toFixed(1)}px)`);
-  const inked = mine.reduce((s, r) => s + r.width * r.size, 0);
-  const area = loco.runs.slice(hot.y0, hot.y1).reduce((s, row) => s + row.reduce((a, [l, r]) => a + r - l, 0), 0);
-  assert.ok(inked / area > 0.3, `its lines cover the band, not one line in an empty slab (${Math.round((100 * inked) / area)}%)`);
-  for (const r of rows) {
-    const name = r.word.toLowerCase();
-    assert.match(r.text, new RegExp(`^${name}( ${name})*$`), `"${r.text}" holds whole names only`);
-    assert.ok(r.x >= 0 && r.x + r.width <= W, `"${r.text}" stays on the sheet`);
-  }
-});
-
-test("the light theme alternates fills over a cast shadow; the dark theme fills in ink", () => {
-  const spec = jar();
-  const parts = regionParts(spec.figure.regions[0], recipe);
-  const mask = shapeMask(spec.figure.regions[0].shape);
-  const light = bandsStyle(mask, parts, { measure: fixedMeasure, theme: "light" }).ground;
-  assert.equal(light[0].part, null, "the shadow comes first");
-  assert.equal(light[0].tone, "cold");
-  assert.equal(light[1].tone, "paper", "then the gaps between bands, in paper");
-  assert.deepEqual(light.slice(2, 5).map((g) => g.tone), ["ink", "cool", "ink"]);
-  assert.equal(light.find((g) => g.hot).tone, "hot");
-  const dark = bandsStyle(mask, parts, { measure: fixedMeasure, theme: "dark" }).ground;
-  assert.ok(dark.every((g) => g.part && (g.hot ? g.tone === "hot" : g.tone === "ink")));
-});
-
 test("findings: the jar has none, and each planted shape trips its own, with a number and an instruction", () => {
   const findings = (spec, blocks = []) => shapeFindings(shapeReport(spec, spec.figure.regions[0], recipe), { blocks });
   const nothing = (f) => Object.values(f).flat();
@@ -237,15 +163,11 @@ test("findings: the jar has none, and each planted shape trips its own, with a n
   assert.match(hairline["shape-thin"][0], /^the shape is \d+px thick near \d+,\d+; under 18px it is a hairline at thumbnail size, so make that feature at least 18px thick or remove it$/);
   const slit = findings(withShape({ ...base, ops: [...base.ops, { cut: "rect", at: [0, 70], size: [100, 0.8] }] }));
   assert.match(slit["shape-thin"][0], /^a cut in the shape is \d+px wide near \d+,\d+; under 18px it closes up at thumbnail size, so widen the cut to at least 18px or remove it$/);
-  assert.match(slit["shape-split"][0], /^the band of "[a-z ]+" \(y \d+ to \d+\) falls on 2 separate pieces of the shape, at x \d+ to \d+ and x \d+ to \d+; join them there, or move one piece up or down by \d+px so they do not share those rows$/);
 
   const tiny = findings(withShape({ ...base, fit: { h: 0.3 } }));
-  assert.match(tiny["shape-cover"][0], /^the shape covers 7% of the sheet; it needs 35% to read as the picture, so scale it up 2\.\d+x \(set fit\.h to 0\.6\d, it is 0\.3\) or draw it fatter$/);
-  assert.match(tiny["shape-accent"][0], /^the accent band "the plan" is \d\dpx tall \(y \d+ to \d+\); it needs 40px to show in the thumbnail, so scale the shape up 1\.\d+x, narrow it where the band falls, or put the accent on a bigger part$/);
-
-  // A cup's handle is joined to the cup above and below the bands that cross its hole: one piece, not a split.
-  const cup = findings(withShape({ ops: [{ add: "polygon", points: [[8, 4], [82, 4], [74, 84], [16, 84]], round: 5 }, { add: "arc", at: [80, 32], r: 15, from: 0, to: 180, width: 8 }, { add: "ellipse", at: [45, 88], r: [46, 7] }] }));
-  assert.deepEqual(cup["shape-split"], []);
+  assert.match(tiny["shape-cover"][0], /^the shape covers 7% of the sheet; it needs 18% to read as the picture, so scale it up 1\.\d+x \(set fit\.h to 0\.4\d, it is 0\.3\) or draw it fatter$/);
+  const tinySymbols = findings(withShape({ ...base, fit: { h: 0.3 } }, { style: "symbols" }));
+  assert.match(tinySymbols["shape-cover"][0], /^the shape covers 7% of the sheet; it needs 35% to read as the picture, so scale it up 2\.\d+x \(set fit\.h to 0\.6\d, it is 0\.3\) or draw it fatter$/, "every style but relief needs 35%");
 
   // The cold run's flask: fit h 0.76 at cy 0.63 runs 12px off the bottom.
   const flask = findings(withShape({ ops: [{ add: "circle", at: [50, 66], r: 34 }, rect([39, 12], [22, 34]), rect([33, 4], [34, 10], { round: 3 })], fit: { h: 0.76, cx: 0.6, cy: 0.63 } }));
@@ -259,7 +181,7 @@ test("findings: the jar has none, and each planted shape trips its own, with a n
   for (const m of [wide, lean]) assert.doesNotMatch(m, /scale it up 1x|set fit\.\w to ([\d.]+), it is \1\)/);
 
   const stem = findings(withShape({ ops: [rect([0, 0], [6, 120]), rect([-40, 120], [84, 60], { round: 10 })], fit: { h: 0.8 } }));
-  assert.match(stem["shape-name"][0], /^part "saved recipes" never shows its whole name: its band \(y \d+ to \d+\) holds \d+px of 5\.0px type and the name needs \d+px; widen the shape there to at least \d+px or give the part a shorter name$/);
+  assert.match(stem["shape-name"][0], /^part "saved recipes" never shows its whole name: its stratum's widest run of type is \d+px and the name needs \d+px; widen the shape where the stratum falls, turn the strata \(strata\.angle\) so it crosses the shape's long side, or give the part a shorter name$/);
 
   const room = findings(jar(), [{ id: "legend", left: 400, top: 600, right: 660, bottom: 680 }]);
   assert.match(room["shape-room"][0], /^the legend \(260 by 80 at 400,600\) sits on the shape or within 16px of it; move it into the top-(left|right) corner, \d+ by \d+ at \d+,0$/);
@@ -289,9 +211,7 @@ test("shape-dominant: Got's accent, 95% of its code in 3 parts, is one slab; spl
   assert.equal(shapeReport(split, split.figure.regions[0], got).parts.length, 6);
   const lone = { hash: got.hash, facts: [{ id: "area:app", kind: "area", name: "App", meta: { leaf: true } }, { id: "area:docs", kind: "area", name: "Docs", meta: { leaf: true } }], files: { "app/a.js": { area: "area:app", loc: 900 }, "docs/b.js": { area: "area:docs", loc: 100 } } };
   const one = spec({ accent: "area:app" });
-  assert.deepEqual(shapeFindings(shapeReport(one, one.figure.regions[0], lone))["shape-dominant"], ['the accent "App" holds 90% of the lines, so relief draws it as one slab of the accent; "App" has no folders inside it to split, so put the accent on a smaller part, or set style to bands, whose type still names every part']);
-  const banded = spec({ accent: "area:app", style: "bands" });
-  assert.deepEqual(shapeFindings(shapeReport(banded, banded.figure.regions[0], lone))["shape-dominant"], [], "in bands with nothing to split, nothing to say");
+  assert.deepEqual(shapeFindings(shapeReport(one, one.figure.regions[0], lone))["shape-dominant"], ['the accent "App" holds 90% of the lines, so relief draws it as one slab of the accent; "App" has no folders inside it to split, so put the accent on a smaller part']);
 });
 
 test("shape-dominant: a small accent among few parts is fine unless the big part can be split, and then the split keeps the accent", () => {
@@ -299,7 +219,7 @@ test("shape-dominant: a small accent among few parts is fine unless the big part
   const found = (s, facts) => shapeFindings(shapeReport(s, s.figure.regions[0], facts))["shape-dominant"];
   // The requests cold run: the accent is the 2% part of two, and the 98% part has no folders. Nothing can change it.
   const mug = { hash: got.hash, facts: [{ id: "area:.", kind: "area", name: "Root" }, { id: "area:src", kind: "area", name: "Src", meta: { leaf: true } }], files: { "README.py": { area: "area:.", loc: 40 }, "src/a.py": { area: "area:src", loc: 1960 } } };
-  for (const style of ["rings", "relief", "bands"]) assert.deepEqual(found(withShape(jar().figure.regions[0].shape, { style, accent: "area:.", names: {} }), mug), [], `${style}: nothing to say`);
+  for (const style of ["rings", "relief", "symbols"]) assert.deepEqual(found(withShape(jar().figure.regions[0].shape, { style, accent: "area:.", names: {} }), mug), [], `${style}: nothing to say`);
   // Got with the accent on its documentation: Source is the slab, and splitting Source is the fix.
   const doc = withShape(jar().figure.regions[0].shape, { style: "rings", accent: "area:documentation", names: {} });
   assert.deepEqual(found(doc, got), ['"Source" holds 95% of the lines and the shape has 3 parts, so it draws as one slab around the accent; add "split": ["area:source"] to the region to cut "Source" into the folders inside it (6 parts, the largest 63%); the accent stays where it is']);
@@ -332,27 +252,26 @@ test("a sharp tip is not a thin feature, a bleed is not thin, and a 10px bar is"
   near(bar[0].width, 0.8 * W * (2 / 160), 3, "its width is measured");
 });
 
-test("sketch of the jar: the mask at 20px with the accent band, each band's numbers, the corners, no warnings", () => {
+test("sketch of the jar: the mask at 20px with the accent stratum, each stratum's numbers, the corners, no warnings", () => {
   const out = sketch(jar(), recipe);
   const grid = out.split("\n\nregions:")[0].split("\n");
   assert.ok(grid.every((l) => l.length <= 42));
-  assert.match(out, /A{20}/);
-  assert.match(out, /@{20}/, "the accent band");
-  assert.match(out, /^regions: A shape \(shape, 12 bands; @ marks the accent band\); · marks hot rows$/m);
-  assert.match(out, /^shape: covers 6\d% of the sheet \(needs 35%\), \d+ by \d+px \(fit\.w 0\.9\d, fit\.h 0\.9\), bleeds bottom$/m);
-  assert.match(out, /^ {4}screens {18}y \d+ to \d+, \d+px tall, 1 line of \d+\.\dpx type$/m);
-  assert.match(out, /^ {2}\* the plan {17}y \d+ to \d+, \d+px tall, 2 lines of \d+\.\dpx type$/m);
+  assert.match(out, /@{20}/, "the accent stratum");
+  assert.match(out, /^regions: A shape \(shape, 12 strata; @ marks the accent stratum, ·:-=\+\*# the light\); · marks hot rows$/m);
+  assert.match(out, /^shape: covers 6\d% of the sheet \(needs 18%\), \d+ by \d+px \(fit\.w 0\.9\d, fit\.h 0\.9\), bleeds bottom$/m);
+  assert.match(out, /^ {4}screens {18}\d+\.\d% of the area for \d+\.\d% of the lines, \d+ glyph cells, whole name \d+x$/m);
+  assert.match(out, /^ {2}\* the plan {17}\d+\.\d% of the area for \d+\.\d% of the lines, \d+ glyph cells, whole name \d+x, \d+px thick$/m);
   assert.match(out, /^corners: top-left at 0,0 is 420 by \d+;/m);
   assert.doesNotMatch(out, /^! /m);
   const tiny = sketch(withShape({ ...jar().figure.regions[0].shape, fit: { h: 0.3 } }), recipe);
-  assert.match(tiny, /^! shape-cover: the shape covers 7% of the sheet; it needs 35%/m);
+  assert.match(tiny, /^! shape-cover: the shape covers 7% of the sheet; it needs 18%/m);
 });
 
 test("shape-limb: the cold run's mailbox on a long bare post reads as a signpost; a short post, a flask's neck and a tapering tip pass", () => {
   const limb = (shape) => shapeFindings(shapeReport(withShape(shape), withShape(shape).figure.regions[0], recipe))["shape-limb"];
   const head = [rect([10, 0], [80, 70], { round: 38 }), rect([10, 40], [80, 42], { round: 4 })];
   assert.deepEqual(limb({ ops: [...head, rect([41, 80], [18, 40]), rect([88, 12], [8, 36], { round: 2 })] }).map((m) => m.replace(/\d+/g, "#")), [
-    "a thin limb at the bottom (y # to #, #px wide) takes #% of the shape's height for #% of its area; at thumbnail size the object reads as a post with a small head, and its bands there are too narrow to read, so shorten it to under #% of the height or drop it",
+    "a thin limb at the bottom (y # to #, #px wide) takes #% of the shape's height for #% of its area; at thumbnail size the object reads as a post with a small head, and its parts there are too narrow to read, so shorten it to under #% of the height or drop it",
   ]);
   assert.match(limb({ ops: [...head, rect([41, 80], [18, 40])] })[0], /takes 3\d% of the shape's height for 1\d% of its area;.* shorten it to under 25% of the height or drop it$/);
   assert.deepEqual(limb({ ops: [...head, rect([41, 80], [18, 20])] }), [], "a short post");
@@ -375,7 +294,7 @@ test("the sketch prints each shape finding at the level render gives it: a block
   assert.match(tiny, /^! shape-cover: /m, "a warning stays a warning");
 });
 
-test("the sketch PNG is a 280px picture of the silhouette with its accent band, encoded without a browser", () => {
+test("the sketch PNG is a 280px picture of the silhouette with its accent, encoded without a browser", () => {
   const png = sketchImage(jar(), recipe);
   assert.deepEqual([...png.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
   assert.equal(png.readUInt32BE(16), 280);
@@ -383,8 +302,16 @@ test("the sketch PNG is a 280px picture of the silhouette with its accent band, 
   const idat = png.subarray(png.indexOf("IDAT") + 4, png.indexOf("IEND") - 8);
   const raw = zlib.inflateSync(idat);
   const pixels = new Set();
-  for (let y = 0; y < 397; y++) for (let x = 0; x < 280; x++) pixels.add(raw.subarray(y * 841 + 1 + x * 3, y * 841 + 4 + x * 3).toString("hex"));
-  for (const hex of ["eae8e2", "161616", "5f7389", "ff4f12"]) assert.ok(pixels.has(hex), `the paper, both fills and the accent appear (${hex})`);
+  let hot = 0;
+  for (let y = 0; y < 397; y++) {
+    for (let x = 0; x < 280; x++) {
+      const [r, g, b] = raw.subarray(y * 841 + 1 + x * 3, y * 841 + 4 + x * 3);
+      pixels.add([r, g, b].map((v) => v.toString(16).padStart(2, "0")).join(""));
+      if (r > 100 && r > g + 50) hot++;
+    }
+  }
+  assert.ok(pixels.has("eae8e2"), "the paper appears");
+  assert.ok(hot > 2000, `the accent shows (${hot} orange pixels)`);
   assert.equal(sketchImage(JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "wave.json"), "utf8")), recipe), null, "no PNG without a drawn shape");
 });
 
@@ -395,14 +322,7 @@ function sketchPixels(spec) {
   return Array.from({ length: 397 }, (_, y) => Array.from({ length: 280 }, (_, x) => raw.subarray(y * 841 + 1 + x * 3, y * 841 + 4 + x * 3).toString("hex")));
 }
 
-test("the sketch PNG draws large type as bars, so the big words show before render, and draws creases", () => {
-  const px = sketchPixels(jar());
-  const big = shapeReport(jar(), jar().figure.regions[0], recipe).rows.filter((r) => r.size >= 12);
-  assert.ok(big.length);
-  for (const r of big) {
-    const [x, y] = [Math.round((r.x + r.width / 2) / 3), Math.round((r.y + 0.6 * r.size) / 3)];
-    assert.equal(px[y][x], r.tone === "on-hot" ? "161616" : "eae8e2", `"${r.text}" is a bar in its letters' tone at ${x},${y}`);
-  }
+test("the sketch PNG draws creases", () => {
   const relief = JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "shape-relief.json"), "utf8"));
   relief.facts = recipe.hash;
   const count = (spec) => sketchPixels(spec).flat().filter((c) => c === "0e1424").length;

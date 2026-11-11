@@ -46,7 +46,7 @@ test("the rings preset and a plane in rings are valid specs; echo is checked", (
   const bad = (over) => validateSpec(Object.assign(jar(), { figure: { ...jar().figure, regions: [{ ...jar().figure.regions[0], ...over }] } }));
   assert.ok(bad({ echo: 13 }).includes(`${f}.echo: a whole number of faded outlines from 0 to 12`));
   assert.ok(bad({ echo: 2.5 }).includes(`${f}.echo: a whole number of faded outlines from 0 to 12`));
-  assert.ok(bad({ style: "bands", echo: 3 }).includes(`${f}.echo: only the rings style draws echoes; set style to rings or remove echo`));
+  assert.ok(bad({ style: "relief", echo: 3 }).includes(`${f}.echo: only the rings style draws echoes; set style to rings or remove echo`));
 });
 
 for (const [name, specOf, facts] of CASES) {
@@ -145,7 +145,7 @@ test("a thin shape warns shape-rings before render, with the rings it has, the r
   s.figure.regions[0].shape = { ops: [{ add: "rect", at: [0, 0], size: [100, 12], round: 4 }], fit: { w: 0.9 } };
   const report = reportOf(s, recipe);
   const [message] = shapeFindings(report)["shape-rings"];
-  assert.match(message, /^the shape is \d+px across at its thickest, room for \d rings of 7px; its 12 parts need about 18, so draw it fatter \(about 252px across at its thickest\), raise fit\.h, or use style bands$/);
+  assert.match(message, /^the shape is \d+px across at its thickest, room for \d rings of 7px; its 12 parts need about 18, so draw it fatter \(about 252px across at its thickest\), raise fit\.h, or use style relief$/);
   assert.match(sketch(s, recipe), /^! shape-rings: the shape is \d+px across at its thickest, room for \d rings of 7px; its 12 parts need about 18/m);
   assert.match(sketch(s, recipe), /^rings: \d rings of 7px fit \(the shape is \d+px across at its thickest; 12 parts want about 18\)/m);
 });

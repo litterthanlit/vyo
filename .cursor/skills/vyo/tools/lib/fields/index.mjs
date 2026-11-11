@@ -4,7 +4,7 @@
 import { waveRows, toneSet } from "./wave.mjs";
 import { terrainRows } from "./terrain.mjs";
 import { riverRows } from "./river.mjs";
-import { shapeRows, shapeGround, shapeSheet, SHAPE_TONES } from "./shape.mjs";
+import { shapeRows, shapeGround, shapeSheet, SHAPE_TOKENS } from "./shape.mjs";
 import { RELIEF_TONES } from "./shape-relief.mjs";
 import { radialRows } from "./radial.mjs";
 import { sphereRows } from "./sphere.mjs";
@@ -53,19 +53,19 @@ export const FIELDS = {
   shape: {
     about: "a silhouette you draw as ops, cut top to bottom into one band per part, as much area as its lines, the type as big as its share",
     options: ["shape", "style", "echo", "bevel", "strata", "split"],
-    // Every band must hold its whole name in readable type, so fewer, bigger parts than a wave.
+    // A ring or a symbol row must hold its whole name in readable type, so fewer, bigger parts than a wave.
     parts: { maxParts: 12 },
     // A relief's 6px type holds any name, so it takes as many parts as a wave.
     styleParts: { relief: { maxParts: 14 } },
     measure: [["code", "lines"], ["type", "size", "big", "bigger", "larger", "area"]],
     fits: ["object", "thing", "picture", "shape", "looks"],
     layout: shapeRows,
-    // The silhouette under the rows: one fill per band, as rows of spans.
+    // The silhouette under the rows, as rows of spans.
     ground: shapeGround,
     // Marks on the sheet itself, outside the shape: never figure, so no check reads them.
     sheet: shapeSheet,
     // The symbols style tints its rows like the generated fields, so it takes their tokens too.
-    tokens: (theme, frame) => ({ ...toneSet(theme, frame).tokens, ...SHAPE_TONES[theme].tokens, ...RELIEF_TONES[theme].tokens }),
+    tokens: (theme, frame) => ({ ...toneSet(theme, frame).tokens, ...SHAPE_TOKENS[theme], ...RELIEF_TONES[theme].tokens }),
     behindTexts: false,
     // The words sit in the room the silhouette leaves, so only the frames with a record line draw one.
     frames: ["loose", "signal"],

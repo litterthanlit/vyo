@@ -110,7 +110,7 @@ test("every check has a unique id, a level, a stage and a description", () => {
   for (const c of CHECKS) assert.ok(["fail", "warn"].includes(c.level) && ["spec", "page"].includes(c.stage) && c.about, c.id);
   assert.deepEqual(
     CHECKS.map((c) => c.id).sort(),
-    ["accent-part", "band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "field-parts", "fits", "fonts", "headline-lines", "hot-tagged", "legend", "masthead-font", "notes", "one-region", "palette", "part-name", "part-unplain", "path", "preset-copy", "product-name", "record", "region-size", "regions-apart", "row-variety", "rows-fit", "shape-accent", "shape-cover", "shape-dominant", "shape-edge", "shape-limb", "shape-name", "shape-rings", "shape-room", "shape-share", "shape-simple", "shape-split", "shape-thin", "shape-tone", "shape-upright", "silhouette", "spec", "still", "text-clear", "thin-region", "words-drawn"],
+    ["accent-part", "band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "field-parts", "fits", "fonts", "headline-lines", "hot-tagged", "legend", "masthead-font", "notes", "one-region", "palette", "part-name", "part-unplain", "path", "preset-copy", "product-name", "record", "region-size", "regions-apart", "row-variety", "rows-fit", "shape-accent", "shape-cover", "shape-dominant", "shape-edge", "shape-limb", "shape-name", "shape-rings", "shape-room", "shape-share", "shape-simple", "shape-thin", "shape-tone", "shape-upright", "silhouette", "spec", "still", "text-clear", "thin-region", "words-drawn"],
   );
 });
 

@@ -3,7 +3,7 @@ import { isJargon } from "./jargon.mjs";
 import { SHEET, SHAPE_KEYS, parsePath, flattenPath } from "./geometry.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { WAVE } from "./fields/wave.mjs";
-import { SHAPE_STYLES } from "./fields/shape.mjs";
+import { SHAPE_STYLES, DEFAULT_STYLE } from "./fields/shape.mjs";
 import { RINGS } from "./fields/shape-rings.mjs";
 import { SHAPE_KINDS, opKind, shapeMask } from "./mask.mjs";
 // Loads a traced shape's image for shapeMask, in Node.
@@ -607,7 +607,6 @@ function fieldRegion(field, { accent, parts, seed, letter }) {
 
 // A shape's legend by style: what one part is drawn as, and the measure in the words the legend check wants.
 const SHAPE_LEGEND = {
-  bands: { unit: "band", measure: "its type as big as its share of the code" },
   rings: { unit: "ring", measure: "its area as big as its share of the code" },
   symbols: { unit: "band of marks", measure: "as big as its share of the code" },
   relief: { unit: "layer", measure: "as big as its code" },
@@ -621,7 +620,7 @@ const SHAPE_LEGEND = {
 function looseFigure(field, { accent, split, style, accentNames, parts, places, seed, letter }) {
   const name = accentNames.length ? quoted(accentNames) : "the accent part by the plain name you give it in names";
   const measure = FIELDS[field].measure.map(quoted).join(", and ");
-  const look = field === "shape" && SHAPE_LEGEND[style ?? "bands"];
+  const look = field === "shape" && SHAPE_LEGEND[style ?? DEFAULT_STYLE];
   const legend = look
     ? `at most 2 sentences and ${FRAME_ROLES.loose.legend.max} characters, like "Every ${look.unit} is a part of <product>, ${look.measure}. The orange ${look.unit} is <the accent's plain name>."`
     : `what the picture encodes, at most 2 sentences and ${FRAME_ROLES.loose.legend.max} characters: name ${name} and the measure (${measure})`;

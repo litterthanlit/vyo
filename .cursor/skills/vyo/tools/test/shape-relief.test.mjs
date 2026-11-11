@@ -66,17 +66,17 @@ test("bad hints are each reported, in the house style", () => {
   ]) assert.ok(errors.includes(want), `expected ${JSON.stringify(want)} in ${JSON.stringify(errors, null, 1)}`);
 });
 
-test("a crease never changes the silhouette, and the bands style ignores every hint", () => {
+test("a crease never changes the silhouette, and the rings style ignores every hint", () => {
   const plain = shapeMask(plainJar);
   const creased = shapeMask({ ...plainJar, ops: [...plainJar.ops, { crease: "rect", at: [12, 58], size: [76, 42] }, { crease: "capsule", from: [16, 6], to: [84, 6] }] });
   assert.deepEqual(creased.runs, plain.runs);
-  const bands = (over) => {
+  const rings = (over) => {
     const s = relief(over);
-    s.figure.regions[0].style = "bands";
+    s.figure.regions[0].style = "rings";
     return report(s).rows.map((r) => [r.text, Math.round(r.x), Math.round(r.y)]);
   };
   const faced = { ...plainJar, ops: plainJar.ops.map((o) => ({ ...o, face: "dim" })) };
-  assert.deepEqual(bands({ shape: faced, bevel: 0.1, strata: { by: "depth" } }), bands({ shape: plainJar }));
+  assert.deepEqual(rings({ shape: faced, bevel: 0.1, strata: { by: "depth" } }), rings({ shape: plainJar }));
 });
 
 test("strata hold each part's share of the area, and the glyphs follow it", () => {

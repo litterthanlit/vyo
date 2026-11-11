@@ -10,7 +10,7 @@ import { stableStringify, factsHash } from "./lib/hash.mjs";
 import { scanRepoDetailed } from "./lib/scan/index.mjs";
 import { showFacts, hiddenCodeHint } from "./lib/scan/show.mjs";
 import { scaffoldSpec, validateSpec, THEMES, PLACEHOLDER } from "./lib/spec.mjs";
-import { SHAPE_STYLES } from "./lib/fields/shape.mjs";
+import { SHAPE_STYLES, DEFAULT_STYLE } from "./lib/fields/shape.mjs";
 import { sketch, sketchImage } from "./lib/sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE, SHEET } from "./lib/geometry.mjs";
 import { SHAPE_KINDS, SHAPE_ROOM } from "./lib/mask.mjs";
@@ -266,7 +266,7 @@ function shapeNotes() {
     "  Coordinates are free units, y down: the engine measures what you painted and fits it.",
     `  Leave fit out: the shape is then as large as fits ${R.left}px in from the sides, ${R.top}px below the top (room for the words) and ${R.bottom}px above the bottom, and never bleeds; the engine then centres it in the room the words leave.`,
     "  fit.w or fit.h sets its share of the sheet's width or height instead (over 1 bleeds off, and the sketch says which edges), fit.cx and fit.cy its centre.",
-    '  style: "bands" (the default) cuts it top to bottom and suits any outline; "rings" sets the names round the outline, ring inside ring, for a fat, round object, with "echo": 0 to 12 faded outlines; "relief" draws any outline as a lit volume in fine type; "symbols" draws it in shaded clusters of - : = + #, like ASCII art.',
+    '  style: "relief" (the default) draws any outline as a lit volume in fine type; "rings" sets the names round the outline, ring inside ring, for a fat, round object, with "echo": 0 to 12 faded outlines; "symbols" draws it in shaded clusters of - : = + #, like ASCII art.',
     '  Relief reads optional hints: "face": "lit" or "dim" on an add, { "crease": kind, ... } ops (a fold, never the outline), region "bevel" 0 to 1 and "strata" { "by": "angle", "angle" } or { "by": "depth" }.',
   ];
 }
@@ -365,7 +365,7 @@ function cmdCompose(argv) {
   const twins = new Set(sameNames(parts).flat());
   const unplain = parts.filter((p) => unplainName(p.name) || twins.has(p));
   const notes = preset ? preset.notes.length : 3;
-  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, split: opt.split, style: opt.style, parts, seed, letter };
+  const o = { frame, theme, commit, date, floor: floorFor(notes, 1), preset, field, accent: opt.accent, split: opt.split, style: opt.style ?? (field === "shape" ? DEFAULT_STYLE : undefined), parts, seed, letter };
   let space;
   if (RECORD_FRAMES.includes(frame)) {
     const draft = scaffoldSpec(facts, { ...o, places: {} });
@@ -429,7 +429,7 @@ function cmdSketch(argv) {
   if (image) {
     const file = path.join(path.dirname(pos[0]), `${spec.product.repo}-sketch.png`);
     fs.writeFileSync(file, image);
-    process.stdout.write(`sketch PNG: ${path.resolve(file)}, the silhouette at a third of its size with its bands or its shading; open it and check it reads as the object\n`);
+    process.stdout.write(`sketch PNG: ${path.resolve(file)}, the silhouette at a third of its size with its shading; open it and check it reads as the object\n`);
   }
   return 0;
 }

@@ -22,30 +22,26 @@ const share = (n) => Math.round(n * 100) / 100;
 /** A finding as render prints it: ✗ for a check that fails render, ! for one that warns, then its id. */
 export const findingLine = (id, message) => `${CHECKS.find((c) => c.id === id).level === "fail" ? "✗" : "!"} ${id}: ${message}`;
 
-/** A drawn shape in numbers: how much of the sheet it covers, its fit and bleed, and each band (or the style's own lines). */
-function shapeSummary({ mask, bands, summary, region }) {
+/** A drawn shape in numbers: how much of the sheet it covers, its fit and bleed, and the style's own lines. */
+function shapeSummary({ mask, summary, region }) {
   const { width: W, height: H } = SHEET;
   const b = mask.box;
   const bleeds = [["left", b.left < 0], ["top", b.top < 0], ["right", b.right > W], ["bottom", b.bottom > H]].filter(([, off]) => off).map(([side]) => side);
   return [
     `shape: covers ${Math.round((mask.area / (W * H)) * 100)}% of the sheet (needs ${coverFloor(region) * 100}%), ${Math.round(b.right - b.left)} by ${Math.round(b.bottom - b.top)}px (fit.w ${share(mask.fit.w)}, fit.h ${share(mask.fit.h)}), bleeds ${bleeds.join(", ") || "nowhere"}`,
-    // A style without bands says what it drew in its own lines; relief's are a function, so the page never
-    // pays for its thumbnail prediction.
-    ...(typeof summary === "function" ? summary() : summary ?? ["bands, top to bottom (* the accent):"]),
-    ...(summary ? [] : bands).map((d) => `  ${d.part.hot ? "*" : " "} ${d.part.name.toLowerCase().padEnd(24)} y ${d.y0} to ${d.y1}, ${d.y1 - d.y0}px tall, ${d.lines} ${d.lines === 1 ? "line" : "lines"} of ${d.size.toFixed(1)}px type`),
+    // A style says what it drew in its own lines; relief's are a function, so the page never pays for its
+    // thumbnail prediction.
+    ...(typeof summary === "function" ? summary() : summary),
   ];
 }
 
-// The sketch PNG is the sheet at a third of its size: 280px wide, like the render's thumbnail. Type at BAR_SIZE px
-// or more is drawn as bars.
+// The sketch PNG is the sheet at a third of its size: 280px wide, like the render's thumbnail.
 const IMAGE_SCALE = 3;
-const BAR_SIZE = 12;
 const hexRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
 /**
- * The silhouette as the poster will fill it, without a browser: each band in its fill, the accent band in the
- * accent, the gaps between bands in paper, its large lines of type as bars, its creases as lines, and the text
- * blocks outlined. Null when the figure has no drawn shape.
+ * The silhouette as the poster will fill it, without a browser: each part in its fill, the accent in the
+ * accent, its large lines of type as bars, its creases as lines, and the text blocks outlined. Null when the figure has no drawn shape.
  * @returns {Buffer | null}
  */
 export function sketchImage(given, facts) {
@@ -54,8 +50,8 @@ export function sketchImage(given, facts) {
   if (!region) return null;
   const report = shapeReport(spec, region, facts);
   const tokens = { ...tokensOf(spec), ...FIELDS.shape.tokens(spec.theme, frameOf(spec)) };
-  // Bands fill each row once, so a row's last band is its fill; rings lay fills over each other, so each row keeps
-  // them all, the last on top, and the letters show as a texture in their tone.
+  // Rings lay fills over each other, so each row keeps them all, the last on top, and the letters show as a
+  // texture in their tone.
   const glyphs = report.rows.filter((r) => r.glyphs);
   const toneAt = new Map();
   for (const g of report.ground) {
@@ -87,12 +83,6 @@ export function sketchImage(given, facts) {
       const i = (Math.floor(y / S) * w + Math.floor(x / S)) * 3;
       if (i >= 0 && i < rgb.length) for (let k = 0; k < 3; k++) rgb[i + k] = Math.round(rgb[i + k] * 0.6 + c[k] * 0.4);
     }
-  }
-  // Large type as solid bars across its x-height, in its tone, so the sketch shows where the big words fall.
-  for (const r of report.rows.filter((q) => !q.glyphs && q.size >= BAR_SIZE)) {
-    const c = hexRgb(tokens[r.tone] ?? tokens.paper);
-    for (let py = Math.round((r.y + 0.42 * r.size) / S); py <= Math.round((r.y + 0.78 * r.size) / S); py++)
-      for (let px = Math.round(r.x / S); px <= Math.round((r.x + r.width) / S); px++) if (px >= 0 && py >= 0 && px < w && py < h) rgb.set(c, (py * w + px) * 3);
   }
   // Creases as lines in the paper's tone: they fold the relief's light, which a third of the size hides.
   const { s: k, tx, ty } = report.mask.xf;
@@ -154,14 +144,13 @@ export function sketch(given, facts) {
       for (const it of report.rows) fieldRects.push({ left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + it.height });
       for (let r = 0; r < ROWS; r++) {
         const y = Math.min(SHEET.height - 1, r * CELL + CELL / 2);
-        const band = report.bands?.find((b) => y >= b.y0 && y < b.y1);
         const hot = report.ground.filter((g) => g.hot).flatMap((g) => g.rows.filter(([gy]) => gy === y).flatMap(([, spans]) => spans));
         for (let c = 0; c < COLS; c++) {
           const x = c * CELL + CELL / 2;
-          if (report.mask.runs[y].some(([l, rr]) => x >= l && x < rr)) put(r, c, report.ascii?.(x, y) ?? ((band ? band.part.hot : hot.some(([l, rr]) => x >= l && x < rr)) ? "@" : mark));
+          if (report.mask.runs[y].some(([l, rr]) => x >= l && x < rr)) put(r, c, report.ascii?.(x, y) ?? (hot.some(([l, rr]) => x >= l && x < rr) ? "@" : mark));
         }
       }
-      legend.push(`${mark} ${region.id} (shape, ${report.parts.length} ${report.ascii ? "strata; @ marks the accent stratum, ·:-=+*# the light" : report.summary ? "parts; @ marks the accent band" : "bands; @ marks the accent band"})`);
+      legend.push(`${mark} ${region.id} (shape, ${report.parts.length} ${report.ascii ? "strata; @ marks the accent stratum, ·:-=+*# the light" : "parts; @ marks the accent band"})`);
       shapeLines.push(...shapeSummary(report));
       const findings = shapeFindings(report, { blocks: spec.figure.texts.map((t) => estimateText(t, spec, facts)) });
       for (const [id, messages] of Object.entries(findings)) marked.push(...messages.map((m) => findingLine(id, m)));

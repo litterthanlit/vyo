@@ -163,7 +163,7 @@ test("vyo sketch runs every check that needs no browser: a legend and a fits tha
   }
 });
 
-test("compose --field shape --style writes the style and a legend placeholder in that style's words, never the names' placeholder", async () => {
+test("compose --field shape writes relief unless --style says otherwise, with a legend placeholder in that style's words, never the names' placeholder", async () => {
   const { spawnSync } = await import("node:child_process");
   const os = await import("node:os");
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-compose-"));
@@ -182,17 +182,20 @@ test("compose --field shape --style writes the style and a legend placeholder in
     assert.equal(legendOf(relief.spec), '… at most 2 sentences and 180 characters, like "Every layer is a part of <product>, as big as its code. The orange layer is <the accent\'s plain name>."');
     const rings = compose(path.join(dir, "rings.json"), "--field", "shape", "--style", "rings");
     assert.match(legendOf(rings.spec), /like "Every ring is a part of <product>, its area as big as its share of the code\. The orange ring is/);
-    const bands = compose(path.join(dir, "bands.json"), "--field", "shape");
-    assert.equal(bands.spec.figure.regions[0].style, undefined, "bands is the default, so no style is written");
-    assert.match(legendOf(bands.spec), /like "Every band is a part of <product>, its type as big as its share of the code\. The orange band is/);
-    for (const s of [relief, rings, bands]) assert.doesNotMatch(legendOf(s.spec), /a plain name for/, "the names' placeholder stays in names");
+    const bare = compose(path.join(dir, "bare.json"), "--field", "shape");
+    assert.equal(bare.spec.figure.regions[0].style, "relief", "relief is the default, and compose writes it");
+    assert.equal(legendOf(bare.spec), legendOf(relief.spec));
+    for (const s of [relief, rings, bare]) assert.doesNotMatch(legendOf(s.spec), /a plain name for/, "the names' placeholder stays in names");
     const wave = compose(path.join(dir, "wave.json"), "--field", "wave");
     assert.match(legendOf(wave.spec), /name the accent part by the plain name you give it in names and the measure \("code" or "lines"\)$/);
     const wrong = compose(path.join(dir, "bad.json"), "--field", "wave", "--style", "rings");
     assert.equal(wrong.r.status, 2);
     assert.match(wrong.r.stderr, /--style picks a shape field's look; pass --field shape/);
     const blob = compose(path.join(dir, "blob.json"), "--field", "shape", "--style", "blob");
-    assert.match(blob.r.stderr, /--style blob is not a style; use bands, rings, relief/);
+    assert.match(blob.r.stderr, /--style blob is not a style; use rings, relief, symbols/);
+    const bands = compose(path.join(dir, "bands.json"), "--field", "shape", "--style", "bands");
+    assert.equal(bands.r.status, 2);
+    assert.match(bands.r.stderr, /--style bands is not a style; use rings, relief, symbols/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

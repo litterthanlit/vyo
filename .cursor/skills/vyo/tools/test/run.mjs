@@ -103,10 +103,10 @@ const PLANTED = [
   ["a record line with no commit", "terrain", (s) => delete s.product.commit, /^✗ record: the record line has no commit; set product\.commit to the short hash/m],
   ["a fits without the field's keyword", "wave", (s) => (s.figure.regions[0].fits = "Pantry as a band of its own parts."), /^✗ fits: region wave: fits must say why a wave matches the product's story; use "travel" or "flow" or "hand" or "move"$/m],
   [
-    "a shape whose first band falls in a stem too narrow for its name",
+    "a shape whose first stratum falls in a stem too narrow for its name",
     "shape",
     (s) => (s.figure.regions[0].shape = { ops: [{ add: "rect", at: [0, 0], size: [6, 120] }, { add: "rect", at: [-40, 120], size: [84, 60], round: 10 }], fit: { h: 0.8 } }),
-    /^✗ shape-name: part "saved recipes" never shows its whole name: its band \(y \d+ to \d+\) holds \d+px of 5\.0px type and the name needs \d+px; widen the shape there to at least \d+px or give the part a shorter name$/m,
+    /^✗ shape-name: part "saved recipes" never shows its whole name: its stratum's widest run of type is \d+px and the name needs \d+px; widen the shape where the stratum falls/m,
   ],
   ["a legend placed on the shape", "shape", (s) => Object.assign(s.figure.texts.find((t) => t.role === "legend"), { x: 300, y: 600 }), /^✗ shape-room: the legend \(\d+ by \d+ at \d+,\d+\) sits on the shape or within 16px of it; move it into the top-(left|right) corner/m],
   ["a shape that paints nothing", "shape", (s) => s.figure.regions[0].shape.ops.push({ cut: "rect", at: [-50, -50], size: [300, 300] }), /^✗ spec: figure\.regions\[0\]\.shape: the ops paint nothing on the sheet/m],
@@ -116,8 +116,7 @@ const PLANTED = [
 const jarShape = () => preset("shape").figure.regions[0].shape;
 const SHAPE_WARNINGS = [
   ["a hairline handle", (s) => s.ops.push({ add: "capsule", from: [96, 60], to: [130, 40], r: 0.6 }), /^! shape-thin: the shape is \d+px thick near \d+,\d+; under 18px it is a hairline at thumbnail size, so make that feature at least 18px thick or remove it$/m],
-  ["a tiny jar", (s) => (s.fit = { h: 0.3, cx: 0.52, cy: 0.64 }), /^! shape-cover: the shape covers 7% of the sheet; it needs 35% to read as the picture, so scale it up 2\.\d+x \(set fit\.h to 0\.\d+, it is 0\.3\) or draw it fatter$/m],
-  ["a jar cut in two", (s) => s.ops.push({ cut: "rect", at: [-10, 70], size: [120, 4] }), /^! shape-split: the band of "[a-z ]+" \(y \d+ to \d+\) falls on 2 separate pieces of the shape/m],
+  ["a tiny jar", (s) => (s.fit = { h: 0.3, cx: 0.52, cy: 0.64 }), /^! shape-cover: the shape covers 7% of the sheet; it needs 18% to read as the picture, so scale it up 1\.\d+x \(set fit\.h to 0\.\d+, it is 0\.3\) or draw it fatter$/m],
 ];
 const RINGS_WARNINGS = [
   ["a thin bar in rings", { ops: [{ add: "rect", at: [0, 0], size: [100, 12], round: 4 }], fit: { w: 0.9 } }, /^! shape-rings: the shape is \d+px across at its thickest, room for \d rings of 7px; its 12 parts need about 18, so draw it fatter/m],

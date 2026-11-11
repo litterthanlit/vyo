@@ -16,6 +16,7 @@
         "kind": "field",
         "id": "shape",
         "field": "shape",
+        "style": "relief",
         "fits": "Pantry keeps a week of recipes the way a jar keeps preserves, so the picture is a jar of its code.",
         "accent": "area:lib/plan",
         "names": {
@@ -49,7 +50,7 @@
       {
         "role": "legend",
         "id": "legend",
-        "text": "Every band is a part of Pantry, its type as big as its share of the code. The orange band is the plan."
+        "text": "Every layer in the jar is a part of Pantry, as big as its code. The orange layer is the plan."
       }
     ]
   }
