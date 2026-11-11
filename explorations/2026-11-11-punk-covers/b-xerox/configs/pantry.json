@@ -1,0 +1,41 @@
+{
+  "id": "pantry",
+  "facts": "../facts/pantry-facts.json",
+  "product": "Pantry",
+  "commit": "04186f4",
+  "date": "2026-11-07",
+  "archive": "014",
+  "series": "01/04",
+  "headline": "A week of dinners, planned in one go.",
+  "legend": "Every patch of type is a part of Pantry, as big as its share of the code. The orange block is the plan.",
+  "accent": "area:lib/plan",
+  "names": {
+    "area:.": "saved recipes",
+    "area:app": "page frame",
+    "area:app/(app)": "screens",
+    "area:app/api": "requests",
+    "area:components": "screen pieces",
+    "area:components/plan": "week view",
+    "area:components/recipes": "recipe cards",
+    "area:components/ui": "buttons",
+    "area:lib": "accounts and email",
+    "area:lib/ai": "suggestions",
+    "area:lib/plan": "the plan",
+    "area:lib/recipes": "recipe book"
+  },
+  "ground": "#ECE8DC",
+  "ink": "#141414",
+  "spot": "#FF5A1F",
+  "seed": 14,
+  "strata": 278,
+  "shape": {
+    "ops": [
+      { "add": "circle", "at": [33, 60], "r": 31 },
+      { "add": "circle", "at": [67, 60], "r": 31 },
+      { "add": "ellipse", "at": [50, 76], "r": [38, 26] },
+      { "cut": "circle", "at": [50, 25], "r": 8 },
+      { "add": "capsule", "from": [49, 34], "to": [54, 6], "r": 3.5 },
+      { "add": "ellipse", "at": [70, 14], "r": [15, 7], "rotate": -28 }
+    ]
+  }
+}

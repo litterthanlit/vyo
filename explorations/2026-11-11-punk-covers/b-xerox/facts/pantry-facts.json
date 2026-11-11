@@ -1,0 +1,931 @@
+{
+ "empty": false,
+ "excluded": {
+  "by": {
+   "config and declaration files": {
+    "files": 1,
+    "lines": 3
+   },
+   "test files": {
+    "files": 1,
+    "lines": 5
+   }
+  },
+  "files": 2,
+  "lines": 8
+ },
+ "facts": [
+  {
+   "files": [
+    "lib/ai/suggest.ts"
+   ],
+   "id": "ai:openai",
+   "kind": "ai",
+   "meta": {
+    "tools": 2,
+    "vendor": [
+     "openai"
+    ]
+   },
+   "name": "OpenAI"
+  },
+  {
+   "files": [],
+   "id": "area:.",
+   "kind": "area",
+   "loc": 593,
+   "meta": {
+    "fileCount": 41,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Recipe"
+  },
+  {
+   "files": [],
+   "id": "area:app",
+   "kind": "area",
+   "loc": 165,
+   "meta": {
+    "fileCount": 12,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Main app"
+  },
+  {
+   "files": [],
+   "id": "area:app/(app)",
+   "kind": "area",
+   "loc": 110,
+   "meta": {
+    "fileCount": 7,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Main app"
+  },
+  {
+   "files": [],
+   "id": "area:app/(app)/recipes",
+   "kind": "area",
+   "loc": 41,
+   "meta": {
+    "fileCount": 3,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Recipes"
+  },
+  {
+   "files": [],
+   "id": "area:app/api",
+   "kind": "area",
+   "loc": 42,
+   "meta": {
+    "fileCount": 4,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Requests"
+  },
+  {
+   "files": [],
+   "id": "area:components",
+   "kind": "area",
+   "loc": 191,
+   "meta": {
+    "fileCount": 14,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Screen pieces"
+  },
+  {
+   "files": [],
+   "id": "area:components/plan",
+   "kind": "area",
+   "loc": 55,
+   "meta": {
+    "fileCount": 3,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Plan"
+  },
+  {
+   "files": [],
+   "id": "area:components/recipes",
+   "kind": "area",
+   "loc": 66,
+   "meta": {
+    "fileCount": 4,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Recipes"
+  },
+  {
+   "files": [],
+   "id": "area:components/ui",
+   "kind": "area",
+   "loc": 24,
+   "meta": {
+    "fileCount": 4,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Look and feel"
+  },
+  {
+   "files": [],
+   "id": "area:lib",
+   "kind": "area",
+   "loc": 192,
+   "meta": {
+    "fileCount": 14,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Inner workings"
+  },
+  {
+   "files": [],
+   "id": "area:lib/ai",
+   "kind": "area",
+   "loc": 42,
+   "meta": {
+    "fileCount": 3,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "AI features"
+  },
+  {
+   "files": [],
+   "id": "area:lib/plan",
+   "kind": "area",
+   "loc": 50,
+   "meta": {
+    "fileCount": 3,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Plan"
+  },
+  {
+   "files": [],
+   "id": "area:lib/recipes",
+   "kind": "area",
+   "loc": 46,
+   "meta": {
+    "fileCount": 3,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Recipes"
+  },
+  {
+   "files": [
+    "app/api/recipes/route.ts"
+   ],
+   "id": "endpoint:/api/recipes",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET",
+     "POST"
+    ],
+    "package": "."
+   },
+   "name": "Recipes"
+  },
+  {
+   "files": [
+    "app/api/recipes/[id]/route.ts"
+   ],
+   "id": "endpoint:/api/recipes/[id]",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "DELETE",
+     "GET",
+     "PATCH"
+    ],
+    "package": "."
+   },
+   "name": "Recipe detail"
+  },
+  {
+   "files": [
+    "app/api/suggest/route.ts"
+   ],
+   "id": "endpoint:/api/suggest",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "."
+   },
+   "name": "Suggest"
+  },
+  {
+   "files": [
+    "app/api/cron/weekly-plan/route.ts"
+   ],
+   "id": "job:/api/cron/weekly-plan",
+   "kind": "job",
+   "meta": {
+    "package": ".",
+    "schedule": "0 8 * * 1"
+   },
+   "name": "Weekly plan"
+  },
+  {
+   "files": [
+    "app/(app)/page.tsx"
+   ],
+   "id": "screen:/",
+   "kind": "screen",
+   "meta": {
+    "package": "."
+   },
+   "name": "Home"
+  },
+  {
+   "files": [
+    "app/(app)/plan/page.tsx"
+   ],
+   "id": "screen:/plan",
+   "kind": "screen",
+   "meta": {
+    "package": "."
+   },
+   "name": "Plan"
+  },
+  {
+   "files": [
+    "app/(app)/recipes/page.tsx"
+   ],
+   "id": "screen:/recipes",
+   "kind": "screen",
+   "meta": {
+    "package": "."
+   },
+   "name": "Recipes"
+  },
+  {
+   "files": [
+    "app/(app)/recipes/[id]/page.tsx"
+   ],
+   "id": "screen:/recipes/[id]",
+   "kind": "screen",
+   "meta": {
+    "package": "."
+   },
+   "name": "Recipe detail"
+  },
+  {
+   "files": [
+    "app/(app)/recipes/new/page.tsx"
+   ],
+   "id": "screen:/recipes/new",
+   "kind": "screen",
+   "meta": {
+    "package": "."
+   },
+   "name": "New recipe"
+  },
+  {
+   "files": [
+    "app/(app)/settings/page.tsx"
+   ],
+   "id": "screen:/settings",
+   "kind": "screen",
+   "meta": {
+    "package": "."
+   },
+   "name": "Settings"
+  },
+  {
+   "files": [
+    "lib/email.ts"
+   ],
+   "id": "service:email",
+   "kind": "service",
+   "meta": {
+    "vendor": [
+     "resend"
+    ]
+   },
+   "name": "Email"
+  },
+  {
+   "files": [
+    "lib/billing.ts"
+   ],
+   "id": "service:payments",
+   "kind": "service",
+   "meta": {
+    "vendor": [
+     "stripe"
+    ]
+   },
+   "name": "Payments"
+  },
+  {
+   "files": [
+    "lib/auth.ts"
+   ],
+   "id": "service:sign-in",
+   "kind": "service",
+   "meta": {
+    "vendor": [
+     "clerk"
+    ]
+   },
+   "name": "Sign-in"
+  },
+  {
+   "files": [
+    "prisma/schema.prisma"
+   ],
+   "id": "table:Ingredient",
+   "kind": "table",
+   "meta": {
+    "package": "."
+   },
+   "name": "Ingredient"
+  },
+  {
+   "files": [
+    "prisma/schema.prisma"
+   ],
+   "id": "table:MealPlan",
+   "kind": "table",
+   "meta": {
+    "package": "."
+   },
+   "name": "Meal plan"
+  },
+  {
+   "files": [
+    "prisma/schema.prisma"
+   ],
+   "id": "table:Recipe",
+   "kind": "table",
+   "meta": {
+    "package": "."
+   },
+   "name": "Recipe"
+  },
+  {
+   "files": [
+    "prisma/schema.prisma"
+   ],
+   "id": "table:User",
+   "kind": "table",
+   "meta": {
+    "package": "."
+   },
+   "name": "User"
+  }
+ ],
+ "files": {
+  "app/(app)/layout.tsx": {
+   "area": "area:app/(app)",
+   "loc": 10
+  },
+  "app/(app)/page.tsx": {
+   "area": "area:app/(app)",
+   "defines": [
+    "screen:/"
+   ],
+   "loc": 31
+  },
+  "app/(app)/plan/page.tsx": {
+   "area": "area:app/(app)",
+   "defines": [
+    "screen:/plan"
+   ],
+   "loc": 13
+  },
+  "app/(app)/recipes/[id]/page.tsx": {
+   "area": "area:app/(app)/recipes",
+   "defines": [
+    "screen:/recipes/[id]"
+   ],
+   "loc": 13
+  },
+  "app/(app)/recipes/new/page.tsx": {
+   "area": "area:app/(app)/recipes",
+   "defines": [
+    "screen:/recipes/new"
+   ],
+   "loc": 11
+  },
+  "app/(app)/recipes/page.tsx": {
+   "area": "area:app/(app)/recipes",
+   "defines": [
+    "screen:/recipes"
+   ],
+   "loc": 17
+  },
+  "app/(app)/settings/page.tsx": {
+   "area": "area:app/(app)",
+   "defines": [
+    "screen:/settings"
+   ],
+   "loc": 15
+  },
+  "app/api/cron/weekly-plan/route.ts": {
+   "area": "area:app/api",
+   "defines": [
+    "job:/api/cron/weekly-plan"
+   ],
+   "loc": 9
+  },
+  "app/api/recipes/[id]/route.ts": {
+   "area": "area:app/api",
+   "defines": [
+    "endpoint:/api/recipes/[id]"
+   ],
+   "loc": 16
+  },
+  "app/api/recipes/route.ts": {
+   "area": "area:app/api",
+   "defines": [
+    "endpoint:/api/recipes"
+   ],
+   "loc": 11
+  },
+  "app/api/suggest/route.ts": {
+   "area": "area:app/api",
+   "defines": [
+    "endpoint:/api/suggest"
+   ],
+   "loc": 6
+  },
+  "app/layout.tsx": {
+   "area": "area:app",
+   "loc": 13
+  },
+  "components/empty-state.tsx": {
+   "area": "area:components",
+   "loc": 12
+  },
+  "components/header.tsx": {
+   "area": "area:components",
+   "loc": 15
+  },
+  "components/nav.tsx": {
+   "area": "area:components",
+   "loc": 19
+  },
+  "components/plan/plan-day.tsx": {
+   "area": "area:components/plan",
+   "loc": 12
+  },
+  "components/plan/plan-grid.tsx": {
+   "area": "area:components/plan",
+   "loc": 14
+  },
+  "components/plan/shopping-list.tsx": {
+   "area": "area:components/plan",
+   "loc": 29
+  },
+  "components/recipes/ingredient-row.tsx": {
+   "area": "area:components/recipes",
+   "loc": 10
+  },
+  "components/recipes/recipe-card.tsx": {
+   "area": "area:components/recipes",
+   "loc": 18
+  },
+  "components/recipes/recipe-form.tsx": {
+   "area": "area:components/recipes",
+   "loc": 25
+  },
+  "components/recipes/recipe-list.tsx": {
+   "area": "area:components/recipes",
+   "loc": 13
+  },
+  "components/ui/badge.tsx": {
+   "area": "area:components/ui",
+   "kit": 1,
+   "loc": 5
+  },
+  "components/ui/button.tsx": {
+   "area": "area:components/ui",
+   "kit": 1,
+   "loc": 6
+  },
+  "components/ui/card.tsx": {
+   "area": "area:components/ui",
+   "kit": 1,
+   "loc": 8
+  },
+  "components/ui/input.tsx": {
+   "area": "area:components/ui",
+   "kit": 1,
+   "loc": 5
+  },
+  "lib/ai/client.ts": {
+   "area": "area:lib/ai",
+   "loc": 9
+  },
+  "lib/ai/prompts.ts": {
+   "area": "area:lib/ai",
+   "loc": 5
+  },
+  "lib/ai/suggest.ts": {
+   "area": "area:lib/ai",
+   "loc": 28
+  },
+  "lib/auth.ts": {
+   "area": "area:lib",
+   "loc": 10
+  },
+  "lib/billing.ts": {
+   "area": "area:lib",
+   "loc": 19
+  },
+  "lib/db.ts": {
+   "area": "area:lib",
+   "data": 1,
+   "loc": 5
+  },
+  "lib/email.ts": {
+   "area": "area:lib",
+   "loc": 11
+  },
+  "lib/plan/build.ts": {
+   "area": "area:lib/plan",
+   "loc": 20
+  },
+  "lib/plan/query.ts": {
+   "area": "area:lib/plan",
+   "loc": 16
+  },
+  "lib/plan/shopping.ts": {
+   "area": "area:lib/plan",
+   "loc": 14
+  },
+  "lib/recipes/mutations.ts": {
+   "area": "area:lib/recipes",
+   "loc": 19
+  },
+  "lib/recipes/query.ts": {
+   "area": "area:lib/recipes",
+   "loc": 10
+  },
+  "lib/recipes/schema.ts": {
+   "area": "area:lib/recipes",
+   "loc": 17
+  },
+  "lib/utils.ts": {
+   "area": "area:lib",
+   "kit": 1,
+   "loc": 9
+  },
+  "prisma/schema.prisma": {
+   "area": "area:.",
+   "defines": [
+    "table:Ingredient",
+    "table:MealPlan",
+    "table:Recipe",
+    "table:User"
+   ],
+   "loc": 45
+  }
+ },
+ "hash": "69fdfb929a85",
+ "imports": [
+  [
+   "app/(app)/layout.tsx",
+   "components/nav.tsx"
+  ],
+  [
+   "app/(app)/page.tsx",
+   "components/empty-state.tsx"
+  ],
+  [
+   "app/(app)/page.tsx",
+   "components/ui/button.tsx"
+  ],
+  [
+   "app/(app)/plan/page.tsx",
+   "components/plan/plan-grid.tsx"
+  ],
+  [
+   "app/(app)/plan/page.tsx",
+   "components/plan/shopping-list.tsx"
+  ],
+  [
+   "app/(app)/plan/page.tsx",
+   "lib/plan/query.ts"
+  ],
+  [
+   "app/(app)/recipes/[id]/page.tsx",
+   "components/recipes/recipe-card.tsx"
+  ],
+  [
+   "app/(app)/recipes/[id]/page.tsx",
+   "components/ui/card.tsx"
+  ],
+  [
+   "app/(app)/recipes/[id]/page.tsx",
+   "lib/recipes/query.ts"
+  ],
+  [
+   "app/(app)/recipes/new/page.tsx",
+   "components/recipes/recipe-form.tsx"
+  ],
+  [
+   "app/(app)/recipes/page.tsx",
+   "components/recipes/recipe-list.tsx"
+  ],
+  [
+   "app/(app)/settings/page.tsx",
+   "components/ui/badge.tsx"
+  ],
+  [
+   "app/(app)/settings/page.tsx",
+   "components/ui/input.tsx"
+  ],
+  [
+   "app/(app)/settings/page.tsx",
+   "lib/auth.ts"
+  ],
+  [
+   "app/(app)/settings/page.tsx",
+   "lib/billing.ts"
+  ],
+  [
+   "app/api/cron/weekly-plan/route.ts",
+   "lib/email.ts"
+  ],
+  [
+   "app/api/cron/weekly-plan/route.ts",
+   "lib/plan/build.ts"
+  ],
+  [
+   "app/api/recipes/[id]/route.ts",
+   "lib/recipes/mutations.ts"
+  ],
+  [
+   "app/api/recipes/[id]/route.ts",
+   "lib/recipes/query.ts"
+  ],
+  [
+   "app/api/recipes/[id]/route.ts",
+   "lib/recipes/schema.ts"
+  ],
+  [
+   "app/api/recipes/route.ts",
+   "lib/recipes/mutations.ts"
+  ],
+  [
+   "app/api/recipes/route.ts",
+   "lib/recipes/query.ts"
+  ],
+  [
+   "app/api/recipes/route.ts",
+   "lib/recipes/schema.ts"
+  ],
+  [
+   "app/api/suggest/route.ts",
+   "lib/ai/suggest.ts"
+  ],
+  [
+   "app/layout.tsx",
+   "components/header.tsx"
+  ],
+  [
+   "components/empty-state.tsx",
+   "components/ui/badge.tsx"
+  ],
+  [
+   "components/empty-state.tsx",
+   "components/ui/button.tsx"
+  ],
+  [
+   "components/empty-state.tsx",
+   "components/ui/card.tsx"
+  ],
+  [
+   "components/header.tsx",
+   "components/ui/button.tsx"
+  ],
+  [
+   "components/header.tsx",
+   "components/ui/input.tsx"
+  ],
+  [
+   "components/header.tsx",
+   "lib/utils.ts"
+  ],
+  [
+   "components/nav.tsx",
+   "lib/utils.ts"
+  ],
+  [
+   "components/plan/plan-day.tsx",
+   "components/ui/badge.tsx"
+  ],
+  [
+   "components/plan/plan-day.tsx",
+   "lib/utils.ts"
+  ],
+  [
+   "components/plan/plan-grid.tsx",
+   "components/plan/plan-day.tsx"
+  ],
+  [
+   "components/plan/plan-grid.tsx",
+   "components/ui/card.tsx"
+  ],
+  [
+   "components/plan/shopping-list.tsx",
+   "components/ui/button.tsx"
+  ],
+  [
+   "components/plan/shopping-list.tsx",
+   "components/ui/input.tsx"
+  ],
+  [
+   "components/plan/shopping-list.tsx",
+   "lib/utils.ts"
+  ],
+  [
+   "components/recipes/ingredient-row.tsx",
+   "components/ui/input.tsx"
+  ],
+  [
+   "components/recipes/recipe-card.tsx",
+   "components/ui/badge.tsx"
+  ],
+  [
+   "components/recipes/recipe-card.tsx",
+   "components/ui/card.tsx"
+  ],
+  [
+   "components/recipes/recipe-form.tsx",
+   "components/recipes/ingredient-row.tsx"
+  ],
+  [
+   "components/recipes/recipe-form.tsx",
+   "components/ui/button.tsx"
+  ],
+  [
+   "components/recipes/recipe-form.tsx",
+   "components/ui/input.tsx"
+  ],
+  [
+   "components/recipes/recipe-list.tsx",
+   "components/recipes/recipe-card.tsx"
+  ],
+  [
+   "components/recipes/recipe-list.tsx",
+   "components/ui/button.tsx"
+  ],
+  [
+   "components/ui/badge.tsx",
+   "lib/utils.ts"
+  ],
+  [
+   "components/ui/button.tsx",
+   "lib/utils.ts"
+  ],
+  [
+   "components/ui/card.tsx",
+   "lib/utils.ts"
+  ],
+  [
+   "components/ui/input.tsx",
+   "lib/utils.ts"
+  ],
+  [
+   "lib/ai/suggest.ts",
+   "lib/ai/client.ts"
+  ],
+  [
+   "lib/ai/suggest.ts",
+   "lib/ai/prompts.ts"
+  ],
+  [
+   "lib/plan/build.ts",
+   "lib/db.ts"
+  ],
+  [
+   "lib/plan/build.ts",
+   "lib/recipes/query.ts"
+  ],
+  [
+   "lib/plan/query.ts",
+   "lib/db.ts"
+  ],
+  [
+   "lib/plan/shopping.ts",
+   "lib/db.ts"
+  ],
+  [
+   "lib/plan/shopping.ts",
+   "lib/utils.ts"
+  ],
+  [
+   "lib/recipes/mutations.ts",
+   "lib/db.ts"
+  ],
+  [
+   "lib/recipes/query.ts",
+   "lib/db.ts"
+  ]
+ ],
+ "repo": {
+  "name": "recipe",
+  "packages": [
+   "."
+  ]
+ },
+ "unresolved": {},
+ "uses": [
+  [
+   "app/(app)/page.tsx",
+   "endpoint:/api/recipes",
+   "http"
+  ],
+  [
+   "app/(app)/page.tsx",
+   "endpoint:/api/suggest",
+   "http"
+  ],
+  [
+   "app/(app)/recipes/new/page.tsx",
+   "endpoint:/api/recipes",
+   "http"
+  ],
+  [
+   "app/(app)/recipes/page.tsx",
+   "endpoint:/api/recipes",
+   "http"
+  ],
+  [
+   "lib/ai/suggest.ts",
+   "ai:openai",
+   "package"
+  ],
+  [
+   "lib/auth.ts",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "lib/billing.ts",
+   "service:payments",
+   "package"
+  ],
+  [
+   "lib/email.ts",
+   "service:email",
+   "package"
+  ],
+  [
+   "lib/plan/build.ts",
+   "table:MealPlan",
+   "orm"
+  ],
+  [
+   "lib/plan/build.ts",
+   "table:User",
+   "orm"
+  ],
+  [
+   "lib/plan/query.ts",
+   "table:MealPlan",
+   "orm"
+  ],
+  [
+   "lib/plan/shopping.ts",
+   "table:Ingredient",
+   "orm"
+  ],
+  [
+   "lib/recipes/mutations.ts",
+   "table:Ingredient",
+   "orm"
+  ],
+  [
+   "lib/recipes/mutations.ts",
+   "table:Recipe",
+   "orm"
+  ],
+  [
+   "lib/recipes/query.ts",
+   "table:Recipe",
+   "orm"
+  ]
+ ],
+ "version": 1
+}
