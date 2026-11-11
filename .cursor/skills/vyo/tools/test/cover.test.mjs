@@ -108,9 +108,8 @@ test("the turn: periodic over the loop, never edge-on, the pitch a quarter turn 
   const m = modelOf(cover());
   assert.equal(coverCells(m, COVER_FRAMES), coverCells(m, 0), "frame N is frame 0");
   for (let f = 0; f < COVER_FRAMES; f++) {
-    const [nx, , nz] = coverPose(T, f / COVER_FRAMES)(0, 0, 1);
+    const [, , nz] = coverPose(T, f / COVER_FRAMES)(0, 0, 1);
     assert.ok(nz > Math.cos((40 * Math.PI) / 180), `frame ${f}: the face never turns more than 40 degrees from the viewer`);
-    void nx;
   }
   const quarter = coverPose(T, 0.25)(0, 0, 1);
   assert.ok(Math.abs(quarter[0] - Math.sin((T.yaw * Math.PI) / 180)) < 1e-9, "a quarter in, the yaw is at its full swing");

@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { SHEET } from "./geometry.mjs";
 import { regionParts } from "./parts.mjs";
 import { loadMaskImage } from "./png-mask.mjs";
-import { coverModel, coverStill, coverShell, coverRecord, COVER, COVER_GROUNDS, COVER_FRAMES } from "./cover.mjs";
+import { coverModel, coverStill, coverShell, coverRecord, coverSmallWidth, COVER, COVER_GROUNDS } from "./cover.mjs";
 
 const LIB = path.dirname(fileURLToPath(import.meta.url));
 const FONT_DIR = path.join(LIB, "..", "..", "fonts");
@@ -52,7 +52,7 @@ export function coverBlocks(spec, facts) {
   const T = model.template;
   const { margin: M, small, lead, headlineX } = COVER;
   const top = (baseline) => baseline - baselineIn(lead, small);
-  const vyo = 21.7;
+  const vyo = coverSmallWidth("Vyo");
   const name = T.nameSize;
   return {
     record: { left: M, top: top(M + 10), lines: record },
@@ -108,4 +108,3 @@ ${B.series.number ? `<div class="t" data-block="number" data-owner="render" styl
 </div><script type="application/json" id="figure">${json(figure)}</script><script type="module">${script()}</script></body></html>`;
 }
 
-export { COVER_FRAMES };
