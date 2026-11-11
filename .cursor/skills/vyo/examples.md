@@ -81,7 +81,7 @@ Tally is made up. Pantry is the `recipe` test fixture. Hypher's parts come from 
 
 Pantry is the `recipe` test fixture. It has 6 screens (recipes, a recipe, a new recipe, the weekly plan, settings, home), recipes with ingredients, a weekly plan, a shopping list, AI suggestions, and a weekly email every Monday at 8. It has payment code but no checkout screen, so the chat reply lists "paid plans" as not built.
 
-Each block below is the preset file in the package's `tools/presets/` (the relief one is `shape-relief.json`). `compose --field <id>` writes the same shape with placeholders and its own text positions. The `facts` value is a placeholder: yours is the hash from your own scan, and `compose` writes it. The commit is made up, since the fixture is not a git repo. Each spec names every part, not only the flagged ones, because the scanned names repeat ("Plan", "Recipes", "Main app").
+Each block below is the preset file in the package's `tools/presets/`, except the relief jar on the dark sheet, which the tests keep as a fixture. `compose --field <id>` writes the same shape with placeholders and its own text positions. The `facts` value is a placeholder: yours is the hash from your own scan, and `compose` writes it. The commit is made up, since the fixture is not a git repo. Each spec names every part, not only the flagged ones, because the scanned names repeat ("Plan", "Recipes", "Main app").
 
 The legend names the accent part as the poster colours it. On a light wave the accent rows are black. On dark, and on a terrain or river, they are orange.
 
@@ -592,6 +592,64 @@ Before rendering, `vyo sketch` printed each stratum's share of the area against 
 }
 ```
 
+## A cover, as a full spec for Pantry
+
+`vyo compose <facts> --frame cover --repo <repo>` writes this with `…` in the product name, the headline, the accent, the names, the shape and the legend; this is it filled in, and the `cover` preset. The pear is a ready silhouette, so the spec has no ops; `"strata": "outline"` makes the accent, the screens (19% of the code), the orange shell, and the other parts stack inside it. Before rendering, `vyo sketch` printed `shell: the orange shell is 16px thick, 18.5% of the code`, one line per part with its share of the lines and of the glyphs in the still, and the still as a 280px PNG; `vyo render --gif` then wrote the PNG, the PDF and a 7-second loop.
+
+```json
+{
+  "version": 3,
+  "frame": "cover",
+  "facts": "69fdfb929a85",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "ground": "navy",
+  "headline": "A week of dinners, planned in one go from the recipes you already cook.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "shape",
+        "field": "shape",
+        "accent": "area:app/(app)",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "shape": {
+          "like": "pear"
+        },
+        "strata": "outline"
+      }
+    ],
+    "texts": [
+      {
+        "role": "legend",
+        "id": "legend",
+        "text": "Every ring of the pear is a part of Pantry, as big as its share of the code. The orange ring is the screens."
+      }
+    ]
+  },
+  "motion": {
+    "kind": "turn"
+  }
+}
+```
+
 ## Sample chat reply
 
 ```markdown
@@ -1016,7 +1074,7 @@ Write the main moment as one sentence. Find its verb. The verb gives the shape.
 
 Pantry is the same fixture as above. `npx vyo presets` lists these four beside wave, terrain, river and wave-swiss. `compose --from <id>` copies one with its words replaced by placeholders. A poster that keeps a preset's geometry unchanged gets the `preset-copy` warning, so use them to learn from or to bend, not to ship as they are.
 
-Each block below is the preset file in the package's `tools/presets/` (the relief one is `shape-relief.json`). with the same words and geometry. Only the layout of the number lists is tighter.
+Each block below is the preset file in the package's `tools/presets/`, with the same words and geometry. Only the layout of the number lists is tighter.
 
 #### hourglass
 

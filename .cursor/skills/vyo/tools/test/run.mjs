@@ -8,6 +8,8 @@ import { buildPage, renderPage } from "../lib/render.mjs";
 import { fieldItems } from "../lib/sketch.mjs";
 import { BROWSER_NOTE } from "../lib/browser.mjs";
 import { runChecks } from "../lib/check.mjs";
+import { coverOf } from "../lib/cover-render.mjs";
+import { COVER_FRAMES } from "../lib/cover.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TOOLS = path.join(HERE, "..");
@@ -15,7 +17,7 @@ const OUT = path.join(HERE, ".out");
 const VYO = path.join(TOOLS, "vyo.mjs");
 const PRESETS = fs.readdirSync(path.join(TOOLS, "presets")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
 
-const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "shape", "place", "rings", "shape-relief", "docs", "init", "recent", "png"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
+const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "shape", "place", "rings", "shape-relief", "docs", "init", "recent", "png", "cover"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
@@ -277,7 +279,41 @@ for (const kind of ["resolve", "wipe"]) {
   result(r.status === 0 && /^PASS$/m.test(r.stdout), `a spec with ${kind} motion renders its still as the finished poster`, `exit ${r.status}\n${r.stdout}${r.stderr}`);
 }
 
-console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length + SHAPE_WARNINGS.length + RINGS_WARNINGS.length + RELIEF_WARNINGS.length} planted bugs caught`);
+// The cover: its loop through render --gif, the page's still against the sketch's, and planted flaws.
+{
+  const dir = path.join(OUT, "cover-loop");
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, "recipe-poster.json");
+  fs.writeFileSync(file, JSON.stringify(preset("cover"), null, 2));
+  const r = vyo("render", file, "--facts", factsFile, "--gif", "--no-pdf");
+  const gif = path.join(dir, "recipe-poster.gif");
+  const size = fs.existsSync(gif) ? fs.statSync(gif).size : 0;
+  const probe = size ? spawnSync("ffprobe", ["-v", "error", "-count_frames", "-select_streams", "v:0", "-show_entries", "stream=nb_read_frames", "-of", "csv=p=0", gif], { encoding: "utf8" }) : null;
+  const frames = probe ? Number(probe.stdout.trim()) : 0;
+  result(r.status === 0 && /^PASS$/m.test(r.stdout) && size > 0 && size < 8e6 && frames === COVER_FRAMES / 2 && fs.existsSync(path.join(dir, "recipe-poster.mp4")), "the cover preset renders its loop with --gif: every frame passes, a GIF of 84 frames under 8 MB, and an MP4", `exit ${r.status}, ${size} bytes, ${frames} frames\n${r.stdout}${r.stderr}`);
+}
+{
+  const spec = preset("cover");
+  const page = await renderPage({ html: buildPage(spec, facts), base: path.join(OUT, "cover-twin"), png: false, pdf: false });
+  const node = coverOf(spec, facts).still;
+  const same = ["frame", "shares", "whole", "letters", "accentCells"].every((k) => JSON.stringify(page.cover?.report?.[k]) === JSON.stringify(node[k]));
+  result(same && page.cover.shown === node.frame && !runChecks("page", { spec, facts, presets: {}, page }).length, "the cover's page draws the still the sketch measures, cell for cell, and passes every page check", `page ${JSON.stringify(page.cover?.report)}\nnode ${JSON.stringify(node)}`);
+}
+const COVER_PLANTED = [
+  ["a free colour for the ground", (s) => (s.ground = "#14281F"), /^✗ spec: ground: "#14281F" is not a ground; a free colour is not offered; use "navy", "charcoal", "forest", "paper"$/m],
+  ["an accent that names no part", (s) => (s.figure.regions[0].accent = "area:nowhere"), /^✗ cover-accent: the accent area:nowhere names no part, so nothing prints in orange; put the accent on /m],
+  ["a form as thin as a pole", (s) => (s.figure.regions[0].shape = { ops: [{ add: "rect", at: [0, 0], size: [6, 100] }] }), /^✗ cover-names: "[a-z ]+" \(\d+% of the code\) never prints its whole name in the still, frame \d+; at \d+ characters it does not fit its stratum there, so shorten it to \d+ characters or fewer$/m],
+];
+for (const [name, mutate, expect] of COVER_PLANTED) {
+  const spec = preset("cover");
+  mutate(spec);
+  const file = path.join(OUT, "planted-cover.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(r.status === 1 && expect.test(r.stderr), `planted cover flaw (${name}) fails with ${expect}`, `exit ${r.status}\n${r.stderr}`);
+}
+
+console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length + SHAPE_WARNINGS.length + RINGS_WARNINGS.length + RELIEF_WARNINGS.length + COVER_PLANTED.length} planted bugs caught`);
 
 const pack = spawnSync(process.execPath, ["--test", path.join(HERE, "pack.test.mjs")], { stdio: "inherit" });
 

@@ -338,21 +338,26 @@ function composeCover(factsFile, opt) {
   const out = opt.out ?? path.join(path.dirname(factsFile), `${facts.repo.name}-poster.json`);
   if (fs.existsSync(out) && !opt.force) throw new Failure(`${out} exists; it may hold your words. Pass --force to replace it with a fresh scaffold`);
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-  fs.writeFileSync(out, JSON.stringify(coverScaffold(facts, { commit, date, accent: opt.accent, split: opt.split, parts }), null, 2) + "\n");
   const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
   const L = COVER_LIMITS;
-  const good = (p) => p.loc / total >= OUTLINE_SHARE[0] && p.loc / total <= L.share;
+  const share = (p) => p.loc / total;
+  // With no part to make a good outline, the scaffold stacks the parts in bands, where any part from 5% shows.
+  const outline = parts.some((p) => share(p) >= OUTLINE_SHARE[0] && share(p) <= L.share);
+  const good = (p) => (outline ? share(p) >= OUTLINE_SHARE[0] : share(p) >= L.least) && share(p) <= L.share;
+  const d = dominance(facts, partOptions({ field: "shape", ...(opt.split ? { split: opt.split } : {}) }));
+  fs.writeFileSync(out, JSON.stringify(coverScaffold(facts, { commit, date, accent: opt.accent, split: opt.split, parts, strata: outline ? "outline" : "down" }), null, 2) + "\n");
   const width = Math.max(...parts.map((p) => p.id.length));
   const lines = [
     `Wrote ${out}: a cover of ${parts.length} parts. Replace every "…" value; product.commit and product.date are the engine's, so leave them.`,
-    `parts (id, share of the code, scanned name); * marks a good outline accent, ${Math.round(OUTLINE_SHARE[0] * 100)}% to ${Math.round(L.share * 100)}% of the code:`,
-    ...parts.map((p) => `  ${good(p) ? "*" : " "} ${p.id.padEnd(width)} ${pct(p.loc / total).padStart(4)}  ${p.name}${unplainName(p.name) ? "  ! needs a plain name" : ""}`),
-    parts.some(good)
-      ? `accent: the id of the part the product is about. With "strata": "outline" it becomes the orange outer shell, so a part marked * reads best.`
-      : `accent: no part is ${Math.round(OUTLINE_SHARE[0] * 100)}% to ${Math.round(L.share * 100)}% of the code, so an outline would be a sliver or most of the object; set "strata": "down" and put the accent on the part the product is about.`,
+    ...(d?.split ? [`! "${d.part.name}" (${d.part.id}) holds ${pct(d.share)} of the code: compose again with --split ${d.split.id} --force to cut it into ${d.split.count} parts, then pick the accent among them.`] : []),
+    `parts (id, share of the code, scanned name); * marks a good accent, ${outline ? `${Math.round(OUTLINE_SHARE[0] * 100)}% to ${Math.round(L.share * 100)}% of the code, which makes the orange outer shell` : `${Math.round(L.least * 100)}% to ${Math.round(L.share * 100)}% of the code, an orange band`}:`,
+    ...parts.map((p) => `  ${good(p) ? "*" : " "} ${p.id.padEnd(width)} ${pct(share(p)).padStart(4)}  ${p.name}${unplainName(p.name) ? "  ! needs a plain name" : ""}`),
+    outline
+      ? `accent: the id of the part the product is about, best one marked *. "strata": "outline" makes it the orange outer shell.`
+      : `accent: no part is ${Math.round(OUTLINE_SHARE[0] * 100)}% to ${Math.round(L.share * 100)}% of the code, so an orange outline would be a sliver or most of the object, and compose wrote "strata": "down": the parts stack top to bottom. Put the accent on the part marked * that the story is about.`,
     `shape: { "like": "<name>" }, one of ${SILHOUETTE_NAMES.join(", ")} (vyo shapes says what each suits). Draw your own { "ops": [...] } only when none fits.`,
     `ground: ${Object.keys(COVER_GROUNDS).join(", ")}. Names: every part, lowercase, at most 24 characters, saying what it does for a person.`,
-    `Then: vyo sketch ${out}, open the sketch PNG, fix every ✗ and ! line, then vyo render ${out} --gif.`,
+    `Then: vyo sketch ${out}, open the sketch PNG, act on every finding, then vyo render ${out} --gif.`,
   ];
   process.stdout.write(lines.join("\n") + "\n");
   return 0;

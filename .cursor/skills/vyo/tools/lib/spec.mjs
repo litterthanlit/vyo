@@ -754,7 +754,7 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
  * @param {{ hash: string, repo: { name: string } }} facts
  * @param {{ commit?: string, date: string, accent?: string, split?: string[], parts: { id: string, name: string }[] }} o
  */
-export function coverScaffold(facts, { commit, date, accent, split, parts }) {
+export function coverScaffold(facts, { commit, date, accent, split, parts, strata = "outline" }) {
   return {
     version: 3,
     frame: "cover",
@@ -772,10 +772,10 @@ export function coverScaffold(facts, { commit, date, accent, split, parts }) {
           ...(split ? { split } : {}),
           names: Object.fromEntries(parts.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])),
           shape: hold(`{ "like": "<name>" }, one of ${SILHOUETTE_NAMES.join(", ")}`),
-          strata: "outline",
+          strata,
         },
       ],
-      texts: [{ role: "legend", id: "legend", text: hold('at most 2 sentences and 180 characters, like "Every ring of the <object> is a part of <product>, as big as its share of the code. The orange ring is <the plain name of the accent>."') }],
+      texts: [{ role: "legend", id: "legend", text: hold(`at most 2 sentences and 180 characters, like "Every ${strata === "outline" ? "ring" : "band"} of the <object> is a part of <product>, as big as its share of the code. The orange ${strata === "outline" ? "ring" : "band"} is <the plain name of the accent>."`) }],
     },
     motion: { kind: "turn" },
   };

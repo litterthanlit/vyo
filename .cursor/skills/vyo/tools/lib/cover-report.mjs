@@ -22,10 +22,9 @@ const points = (n) => (Math.round(n * 1000) / 10).toFixed(1);
  * the parts whose outer shell would be at least `thin` px and at most `share` of the code, nearest `ideal`; for
  * other strata, the parts of `least` to `share` of the code, nearest `band`.
  */
-export function accentCandidates(cover, limit = 3) {
+export function accentCandidates(cover, limit = 3, outline = cover.model.strata.outline) {
   const { model, shell, region } = cover;
-  const outline = model.strata.outline;
-  const at = shell?.at;
+  const at = outline ? shell?.at : null;
   const L = COVER_LIMITS;
   return model.parts
     .map((p) => ({ ...p, px: at ? at(p.share) : null }))
@@ -35,11 +34,15 @@ export function accentCandidates(cover, limit = 3) {
     .map((p) => `${p.id} ("${region.names?.[p.id] ?? p.name}", ${pct(p.share)}${p.px !== null ? `, a ${Math.round(p.px)}px shell` : ""})`);
 }
 
-const accentFix = (cover) => {
+/** The one change to make: a part that would work, or, when none would, what to change instead. `thin` is a shell too thin. */
+const accentFix = (cover, thin = false) => {
+  const on = (list) => `${list.length > 1 ? "one of " : ""}${list.join(", ")}`;
   const c = accentCandidates(cover);
-  const want = cover.model.strata.outline ? `${Math.round(COVER_LIMITS.ideal * 100)}%` : `${Math.round(COVER_LIMITS.band * 100)}%`;
-  if (c.length) return `put the accent on ${c.length > 1 ? "one of " : ""}${c.join(", ")}`;
-  return cover.model.strata.outline ? 'no part here makes a thicker shell, so set "strata": "down" for bands top to bottom, or take a rounder silhouette' : `put the accent on the part nearest ${want} of the code (vyo parts lists the shares)`;
+  if (c.length) return `put the accent on ${on(c)}`;
+  if (!cover.model.strata.outline) return `put the accent on the part nearest ${Math.round(COVER_LIMITS.band * 100)}% of the code (vyo parts lists the shares)`;
+  // No part makes a good shell here: bands show any part from `least` of the code.
+  const bands = accentCandidates(cover, 3, false);
+  return `no part here makes a ${thin ? "thicker" : "good"} shell, so set "strata": "down" for bands top to bottom${bands.length ? ` and put the accent on ${on(bands)}` : thin ? ", or take a rounder silhouette" : ""}`;
 };
 
 /** The longest run of one part's cells along a glyph row in a frame: the most room its name has. */
@@ -98,7 +101,7 @@ export function coverFindings(cover, { still = cover.still, loop = null, cells =
   }
   if (shell && hot.length === 1) {
     if (Math.round(shell.px) < COVER_LIMITS.thin) {
-      out["cover-shell"].push(`the orange shell is ${Math.round(shell.px)}px thick (${pct(shell.share)} of the code); under ${COVER_LIMITS.thin}px it reads as a hairline, not a shell, at thumbnail size, so ${accentFix(cover)}`);
+      out["cover-shell"].push(`the orange shell is ${Math.round(shell.px)}px thick (${pct(shell.share)} of the code); under ${COVER_LIMITS.thin}px it reads as a hairline, not a shell, at thumbnail size, so ${accentFix(cover, true)}`);
     } else if (shell.share > COVER_LIMITS.share) {
       const split = facts && splits(facts, region);
       out["cover-shell"].push(`the orange shell is ${pct(shell.share)} of the code and ${Math.round(shell.px)}px thick, so the object reads mostly orange (keep it at ${pct(COVER_LIMITS.share)} or less); ${split ? `add "split": [${[...(region.split ?? []), hot[0].id].map((s) => `"${s}"`).join(", ")}] to the region and put the accent on one of the ${split} parts inside it, or ` : ""}${accentFix(cover)}`);
