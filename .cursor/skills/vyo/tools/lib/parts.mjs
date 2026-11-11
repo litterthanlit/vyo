@@ -9,6 +9,8 @@ const ROOT = "area:.";
 
 /** "area:lib/ai" -> ["lib", "ai"]; the root has no segments. */
 export const segmentsOf = (id) => (id === ROOT ? [] : id.slice(5).split("/"));
+/** A file part's scanned name: its file name without the extension, like "sessions". */
+const fileName = (id) => id.slice(id.lastIndexOf("/") + 1).replace(/\.[^.]+$/, "") || id.slice(5);
 const idOf = (segs) => (segs.length ? `area:${segs.join("/")}` : ROOT);
 
 // Parents before children, siblings by name: the order a file tree lists folders.
@@ -54,10 +56,15 @@ export function partsFromFacts(facts, { minShare = PART_DEFAULTS.minShare, maxPa
     return id;
   };
 
+  // A split part with no folders holding code inside it splits into its files instead, each a part whose id is
+  // the file's path, so its parent is the part it came from.
+  const code = Object.entries(facts.files).filter(([, f]) => !f.gen);
+  const byFile = new Set(split.filter((s) => !code.some(([, f]) => f.area !== s && f.area.startsWith(s === ROOT ? "area:" : `${s}/`))));
+  const files = new Set();
   const parts = new Map();
-  for (const f of Object.values(facts.files)) {
-    if (f.gen) continue;
-    const id = leafOf(f.area);
+  for (const [file, f] of code) {
+    let id = leafOf(f.area);
+    if (byFile.has(id) && f.area === id) files.add((id = `area:${file}`));
     const p = parts.get(id) ?? { loc: 0, files: 0 };
     parts.set(id, { loc: p.loc + f.loc, files: p.files + 1 });
   }
@@ -80,7 +87,7 @@ export function partsFromFacts(facts, { minShare = PART_DEFAULTS.minShare, maxPa
 
   return [...parts]
     .sort(([a], [b]) => treeOrder(a, b))
-    .map(([id, p], order) => ({ id, name: names[id] ?? areas.get(id)?.name ?? id.slice(5), loc: p.loc, files: p.files, order }));
+    .map(([id, p], order) => ({ id, name: names[id] ?? areas.get(id)?.name ?? (files.has(id) ? fileName(id) : id.slice(5)), loc: p.loc, files: p.files, order }));
 }
 
 // A part over `share` of the lines, or fewer than `parts` parts, draws a shape as one slab. The cold runs' flask

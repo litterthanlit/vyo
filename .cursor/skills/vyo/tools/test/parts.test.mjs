@@ -84,7 +84,23 @@ test("split cuts a dominant leaf part into the folders inside it, every line sti
   assert.ok(split.length >= 6, `about six parts or more (${split.length})`);
   assert.ok(Math.max(...split.map((p) => p.loc)) / lines(got) < 0.7, "none of them is most of the code");
   assert.ok(split.some((p) => p.id === "area:source/core/utils") && split.some((p) => p.id === "area:source"), "the leaf keeps its own files and its folders become parts");
-  assert.deepEqual(partsFromFacts(recipe, { split: ["area:lib/plan"] }), partsFromFacts(recipe), "a part with no folders inside is unchanged");
+});
+
+test("split cuts a part with no folders inside into its files, each named by its file, the small ones merged back", () => {
+  const facts = {
+    facts: [{ id: "area:.", kind: "area", name: "Root", meta: { leaf: false } }, { id: "area:src/net", kind: "area", name: "Net", meta: { leaf: true } }],
+    files: { "setup.py": { area: "area:.", loc: 20 }, "src/net/sessions.py": { area: "area:src/net", loc: 500 }, "src/net/models.py": { area: "area:src/net", loc: 460 }, "src/net/tiny.py": { area: "area:src/net", loc: 10 }, "src/net/conf.py": { area: "area:src/net", loc: 10, gen: 1 } },
+  };
+  assert.deepEqual(partsFromFacts(facts).map((p) => p.id), ["area:.", "area:src/net"]);
+  const split = partsFromFacts(facts, { split: ["area:src/net"] });
+  assert.deepEqual(split.map((p) => [p.id, p.name, p.loc]), [["area:.", "Root", 30], ["area:src/net/models.py", "models", 460], ["area:src/net/sessions.py", "sessions", 500]], "tiny.py, under 2%, merges up as a small folder would");
+  assert.equal(sum(split, "loc"), lines(facts));
+  assert.equal(sum(split, "files"), counted(facts));
+  assert.deepEqual([...accentIds(split, "area:src/net/sessions.py")], ["area:src/net/sessions.py"]);
+  const d = dominance(facts);
+  assert.deepEqual([d.part.id, d.split.id, d.split.count], ["area:src/net", "area:src/net", 3], "dominance offers the file split");
+  const recipeSplit = partsFromFacts(recipe, { split: ["area:lib/plan"] });
+  assert.ok(recipeSplit.length >= partsFromFacts(recipe).length && sum(recipeSplit, "loc") === lines(recipe), "the recipe's plan splits into its files, every line still held once");
 });
 
 test("dominance names the part that is most of the code and what splitting it gives", () => {
