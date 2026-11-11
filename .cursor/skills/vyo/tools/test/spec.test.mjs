@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateSpec, textProblems, hasWord, scaffoldSpec } from "../lib/spec.mjs";
+import { FIELDS } from "../lib/fields/index.mjs";
 import { BANNED, isJargon } from "../lib/jargon.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
 
@@ -24,7 +25,7 @@ const rejects = (mutate, re, base) => {
 };
 
 test("every preset is a valid spec", () => {
-  assert.deepEqual(IDS.sort(), ["eye", "hourglass", "ribbon", "river", "terrain", "warm-start", "wave", "wave-swiss"]);
+  assert.deepEqual(IDS.sort(), ["bands", "bleed", "contour", "eye", "glyph", "hourglass", "radial", "ribbon", "river", "scatter", "shatter", "signal-paper", "signal-wave", "sphere", "spiral", "terrain", "trace", "warm-start", "wave", "wave-swiss", "wings"]);
   for (const id of IDS) assert.deepEqual(validateSpec(preset(id)), [], id);
 });
 
@@ -104,6 +105,8 @@ test("copy is free of jargon, file paths and AI tells, in words, texts and notes
   rejects((s) => (s.notes[0].text = "Talks to the API."), /^notes\[0\]\.text: jargon: "api" in "Talks to the API\."/);
   rejects((s) => (s.headline = "01 Plan dinner"), /^headline: a "01\/02\/03" style marker/);
   rejects((s) => (s.notes[2].title = "Fast · simple"), /^notes\[2\]\.title: a middle dot/);
+  rejects((s) => (s.notes[2].text = "Saved at 04186f4 last week."), /^notes\[2\]\.text: a typed commit; the engine prints the commit/);
+  rejects((s) => (s.headline = "Plans set on 2026-11-07"), /^headline: a typed date; the engine prints the date/);
   assert.deepEqual(textProblems("Ask for ideas with OpenAI, Stripe and Clerk."), [], "vendor names are not jargon");
   assert.deepEqual(textProblems("24/7 and either/or"), [], "a slash alone is not a path");
 });
@@ -113,7 +116,7 @@ test("a scaffold is rejected until every placeholder is written: a field by defa
   const fillPresets = IDS.filter((id) => !preset(id).figure.regions.some((r) => r.kind === "field"));
   for (const from of [undefined, ...fillPresets]) {
     const p = from && preset(from);
-    const spec = scaffoldSpec(facts, { frame: "swiss", theme: p ? p.theme : "light", date: "2026-10-28", floor: 884, preset: p, unplain: [{ id: "area:lib", name: "Convex" }] });
+    const spec = scaffoldSpec(facts, { frame: "swiss", theme: p ? p.theme : "light", date: "2026-10-28", floor: 884, preset: p, field: p ? undefined : "wave", unplain: [{ id: "area:lib", name: "Convex" }] });
     const errors = validateSpec(spec);
     const field = p ? [/^hot: still the placeholder/, /still the placeholder; write \d+ to \d+ (nouns|words)/] : [/^figure\.regions\[0\]\.sentence: still the placeholder/, /^figure\.regions\[0\]\.names\["area:lib"\]: still the placeholder/];
     const fits = p ? /^figure\.fits: still the placeholder/ : /^figure\.regions\[0\]\.fits: still the placeholder/;
@@ -159,9 +162,13 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
     return s;
   };
   assert.deepEqual(validateSpec(withField({ accent: "area:lib/plan", names: { "area:lib": "kitchen" }, sentence: "plan once", every: 4 })()), []);
+  assert.deepEqual(validateSpec(withField({ seed: 0 })()), []);
+  assert.deepEqual(validateSpec(withField({ seed: 2147483647 })()), []);
+  assert.deepEqual(validateSpec(withField({ field: "glyph", letter: "Q" })()), []);
+  assert.deepEqual(validateSpec(withField({ field: "trace", mask: "masks/trace.png" })()), []);
   assert.deepEqual(validateSpec(withField({ field: "terrain" })()), [], "accent and hot are optional");
   const cases = [
-    [{ field: "lake" }, /^figure\.regions\[0\]\.field: "lake" is not a field; use wave or terrain or river$/],
+    [{ field: "lake" }, new RegExp(`^figure\\.regions\\[0\\]\\.field: "lake" is not a field; use ${Object.keys(FIELDS).join(" or ")}$`)],
     [{ field: "terrain", sentence: "plan once" }, /^figure\.regions\[0\]\.sentence: a terrain field has no sentence; only wave takes it$/],
     [{ accent: "lib/plan" }, /^figure\.regions\[0\]\.accent: an area id like "area:lib\/plan"/],
     [{ names: { "area:lib": "the API" } }, /^figure\.regions\[0\]\.names\["area:lib"\]: jargon: "api"/],
@@ -170,6 +177,14 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
     [{ every: 1 }, /^figure\.regions\[0\]\.every: a whole number, 2 to 20$/],
     [{ maxParts: 40 }, /maxParts: a whole number, 2 to 24/],
     [{ minShare: 0.5 }, /minShare: 0 to 0\.2/],
+    [{ seed: -1 }, /seed: a whole number, 0 to 2147483647/],
+    [{ seed: 1.5 }, /seed: a whole number, 0 to 2147483647/],
+    [{ seed: 2147483648 }, /seed: a whole number, 0 to 2147483647/],
+    [{ letter: "A" }, /letter: a wave field has no letter; only glyph takes it/],
+    [{ mask: "mark.png" }, /mask: a wave field has no mask; only trace takes it/],
+    [{ field: "glyph", letter: "a" }, /letter: one character A to Z or 0 to 9/],
+    [{ field: "glyph", letter: "AA" }, /letter: one character A to Z or 0 to 9/],
+    [{ field: "trace", mask: "  " }, /mask: a path to a PNG/],
     [{ words: ["a", "b"] }, /^figure\.regions\[0\]\.words: unknown field$/],
   ];
   for (const [region, re] of cases) rejects(() => {}, re, withField(region));
@@ -197,6 +212,36 @@ test("frames: loose takes its own roles and counts, no notes, and a field; swiss
   const loose = () => ({ ...preset("wave"), frame: "loose", notes: undefined, notBuilt: undefined });
   rejects((s) => (s.figure.texts = [{ role: "masthead", id: "masthead", x: 50, y: 36, w: 490 }]), /^figure\.texts\[0\]\.role: "masthead" is not a role in the loose frame; use label, headline, paragraph, legend, list, rule$/, loose);
   rejects((s) => (s.notes = []), /^notes: the loose frame has no footer/, loose);
-  rejects((s) => (s.frame = "poster"), /^frame: "poster" is not a frame; use swiss or loose$/);
-  rejects((s) => (s.record = "left"), /^record: only the loose frame has a record line/);
+  rejects((s) => (s.frame = "poster"), /^frame: "poster" is not a frame; use swiss or loose or signal$/);
+  rejects((s) => (s.record = "left"), /^record: only the loose and signal frames have a record line/);
+});
+
+test("signal: grotesque roles, marks, routes and motion", () => {
+  assert.deepEqual(validateSpec(preset("signal-wave")), []);
+  assert.deepEqual(validateSpec(preset("signal-paper")), []);
+  const signal = () => preset("signal-wave");
+  rejects((s) => (s.figure.texts = [{ role: "masthead", id: "masthead", x: 50, y: 36, w: 490 }]), /"masthead" is not a role in the signal frame/, signal);
+  rejects((s) => (s.figure.regions = []), /^figure\.regions: 1 to 6 regions/, signal);
+  rejects((s) => (s.figure.regions = [{ kind: "dots", id: "dots", lines: ["PLAN", "WEEK"], x: 40, y: 40, cell: 12, tones: ["ink", "hot"] }]), /^figure\.regions: the signal frame draws a field or a fill/, signal);
+  rejects((s) => (s.motion = { kind: "spin", frames: 12, fps: 12 }), /motion.kind: "spin" is not a motion; use nodes or resolve or wipe/, signal);
+  rejects((s) => (s.motion = { kind: "nodes", frames: 2, fps: 12 }), /motion.frames: a whole number, 8 to 36/, signal);
+  const withRoutes = () => {
+    const s = preset("signal-wave");
+    s.figure.regions.push({
+      kind: "routes",
+      id: "lines",
+      paths: [{ d: "M 40 40 L 200 200", tone: "hot" }],
+      nodes: [{ path: 0, t: 0.4, tone: "ink" }],
+    });
+    s.motion = { kind: "nodes", frames: 12, fps: 10 };
+    return s;
+  };
+  assert.deepEqual(validateSpec(withRoutes()), []);
+  rejects((s) => (s.figure.regions[1].paths[0].d = "Q 1 2"), /paths\[0\]\.d: does not parse/, withRoutes);
+  rejects((s) => (s.figure.regions[1].nodes[0].path = 4), /nodes\[0\]\.path: index of a path, 0 to 0/, withRoutes);
+  const paper = () => preset("signal-paper");
+  rejects((s) => {
+    const m = s.figure.texts.find((t) => t.role === "mark");
+    m.h = 2;
+  }, /figure\.texts\[\d+\]\.h: 4 to 1190/, paper);
 });

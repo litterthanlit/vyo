@@ -169,9 +169,9 @@
       {
         "role": "masthead",
         "id": "masthead",
-        "x": 290,
+        "x": 318,
         "y": 562,
-        "w": 260,
+        "w": 204,
         "size": 72,
         "align": "center"
       }

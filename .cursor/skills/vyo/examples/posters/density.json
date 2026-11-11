@@ -1,0 +1,70 @@
+{
+  "version": 3,
+  "frame": "signal",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "accent": "#FF4F12",
+  "headline": "A week of dinners, planned in one go.",
+  "hot": "leftovers",
+  "figure": {
+    "fits": "Everything you juggle pours in at the top, narrows to one week's plan at the waist, and comes out as a list.",
+    "regions": [
+      {
+        "kind": "fill",
+        "id": "inputs",
+        "size": 8,
+        "profile": [
+          [172, 420, 365],
+          [185, 420, 365],
+          [249, 420, 297],
+          [313, 420, 231.2],
+          [377, 420, 168.3],
+          [441, 420, 109.1],
+          [489, 420, 68.4],
+          [505, 420, 55.9],
+          [508, 420, 30]
+        ],
+        "words": [
+          "recipes",
+          "cravings",
+          "leftovers",
+          "busy nights",
+          "allergies",
+          "what's in season",
+          "the budget",
+          "family picks"
+        ],
+        "tone": ["soft", "mid"]
+      },
+      {
+        "kind": "fill",
+        "id": "outputs",
+        "size": 8,
+        "profile": [
+          [572, 420, 30],
+          [575, 420, 70.2],
+          [591, 420, 84],
+          [655, 420, 143.8],
+          [719, 420, 208.4],
+          [783, 420, 276.4],
+          [863, 420, 365],
+          [876, 420, 365]
+        ],
+        "words": ["shopping list", "tonight's dinner", "Monday's email", "next week"],
+        "tone": "ink"
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 40, "y": 36, "w": 220, "align": "left" },
+      { "role": "headline", "id": "headline", "x": 40, "y": 64, "w": 760, "align": "left", "size": 44 },
+      { "role": "legend", "id": "legend", "x": 40, "y": 980, "w": 360, "align": "left", "text": "The waist is leftovers, squeezed into one week of dinners from your own recipes." },
+      { "role": "meta", "id": "meta", "x": 40, "y": 1120, "w": 400, "text": "Archive N° 31 / Pantry / Observation series" }
+    ]
+  }
+}

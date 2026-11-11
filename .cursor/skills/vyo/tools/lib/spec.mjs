@@ -1,9 +1,9 @@
 // The poster spec: the one file the agent writes. Pure validation, no I/O, no text measuring.
 import { isJargon } from "./jargon.mjs";
-import { SHEET, SHAPE_KEYS, parsePath } from "./geometry.mjs";
+import { SHEET, SHAPE_KEYS, parsePath, flattenPath } from "./geometry.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { WAVE } from "./fields/wave.mjs";
-import { ROLES as FRAME_ROLES, FRAMES, frameOf, sizeRange, LIST } from "./frame.mjs";
+import { ROLES as FRAME_ROLES, FRAMES, RECORD_FRAMES, frameOf, sizeRange, LIST } from "./frame.mjs";
 
 /**
  * @typedef {"soft" | "mid" | "ink" | "cold" | "cool"} ToneName
@@ -11,15 +11,15 @@ import { ROLES as FRAME_ROLES, FRAMES, frameOf, sizeRange, LIST } from "./frame.
  * @typedef {{ profile: [number, number, number][] } | { ellipse: { cx: number, cy: number, rx: number, ry: number } }
  *         | { polygon: [number, number][] } | { path: string }} Shape
  * @typedef {Shape & { kind: "fill", id: string, holes?: Shape[], words: string[], tone: Tone, caps?: boolean,
- *                     band?: 1 | 2 | 3 | 4, size?: 11 | 12, hot?: boolean }} FillRegion
+ *                     band?: 1 | 2 | 3 | 4, size?: 7 | 8 | 9 | 10 | 11 | 12, hot?: boolean }} FillRegion
  * @typedef {{ kind: "dots", id: string, lines: string[], x: number, y: number, cell: number, tones: (ToneName | "hot")[] }} DotsRegion
- * @typedef {{ kind: "field", id: string, field: "wave" | "terrain" | "river", fits: string, accent?: string, names?: Record<string, string>,
- *             sentence?: string, every?: number, minShare?: number, maxParts?: number }} FieldRegion  drawn from facts.json at render
+ * @typedef {{ kind: "field", id: string, field: keyof typeof FIELDS, fits: string, accent?: string, names?: Record<string, string>,
+ *             sentence?: string, every?: number, seed?: number, letter?: string, mask?: string, minShare?: number, maxParts?: number }} FieldRegion  drawn from facts.json at render
  * @typedef {{ role: string, id: string, text?: string, x: number, y: number, w: number, size?: number,
  *             align?: "left" | "right" | "center", hot?: boolean, parts?: true, items?: string[] }} Text  roles per frame in lib/frame.mjs
  * @typedef {{
  *   version: 3,
- *   frame?: "loose" | "swiss",  loose unless it says swiss
+ *   frame?: "loose" | "swiss" | "signal",  loose unless it says swiss or signal
  *   facts: string,
  *   product: { name: string, repo: string, commit?: string, date: string },
  *   theme: "light" | "dark",
@@ -37,7 +37,7 @@ import { ROLES as FRAME_ROLES, FRAMES, frameOf, sizeRange, LIST } from "./frame.
 export const PLACEHOLDER = "…";
 export const LIMITS = {
   name: 24, headline: 72, hot: 24, noteTitle: 24, noteText: 220, notBuilt: 6, notBuiltItem: 32, audience: 40,
-  fits: 160, regions: 6, texts: 7, words: [2, 14], word: 24, lines: [2, 4], line: 5,
+  fits: 160, regions: 6, texts: 14, words: [2, 14], word: 24, lines: [2, 4], line: 5,
   profile: [3, 24], polygon: [3, 40], holes: 4, path: 4000, fields: 1, partName: 24, sentence: 40, every: [2, 20], minShare: [0, 0.2], maxParts: [2, 24],
 };
 export const TONES = ["soft", "mid", "ink", "cold", "cool"];
@@ -49,16 +49,26 @@ const RESERVED = ["note", "counts", "notBuilt", "provenance", "credit", "record"
 // Keys that only some kinds of field take, like the wave's sentence.
 const FIELD_OPTIONS = [...new Set(Object.values(FIELDS).flatMap((f) => f.options))];
 const KEYS = {
-  spec: ["version", "frame", "facts", "product", "theme", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience"],
+  spec: ["version", "frame", "facts", "product", "theme", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience", "motion"],
   product: ["name", "repo", "commit", "date"],
   note: ["title", "text"],
   figure: ["fits", "regions", "texts"],
   fill: ["kind", "id", ...SHAPE_KEYS, "holes", "words", "tone", "caps", "band", "size", "hot"],
   dots: ["kind", "id", "lines", "x", "y", "cell", "tones"],
   field: ["kind", "id", "field", "fits", "accent", "names", "minShare", "maxParts", ...FIELD_OPTIONS],
-  text: { swiss: ["role", "id", "text", "x", "y", "w", "size", "align", "hot"], loose: ["role", "id", "text", "x", "y", "w", "size", "align", "parts", "items"] },
+  routes: ["kind", "id", "paths", "nodes"],
+  routePath: ["d", "tone"],
+  routeNode: ["path", "t", "tone"],
+  motion: ["kind", "frames", "fps"],
+  text: {
+    swiss: ["role", "id", "text", "x", "y", "w", "size", "align", "hot"],
+    loose: ["role", "id", "text", "x", "y", "w", "size", "align", "parts", "items"],
+    signal: ["role", "id", "text", "x", "y", "w", "h", "size", "align", "parts", "items"],
+  },
   ellipse: ["cx", "cy", "rx", "ry"],
 };
+export const ROUTE_TONES = [...TONES, "hot"];
+export const MOTION = { kinds: ["nodes", "resolve", "wipe"], frames: [8, 36], fps: [6, 24] };
 
 const isStr = (v) => typeof v === "string";
 const isNum = (v) => typeof v === "number" && Number.isFinite(v);
@@ -79,6 +89,9 @@ const PATH = [
   /\b[\w-]+\.(tsx?|jsx?|mjs|cjs|py|rb|go|rs|json|ya?ml|sql|prisma|css|html|mdx?|env)\b/i,
 ];
 const NUMBER_MARKER = /(^|\s)0[1-9](?=[\s.:)]|$)/;
+// The record line and footer print the commit and date from the spec; typed copies go stale.
+const TYPED_COMMIT = /\b(?=[0-9a-f]*\d)(?=[0-9a-f]*[a-f])[0-9a-f]{7,40}\b/i;
+const TYPED_DATE = /\b\d{4}-\d{2}-\d{2}\b/;
 
 /** Problems with poster copy the agent wrote: jargon, file paths, AI tells. */
 export function textProblems(text) {
@@ -88,6 +101,8 @@ export function textProblems(text) {
   if (PATH.some((re) => re.test(text))) out.push("a file path");
   if (NUMBER_MARKER.test(text)) out.push('a "01/02/03" style marker');
   if (text.includes("·")) out.push("a middle dot");
+  if (TYPED_COMMIT.test(text)) out.push("a typed commit; the engine prints the commit, so leave it out");
+  if (TYPED_DATE.test(text)) out.push("a typed date; the engine prints the date, so leave it out");
   return out;
 }
 
@@ -160,7 +175,32 @@ function checkFill(f, r, err) {
   if (r.caps !== undefined && typeof r.caps !== "boolean") err(`${f}.caps: true or false`);
   if (r.hot !== undefined && typeof r.hot !== "boolean") err(`${f}.hot: true or false`);
   if (r.band !== undefined && ![1, 2, 3, 4].includes(r.band)) err(`${f}.band: 1 to 4 rows per word`);
-  if (r.size !== undefined && ![11, 12].includes(r.size)) err(`${f}.size: 11 or 12`);
+  if (r.size !== undefined && ![7, 8, 9, 10, 11, 12].includes(r.size)) err(`${f}.size: 7 to 12`);
+}
+
+function checkRoutes(f, r, err) {
+  if (!Array.isArray(r.paths) || r.paths.length < 1 || r.paths.length > 6) return err(`${f}.paths: 1 to 6 paths`);
+  r.paths.forEach((p, i) => {
+    const at = `${f}.paths[${i}]`;
+    if (!isObj(p)) return err(`${at}: must be { d, tone }`);
+    unknownKeys(p, KEYS.routePath, `${at}.`, err);
+    if (!isStr(p.d) || !p.d.trim()) return err(`${at}.d: an SVG path string`);
+    const parsed = flattenPath(p.d);
+    if (parsed.error) err(`${at}.d: does not parse: ${parsed.error}`);
+    if (!ROUTE_TONES.includes(p.tone)) err(`${at}.tone: one of ${ROUTE_TONES.join(", ")}`);
+  });
+  if (r.nodes !== undefined) {
+    if (!Array.isArray(r.nodes) || r.nodes.length > 12) err(`${f}.nodes: a list of at most 12 nodes`);
+    else
+      r.nodes.forEach((n, i) => {
+        const at = `${f}.nodes[${i}]`;
+        if (!isObj(n)) return err(`${at}: must be { path, t, tone }`);
+        unknownKeys(n, KEYS.routeNode, `${at}.`, err);
+        if (!Number.isInteger(n.path) || n.path < 0 || n.path >= r.paths.length) err(`${at}.path: index of a path, 0 to ${r.paths.length - 1}`);
+        if (!inRange(n.t, 0, 1)) err(`${at}.t: 0 to 1 along the path`);
+        if (!ROUTE_TONES.includes(n.tone)) err(`${at}.tone: one of ${ROUTE_TONES.join(", ")}`);
+      });
+  }
 }
 
 function checkDots(f, r, err) {
@@ -203,6 +243,10 @@ function checkField(f, r, err, copy) {
       }
   }
   if (r.sentence !== undefined) plain(`${f}.sentence`, r.sentence, LIMITS.sentence, "one plain sentence, or remove it");
+  if (r.seed !== undefined && !(Number.isInteger(r.seed) && inRange(r.seed, 0, 2147483647))) err(`${f}.seed: a whole number, 0 to 2147483647`);
+  if (r.letter !== undefined && kind.options.includes("letter") && !/^[A-Z0-9]$/.test(r.letter)) err(`${f}.letter: one character A to Z or 0 to 9`);
+  if (r.mask !== undefined && kind.options.includes("mask") && !(isStr(r.mask) && r.mask.trim())) err(`${f}.mask: a path to a PNG`);
+  if (r.symbols !== undefined && kind.options.includes("symbols") && typeof r.symbols !== "boolean") err(`${f}.symbols: true or false`);
   plain(`${f}.fits`, r.fits, LIMITS.fits, "one sentence on why this field matches the product's story");
   const whole = (k) => {
     const [lo, hi] = LIMITS[k];
@@ -219,7 +263,10 @@ function checkText(f, t, err, copy, frame) {
   const roles = FRAME_ROLES[frame];
   const role = roles[t.role];
   if (!role) return err(`${f}.role: "${t.role}" is not a role in the ${frame} frame; use ${Object.keys(roles).join(", ")}`);
-  if (role.prints) {
+  if (t.role === "mark") {
+    if (t.text !== undefined) err(`${f}.text: a mark is a block of colour; leave text out`);
+    if (!inRange(t.h, 4, SHEET.height)) err(`${f}.h: 4 to ${SHEET.height}`);
+  } else if (role.prints) {
     if (t.text !== undefined) err(`${f}.text: the ${t.role} prints ${role.prints === "name" ? "product.name" : "the spec's headline"}; leave text out`);
   } else if (t.role === "list") {
     if ((t.parts === true) === (t.items !== undefined)) err(`${f}: a list takes parts: true (the field's parts) or items, not both or neither`);
@@ -276,17 +323,21 @@ function checkFigure(fig, err, copy, frame) {
     fig.regions.forEach((r, i) => {
       const f = `figure.regions[${i}]`;
       if (!isObj(r)) return err(`${f}: must be a region`);
-      if (!["fill", "dots", "field"].includes(r.kind)) return err(`${f}.kind: "${r.kind}" is not a region kind; use field, fill or dots`);
+      if (!["fill", "dots", "field", "routes"].includes(r.kind)) return err(`${f}.kind: "${r.kind}" is not a region kind; use field, fill, dots or routes`);
       unknownKeys(r, KEYS[r.kind], `${f}.`, err);
       idOk(f, r.id);
       if (r.kind === "fill") checkFill(f, r, err);
       else if (r.kind === "dots") checkDots(f, r, err);
+      else if (r.kind === "routes") checkRoutes(f, r, err);
       else checkField(f, r, err, copy);
       for (const [k, list] of [["words", r.words], ["lines", r.lines]]) if (Array.isArray(list) && !list.some(isPlaceholder)) list.forEach((w, j) => isStr(w) && copy.push([`${f}.${k}[${j}]`, w]));
     });
 
   if (Array.isArray(fig.regions) && fig.regions.filter((r) => isObj(r) && r.kind === "field").length > LIMITS.fields) err(`figure.regions: at most ${LIMITS.fields} field region`);
   if (frame === "loose" && Array.isArray(fig.regions) && !hasField(fig)) err("figure.regions: the loose frame draws a field; add a field region, or set frame to swiss for fill and dots figures");
+  if (frame === "signal" && Array.isArray(fig.regions) && !hasField(fig) && !fig.regions.some((r) => isObj(r) && r.kind === "fill")) {
+    err("figure.regions: the signal frame draws a field or a fill; add one, or set frame to swiss");
+  }
 
   if (!Array.isArray(fig.texts) || fig.texts.length < 1 || fig.texts.length > LIMITS.texts) return err(`figure.texts: 1 to ${LIMITS.texts} texts`);
   fig.texts.forEach((t, i) => {
@@ -369,11 +420,11 @@ export function validateSpec(spec) {
     }
   }
 
-  if (frame === "loose") {
-    for (const k of ["notes", "notBuilt"]) if (spec[k] !== undefined) err(`${k}: the loose frame has no footer; write paragraphs in figure.texts, or set frame to swiss`);
+  if (RECORD_FRAMES.includes(frame)) {
+    for (const k of ["notes", "notBuilt"]) if (spec[k] !== undefined) err(`${k}: the ${frame} frame has no footer; write paragraphs in figure.texts, or set frame to swiss`);
     if (spec.record !== undefined && !["bottom", "left"].includes(spec.record)) err('record: "bottom" or "left", or leave it out and the engine picks');
   } else {
-    if (spec.record !== undefined) err("record: only the loose frame has a record line; the swiss footer prints provenance");
+    if (spec.record !== undefined) err("record: only the loose and signal frames have a record line; the swiss footer prints provenance");
     if (!Array.isArray(spec.notes)) err("notes: must be a list");
     else {
       if (spec.notes.length < 2 || spec.notes.length > 3) err(`notes: ${spec.notes.length} notes; use 2 or 3`);
@@ -391,6 +442,18 @@ export function validateSpec(spec) {
     }
   }
   if (spec.audience !== undefined) field("audience", spec.audience, LIMITS.audience);
+
+  if (spec.motion !== undefined) {
+    if (!isObj(spec.motion)) err("motion: must be { kind, frames, fps }");
+    else {
+      unknownKeys(spec.motion, KEYS.motion, "motion.", err);
+      if (!MOTION.kinds.includes(spec.motion.kind)) err(`motion.kind: "${spec.motion.kind}" is not a motion; use ${MOTION.kinds.join(" or ")}`);
+      const [flo, fhi] = MOTION.frames;
+      if (!Number.isInteger(spec.motion.frames) || !inRange(spec.motion.frames, flo, fhi)) err(`motion.frames: a whole number, ${flo} to ${fhi}`);
+      const [plo, phi] = MOTION.fps;
+      if (!Number.isInteger(spec.motion.fps) || !inRange(spec.motion.fps, plo, phi)) err(`motion.fps: a whole number, ${plo} to ${phi}`);
+    }
+  }
 
   for (const [name, text] of copy) for (const problem of textProblems(text)) err(`${name}: ${problem} in "${text}"`);
   return errors;
@@ -411,10 +474,10 @@ const hold = (prompt) => `${PLACEHOLDER} ${prompt}`;
  * @param {number} floor
  * @param {{ accent?: string, unplain: { id: string, name: string }[] }} o
  */
-function fieldFigure(field, floor, { accent, unplain }) {
+function fieldFigure(field, floor, { accent, unplain, seed, letter }) {
   const at = FIELDS[field].texts(floor);
   return {
-    regions: [fieldRegion(field, { accent, unplain })],
+    regions: [fieldRegion(field, { accent, unplain, seed, letter })],
     texts: [
       { role: "masthead", id: "masthead", x: 50, y: 36, w: 490 },
       { role: "headline", id: "headline", ...at.headline },
@@ -426,13 +489,15 @@ function fieldFigure(field, floor, { accent, unplain }) {
 const quoted = (words) => words.map((w) => `"${w}"`).join(" or ");
 
 /** The field region a scaffold starts from, in either frame. */
-function fieldRegion(field, { accent, unplain }) {
+function fieldRegion(field, { accent, unplain, seed, letter }) {
   return {
     kind: "field",
     id: field,
     field,
     fits: hold(`one sentence on why a ${field} matches the product's story, with ${quoted(FIELDS[field].fits)}, at most ${LIMITS.fits} characters`),
     ...(accent ? { accent } : {}),
+    ...(seed !== undefined ? { seed } : {}),
+    ...(letter ? { letter } : {}),
     ...(unplain.length ? { names: Object.fromEntries(unplain.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])) } : {}),
     ...(FIELDS[field].options.includes("sentence") ? { sentence: hold(`a sentence woven in every ${WAVE.every}th row, at most ${LIMITS.sentence} characters, or remove it`) } : {}),
   };
@@ -443,11 +508,11 @@ function fieldRegion(field, { accent, unplain }) {
  * the corners the field leaves empty (`places`, from lib/frame.mjs). The legend's placeholder spells out its rule.
  * @param {{ accent?: string, accentNames: string[], unplain: { id: string, name: string }[], places: Record<string, object> }} o
  */
-function looseFigure(field, { accent, accentNames, unplain, places }) {
+function looseFigure(field, { accent, accentNames, unplain, places, seed, letter }) {
   const name = accentNames.length ? quoted(accentNames) : "the accent part";
   const measure = FIELDS[field].measure.map(quoted).join(", and ");
   return {
-    regions: [fieldRegion(field, { accent, unplain })],
+    regions: [fieldRegion(field, { accent, unplain, seed, letter })],
     texts: [
       { role: "label", id: "label", ...places.label },
       { role: "headline", id: "headline", ...places.headline },
@@ -482,8 +547,9 @@ function blankFigure(fig) {
  *           places?: Record<string, object> }} o
  * @returns {Spec}
  */
-export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", theme, commit, date, floor, field = "wave", accent, accentNames = [], unplain = [], places }) {
-  const loose = frame === "loose";
+export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", theme, commit, date, floor, field, accent, accentNames = [], unplain = [], places, seed, letter }) {
+  if (!preset && !field) throw new Error("scaffoldSpec needs a field");
+  const loose = RECORD_FRAMES.includes(frame);
   const notes = preset ? preset.notes.length : 3;
   return {
     version: 3,
@@ -494,7 +560,7 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
     ...(preset?.accent ? { accent: preset.accent } : {}),
     headline: hold(`one plain sentence about the outcome, at most ${LIMITS.headline} characters`),
     ...(preset ? { hot: hold("the one word set in the accent colour: a word of a fill region, a dots line or a hot label") } : {}),
-    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, accentNames, unplain, places }) : fieldFigure(field, floor, { accent, unplain }),
+    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, accentNames, unplain, places, seed, letter }) : fieldFigure(field, floor, { accent, unplain, seed, letter }),
     ...(loose
       ? {}
       : {

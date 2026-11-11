@@ -44,10 +44,44 @@ test("dots draw as #, and a figure with no fill rows says so", () => {
 test("the compose scaffold is a field that sketches from the facts with no warnings", async () => {
   const { scanRepo } = await import("../lib/scan/index.mjs");
   const facts = scanRepo(path.join(HERE, "fixtures", "recipe"));
-  const spec = scaffoldSpec(facts, { frame: "swiss", theme: "light", date: "2026-11-07", floor: 884, accent: "area:lib/plan" });
+  const spec = scaffoldSpec(facts, { frame: "swiss", theme: "light", date: "2026-11-07", floor: 884, field: "wave", accent: "area:lib/plan" });
   const out = sketch(spec, facts);
   assert.match(out, /^regions: A wave \(wave, 12 parts, \d+ rows\); · marks hot rows$/m);
   assert.doesNotMatch(out, /^! /m);
+});
+
+test("compose places the loose and signal frames' texts by that frame's sizes, so none overlap or leave the sheet", async () => {
+  const { spawnSync } = await import("node:child_process");
+  const os = await import("node:os");
+  const { FIELDS } = await import("../lib/fields/index.mjs");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-places-"));
+  const vyo = (...a) => spawnSync(process.execPath, [path.join(HERE, "..", "vyo.mjs"), ...a], { encoding: "utf8" });
+  try {
+    const facts = path.join(dir, "facts.json");
+    assert.equal(vyo("scan", path.join(HERE, "fixtures", "recipe"), "--out", facts).status, 0);
+    const bad = [];
+    for (const frame of ["loose", "signal"]) {
+      for (const field of Object.keys(FIELDS)) {
+        const out = path.join(dir, `${frame}-${field}.json`);
+        const made = vyo("compose", facts, "--frame", frame, "--field", field, "--accent", "area:lib/plan", "--out", out, "--shapes-log", path.join(dir, "log.json"));
+        assert.equal(made.status, 0, made.stderr);
+        // Fill each text to the length compose plans room for: three quarters of its role's limit.
+        const spec = JSON.parse(fs.readFileSync(out, "utf8"));
+        const words = (n) => "plan the week from saved recipes and cook ".repeat(8).slice(0, n).trim();
+        spec.headline = words(54);
+        for (const t of spec.figure.texts) if (t.text !== undefined) t.text = words(t.role === "legend" ? 135 : 165);
+        fs.writeFileSync(out, JSON.stringify(spec));
+        const drawn = vyo("sketch", out, "--facts", facts).stdout;
+        const boxes = [...drawn.match(/^texts: (.*)$/m)[1].matchAll(/(\w+) (-?\d+),(-?\d+) to (-?\d+),(-?\d+)/g)];
+        const off = boxes.filter((m) => +m[5] > 1190 || +m[4] > 840).map((m) => m[1]);
+        const overlaps = drawn.match(/^! text blocks .* overlap.*$/gm) ?? [];
+        if (off.length || overlaps.length) bad.push(`${frame} ${field}: ${[...off.map((id) => `${id} off the sheet`), ...overlaps].join("; ")}`);
+      }
+    }
+    assert.deepEqual(bad, []);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("a loose sketch: no footer line, the record among the texts, and the four corners the field leaves", async () => {

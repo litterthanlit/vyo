@@ -1,0 +1,69 @@
+{
+  "version": 3,
+  "frame": "loose",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "light",
+  "headline": "A week of dinners, planned in one go.",
+  "motion": { "kind": "resolve", "frames": 18, "fps": 12 },
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "shatter",
+        "field": "shatter",
+        "fits": "The week splits into meals, so Pantry's code breaks apart in a grid.",
+        "accent": "area:lib/plan",
+        "seed": 0,
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      {
+        "role": "label",
+        "id": "label",
+        "x": 36,
+        "y": 2,
+        "w": 140,
+        "align": "left"
+      },
+      {
+        "role": "headline",
+        "id": "headline",
+        "x": 184,
+        "y": 36,
+        "w": 250,
+        "align": "left",
+        "size": 32
+      },
+      {
+        "role": "legend",
+        "id": "legend",
+        "x": 656,
+        "y": 700,
+        "w": 168,
+        "align": "left",
+        "size": 13,
+        "text": "Every cell is a share of Pantry's code. The black cells are the plan."
+      }
+    ]
+  }
+}

@@ -10,7 +10,7 @@ import { SHEET, ADVANCE, CORNERS } from "./geometry.mjs";
  *             prints?: "name" | "headline", max?: number, sentences?: number, em: number, mono?: boolean }} Role
  */
 
-/** @type {Record<"swiss" | "loose", Record<string, Role>>} */
+/** @type {Record<"swiss" | "loose" | "signal", Record<string, Role>>} */
 export const ROLES = {
   swiss: {
     masthead: { size: [84, 48, 120], lh: (s) => Math.round(s * 1.05), count: [1, 1], prints: "name", em: 0.45 },
@@ -27,8 +27,24 @@ export const ROLES = {
     list: { size: [13, 11, 14], lh: (s) => Math.round(s * 1.55), count: [0, 1], em: ADVANCE, mono: true },
     rule: { size: [13, 11, 14], lh: (s) => s, count: [0, 1], em: ADVANCE, mono: true },
   },
+  // Charcoal or paper, one signal colour, grotesque headline, archival meta, highlighter marks.
+  signal: {
+    label: { size: [12, 10, 16], lh: (s) => Math.round(s * 1.2), count: [1, 1], prints: "name", em: ADVANCE + 0.18, mono: true },
+    headline: { size: [52, 36, 72], lh: (s) => Math.round(s * 0.98), count: [1, 1], prints: "headline", em: 0.42 },
+    paragraph: { size: [13, 12, 15], lh: (s) => Math.round(s * 1.35), count: [0, 2], max: 220, sentences: 2, em: 0.45 },
+    legend: { size: [12, 10, 14], lh: (s) => Math.round(s * 1.4), count: [1, 1], max: 180, sentences: 2, em: ADVANCE, mono: true },
+    // The stepped list: bold grotesque caps, each item a bullet and one step further in, four steps then back.
+    list: { size: [13, 10, 44], lh: (s) => Math.round(s * (s < 20 ? 1.4 : 1.02)), count: [0, 1], em: 0.66 },
+    rule: { size: [12, 10, 14], lh: (s) => s, count: [0, 1], em: ADVANCE, mono: true },
+    meta: { size: [11, 9, 13], lh: (s) => Math.round(s * 1.25), count: [0, 1], max: 80, sentences: 1, em: ADVANCE, mono: true },
+    display: { size: [96, 64, 160], lh: (s) => Math.round(s * 0.9), count: [0, 2], max: 8, em: 0.5 },
+    mark: { size: [12, 1, 200], lh: () => 0, count: [0, 3], em: 0 },
+  },
 };
 export const FRAMES = Object.keys(ROLES);
+/** Frames that draw a record line instead of the swiss footer. */
+export const RECORD_FRAMES = ["loose", "signal"];
+export const hasRecord = (spec) => RECORD_FRAMES.includes(frameOf(spec));
 // A swiss label set hot is the accent word set large, like the hourglass waist.
 export const HOT_LABEL = [26, 10, 32];
 export const LIST = { items: 16, item: 24 };
@@ -90,9 +106,10 @@ const BLOCKS = { label: { w: 220 }, headline: { w: 380, chars: 54 }, list: { w: 
  * @param {ReturnType<import("./geometry.mjs").corners>} corners
  * @param {{ x: number, y: number }} accent  the centre of the accent part's rows, or of all rows
  * @param {number} listLines  how many parts the list prints
+ * @param {"loose" | "signal"} frame  whose role sizes to plan by
  * @returns {Record<string, { x: number, y: number, w: number, align: "left" | "right" }>}
  */
-export function scaffoldPlaces(corners, accent, listLines) {
+export function scaffoldPlaces(corners, accent, listLines, frame = "loose") {
   const { inset, gap, between, bottomEnd, minW, minH } = SCAFFOLD;
   const room = Object.fromEntries(
     CORNERS.map((n) => {
@@ -116,9 +133,10 @@ export function scaffoldPlaces(corners, accent, listLines) {
   };
   const out = {};
   for (const [role, b] of Object.entries(BLOCKS)) {
-    const { size: [size], lh, em } = ROLES.loose[role];
+    const { size: [size], lh, em } = ROLES[frame][role];
     const widthIn = (r) => Math.max(minW / 2, Math.min(b.w, r.w));
-    const heightIn = (r) => lh(size) * (role === "list" ? listLines : b.chars ? Math.ceil(b.chars / Math.floor(widthIn(r) / (em * size))) : 1);
+    // Wrapping at word breaks fills about 85% of each line, so plan for that many characters per line.
+    const heightIn = (r) => lh(size) * (role === "list" ? listLines : b.chars ? Math.ceil(b.chars / Math.floor((0.85 * widthIn(r)) / (em * size))) : 1);
     const fits = (r) => r.h - r.used - (r.used ? between : 0) >= heightIn(r);
     const most = by((r) => -(r.h - r.used))[0];
     const r = [want[role], most].find((x) => x && fits(x)) ?? (role === "list" || role === "paragraph" ? null : want[role] ?? most);
