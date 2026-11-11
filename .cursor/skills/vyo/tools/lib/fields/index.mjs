@@ -52,7 +52,7 @@ export const FIELDS = {
   },
   shape: {
     about: "a silhouette you draw as ops, cut top to bottom into one band per part, as much area as its lines, the type as big as its share",
-    options: ["shape", "style", "echo", "bevel", "strata", "split"],
+    options: ["shape", "style", "echo", "bevel", "strata", "split", "solid", "turn"],
     // A ring or a symbol row must hold its whole name in readable type, so fewer, bigger parts than a wave.
     parts: { maxParts: 12 },
     // A relief's 6px type holds any name, so it takes as many parts as a wave.
@@ -68,7 +68,7 @@ export const FIELDS = {
     tokens: (theme, frame) => ({ ...toneSet(theme, frame).tokens, ...SHAPE_TOKENS[theme], ...RELIEF_TONES[theme].tokens }),
     behindTexts: false,
     // The words sit in the room the silhouette leaves, so only the frames with a record line draw one.
-    frames: ["loose", "signal"],
+    frames: ["loose", "signal", "cover"],
   },
   radial: {
     about: "rows of part names in a triangle of type that spreads from an apex, sized by lines",

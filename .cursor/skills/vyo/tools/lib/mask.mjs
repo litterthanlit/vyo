@@ -2,12 +2,13 @@
 // places and checks is read from the mask, never from the ops. Pure: render inlines it after geometry.mjs,
 // `vyo sketch` and the checks import it.
 import { SHEET, parsePath } from "./geometry.mjs";
+import { shapeOps } from "./silhouettes.mjs";
 
 /**
  * @typedef {[number, number]} Point
  * @typedef {{ add?: string, cut?: string, rotate?: number, at?: Point, r?: number | Point, size?: Point, round?: number,
  *             from?: Point | number, to?: Point | number, width?: number, points?: Point[], d?: string }} ShapeOp
- * @typedef {{ ops?: ShapeOp[], mask?: string, rotate?: number, fit?: { w?: number, h?: number, cx?: number, cy?: number }, room?: { top: number } }} Shape
+ * @typedef {{ ops?: ShapeOp[], like?: string, mask?: string, rotate?: number, fit?: { w?: number, h?: number, cx?: number, cy?: number }, room?: { top: number } }} Shape
  *   A shape is drawn from `ops`, or traced from `mask`, a PNG whose dark pixels are the silhouette.
  * @typedef {{ w: number, h: number, runs: [number, number][][] }} MaskImage
  *   A traced PNG's dark pixels as spans per image row, trimmed to their box.
@@ -125,7 +126,7 @@ export const shapeImage = (shape) => maskImage(shape.mask);
 export const opKind = (op) => ("add" in op ? ["add", op.add] : "crease" in op ? ["crease", op.crease] : ["cut", op.cut]);
 
 /** Every op as `{ verb, cut, rings }` in shape units: its own rotate about its centre (a path's: its box's), then the shape's. */
-export function opRings(shape, ops = shape.ops ?? []) {
+export function opRings(shape, ops = shapeOps(shape)) {
   return ops.map((op) => {
     const [verb, kind] = opKind(op);
     let rings = KIND_RINGS[kind](op);

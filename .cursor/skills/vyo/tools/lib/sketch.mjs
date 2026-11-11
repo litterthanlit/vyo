@@ -11,6 +11,7 @@ import { shapeReport, shapeFindings, coverFloor } from "./shape-report.mjs";
 import { encodePng } from "./png.mjs";
 import { estimateText, placeTexts } from "./place.mjs";
 import { opKind, opRings, paintRows } from "./mask.mjs";
+import { shapeOps } from "./silhouettes.mjs";
 
 const CELL = 20;
 const COLS = SHEET.width / CELL;
@@ -86,7 +87,7 @@ export function sketchImage(given, facts) {
   }
   // Creases as lines in the paper's tone: they fold the relief's light, which a third of the size hides.
   const { s: k, tx, ty } = report.mask.xf;
-  for (const op of (region.shape.ops ?? []).filter((o) => opKind(o)[0] === "crease")) {
+  for (const op of shapeOps(region.shape).filter((o) => opKind(o)[0] === "crease")) {
     const kind = op.crease;
     const thin = kind === "capsule" ? { r: 1.5 / k } : kind === "arc" ? { width: 3 / k } : {};
     const runs = paintRows(opRings(region.shape, [{ ...op, ...thin, add: kind, crease: undefined }]).map((o) => ({ ...o, cut: false })), k, tx, ty, SHEET.height);

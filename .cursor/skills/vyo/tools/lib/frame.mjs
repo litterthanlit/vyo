@@ -40,6 +40,11 @@ export const ROLES = {
     display: { size: [96, 64, 160], lh: (s) => Math.round(s * 0.9), count: [0, 2], max: 8, em: 0.5 },
     mark: { size: [12, 1, 200], lh: () => 0, count: [0, 3], em: 0 },
   },
+  // The cover's template is fixed: the engine prints the record, the headline, the series mark and the name, and
+  // places every block. The agent writes the legend's words only.
+  cover: {
+    legend: { size: [11.5, 11.5, 11.5], lh: () => 14.5, count: [1, 1], max: 180, sentences: 2, em: 0.55 },
+  },
 };
 export const FRAMES = Object.keys(ROLES);
 /** Frames that draw a record line instead of the swiss footer. */

@@ -2,9 +2,13 @@
 // judge the measurements lib/inspect.js takes in the rendered page.
 import { validateSpec, textProblems, hasWord, geometryKey } from "./spec.mjs";
 import { bandCounts, bandLine } from "./band.mjs";
-import { FONT_FACES, tokensOf, fieldTokensOf, recordText } from "./render.mjs";
+import { fontFacesOf, tokensOf, fieldTokensOf, recordText } from "./render.mjs";
 import { frameOf, ROLES, RECORD_FRAMES } from "./frame.mjs";
-import { partsFromFacts, partOptions, regionParts, unplainName, sameNames } from "./parts.mjs";
+import { partsFromFacts, partOptions, regionParts, unplainName, sameNames, dominance } from "./parts.mjs";
+import { shapeMask } from "./mask.mjs";
+import { coverOf } from "./cover-render.mjs";
+import { coverFindings, COVER_LIMITS } from "./cover-report.mjs";
+import { COVER } from "./cover.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { shapeReport, shapeFindings, SHAPE_LIMITS, SHAPE_LIMB } from "./shape-report.mjs";
 import { RINGS } from "./fields/shape-rings.mjs";
@@ -89,13 +93,27 @@ const pageRegionStats = (page) => regionStats(fillRowsOf(page).map((r) => ({ reg
  * A check of every shape field, read from shape-report's findings. `drawn` picks what the finding measures
  * on the page: its rows, its text blocks, or nothing (the mask alone).
  */
-const shapeCheck = (id, level, stage, about, drawn = () => ({})) => ({
-  id, level, stage, frames: ["loose"], about,
+const shapeCheck = (id, level, stage, about, drawn = () => ({}), frames = ["loose"]) => ({
+  id, level, stage, frames, about,
   run: (i) => {
+    if (frameOf(i.spec) === "cover") return shapeFindings(coverShapeReport(i.spec, i.facts))[id];
     const spec = placedSpec(i);
     return fieldsOf(spec).filter((r) => r.field === "shape").flatMap((r) => shapeFindings(shapeReport(spec, r, i.facts), drawn(i))[id]);
   },
 });
+// The silhouette checks judge the shape as a poster would fit it: the cover's form sits in a box about as large.
+const coverShapeReport = (spec, facts) => {
+  const region = spec.figure.regions[0];
+  const parts = regionParts(region, facts);
+  return { region, parts, dominant: dominance(facts, partOptions(region)), mask: shapeMask(region.shape), rows: [] };
+};
+const COVER_ONLY = ["cover"];
+/** A cover check judged on the frames the page drew: the still, and the loop when render drew one. */
+const coverCheck = (id, about) => ({
+  id, level: "fail", stage: "page", frames: COVER_ONLY, about,
+  run: ({ spec, facts, page }) => (page.cover ? coverFindings(coverOf(spec, facts), { still: page.cover.report, loop: page.loop ?? null })[id] : []),
+});
+const POSTERS = ["swiss", "loose", "signal"];
 // The spec as render and sketch draw it, with the texts placed and the shape moved for them; once per spec.
 const placed = new WeakMap();
 const placedSpec = ({ spec, facts }) => {
@@ -163,7 +181,7 @@ export const CHECKS = [
     run: ({ spec }) => fieldsOf(spec).filter((r) => r.accent === undefined).map((r) => `no accent part in region ${r.id}; set accent to the id of the part the poster is about (vyo parts lists them)`),
   },
   {
-    id: "legend", level: "fail", stage: "spec", frames: ["loose", "signal"], about: "the legend names the accent part and the field's measure, so the picture reads as this project",
+    id: "legend", level: "fail", stage: "spec", frames: ["loose", "signal", "cover"], about: "the legend names the accent part and the field's measure, so the picture reads as this project",
     run: ({ spec, facts }) =>
       fieldsOf(spec).flatMap((r) => {
         const legend = spec.figure.texts.find((t) => t.role === "legend")?.text ?? "";
@@ -176,16 +194,24 @@ export const CHECKS = [
       }),
   },
   {
-    id: "fits", level: "fail", stage: "spec", about: "a field's fits says why this field matches the product's story, in one of the field's keywords",
+    id: "fits", level: "fail", stage: "spec", frames: POSTERS, about: "a field's fits says why this field matches the product's story, in one of the field's keywords",
     run: ({ spec }) =>
       fieldsOf(spec)
         .filter((r) => !FIELDS[r.field].fits.some((w) => startsWord(r.fits, w)))
         .map((r) => `region ${r.id}: fits must say why a ${r.field} matches the product's story; use ${anyOf(FIELDS[r.field].fits)}`),
   },
-  shapeCheck("shape-dominant", "warn", "spec", "no part of a drawn shape is one slab: a part over 75% of the lines, or among under 4 parts, is split when it has folders inside it, and an accent over 75% with none to split is named, so it can move to a smaller part"),
-  shapeCheck("shape-simple", "warn", "spec", "a drawn shape has at most 8 ops and no run of small repeated details that merge at thumbnail size"),
-  shapeCheck("shape-limb", "warn", "spec", `no even limb under ${SHAPE_LIMB.width * 100}% of a drawn shape's widest row runs from its top or bottom over ${SHAPE_LIMB.height * 100}% of its height while holding at most ${SHAPE_LIMB.area * 100}% of its area`),
-  shapeCheck("shape-thin", "warn", "spec", `no feature of a drawn shape, and no cut in it, is under ${SHAPE_LIMITS.thin}px across, a hairline at thumbnail size`),
+  shapeCheck("shape-dominant", "warn", "spec", "no part of a drawn shape is one slab: a part over 75% of the lines, or among under 4 parts, is split when it has folders inside it, and an accent over 75% with none to split is named, so it can move to a smaller part", undefined, ["loose", "cover"]),
+  shapeCheck("shape-simple", "warn", "spec", "a drawn shape has at most 8 ops and no run of small repeated details that merge at thumbnail size", undefined, ["loose", "cover"]),
+  shapeCheck("shape-limb", "warn", "spec", `no even limb under ${SHAPE_LIMB.width * 100}% of a drawn shape's widest row runs from its top or bottom over ${SHAPE_LIMB.height * 100}% of its height while holding at most ${SHAPE_LIMB.area * 100}% of its area`, undefined, ["loose", "cover"]),
+  shapeCheck("shape-thin", "warn", "spec", `no feature of a drawn shape, and no cut in it, is under ${SHAPE_LIMITS.thin}px across, a hairline at thumbnail size`, undefined, ["loose", "cover"]),
+  {
+    id: "cover-shell", level: "warn", stage: "spec", frames: COVER_ONLY, about: `a cover's outline accent is at least ${COVER_LIMITS.thin}px thick in the still and at most ${COVER_LIMITS.share * 100}% of the code, so it reads as an orange shell round the object`,
+    run: ({ spec, facts }) => coverFindings(coverOf(spec, facts), { facts })["cover-shell"],
+  },
+  coverCheck("cover-names", `every part of ${COVER.big * 100}% of the lines or more prints its whole name at least once in the cover's still`),
+  coverCheck("cover-share", `in every frame a cover draws, each part's share of the glyphs is within ${COVER.gap * 100} point of its share of the lines`),
+  coverCheck("cover-accent", "a cover's accent names exactly one part, and that part prints in every frame drawn"),
+  coverCheck("cover-seam", "a cover's loop closes: the step from its last frame to its first changes no more glyphs than the largest step inside it"),
   shapeCheck("shape-cover", "warn", "spec", `a drawn shape covers at least ${SHAPE_LIMITS.cover * 100}% of the sheet (a relief ${RELIEF.cover * 100}%)`),
   shapeCheck("shape-edge", "warn", "spec", `a drawn shape that runs off an edge runs off by at least ${SHAPE_LIMITS.bleed * 100}% of its own size, so the bleed reads as meant`),
   shapeCheck("shape-accent", "warn", "spec", `the accent of a drawn shape is at least ${SHAPE_LIMITS.accent}px tall, so it shows in the thumbnail`),
@@ -202,9 +228,9 @@ export const CHECKS = [
     run: ({ page }) => [...page.errors.map((e) => `page error: ${e}`), ...(page.drawn ? [] : ["the figure never set window.drawn"])],
   },
   {
-    id: "fonts", level: "fail", stage: "page", about: "Commit Mono 400 and 700 and Newsreader 400 loaded",
-    run: ({ page }) =>
-      FONT_FACES.filter(({ family, weight }) => !page.faces.some((f) => f.family === family && f.weight === String(weight) && f.status === "loaded")).map(
+    id: "fonts", level: "fail", stage: "page", about: "the poster's faces loaded: Commit Mono 400 and 700, and Newsreader 400 (a cover: Inter 500 and Inter Display 600)",
+    run: ({ spec, page }) =>
+      fontFacesOf(frameOf(spec)).filter(({ family, weight }) => !page.faces.some((f) => f.family === family && f.weight === String(weight) && f.status === "loaded")).map(
         ({ family, weight }) => `${family} ${weight} did not load`,
       ),
   },
@@ -275,7 +301,7 @@ export const CHECKS = [
     },
   },
   {
-    id: "blocks-apart", level: "fail", stage: "page", about: "no two text blocks overlap, rows and dots keep clear of them (in the swiss frame a wave's rows may pass behind the figure's texts), and blocks side by side keep 8px apart",
+    id: "blocks-apart", level: "fail", stage: "page", frames: POSTERS, about: "no two text blocks overlap, rows and dots keep clear of them (in the swiss frame a wave's rows may pass behind the figure's texts), and blocks side by side keep 8px apart",
     run: ({ spec, page }) => {
       const blocks = page.blocks.map((b) => ({ ...b, kind: "block" }));
       // Swiss and signal let a field's rows pass behind type; a mark may sit under type.
@@ -306,7 +332,7 @@ export const CHECKS = [
         .map((c) => `${c.covered} px of the ${c.block}'s letters are painted over near ${c.x},${c.y}; something is drawn on top of the text, so move the block clear of it`),
   },
   {
-    id: "blocks-inside", level: "fail", stage: "page", about: "every text block is inside the sheet",
+    id: "blocks-inside", level: "fail", stage: "page", frames: POSTERS, about: "every text block is inside the sheet",
     run: ({ page }) =>
       page.blocks
         .filter((b) => !inside(b.rect, page.sheet))
@@ -329,7 +355,7 @@ export const CHECKS = [
     },
   },
   {
-    id: "field-parts", level: "fail", stage: "page", about: "a field's parts hold every line of the scan, each part is drawn, and its accent names a part",
+    id: "field-parts", level: "fail", stage: "page", frames: POSTERS, about: "a field's parts hold every line of the scan, each part is drawn, and its accent names a part",
     run: ({ spec, facts, page }) =>
       fieldsOf(spec).flatMap((r) => {
         const parts = regionParts(r, facts);
@@ -388,7 +414,7 @@ export const CHECKS = [
     },
   },
   {
-    id: "notes", level: "fail", stage: "page", about: "swiss: the footer shows the spec's notes; loose and signal: 0 to 2 paragraphs and exactly one legend",
+    id: "notes", level: "fail", stage: "page", frames: POSTERS, about: "swiss: the footer shows the spec's notes; loose and signal: 0 to 2 paragraphs and exactly one legend",
     run: ({ spec, page }) => {
       const n = (pred) => page.blocks.filter(pred).length;
       if (frameOf(spec) === "swiss") {
@@ -413,6 +439,7 @@ export const CHECKS = [
   {
     id: "still", level: "fail", stage: "page", about: "the PNG and PDF show the finished poster: no row hidden and every mark at its full width, whatever motion the spec has",
     run: ({ spec, page }) => {
+      if (page.cover) return page.cover.shown === page.cover.still ? [] : [`the cover's canvas shows frame ${page.cover.shown}, not its still, frame ${page.cover.still}; the PNG and PDF must show the still, so render again without changing the page`];
       const hidden = page.rows.filter((r) => r.opacity === 0).length;
       const marks = spec.figure.texts.filter((t) => t.role === "mark");
       const short = marks.filter((t) => (page.blocks.find((b) => b.name === t.id)?.rect.right ?? 0) - t.x < t.w - 1).map((t) => t.id);
@@ -423,9 +450,14 @@ export const CHECKS = [
     },
   },
   {
-    id: "record", level: "fail", stage: "page", frames: ["loose", "signal"], about: "the record line is drawn once, with the commit and the date",
-    run: ({ spec, page }) => {
+    id: "record", level: "fail", stage: "page", frames: ["loose", "signal", "cover"], about: "the record line is drawn once, with the commit and the date (a cover's record: its day, commit and counts)",
+    run: ({ spec, facts, page }) => {
       const lines = page.blocks.filter((b) => b.name === "record");
+      if (frameOf(spec) === "cover") {
+        if (!spec.product.commit) return ["the record has no commit; set product.commit to the short hash (vyo compose --repo fills it)"];
+        const want = coverOf(spec, facts).record.join(" ");
+        return lines.length === 1 && lines[0].text === want ? [] : [`the cover's record reads "${lines.map((l) => l.text).join(" | ")}"; it should read "${want}"`];
+      }
       if (lines.length !== 1) return [`the poster shows ${lines.length} record lines; it needs exactly one`];
       if (!spec.product.commit) return ["the record line has no commit; set product.commit to the short hash (vyo compose --repo fills it)"];
       const want = `${recordText(spec.product)}.`;

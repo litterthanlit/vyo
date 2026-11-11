@@ -68,5 +68,8 @@
   const footerTop = hairline ? hairline.getBoundingClientRect().top : sr.bottom;
   const regions = (window.figure && window.figure.regions) || [];
 
-  return { sheet: sr, footerTop, texts, boxes, rows, dots, blocks, regions, figureHot, faces, inter: probe('"Inter Display"') || probe("Inter"), drawn: window.drawn === true };
+  // A cover's canvas: the still it should show, the frame it shows, and the still's measurements.
+  const cover = window.cover ? { still: window.cover.still, shown: window.coverShown, report: window.cover.report } : null;
+
+  return { sheet: sr, footerTop, texts, boxes, rows, dots, blocks, regions, figureHot, faces, inter: probe('"Inter Display"') || probe("Inter"), drawn: window.drawn === true, cover, coverError: window.coverError ?? null };
 }

@@ -221,7 +221,7 @@ test("frames: loose takes its own roles and counts, no notes, and a field; swiss
   const loose = () => ({ ...preset("wave"), frame: "loose", notes: undefined, notBuilt: undefined });
   rejects((s) => (s.figure.texts = [{ role: "masthead", id: "masthead", x: 50, y: 36, w: 490 }]), /^figure\.texts\[0\]\.role: "masthead" is not a role in the loose frame; use label, headline, paragraph, legend, list, rule$/, loose);
   rejects((s) => (s.notes = []), /^notes: the loose frame has no footer/, loose);
-  rejects((s) => (s.frame = "poster"), /^frame: "poster" is not a frame; use swiss or loose or signal$/);
+  rejects((s) => (s.frame = "poster"), /^frame: "poster" is not a frame; use swiss or loose or signal or cover$/);
   rejects((s) => (s.record = "left"), /^record: only the loose and signal frames have a record line/);
 });
 

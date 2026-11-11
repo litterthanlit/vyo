@@ -3,6 +3,7 @@
 // every message says what to change, with a number.
 import { SHEET, corners, CORNERS, fixedMeasure } from "./geometry.mjs";
 import { maskGrid, edt, SHAPE_ROOM, opRings, paintRows } from "./mask.mjs";
+import { shapeOps } from "./silhouettes.mjs";
 import { shapeLayout, DEFAULT_STYLE } from "./fields/shape.mjs";
 import { regionParts, partOptions, dominance, DOMINANT } from "./parts.mjs";
 import { tokensOf } from "./render.mjs";
@@ -178,7 +179,7 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
 
   out["shape-dominant"].push(...dominantFindings(report));
 
-  const drawn = (region.shape.ops ?? []).map((op, i) => ({ op, i })).filter(({ op }) => op.crease === undefined);
+  const drawn = shapeOps(region.shape).map((op, i) => ({ op, i })).filter(({ op }) => op.crease === undefined);
   if (drawn.length > SHAPE_SIMPLE.ops) {
     out["shape-simple"].push(`the shape has ${drawn.length} ops; past ${SHAPE_SIMPLE.ops} a silhouette stops reading as one object at thumbnail size, so simplify it: one object with one telling feature, in 3 to 6 ops`);
   }

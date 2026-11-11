@@ -13,6 +13,8 @@ import { FIELDS } from "./fields/index.mjs";
 import { loadMaskImage } from "./png-mask.mjs";
 import { launchChromium } from "./browser.mjs";
 import { placeTexts } from "./place.mjs";
+import { coverPage, COVER_FONTS } from "./cover-render.mjs";
+import { COVER, COVER_GROUNDS } from "./cover.mjs";
 
 const TOOLS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const FONT_DIR = path.join(TOOLS, "..", "fonts");
@@ -22,6 +24,8 @@ const FONTS = [
   ["Newsreader", 400, "newsreader-400.ttf", "font/ttf"],
 ];
 export const FONT_FACES = FONTS.map(([family, weight]) => ({ family, weight }));
+/** The faces a poster in `frame` loads. */
+export const fontFacesOf = (frame) => (frame === "cover" ? COVER_FONTS : FONTS).map(([family, weight]) => ({ family, weight }));
 const MAST_FONT = `"Inter Display", Inter, "Helvetica Neue", Helvetica, Arial, sans-serif`;
 export { SHEET };
 
@@ -33,12 +37,16 @@ export const THEMES = {
   "signal-dark": { paper: "#111111", ink: "#F4F0E6", soft: "#6A675F", mid: "#A8A49A", cold: "#3D4A5C", cool: "#6B7C94", hot: "#C8FF00" },
 };
 export const tokensOf = (spec) => {
+  if (frameOf(spec) === "cover") {
+    const g = COVER_GROUNDS[spec.ground];
+    return { paper: g.ground, ink: g.ink, hot: g.accent };
+  }
   const key = frameOf(spec) === "signal" ? `signal-${spec.theme}` : spec.theme;
   return { ...THEMES[key], ...(spec.accent ? { hot: spec.accent.toUpperCase() } : {}) };
 };
 /** The colour tokens each field region adds for its own rows, by region id. */
 export const fieldTokensOf = (spec) =>
-  Object.fromEntries(spec.figure.regions.filter((r) => r.kind === "field").map((r) => [r.id, FIELDS[r.field].tokens(spec.theme, frameOf(spec))]));
+  frameOf(spec) === "cover" ? {} : Object.fromEntries(spec.figure.regions.filter((r) => r.kind === "field").map((r) => [r.id, FIELDS[r.field].tokens(spec.theme, frameOf(spec))]));
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const hotStop = `<span data-hot data-owner="render" style="color:var(--hot)">.</span>`;
@@ -249,7 +257,7 @@ const fieldModules = () => {
   const rest = fs.readdirSync(FIELD_DIR).filter((f) => f.endsWith(".mjs") && !FIELD_SKIP.has(f)).sort();
   return [...FIELD_FIRST, ...rest, "index.mjs"].map((f) => `fields/${f}`);
 };
-export const PAGE_MODULES = ["geometry.mjs", "mask.mjs", ...fieldModules()];
+export const PAGE_MODULES = ["geometry.mjs", "silhouettes.mjs", "mask.mjs", ...fieldModules()];
 const figureScript = () =>
   [...PAGE_MODULES.map((f) => fs.readFileSync(path.join(LIB, f), "utf8").replace(/^import .*\n/gm, "").replace(/^export /gm, "")), fs.readFileSync(path.join(LIB, "fill.js"), "utf8")]
     .join("\n")
@@ -279,6 +287,7 @@ function routeData(r) {
 
 /** The poster as one HTML string. Throws when the fonts are missing. */
 export function buildPage(given, facts) {
+  if (frameOf(given) === "cover") return coverPage(given, facts, PRELUDE);
   const spec = placeTexts(given, facts);
   const vars = Object.entries(Object.assign({}, ...Object.values(fieldTokensOf(spec)), tokensOf(spec))).map(([k, v]) => `--${k}:${v}`).join(";");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(spec.product.name)} poster</title><style>
@@ -420,7 +429,7 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.setContent(html, { waitUntil: "load" });
-    await page.waitForFunction(() => window.drawn === true, null, { timeout: 15000 }).catch(() => {});
+    await page.waitForFunction(() => window.drawn === true, null, { timeout: 120000 }).catch(() => {});
     const report = await page.evaluate(`(${fs.readFileSync(path.join(TOOLS, "lib", "inspect.js"), "utf8").replace(/^\/\/.*\n/, "")})()`);
     report.errors = errors;
     report.covered = await coveredText(page);
@@ -432,10 +441,37 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
       await page.emulateMedia({ media: "screen" });
       await page.pdf({ path: `${base}.pdf`, printBackground: true, ...PAPER[paper]() });
     }
-    if (gif && motion) await writeGif(page, base, motion);
+    if (gif && motion) report.loop = motion.kind === "turn" ? await writeTurn(page, base) : await writeGif(page, base, motion);
     return report;
   } finally {
     await browser.close();
+  }
+}
+
+/**
+ * A cover's loop: every frame drawn at 1x and measured, the glyph changes per step, then the GIF at every other
+ * frame in 32 colours without dither (the crawling type dithers into noise and past 8 MB) and the MP4 at all of
+ * them. The still is drawn back last, so the page ends as the PNG shows it.
+ * @returns {Promise<{ reports: object[], steps: number[] }>}
+ */
+async function writeTurn(page, base) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-turn-"));
+  try {
+    const n = await page.evaluate(() => window.cover.frames);
+    const reports = [];
+    for (let f = 0; f < n; f++) {
+      reports.push(await page.evaluate((k) => window.coverFrame(k, 1), f));
+      await page.locator(".sheet").screenshot({ path: path.join(dir, `frame-${String(f).padStart(3, "0")}.png`), scale: "css" });
+    }
+    const steps = await page.evaluate(() => window.coverSteps());
+    await page.evaluate(() => window.coverFrame(window.cover.still, 2));
+    const seq = path.join(dir, "frame-%03d.png");
+    const gif = `fps=${COVER.gifFps},scale=560:-1:flags=area,split[a][b];[a]palettegen=max_colors=32:stats_mode=full[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`;
+    ffmpeg(["-framerate", String(COVER.fps), "-i", seq, "-filter_complex", gif, "-loop", "0", `${base}.gif`], "GIF");
+    ffmpeg(["-framerate", String(COVER.fps), "-i", seq, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", "-vf", "scale=840:-2", `${base}.mp4`], "MP4");
+    return { reports, steps };
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 }
 
