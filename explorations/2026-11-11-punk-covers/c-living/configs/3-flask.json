@@ -1,0 +1,31 @@
+{
+  "facts": "../facts/flask-facts.json",
+  "product": "Flask",
+  "number": "03/04",
+  "commit": "49943b5",
+  "date": "2026-10-30",
+  "headline": "A web app from one small file, grown only as far as you need it.",
+  "legend": "Every band of the flask is a part of Flask, as big as its share of the code. The orange band is the request core.",
+  "accent": "area:src/flask/sansio",
+  "names": {
+    "area:.": "package setup",
+    "area:examples": "examples",
+    "area:examples/tutorial/flaskr": "blog tutorial",
+    "area:src/flask": "the framework",
+    "area:src/flask/json": "data replies",
+    "area:src/flask/sansio": "request core"
+  },
+  "palette": {"ground": "#121212", "ink": "#F4F0E6", "accent": "#FF5A1F"},
+  "shape": {
+    "ops": [
+      {"add": "rect", "at": [4, 34], "size": [92, 60], "round": 24},
+      {"add": "polygon", "points": [[20, 38], [80, 38], [64, 28], [36, 28]], "round": 6},
+      {"add": "rect", "at": [42, 16], "size": [16, 14]},
+      {"add": "rect", "at": [37, 4], "size": [26, 14], "round": 3},
+      {"crease": "rect", "at": [20, 48], "size": [60, 34], "round": 10}
+    ]
+  },
+  "strata": {"by": "angle", "angle": 90},
+  "solid": {"bevel": 1, "depth": 1, "groove": 12},
+  "turn": {"yaw": 34, "pitch": 12, "lean": 0}
+}

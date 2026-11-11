@@ -1,0 +1,35 @@
+{
+  "facts": "../facts/hypher-facts.json",
+  "product": "Hypher",
+  "number": "02/04",
+  "commit": "7e1ff3a",
+  "date": "2026-11-07",
+  "headline": "Switch agents without starting over. The work travels with a handoff note.",
+  "legend": "Every band of the plane is a part of Hypher, as big as its share of the code. The orange band is the handoff note.",
+  "accent": "area:hypher-web/shared",
+  "names": {
+    "area:Hypher": "mac app",
+    "area:extensions": "browser add-ons",
+    "area:hypher-web": "website frame",
+    "area:hypher-web/convex": "server",
+    "area:hypher-web/convex/lib": "server helpers",
+    "area:hypher-web/shared": "handoff note",
+    "area:hypher-web/src/app": "web pages",
+    "area:hypher-web/src/app/api": "requests",
+    "area:hypher-web/src/components": "screen pieces",
+    "area:hypher-web/src/lib": "web helpers",
+    "area:packages": "shared tools",
+    "area:packages/hypher-cli/src": "command line",
+    "area:script": "upkeep scripts"
+  },
+  "palette": {"ground": "#0E1424", "ink": "#ECEEF2", "accent": "#FF5A1F"},
+  "shape": {
+    "ops": [
+      {"add": "polygon", "points": [[0, 35], [100, 0], [45, 55]], "face": "lit"},
+      {"add": "polygon", "points": [[45, 55], [100, 0], [65, 100]], "face": "dim"}
+    ]
+  },
+  "strata": {"by": "angle", "angle": 135},
+  "solid": {"bevel": 0.2, "depth": 0.5, "tilt": 0.45},
+  "turn": {"yaw": 26, "pitch": 14, "lean": 0}
+}
