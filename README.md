@@ -1,6 +1,19 @@
 # vyo
 
-vyo draws a codebase as one poster that someone who does not code can read. Your coding agent invents a shape for the product, and vyo sizes every part of the code to fit it.
+vyo draws a codebase as one poster or cover that someone who does not code can read. Your coding agent picks an object for the product, and vyo sizes every part of the code to fit it.
+
+<table align="center">
+  <tr>
+    <td align="center" valign="top"><a href="docs/posters/cover-pantry.gif"><img src="docs/posters/cover-pantry-web.png" width="200" alt="A cream cover headed by a small record and the line 'A week of dinners, planned in one go from the recipes you already cook.' A pear drawn as a lit volume in small type, banded top to bottom by parts of the code; the band for the plan is highlighted in orange near its base. 'Pantry' is set large at the foot."></a></td>
+    <td align="center" valign="top"><a href="docs/posters/cover-hypher.gif"><img src="docs/posters/cover-hypher-web.png" width="200" alt="A navy cover with the line 'Switch agents without starting over: the work travels in a handoff note.' A paper plane in small type, a lit wing over a dim keel, cut in diagonal bands; the band for the handoff note glows orange across the wing. 'Hypher' is set large at the foot."></a></td>
+    <td align="center" valign="top"><a href="docs/posters/cover-flask.gif"><img src="docs/posters/cover-flask-web.png" width="200" alt="A charcoal cover with the line 'A web app from one small file, grown only as far as you need it.' A round-bellied flask with a cap and a debossed label, drawn in small type and banded top to bottom; the request core settles in orange at its base. 'Flask' is set large at the foot."></a></td>
+    <td align="center" valign="top"><a href="docs/posters/cover-express.gif"><img src="docs/posters/cover-express-web.png" width="200" alt="A forest-green cover with the line 'Fast, minimal web servers for Node: a router and little else.' A stopwatch in small type whose outer shell, the example apps, is orange all round, with the framework and the other parts banded inside it. 'Express' is set large at the foot."></a></td>
+  </tr>
+</table>
+
+<p align="center">Four covers on one template. Each object turns slowly under a fixed lamp: click a cover for its loop. Every band is a part of the code, as big as its share of the lines, and the orange one is the part the product is about. Flask and Express are the open-source projects; Pantry is a recipe planner kept as a test fixture; Hypher hands work from one coding agent to the next.</p>
+
+The same engine draws posters in other looks:
 
 <table align="center">
   <tr>
@@ -23,6 +36,8 @@ A shape poster has one `style`. You pick it, or your agent does. The shape is dr
 - **rings** sets the names along the outline, ring inside ring. It suits a fat, round object.
 - **symbols** draws the outline in shaded clusters of `- : = + #`, like ASCII art.
 
+The **cover** frame, at the top of this page, takes one of twelve ready objects (or one you draw), turns it in a seven-second loop, and puts the part the product is about on its outer shell in orange, on a navy, forest, charcoal or paper ground.
+
 Any of them sits in the default frame shown here or in the high-contrast `signal` frame: a charcoal or paper ground, one signal colour, a grotesque headline, metadata and highlighter marks. vyo also generates fields when no one object fits the product, such as a wave, a terrain, a river, a coil or one giant letter, and `vyo render --gif` animates a poster.
 
 ## Install and make a poster
@@ -41,7 +56,11 @@ Then say this to your agent:
 
 > Explain this app as a poster. Draw it as a shape.
 
-The agent follows the skill and replies with the paths of a PNG and a PDF in `vyo/` at the project root.
+or, for a cover with its loop:
+
+> Make a cover for this app.
+
+The agent follows the skill and replies with the paths of a PNG and a PDF, and for a cover a GIF, in `vyo/` at the project root.
 
 To try vyo without installing it, run `npx -y @litterthanlit/vyo init` and have the agent run `npx -y @litterthanlit/vyo` wherever the skill says `npx vyo`.
 
@@ -71,4 +90,4 @@ JavaScript, TypeScript and Python get full detection: screens, requests and save
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE). The bundled fonts, Commit Mono and Newsreader, are under the SIL Open Font License 1.1. See [fonts/LICENSE.md](.cursor/skills/vyo/fonts/LICENSE.md).
+MIT. See [LICENSE](LICENSE). The bundled fonts, Commit Mono, Newsreader and Inter, are under the SIL Open Font License 1.1. See [fonts/LICENSE.md](.cursor/skills/vyo/fonts/LICENSE.md).
