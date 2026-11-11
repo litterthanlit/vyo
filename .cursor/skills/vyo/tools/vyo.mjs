@@ -12,6 +12,7 @@ import { showFacts, hiddenCodeHint } from "./lib/scan/show.mjs";
 import { scaffoldSpec, validateSpec, THEMES, PLACEHOLDER } from "./lib/spec.mjs";
 import { SHAPE_STYLES, DEFAULT_STYLE } from "./lib/fields/shape.mjs";
 import { sketch, sketchImage } from "./lib/sketch.mjs";
+import { coverSketchLines, coverSketchFindings, coverSketchImage } from "./lib/cover-sketch.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE, SHEET } from "./lib/geometry.mjs";
 import { SHAPE_KINDS, SHAPE_ROOM } from "./lib/mask.mjs";
 import { buildPage, renderPage, GifFailure, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
@@ -403,9 +404,41 @@ function factsFor(specFile, spec, opt) {
   return readFacts(file);
 }
 
+/**
+ * A cover's sketch: every spec error at once, then, when the shape and the ground can be drawn, the still in
+ * numbers and as a PNG, with every finding the still and the shell give. Placeholder names sketch as the scanned ones.
+ */
+function coverSketch(file, spec, opt) {
+  const errors = validateSpec(spec);
+  const drawable = !errors.some((e) => /^(version|frame|product|ground|figure\.regions(\[0\])?(:|\.(kind|field|shape|strata|solid|turn|split|accent))|figure\.texts(:|\[\d+\]\.role))/.test(e) && !/\.names\[/.test(e));
+  for (const e of errors) process.stdout.write(`✗ spec: ${e}\n`);
+  if (!drawable) {
+    process.stdout.write("Fix the ✗ spec lines above, then sketch again: the cover cannot be drawn until its shape, ground and parts are valid.\n");
+    return 1;
+  }
+  const facts = factsFor(file, spec, opt);
+  const region = spec.figure.regions[0];
+  const names = Object.fromEntries(Object.entries(region.names ?? {}).filter(([, n]) => typeof n === "string" && !n.trim().startsWith(PLACEHOLDER)));
+  const legend = spec.figure.texts.find((t) => t.role === "legend");
+  const drawn = { ...spec, figure: { ...spec.figure, regions: [{ ...region, names }], texts: [{ ...legend, text: typeof legend?.text === "string" ? legend.text : "" }] } };
+  process.stdout.write(coverSketchLines(drawn, facts).join("\n") + "\n");
+  const presets = loadPresets();
+  const findings = coverSketchFindings(drawn, facts);
+  for (const c of CHECKS.filter((x) => x.frames?.includes("cover") || !x.frames)) {
+    if (c.id === "spec") continue;
+    const messages = c.id.startsWith("cover-") ? findings[c.id] : c.stage === "spec" ? c.run({ spec: c.id.startsWith("shape-") ? drawn : spec, facts, presets }) : [];
+    for (const m of messages) process.stdout.write(`${c.level === "fail" ? "✗" : "!"} ${c.id}: ${m}\n`);
+  }
+  const png = path.join(path.dirname(file), `${spec.product.repo}-sketch.png`);
+  fs.writeFileSync(png, coverSketchImage(drawn, facts));
+  process.stdout.write(`sketch PNG: ${path.resolve(png)}, the still at a third of its size with the orange in place; open it and check it reads as the object\n`);
+  return 0;
+}
+
 function cmdSketch(argv) {
   const { pos, opt } = args(argv, { facts: { type: "string" } }, 1);
   const spec = readJson(pos[0], "poster spec");
+  if (spec?.frame === "cover") return coverSketch(pos[0], spec, opt);
   // Placeholder words and copy rules wait for render; the sketch needs the geometry, the texts and the notes count.
   // A drawn shape is geometry too, so its placeholder blocks the sketch.
   const blocking = validateSpec(spec).filter((e) => /^(figure\.(regions|texts)|figure:|notes:|version|product)/.test(e) && (/\.shape/.test(e) || !/still the placeholder|: (jargon|a file path|a "01|a middle dot)/.test(e)));

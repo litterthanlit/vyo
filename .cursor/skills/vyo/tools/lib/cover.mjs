@@ -20,17 +20,22 @@ export const COVER = {
   small: 11.5, lead: 14.5, headlineX: 214, headlineW: 230, legendW: 330, name: 168, track: -0.045,
   fit: { w: 0.78, h: 0.5, cx: 0.5, cy: 0.5 },
   solid: { bevel: 0.8, depth: 1 }, turn: { yaw: 34, pitch: 12, lean: 0 },
-  glow: 0.7, look: 14, hi: 0.86, still: 0.55, big: 0.02, gap: 0.01, seam: 1.05,
+  glow: 0.7, look: 14, still: 0.55, big: 0.02, gap: 0.01, seam: 1.05,
 };
 export const COVER_FRAMES = COVER.fps * COVER.seconds;
 
 // The grounds, each with its ink and the orange. Navy, paper and charcoal are the engine's own; forest is a deep
-// grey-green at the navy's depth, which answers a green cover without its saturation.
+// grey-green at the navy's depth, which answers a green cover without its saturation. floor: the least alpha a
+// letter keeps. glow: how much of the relief's glow the accent takes. hi: the light past which lit letters give
+// way to glint marks (1 never). fill: the alpha of a highlighter under the accent's cells, its letters then in
+// ink. Paper takes a higher floor and no glint, or its lit side washes out, and a highlighter instead of a glow,
+// since thin orange letters on cream average to salmon at thumbnail size.
+const COVER_HI = 0.86;
 export const COVER_GROUNDS = {
-  navy: { ground: "#0E1424", ink: "#ECEEF2", accent: "#FF5A1F", theme: "dark" },
-  charcoal: { ground: "#121212", ink: "#F4F0E6", accent: "#FF5A1F", theme: "dark" },
-  forest: { ground: "#14281F", ink: "#E8ECE4", accent: "#FF5A1F", theme: "dark" },
-  paper: { ground: "#EAE8E2", ink: "#161616", accent: "#FF4F12", theme: "light" },
+  navy: { ground: "#0E1424", ink: "#ECEEF2", accent: "#FF5A1F", theme: "dark", floor: 0.3, glow: 1, hi: COVER_HI },
+  charcoal: { ground: "#121212", ink: "#F4F0E6", accent: "#FF5A1F", theme: "dark", floor: 0.3, glow: 1, hi: COVER_HI },
+  forest: { ground: "#14281F", ink: "#E8ECE4", accent: "#FF5A1F", theme: "dark", floor: 0.3, glow: 1, hi: COVER_HI },
+  paper: { ground: "#EAE8E2", ink: "#161616", accent: "#FF4F12", theme: "light", floor: 0.62, glow: 0, hi: 1, fill: 0.9 },
 };
 
 // How the strata run, by name. outline: shells from the outline in, the accent part the outer shell and the
@@ -386,7 +391,7 @@ export function coverModel(region, parts, { ground, texts }) {
 // A glyph's alpha by its ink: the relief's 0.3 to 1, with a higher floor on paper, where the lit side's letters
 // are the faint ones and would otherwise wash out.
 export const coverInkAlpha = (m, kind, v) => {
-  const floor = m.dark ? 0.3 : 0.5;
+  const floor = m.colors.floor;
   return kind === "mark" ? (m.dark ? 1 : 0.8) : floor + (1 - floor) * Math.pow(v, 1.1);
 };
 const coverSmooth = (a, b, x) => {
@@ -417,7 +422,7 @@ export function coverCells(m, f) {
   const { S, fit: FIT, focal: FOCAL, parts: PARTS, dark: DARK } = m;
   const { cols: COLS, rows: ROWS, cw: CW, lh: LH, x0: X0 } = COVER_GRID;
   const STRETCH = DARK ? RELIEF.stretch : RELIEF.stretch * 1.35;
-  const HI = COVER.hi;
+  const HI = m.colors.hi;
   const rot = coverPose(m.turn, f / N);
   const n = COLS * ROWS;
   const zb = new Float32Array(n).fill(-Infinity);

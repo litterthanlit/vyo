@@ -67,18 +67,28 @@
     gctx.setTransform(scale, 0, 0, scale, 0, 0);
     gctx.fillStyle = m.colors.accent;
     for (const c of cells) if (c.part === hot && c.letter) gctx.fillRect(X0 + (c.i % COLS) * CW, Math.floor(c.i / COLS) * LH, CW, LH);
-    if (hot >= 0) {
+    if (hot >= 0 && m.colors.glow) {
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.globalAlpha = TONES.glow.alpha * COVER.glow * Math.min(1, Math.max(0.45, 0.15 / m.parts[hot].share));
+      ctx.globalAlpha = TONES.glow.alpha * COVER.glow * m.colors.glow * Math.min(1, Math.max(0.45, 0.15 / m.parts[hot].share));
       ctx.filter = `blur(${TONES.glow.blur * COVER.glow * scale}px)`;
       ctx.drawImage(glow, 0, 0);
       ctx.restore();
     }
 
+    // On paper the accent is a highlighter: its cells filled in orange, shaded by the lamp, its letters in ink.
+    // Thin orange letters on cream average to salmon at thumbnail size, whatever their glow.
+    const fill = m.colors.fill;
+    if (fill && hot >= 0) {
+      for (const c of cells) {
+        if (c.part !== hot) continue;
+        ctx.fillStyle = rgba(m.colors.accent, q(fill * (0.6 + 0.4 * c.v) * Math.max(0.5, c.fade)));
+        ctx.fillRect(X0 + (c.i % COLS) * CW, Math.floor(c.i / COLS) * LH, CW, LH);
+      }
+    }
     const groups = new Map();
     for (const c of cells) {
-      const isHot = c.part === hot;
+      const isHot = c.part === hot && !fill;
       const alpha = isHot ? q((TONES.hot.from + (1 - TONES.hot.from) * (TONES.hot.by === "light" ? c.b : c.v)) * Math.max(0.5, c.fade)) : q(coverInkAlpha(m, c.kind, c.v) * c.fade);
       const weight = isHot || c.kind === "mark" || c.v > 0.42 ? 700 : 400;
       const g = `${isHot ? 1 : 0}|${weight}|${alpha}`;

@@ -4,29 +4,38 @@
 import { COVER, COVER_GRID } from "./cover.mjs";
 import { partsFromFacts, partOptions } from "./parts.mjs";
 
-// shell: an outline accent under `thin` px is a line at thumbnail size, not a shell; past `share` of the code
-// the object reads as an orange thing with a little ink inside. The good accents sit around `ideal`.
-export const COVER_LIMITS = { thin: 16, share: 0.2, ideal: 0.1, small: 0.04 };
+// shell: an outline accent under `thin` px reads at thumbnail size as a sliver on one side wall, not a shell; past
+// `share` of the code the object reads as an orange thing with a dark hole. Judged on the stopwatch: 6% of the code
+// made a 3px sliver, 27% (Express's example apps, the owner's favourite) a 32px outline all round, 58% an orange
+// object. Good outline accents sit near `ideal`; with other strata a band near `band` shows best.
+export const COVER_LIMITS = { thin: 16, share: 0.4, ideal: 0.27, band: 0.15, least: 0.05 };
 export const COVER_CHECKS = ["cover-names", "cover-share", "cover-accent", "cover-seam", "cover-shell"];
 
 const pct = (n) => `${n < 0.01 ? Math.round(n * 1000) / 10 : Math.round(n * 100)}%`;
 const points = (n) => (Math.round(n * 1000) / 10).toFixed(1);
 
-/** Parts that would make a good outline accent, best first: their share gives a shell thick enough, never most of the object. */
-export function shellCandidates(cover, limit = 3) {
+/**
+ * Parts that would make a good accent here, best first, as `<id> ("<name>", <share>[, <shell>px])`. For an outline,
+ * the parts whose outer shell would be at least `thin` px and at most `share` of the code, nearest `ideal`; for
+ * other strata, the parts of `least` to `share` of the code, nearest `band`.
+ */
+export function accentCandidates(cover, limit = 3) {
   const { model, shell, region } = cover;
-  const at = shell?.at ?? (() => Infinity);
+  const outline = model.strata.outline;
+  const at = shell?.at;
+  const L = COVER_LIMITS;
   return model.parts
-    .map((p, i) => ({ ...p, i, px: at(p.share) }))
-    .filter((p) => !p.hot && p.share <= COVER_LIMITS.share && p.share >= COVER_LIMITS.small && p.px >= COVER_LIMITS.thin)
-    .sort((a, b) => Math.abs(a.share - COVER_LIMITS.ideal) - Math.abs(b.share - COVER_LIMITS.ideal))
+    .map((p) => ({ ...p, px: at ? at(p.share) : null }))
+    .filter((p) => !p.hot && p.share <= L.share && (outline && at ? p.px >= L.thin : p.share >= L.least))
+    .sort((a, b) => Math.abs(a.share - (outline ? L.ideal : L.band)) - Math.abs(b.share - (outline ? L.ideal : L.band)))
     .slice(0, limit)
-    .map((p) => `${p.id} ("${region.names?.[p.id] ?? p.name}", ${pct(p.share)}${shell ? `, ${Math.round(p.px)}px` : ""})`);
+    .map((p) => `${p.id} ("${region.names?.[p.id] ?? p.name}", ${pct(p.share)}${p.px !== null ? `, a ${Math.round(p.px)}px shell` : ""})`);
 }
 
 const accentFix = (cover) => {
-  const c = shellCandidates(cover);
-  return c.length ? `put the accent on ${c.length > 1 ? "one of " : ""}${c.join(", ")}` : "put the accent on the part nearest a tenth of the code (vyo parts lists the shares)";
+  const c = accentCandidates(cover);
+  const want = cover.model.strata.outline ? `${Math.round(COVER_LIMITS.ideal * 100)}%` : `${Math.round(COVER_LIMITS.band * 100)}%`;
+  return c.length ? `put the accent on ${c.length > 1 ? "one of " : ""}${c.join(", ")}` : `no part here makes a good one, so put the accent on the part nearest ${want} of the code (vyo parts lists the shares)`;
 };
 
 /** The longest run of one part's cells along a glyph row in a frame: the most room its name has. */
@@ -88,7 +97,7 @@ export function coverFindings(cover, { still = cover.still, loop = null, cells =
       out["cover-shell"].push(`the orange shell is ${Math.round(shell.px)}px thick (${pct(shell.share)} of the code); under ${COVER_LIMITS.thin}px it reads as a hairline, not a shell, at thumbnail size, so ${accentFix(cover)}`);
     } else if (shell.share > COVER_LIMITS.share) {
       const split = facts && splits(facts, region);
-      out["cover-shell"].push(`the orange shell is ${pct(shell.share)} of the code and ${Math.round(shell.px)}px thick, so the object reads mostly orange (keep it under ${pct(COVER_LIMITS.share)}); ${split ? `add "split": [${[...(region.split ?? []), hot[0].id].map((s) => `"${s}"`).join(", ")}] to the region and put the accent on one of the ${split} parts inside it, or ` : ""}${accentFix(cover)}`);
+      out["cover-shell"].push(`the orange shell is ${pct(shell.share)} of the code and ${Math.round(shell.px)}px thick, so the object reads mostly orange (keep it at ${pct(COVER_LIMITS.share)} or less); ${split ? `add "split": [${[...(region.split ?? []), hot[0].id].map((s) => `"${s}"`).join(", ")}] to the region and put the accent on one of the ${split} parts inside it, or ` : ""}${accentFix(cover)}`);
     }
   }
   return out;
