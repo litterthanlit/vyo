@@ -359,7 +359,8 @@ function checkField(f, r, err, copy, frame) {
   for (const k of FIELD_OPTIONS) {
     if (r[k] !== undefined && !kind.options.includes(k)) err(`${f}.${k}: a ${r.field} field has no ${k}; only ${Object.keys(FIELDS).filter((n) => FIELDS[n].options.includes(k)).join(", ")} takes it`);
   }
-  if (r.accent !== undefined && !(isStr(r.accent) && /^area:\S+$/.test(r.accent))) err(`${f}.accent: an area id like "area:lib/plan", or a glob of them; vyo parts lists the ids`);
+  if (isPlaceholder(r.accent)) err(`${f}.accent: still the placeholder; write the id of the part the product is about (compose and vyo parts list the ids)`);
+  else if (r.accent !== undefined && !(isStr(r.accent) && /^area:\S+$/.test(r.accent))) err(`${f}.accent: an area id like "area:lib/plan", or a glob of them; vyo parts lists the ids`);
   const plain = (where, v, max, what) => {
     if (!isStr(v) || !v.trim()) return err(`${where}: missing`);
     if (isPlaceholder(v)) return err(`${where}: still the placeholder; write ${what}`);
@@ -530,7 +531,8 @@ export function validateSpec(spec) {
   if (!isObj(p)) err("product: missing");
   else {
     unknownKeys(p, KEYS.product, "product.", err);
-    if (!isStr(p.name) || !p.name.trim() || isPlaceholder(p.name)) err("product.name: missing");
+    if (isPlaceholder(p.name)) err("product.name: still the placeholder; write the name customers see, as the product's docs write it");
+    else if (!isStr(p.name) || !p.name.trim()) err("product.name: missing");
     else if (p.name.length > LIMITS.name) err(`product.name: ${p.name.length} characters; at most ${LIMITS.name}`);
     if (!isStr(p.repo) || !p.repo || p.repo.includes("/")) err("product.repo: must be the folder name of the project");
     if (p.commit !== undefined && !(isStr(p.commit) && /^[0-9a-f]{4,40}$/.test(p.commit))) err("product.commit: must be a short commit hash");
@@ -743,5 +745,38 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
           notes: Array.from({ length: notes }, () => ({ title: hold(`at most ${LIMITS.noteTitle} characters`), text: hold(`at most ${LIMITS.noteText} characters`) })),
           notBuilt: [],
         }),
+  };
+}
+
+/**
+ * The spec `compose --frame cover` writes: the template's words, the names, the accent and the shape left to write,
+ * and everything else a working default: the navy ground, the outline strata and the turn.
+ * @param {{ hash: string, repo: { name: string } }} facts
+ * @param {{ commit?: string, date: string, accent?: string, split?: string[], parts: { id: string, name: string }[] }} o
+ */
+export function coverScaffold(facts, { commit, date, accent, split, parts }) {
+  return {
+    version: 3,
+    frame: "cover",
+    facts: facts.hash,
+    product: { name: hold("the name customers see, as the product's docs write it"), repo: facts.repo.name, ...(commit ? { commit } : {}), date },
+    ground: "navy",
+    headline: hold(`one plain sentence about what the product does for a person, at most ${LIMITS.headline} characters`),
+    figure: {
+      regions: [
+        {
+          kind: "field",
+          id: "shape",
+          field: "shape",
+          accent: accent ?? hold("the id of the part the product is about, from the list compose printed"),
+          ...(split ? { split } : {}),
+          names: Object.fromEntries(parts.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])),
+          shape: hold(`{ "like": "<name>" }, one of ${SILHOUETTE_NAMES.join(", ")}`),
+          strata: "outline",
+        },
+      ],
+      texts: [{ role: "legend", id: "legend", text: hold('at most 2 sentences and 180 characters, like "Every ring of the <object> is a part of <product>, as big as its share of the code. The orange ring is <the plain name of the accent>."') }],
+    },
+    motion: { kind: "turn" },
   };
 }

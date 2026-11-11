@@ -9,6 +9,9 @@ import { partsFromFacts, partOptions } from "./parts.mjs";
 // made a 3px sliver, 27% (Express's example apps, the owner's favourite) a 32px outline all round, 58% an orange
 // object. Good outline accents sit near `ideal`; with other strata a band near `band` shows best.
 export const COVER_LIMITS = { thin: 16, share: 0.4, ideal: 0.27, band: 0.15, least: 0.05 };
+// The shares that make a good outline accent before the shape is known: on a round object 20% of the code makes
+// about a 21px shell, and past `share` the object reads orange.
+export const OUTLINE_SHARE = [0.2, COVER_LIMITS.share];
 export const COVER_CHECKS = ["cover-names", "cover-share", "cover-accent", "cover-seam", "cover-shell"];
 
 const pct = (n) => `${n < 0.01 ? Math.round(n * 1000) / 10 : Math.round(n * 100)}%`;
@@ -35,7 +38,8 @@ export function accentCandidates(cover, limit = 3) {
 const accentFix = (cover) => {
   const c = accentCandidates(cover);
   const want = cover.model.strata.outline ? `${Math.round(COVER_LIMITS.ideal * 100)}%` : `${Math.round(COVER_LIMITS.band * 100)}%`;
-  return c.length ? `put the accent on ${c.length > 1 ? "one of " : ""}${c.join(", ")}` : `no part here makes a good one, so put the accent on the part nearest ${want} of the code (vyo parts lists the shares)`;
+  if (c.length) return `put the accent on ${c.length > 1 ? "one of " : ""}${c.join(", ")}`;
+  return cover.model.strata.outline ? 'no part here makes a thicker shell, so set "strata": "down" for bands top to bottom, or take a rounder silhouette' : `put the accent on the part nearest ${want} of the code (vyo parts lists the shares)`;
 };
 
 /** The longest run of one part's cells along a glyph row in a frame: the most room its name has. */

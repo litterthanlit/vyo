@@ -9,10 +9,13 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 import { stableStringify, factsHash } from "./lib/hash.mjs";
 import { scanRepoDetailed } from "./lib/scan/index.mjs";
 import { showFacts, hiddenCodeHint } from "./lib/scan/show.mjs";
-import { scaffoldSpec, validateSpec, THEMES, PLACEHOLDER } from "./lib/spec.mjs";
+import { scaffoldSpec, coverScaffold, validateSpec, THEMES, PLACEHOLDER } from "./lib/spec.mjs";
 import { SHAPE_STYLES, DEFAULT_STYLE } from "./lib/fields/shape.mjs";
 import { sketch, sketchImage } from "./lib/sketch.mjs";
 import { coverSketchLines, coverSketchFindings, coverSketchImage } from "./lib/cover-sketch.mjs";
+import { COVER_LIMITS, OUTLINE_SHARE } from "./lib/cover-report.mjs";
+import { COVER_GROUNDS } from "./lib/cover.mjs";
+import { SILHOUETTES, SILHOUETTE_NAMES } from "./lib/silhouettes.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE, SHEET } from "./lib/geometry.mjs";
 import { SHAPE_KINDS, SHAPE_ROOM } from "./lib/mask.mjs";
 import { buildPage, renderPage, GifFailure, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
@@ -285,6 +288,17 @@ function glyphLetter(name) {
   return found ? found[0].toUpperCase() : "A";
 }
 
+// One valid op of each kind, printed by vyo shapes; a test validates them.
+export const OP_EXAMPLES = {
+  circle: { add: "circle", at: [50, 50], r: 30 },
+  ellipse: { add: "ellipse", at: [50, 50], r: [30, 20] },
+  rect: { add: "rect", at: [20, 30], size: [60, 40], round: 6 },
+  capsule: { add: "capsule", from: [20, 50], to: [80, 50], r: 8 },
+  arc: { add: "arc", at: [50, 50], r: 30, from: 270, to: 90, width: 8 },
+  polygon: { add: "polygon", points: [[50, 10], [90, 90], [10, 90]], round: 3 },
+  path: { add: "path", d: "M10 90 L50 10 L90 90 Z" },
+};
+
 function cmdShapes(argv) {
   const { opt } = args(argv, { log: { type: "string" }, "shapes-log": { type: "string" } }, 0);
   const file = opt.log ?? opt["shapes-log"] ?? path.join(process.cwd(), "vyo", "recent-shapes.json");
@@ -293,6 +307,53 @@ function cmdShapes(argv) {
     const ago = usedAgo(shapes, name);
     return `${name} — ${field.about} — ${ago === null ? "never" : `last used ${ago} ago`}`;
   });
+  const width = Math.max(...SILHOUETTE_NAMES.map((n) => n.length));
+  lines.push(
+    "",
+    'Ready silhouettes for a shape, as "shape": { "like": "<name>" }. Pick the object that fits the product; draw your own only when none does:',
+    ...SILHOUETTE_NAMES.map((n) => `  ${n.padEnd(width)}  ${SILHOUETTES[n].about}`),
+    "",
+    'To draw your own, "shape": { "ops": [...] } in a 100-unit box, y down, the first op an add. One op of each kind:',
+    ...Object.entries(OP_EXAMPLES).map(([kind, op]) => `  ${kind.padEnd(8)}  ${JSON.stringify(op)}`),
+  );
+  process.stdout.write(lines.join("\n") + "\n");
+  return 0;
+}
+
+/**
+ * compose --frame cover: a scaffold whose only blanks are the words, the names, the accent and the shape, and the
+ * parts printed with the ones that make a good outline accent marked.
+ */
+function composeCover(factsFile, opt) {
+  for (const k of ["from", "style", "theme", "seed"]) if (opt[k] !== undefined) throw new Usage(`--${k} has no place on a cover; ${k === "theme" ? "set ground in the spec (navy, paper, charcoal or forest)" : `leave out --${k}`}`);
+  if (opt.field !== undefined && opt.field !== "shape") throw new Usage("a cover draws a shape; leave out --field");
+  const facts = readFacts(factsFile);
+  const commit = opt.repo ? git(opt.repo, "%h") : undefined;
+  const date = (opt.repo && git(opt.repo, "%cs")) ?? new Date().toISOString().slice(0, 10);
+  if (!opt.repo) warn("no --repo, so no commit: the cover's record needs one; compose again with --repo <repo>");
+  else if (!commit) warn(`${opt.repo} has no git history; the cover's record needs a commit, so use the swiss frame instead`);
+  const parts = partsFromFacts(facts, partOptions({ field: "shape", ...(opt.split ? { split: opt.split } : {}) }));
+  if (!parts.length) throw new Failure(`no parts to draw; the scan found no code, so a cover has nothing to show. Compose a fill poster instead: vyo compose ${factsFile} --from <preset>`);
+  if (opt.accent !== undefined && !accentIds(parts, opt.accent).size) throw new Usage(`--accent ${opt.accent} names no part; vyo parts ${factsFile} --field shape lists the part ids`);
+  const out = opt.out ?? path.join(path.dirname(factsFile), `${facts.repo.name}-poster.json`);
+  if (fs.existsSync(out) && !opt.force) throw new Failure(`${out} exists; it may hold your words. Pass --force to replace it with a fresh scaffold`);
+  fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
+  fs.writeFileSync(out, JSON.stringify(coverScaffold(facts, { commit, date, accent: opt.accent, split: opt.split, parts }), null, 2) + "\n");
+  const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
+  const L = COVER_LIMITS;
+  const good = (p) => p.loc / total >= OUTLINE_SHARE[0] && p.loc / total <= L.share;
+  const width = Math.max(...parts.map((p) => p.id.length));
+  const lines = [
+    `Wrote ${out}: a cover of ${parts.length} parts. Replace every "…" value; product.commit and product.date are the engine's, so leave them.`,
+    `parts (id, share of the code, scanned name); * marks a good outline accent, ${Math.round(OUTLINE_SHARE[0] * 100)}% to ${Math.round(L.share * 100)}% of the code:`,
+    ...parts.map((p) => `  ${good(p) ? "*" : " "} ${p.id.padEnd(width)} ${pct(p.loc / total).padStart(4)}  ${p.name}${unplainName(p.name) ? "  ! needs a plain name" : ""}`),
+    parts.some(good)
+      ? `accent: the id of the part the product is about. With "strata": "outline" it becomes the orange outer shell, so a part marked * reads best.`
+      : `accent: no part is ${Math.round(OUTLINE_SHARE[0] * 100)}% to ${Math.round(L.share * 100)}% of the code, so an outline would be a sliver or most of the object; set "strata": "down" and put the accent on the part the product is about.`,
+    `shape: { "like": "<name>" }, one of ${SILHOUETTE_NAMES.join(", ")} (vyo shapes says what each suits). Draw your own { "ops": [...] } only when none fits.`,
+    `ground: ${Object.keys(COVER_GROUNDS).join(", ")}. Names: every part, lowercase, at most 24 characters, saying what it does for a person.`,
+    `Then: vyo sketch ${out}, open the sketch PNG, fix every ✗ and ! line, then vyo render ${out} --gif.`,
+  ];
   process.stdout.write(lines.join("\n") + "\n");
   return 0;
 }
@@ -335,6 +396,7 @@ function cmdCompose(argv) {
   if (opt.style !== undefined && opt.field !== "shape") throw new Usage("--style picks a shape field's look; pass --field shape");
   const frame = opt.frame ?? preset?.frame ?? "loose";
   if (!FRAMES.includes(frame)) throw new Usage(`--frame ${frame} is not a frame; use ${FRAMES.join(" or ")}`);
+  if (frame === "cover") return composeCover(pos[0], opt);
   if (opt.field && FIELDS[opt.field].frames && !FIELDS[opt.field].frames.includes(frame)) throw new Usage(`--field ${opt.field} draws only in the ${FIELDS[opt.field].frames.join(" or ")} frame; leave out --frame`);
   if (preset && frame !== preset.frame) throw new Usage(`--from ${opt.from} is a ${preset.frame} preset; the loose frame draws a field, so use --field`);
   const theme = opt.theme ?? preset?.theme ?? "light";
