@@ -594,7 +594,7 @@ Before rendering, `vyo sketch` printed each stratum's share of the area against 
 
 ## A cover, as a full spec for Pantry
 
-`vyo compose <facts> --frame cover --repo <repo>` writes this with `…` in the product name, the headline, the accent, the names, the shape and the legend; this is it filled in, and the `cover` preset. The pear is a ready silhouette, so the spec has no ops; `"strata": "outline"` makes the accent, the screens (19% of the code), the orange shell, and the other parts stack inside it. Before rendering, `vyo sketch` printed `shell: the orange shell is 16px thick, 18.5% of the code`, one line per part with its share of the lines and of the glyphs in the still, and the still as a 280px PNG; `vyo render --gif` then wrote the PNG, the PDF and a 7-second loop.
+`vyo compose <facts> --frame cover --repo <repo>` writes this with `…` in the product name, the headline, the accent, the names and the legend, and picks the object; this is it filled in, and the `cover` preset. The pear is a ready silhouette, so the spec has no ops; `"strata": "outline"` makes the accent, the screens (19% of the code), the orange shell, and the other parts stack inside it. Before rendering, `vyo sketch` printed `shell: the orange shell is 16px thick, 18.5% of the code`, one line per part with its share of the lines and of the glyphs in the still, and the still as a 280px PNG; `vyo render --gif` then wrote the PNG, the PDF and a 7-second loop.
 
 ```json
 {
@@ -640,7 +640,7 @@ Before rendering, `vyo sketch` printed each stratum's share of the area against 
       {
         "role": "legend",
         "id": "legend",
-        "text": "Every ring of the pear is a part of Pantry, as big as its share of the code. The orange ring is the screens."
+        "text": "This pear is the code of Pantry, one layer per part, each as big as its share. The orange outer ring is the screens."
       }
     ]
   },

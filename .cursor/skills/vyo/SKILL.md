@@ -30,19 +30,19 @@ Without installing it, write `npx -y @litterthanlit/vyo` wherever this file says
 
 ## Make a cover
 
-A cover is the quickest strong poster: one ready object, turning slowly, the part the product is about as its orange outline. Follow these steps in order; you need nothing else in this file except "Reply in chat".
+A cover is the quickest strong poster: one ready object, turning slowly, the part the product is about as its orange ring or band. Follow these steps in order; you need nothing else in this file except "Reply in chat".
 
 1. `npx vyo scan <repo> --out <facts>`
-2. `npx vyo compose <facts> --frame cover --repo <repo> --out <repo>/vyo/<name>-poster.json`. It prints every part with its share of the code; `*` marks the parts that make a good orange accent, and it picks the strata.
-3. Read the repo's README. In the spec, replace every value that starts with `…`:
+2. `npx vyo compose <facts> --frame cover --repo <repo> --out <repo>/vyo/<name>-poster.json`. Compose sets the cover up: it splits any part over 40% of the code into its folders or files, picks the object and the strata, and writes the legend's pattern. It prints every part with its share of the code. `*` marks a part that makes a good orange accent on this object, and `-` marks code around the product (samples, tests, docs, scripts, setup).
+3. Read the repo's README. Open the spec compose wrote and edit it in place: replace each value that starts with `…`, and change nothing else. Never write the spec again from scratch; it holds the commit, the date and the splits.
    - `product.name`: the name customers see, as the README writes it.
    - `headline`: one plain sentence, at most 72 characters, on what the product does for a person.
-   - `accent`: the id of the part the product is about. Prefer a part marked `*`.
+   - `accent`: the id of the part the product is about, the code that does the product's main job. Never a part marked `-`. A `*` only says the part will look good; if the part the product is about has none, choose it anyway, and the sketch says how to make it show.
    - `names`: every part, lowercase, at most 24 characters, saying what it does for a person ("sign-in", "the plan"). Never a folder, file or company name.
-   - `shape`: `{ "like": "<name>" }`, the object from `npx vyo shapes` that fits the product.
-   - The legend's `text`: fill in the pattern compose wrote there, like "Every ring of the <object> is a part of <product>, as big as its share of the code. The orange ring is <the accent's plain name>."
-4. Set `ground` to `navy`, `forest`, `charcoal` or `paper`. Leave every other key as compose wrote it.
-5. `npx vyo sketch <repo>/vyo/<name>-poster.json`. Act on every finding, then sketch again until none is left. Open the sketch PNG: say in one word what the object is; if the word is wrong, pick another shape.
+   - The legend's `text`: delete the leading `…`, and put the product's name for `<product>` and the accent's plain name for `<the accent's plain name>`.
+   - `shape`: compose picked the object and said why. Keep it, or pick one from `npx vyo shapes` whose "for ..." fits the product better; then also change the object's name in the legend.
+4. Set `ground` to `navy`, `forest`, `charcoal` or `paper`. Leave out `series` for a single cover, so the top right shows only the mark; set it, like `"02/04"`, only for one of a numbered set.
+5. `npx vyo sketch <repo>/vyo/<name>-poster.json`. Act on every finding, then sketch again until none is left. Open the sketch PNG: say in one word what the object is; if the word is wrong, pick another object.
 6. `npx vyo render <repo>/vyo/<name>-poster.json --gif`. It writes the PNG, the PDF and a looping GIF. Act on any finding and render again.
 7. Reply as "Reply in chat" says, with the PNG and the GIF.
 
@@ -102,7 +102,7 @@ Every field from scatter to contour takes `symbols: true`: the form drawn in spa
 2. If an object in `npx vyo shapes` fits, write `"shape": { "like": "<name>" }` and skip to step 6. Otherwise name the one feature that makes it that object, like the jar's lid and shoulders. Draw it in 3 to 6 ops in a 100-unit box, y down, with that feature large, about as tall as it is wide or taller. Leave out small repeated details such as wheels or windows: they merge at thumbnail size. Keep a post or stem short: a long thin limb takes the object's height and reads as a pole with a small head. `compose --field shape` prints the format.
 3. To trace an image instead, write `"shape": { "mask": "wings" }` (a bundled mask, `wings` or `trace`) or a path to a PNG, absolute or relative to where you run vyo. Its pixels darker than mid grey are the silhouette, and every style and check works on it as on ops. A traced shape takes `fit` but no `ops` or `rotate`.
 4. Leave `fit` out: the engine fits the shape inside the sheet and centres it in the room the words leave. Set `fit` only to bleed it off an edge on purpose. Leave `x` and `y` out of the text blocks too: the engine places them in the room the shape leaves. Pin a block with `x` and `y` only for a reason, like a hole cut for the legend or a `mark` laid over it.
-5. If `shape-dominant` says to split a part, add the `"split"` it gives to the region and run `parts --field shape --split <its id>`. Its folders become parts; if it was the accent, put the accent on the one the story is about.
+5. If `shape-dominant` says to split a part, add the `"split"` it gives to the region and run `parts --field shape --split <its id>`. Its folders become parts, or its files when it has no folders; if it was the accent, put the accent on the one the story is about.
 6. Set the `style` (see "Choose the look"). Rings want a fat, round object with a hole cut where the legend should sit, and `"echo": 6` adds faded outlines; a thin or spiky shape starves them, so take relief, or fatten it until `shape-rings` is quiet.
 7. Sketch, then open `<name>-sketch.png`; it shows the shading of the form. Say in one word what you see. If that word is not the object, redraw it simpler. Act on every finding.
 8. Render and look at the thumbnail again.
@@ -143,8 +143,8 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 | region `shape` | Shape only: `{ like }`, a ready silhouette from `vyo shapes`; `{ ops, rotate?, fit? }`, one you draw; or `{ mask, fit? }`, one traced from a PNG (see "Draw the shape") |
 | region `style`, `echo` | Shape only: `relief` (default), `rings` or `symbols`; `echo` 0 to 12 faded outlines, rings only |
 | region `bevel`, `strata` | Relief only, optional: how rounded the form is, and which way its layers run. A cover's `strata` is `"outline"` (the default), `"down"` or `"diagonal"` |
-| `ground`, `series` | Cover only: `navy`, `forest`, `charcoal` or `paper`, never a hex colour; `series` like `"02/04"` prints top right |
-| region `split` | Shape only, optional: part ids whose folders become parts, for a part that is most of the code |
+| `ground`, `series` | Cover only: `navy`, `forest`, `charcoal` or `paper`, never a hex colour; `series` like `"02/04"` prints top right before the mark, for one of a numbered set only |
+| region `split` | Shape only, optional: part ids whose folders, or files when they have no folders, become parts, for a part that is most of the code |
 | region `seed` | Generated fields: whole number 0 to 2147483647. 0 keeps the field's own form. Compose writes a non-zero seed |
 | region `letter` | Glyph only: one character, A–Z or 0–9. Compose uses the first character of the repo name |
 | region `symbols` | Scatter to contour: `true` draws the form in shaded `- : = + #` with gaps, instead of part names |
