@@ -30,7 +30,7 @@
         "strata": "outline"
       }
     ],
-    "texts": [{ "role": "legend", "id": "legend", "text": "Every ring of the pear is a part of Pantry, as big as its share of the code. The orange ring is the screens." }]
+    "texts": [{ "role": "legend", "id": "legend", "text": "This pear is the code of Pantry, one layer per part, each as big as its share. The orange outer ring is the screens." }]
   },
   "motion": { "kind": "turn" }
 }

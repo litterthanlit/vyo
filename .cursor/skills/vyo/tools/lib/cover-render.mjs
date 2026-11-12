@@ -38,7 +38,7 @@ export function coverOf(spec, facts) {
   const legend = spec.figure.texts.find((t) => t.role === "legend").text;
   const model = coverModel(region, parts, { ground: spec.ground, texts: { name: spec.product.name, headline: spec.headline, legend } });
   const still = coverStill(model);
-  const out = { region, parts, model, still, shell: coverShell(model, still), record: coverRecord(spec.product, parts) };
+  const out = { region, parts, model, still, shell: coverShell(model, still), record: coverRecord(spec.product, parts), product: spec.product.name };
   cache.set(spec, out);
   return out;
 }

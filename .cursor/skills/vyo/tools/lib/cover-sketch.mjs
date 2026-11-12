@@ -4,7 +4,7 @@ import { SHEET } from "./geometry.mjs";
 import { encodePng } from "./png.mjs";
 import { COVER, COVER_GRID, COVER_FRAMES, coverCells, coverInkAlpha } from "./cover.mjs";
 import { coverOf, coverBlocks } from "./cover-render.mjs";
-import { coverFindings, COVER_LIMITS, accentCandidates } from "./cover-report.mjs";
+import { coverFindings, COVER_LIMITS } from "./cover-report.mjs";
 
 const pct = (n) => `${(Math.round(n * 1000) / 10).toFixed(1)}%`;
 // The share of a glyph cell its ink covers, for the picture: a letter, a mark, a gap's dot, and the accent with its glow.
@@ -22,10 +22,8 @@ export function coverSketchLines(spec, facts) {
     `strata: ${strata}${model.strata.outline ? ", the accent the outer shell and the others inside it" : ""}`,
     ...(shell ? [`shell: the orange shell is ${Math.round(shell.px)}px thick, ${pct(shell.share)} of the code (good: ${COVER_LIMITS.thin}px or more, at most ${Math.round(COVER_LIMITS.share * 100)}%)`] : []),
     `parts, ${model.strata.outline ? "from the outline in" : "in strata order"}: share of the lines, share of the glyphs in the still, whole names in the still`,
-    ...order.map((p) => `  ${p.hot ? "*" : " "} ${p.id.padEnd(28)} ${p.name.padEnd(24)} ${pct(p.share).padStart(6)} ${pct(still.shares[p.i]).padStart(6)} ${String(still.whole[p.i]).padStart(4)}${p.share >= COVER.big && !still.whole[p.i] ? "  ! never whole" : ""}`),
+    ...order.map((p) => `  ${p.hot ? "*" : " "} ${p.id.padEnd(Math.max(28, ...order.map((q) => q.id.length)))} ${p.name.padEnd(24)} ${pct(p.share).padStart(6)} ${pct(still.shares[p.i]).padStart(6)} ${String(still.whole[p.i]).padStart(4)}${p.share >= COVER.big && !still.whole[p.i] ? "  ! never whole" : ""}`),
   ];
-  const good = accentCandidates(c);
-  if (good.length) lines.push(`good accents here: ${good.join(", ")}`);
   return lines;
 }
 

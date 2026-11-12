@@ -10,7 +10,7 @@ import { SHAPE_KINDS, opKind, shapeMask } from "./mask.mjs";
 import "./png-mask.mjs";
 import { ROLES as FRAME_ROLES, FRAMES, RECORD_FRAMES, frameOf, sizeRange, LIST } from "./frame.mjs";
 import { SILHOUETTES, SILHOUETTE_NAMES } from "./silhouettes.mjs";
-import { COVER_GROUNDS, COVER_STRATA } from "./cover.mjs";
+import { COVER_GROUNDS, COVER_STRATA, coverLegend } from "./cover.mjs";
 
 /**
  * @typedef {"soft" | "mid" | "ink" | "cold" | "cool"} ToneName
@@ -351,7 +351,7 @@ function checkField(f, r, err, copy, frame) {
       err(`${f}.strata: { "by": "angle", "angle": degrees } (90 stacks the parts top to bottom, 0 left to right) or { "by": "depth" } (shells from the outline in)`);
     }
     if (r.split !== undefined && !(Array.isArray(r.split) && r.split.length >= 1 && r.split.length <= 4 && r.split.every((id) => isStr(id) && /^area:\S+$/.test(id)))) {
-      err(`${f}.split: a list of 1 to 4 part ids, like ["area:source"], each cut into the folders inside it (vyo parts --field shape --split <id> lists the parts it gives)`);
+      err(`${f}.split: a list of 1 to 4 part ids, like ["area:source"], each cut into the folders inside it, or its files when it has none (vyo parts --field shape --split <id> lists the parts it gives)`);
     }
     if (r.echo !== undefined && (!Number.isInteger(r.echo) || r.echo < 0 || r.echo > RINGS.maxEcho)) err(`${f}.echo: a whole number of faded outlines from 0 to ${RINGS.maxEcho}`);
     else if (r.echo && r.style !== "rings") err(`${f}.echo: only the rings style draws echoes; set style to rings or remove echo`);
@@ -754,7 +754,8 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
  * @param {{ hash: string, repo: { name: string } }} facts
  * @param {{ commit?: string, date: string, accent?: string, split?: string[], parts: { id: string, name: string }[] }} o
  */
-export function coverScaffold(facts, { commit, date, accent, split, parts, strata = "outline" }) {
+export function coverScaffold(facts, { commit, date, accent, split, parts, strata = "outline", like }) {
+  const region = { shape: like ? { like } : undefined, strata };
   return {
     version: 3,
     frame: "cover",
@@ -771,11 +772,11 @@ export function coverScaffold(facts, { commit, date, accent, split, parts, strat
           accent: accent ?? hold("the id of the part the product is about, from the list compose printed"),
           ...(split ? { split } : {}),
           names: Object.fromEntries(parts.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])),
-          shape: hold(`{ "like": "<name>" }, one of ${SILHOUETTE_NAMES.join(", ")}`),
+          shape: like ? { like } : hold(`{ "like": "<name>" }, one of ${SILHOUETTE_NAMES.join(", ")}`),
           strata,
         },
       ],
-      texts: [{ role: "legend", id: "legend", text: hold(`at most 2 sentences and 180 characters, like "Every ${strata === "outline" ? "ring" : "band"} of the <object> is a part of <product>, as big as its share of the code. The orange ${strata === "outline" ? "ring" : "band"} is <the plain name of the accent>."`) }],
+      texts: [{ role: "legend", id: "legend", text: hold(coverLegend(region, "<product>", "<the accent's plain name>")) }],
     },
     motion: { kind: "turn" },
   };

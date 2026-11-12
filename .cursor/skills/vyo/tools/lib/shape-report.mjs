@@ -153,7 +153,7 @@ function dominantFindings({ dominant: d, parts, region }) {
   const style = region.style ?? DEFAULT_STYLE;
   const bigIsAccent = accents.some((p) => p.id === d.part.id);
   if (d.split) {
-    const add = `add "split": [${[...(region.split ?? []), d.split.id].map((id) => `"${id}"`).join(", ")}] to the region to cut "${d.part.name}" into the folders inside it (${d.split.count} parts, the largest ${pct(d.split.largest)})`;
+    const add = `add "split": [${[...(region.split ?? []), d.split.id].map((id) => `"${id}"`).join(", ")}] to the region to cut "${d.part.name}" into the ${d.split.into} inside it (${d.split.count} parts, the largest ${pct(d.split.largest)})`;
     return bigIsAccent
       ? [`the accent "${d.part.name}" holds ${pct(d.share)} of the lines and the shape has ${parts.length} parts, so every style draws it as one slab; ${add}, then put the accent on the one the story is about (vyo parts <facts> --field shape --split ${d.split.id} lists them)`]
       : [`"${d.part.name}" holds ${pct(d.share)} of the lines and the shape has ${parts.length} parts, so it draws as one slab around the accent; ${add}; the accent stays where it is`];

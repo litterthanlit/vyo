@@ -9,12 +9,12 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { validateSpec } from "../lib/spec.mjs";
 import { shapeMask } from "../lib/mask.mjs";
-import { regionParts } from "../lib/parts.mjs";
+import { regionParts, aroundProduct } from "../lib/parts.mjs";
 import { runChecks, CHECKS } from "../lib/check.mjs";
 import { SILHOUETTES, SILHOUETTE_NAMES } from "../lib/silhouettes.mjs";
-import { COVER, COVER_FRAMES, COVER_GROUNDS, COVER_STRATA, coverSolid, coverShape, coverPose, coverModel, coverCells, coverMeasure, coverStill, coverSteps, coverTemplate } from "../lib/cover.mjs";
+import { COVER, COVER_FRAMES, COVER_GROUNDS, COVER_STRATA, coverLegend, coverSolid, coverShape, coverPose, coverModel, coverCells, coverMeasure, coverStill, coverSteps, coverTemplate } from "../lib/cover.mjs";
 import { coverOf } from "../lib/cover-render.mjs";
-import { coverFindings, COVER_LIMITS } from "../lib/cover-report.mjs";
+import { coverFindings, accentCandidates, coverWindow, COVER_LIMITS } from "../lib/cover-report.mjs";
 import { OP_EXAMPLES } from "../vyo.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
 import { decodePng } from "../lib/png.mjs";
@@ -24,11 +24,12 @@ const VYO = path.join(HERE, "..", "vyo.mjs");
 const recipe = scanRepo(path.join(HERE, "fixtures", "recipe"));
 const preset = () => ({ ...JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "cover.json"), "utf8")), facts: recipe.hash });
 /** The cover preset with its region changed by `over`, and the spec by `top`. */
-const cover = (over = {}, top = {}) => {
+const coverWith = (over = {}, top = {}) => {
   const s = preset();
   Object.assign(s.figure.regions[0], over);
   return Object.assign(s, top);
 };
+const cover = coverWith;
 const region = (over = {}) => cover(over).figure.regions[0];
 const modelOf = (spec) => coverOf(spec, recipe).model;
 
@@ -151,6 +152,12 @@ test("the still: every big part's name whole, nearest the turn's middle, and the
 test("every ready silhouette validates, passes every shape check, and makes a visible outline at the share the owner liked", () => {
   for (const name of SILHOUETTE_NAMES) {
     const shape = { like: name };
+    // Each object's legend names it, as the legend check asks.
+    const cover = (over) => {
+      const s = coverWith(over);
+      s.figure.texts[0].text = coverLegend(s.figure.regions[0], "Pantry", "the screens");
+      return s;
+    };
     assert.deepEqual(validateSpec(cover({ shape })), [], name);
     const relief = { ...JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "shape.json"), "utf8")), facts: recipe.hash };
     relief.figure.regions[0].shape = { like: name };
@@ -163,6 +170,10 @@ test("every ready silhouette validates, passes every shape check, and makes a vi
     assert.ok(c.shell.at(0.27) >= COVER_LIMITS.thin - 0.5, `${name}: 27% of the code makes a shell of ${Math.round(c.shell.at(0.27))}px`);
     assert.deepEqual(Object.values(coverFindings(c, { facts: recipe })).flat().filter((m) => !/orange shell/.test(m)), [], name);
     assert.ok(SILHOUETTES[name].about.length > 20 && SILHOUETTES[name].ops.length <= 8, `${name} says what it suits, in at most 8 ops`);
+    const S = SILHOUETTES[name];
+    assert.ok(S.noun && S.suits.length > 20 && S.words.length >= 5, `${name} has a noun for the legend, the products it suits, and README words`);
+    const legend = coverLegend(cover({ shape }).figure.regions[0], "Supercalifragilistic", "x".repeat(24));
+    assert.ok(legend.length <= 180, `${name}'s legend fits 180 characters at the longest names: ${legend.length}`);
   }
   assert.equal(SILHOUETTE_NAMES.length, 12);
 });
@@ -193,8 +204,42 @@ test("cover findings: each names one action, with the parts that would work", ()
   assert.equal(f["cover-seam"][0], "the step from the last frame back to the first changes 400 glyphs where the largest step inside the loop changes 12, so the GIF jumps at its seam; this is an engine fault, so render without --gif and report it");
   const vanish = coverFindings(c, { still: { ...c.still, accentCells: 0 } })["cover-accent"][0];
   assert.match(vanish, /^the accent "screens" prints no glyph in frame \d+; at 19% of the code it is too small to show in every pose, so /);
-  const thick = coverFindings({ ...c, shell: { ...c.shell, share: 0.58, px: 98 } }, { facts: recipe })["cover-shell"][0];
-  assert.match(thick, /^the orange shell is 58% of the code and 98px thick, so the object reads mostly orange \(keep it at 40% or less\); /);
+  // An accent over 40% fails in any strata: the orange would be most of the object.
+  for (const strata of ["outline", "down"]) {
+    const big = coverOf(cover({ strata }), recipe);
+    const most = { ...big, model: { ...big.model, parts: big.model.parts.map((p) => (p.hot ? { ...p, share: 0.58 } : p)) } };
+    const f58 = coverFindings(most, { facts: recipe });
+    assert.match(f58["cover-accent"][0], /^the accent "screens" is 58% of the code, so the orange would be most of the object \(at most 40%\); /, strata);
+    assert.deepEqual(f58["cover-shell"], [], `${strata}: a thick accent is cover-accent's to fail, not a shell warning`);
+  }
+  assert.equal(CHECKS.find((x) => x.id === "cover-accent").level, "fail");
+  // A ring too thin keeps the accent: the fix is a band, with the legend to write.
+  const saved = coverOf(cover({ accent: id("saved recipes") }), recipe);
+  assert.match(coverFindings(saved, { facts: recipe })["cover-shell"][0], /so keep the accent and set "strata": "down", which draws it as an orange band, and change the legend to "This pear is the code of Pantry, one band per part, each as big as its share\. The orange band is saved recipes\."$/);
+  // Code around the product is never offered as an accent, in rings or bands.
+  for (const strata of ["outline", "down"]) {
+    const offered = accentCandidates(coverOf(cover({ strata, accent: "area:nowhere" }), recipe), 20);
+    assert.ok(offered.length && !offered.some((o) => o.startsWith("area:. ")), `${strata}: ${offered.join(", ")}`);
+  }
+});
+
+test("a cover's legend names its object and what the orange is, and the finding gives the sentence to write", () => {
+  const legendOf = (text, over = {}) => {
+    const s = cover(over);
+    s.figure.texts[0].text = text;
+    return runChecks("spec", { spec: s, facts: recipe, presets: {} }).filter((f) => f.id === "legend").map((f) => f.message);
+  };
+  assert.deepEqual(legendOf("Every ring of the pear is a part of Pantry, as big as its share of the code. The orange ring is the screens."), [], "the earlier pattern still passes");
+  assert.deepEqual(legendOf("Every ring of the plane is a part of Pantry, as big as its share of the code. The orange ring is the screens.", { shape: { like: "plane" } }), [], "the object by its last word");
+  assert.deepEqual(legendOf("Every part of the pear is a part of Pantry, as big as its share of the code. The orange part is the screens."), [
+    'must say what the picture is: the object, the parts cut by their share of the code, and what the orange is; write "This pear is the code of Pantry, one layer per part, each as big as its share. The orange outer ring is screens."',
+  ]);
+  assert.equal(legendOf("This pear is the code of Pantry, one layer per part, each as big as its share. The orange outer ring is screens.", { strata: "down" }).length, 1, "a ring on bands is wrong");
+});
+
+test("code around the product is named as such: samples, tests, docs, scripts and the root's setup", () => {
+  for (const [id, word] of [["area:examples", "sample code"], ["area:examples/auth", "sample code"], ["area:test/unit", "tests"], ["area:docs/scripts", "docs"], ["area:scripts", "scripts"], ["area:.", "setup"]]) assert.equal(aroundProduct(id), word, id);
+  for (const id of ["area:lib", "area:src/requests/sessions.py", "area:lib/adapters", "area:tools"]) assert.equal(aroundProduct(id), null, id);
 });
 
 test("every check a cover can hit is scoped: the poster-only checks never run on it, the cover's never on a poster", () => {
@@ -214,25 +259,46 @@ test("the template: the name one size until it would leave the sheet, the box be
   assert.ok(tall.box.top > short.box.top && tall.box.bottom < short.box.bottom, "more lines of words leave the form less room, never overlap it");
 });
 
-test("compose --frame cover writes a scaffold whose only blanks are the words, the names, the accent and the shape, and the filled spec sketches clean", () => {
+test("compose --frame cover writes a scaffold whose only blanks are the words, the names and the accent, and the filled spec sketches clean", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-cover-"));
   const factsFile = path.join(dir, "recipe-facts.json");
   fs.writeFileSync(factsFile, JSON.stringify(recipe));
   const out = path.join(dir, "recipe-poster.json");
   const r = spawnSync(process.execPath, [VYO, "compose", factsFile, "--frame", "cover", "--out", out], { encoding: "utf8" });
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /^parts \(id, share of the code, scanned name\); \* marks a good accent, 5% to 40% of the code, an orange band:$/m);
-  assert.match(r.stdout, /^  \* area:app\/\(app\)\s+19%/m, "the parts that make a visible band are marked");
-  assert.match(r.stdout, /^accent: no part is 20% to 40% of the code, so an orange outline would be a sliver or most of the object, and compose wrote "strata": "down"/m);
   const spec = JSON.parse(fs.readFileSync(out, "utf8"));
+  const like = spec.figure.regions[0].shape.like;
+  assert.ok(SILHOUETTES[like], "compose picks a ready object");
+  // The window, printed once, is the one the sketch's shell check holds the object to.
+  const probe = cover({ shape: { like }, strata: "outline" });
+  probe.figure.texts[0].text = coverLegend(probe.figure.regions[0], "recipe", "a plain name");
+  const win = coverWindow(coverOf(probe, recipe));
+  const strata = spec.figure.regions[0].strata;
+  const [lo, hi] = strata === "outline" ? win.ring : win.band;
+  assert.equal(r.stdout.match(/\d+% to \d+% of the code/g).length, 1, r.stdout);
+  assert.match(r.stdout, new RegExp(`^parts \\(id, share of the code, scanned name\\)\\. \\* marks a part that makes a good orange (outer ring on|band across) the ${SILHOUETTES[like].noun}: ${Math.round(lo * 100)}% to ${Math.round(hi * 100)}% of the code\\.`, "m"));
+  const parts = regionParts(spec.figure.regions[0], recipe);
+  const total = parts.reduce((s, p) => s + p.loc, 0);
+  const ringable = !!win.ring && parts.some((p) => !aroundProduct(p.id) && p.loc / total >= win.ring[0] && p.loc / total <= win.ring[1]);
+  assert.equal(strata, ringable ? "outline" : "down", "an outline when a part the product could be about makes a ring on this object, else bands");
+  assert.match(r.stdout, /^  - area:\.\s+8%\s+Recipe  setup, never the accent$/m, "the root's files are marked as setup");
+  assert.doesNotMatch(r.stdout, /^  \* area:\.\s/m);
   const blanks = [];
   const walk = (v, at) => (typeof v === "string" ? v.startsWith("…") && blanks.push(at) : v && typeof v === "object" && Object.entries(v).forEach(([k, x]) => walk(x, `${at}.${k}`)));
   walk(spec, "spec");
-  assert.deepEqual(blanks.filter((b) => !/\.names\./.test(b)), ["spec.product.name", "spec.headline", "spec.figure.regions.0.accent", "spec.figure.regions.0.shape", "spec.figure.texts.0.text"]);
+  assert.deepEqual(blanks.filter((b) => !/\.names\./.test(b)), ["spec.product.name", "spec.headline", "spec.figure.regions.0.accent", "spec.figure.texts.0.text"]);
   assert.equal(blanks.filter((b) => /\.names\./.test(b)).length, regionParts(spec.figure.regions[0], recipe).length, "every part is named");
+  assert.equal(spec.figure.texts[0].text, `… ${coverLegend(spec.figure.regions[0], "<product>", "<the accent's plain name>")}`, "the legend's pattern names this object and this strata");
+  assert.match(spec.figure.texts[0].text, new RegExp(`^… This ${SILHOUETTES[like].noun} is the code of <product>, one (layer|band) per part`));
   assert.equal(spec.ground, "navy");
-  assert.equal(spec.figure.regions[0].strata, "down", "with no part of 20% to 40%, compose writes bands");
   assert.deepEqual(spec.motion, { kind: "turn" });
+  // The folder's log keeps two covers off the same object, and composing the same spec again keeps its object.
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, "recent-shapes.json"), "utf8")).shapes, [like]);
+  const second = path.join(dir, "other-poster.json");
+  assert.equal(spawnSync(process.execPath, [VYO, "compose", factsFile, "--frame", "cover", "--out", second], { encoding: "utf8" }).status, 0);
+  assert.notEqual(JSON.parse(fs.readFileSync(second, "utf8")).figure.regions[0].shape.like, like, "a second cover in the folder takes another object");
+  assert.equal(spawnSync(process.execPath, [VYO, "compose", factsFile, "--frame", "cover", "--out", out, "--force"], { encoding: "utf8" }).status, 0);
+  assert.equal(JSON.parse(fs.readFileSync(out, "utf8")).figure.regions[0].shape.like, like, "composing again keeps the object");
   const filled = preset();
   filled.product = { ...spec.product, name: "Pantry", commit: "04186f4" };
   fs.writeFileSync(out, JSON.stringify(filled));
@@ -249,4 +315,23 @@ test("compose --frame cover writes a scaffold whose only blanks are the words, t
   assert.equal(b.status, 1);
   assert.match(b.stdout, /^✗ spec: headline: still the placeholder; write it$/m);
   assert.match(b.stdout, /^✗ spec: figure\.regions\[0\]\.shape: still the placeholder; .*\{ "like": "<name>" \}/m);
+});
+
+test("a cover spec that lost its commit or date gets the exact values to restore from sketch", () => {
+  const repo = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "vyo-commit-")), "recipe");
+  fs.mkdirSync(repo);
+  const run = (...a) => spawnSync("git", ["-C", repo, ...a], { encoding: "utf8" });
+  run("init", "-q");
+  fs.writeFileSync(path.join(repo, "a.txt"), "a\n");
+  run("add", ".");
+  run("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "a");
+  const [hash, date] = run("log", "-1", "--format=%h %cs").stdout.trim().split(" ");
+  fs.mkdirSync(path.join(repo, "vyo"));
+  fs.writeFileSync(path.join(repo, "vyo", "recipe-facts.json"), JSON.stringify(recipe));
+  const out = path.join(repo, "vyo", "recipe-poster.json");
+  const lost = preset();
+  lost.product = { name: "Pantry", repo: "recipe", date: "2026-01-01" };
+  fs.writeFileSync(out, JSON.stringify(lost));
+  const s = spawnSync(process.execPath, [VYO, "sketch", out], { encoding: "utf8" });
+  assert.match(s.stdout, new RegExp(`^✗ record: product has no commit, which compose wrote; set "commit": "${hash}" and "date": "${date}" in product`, "m"), s.stdout);
 });

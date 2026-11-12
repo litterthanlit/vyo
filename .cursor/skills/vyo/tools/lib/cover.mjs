@@ -47,6 +47,19 @@ export const COVER_STRATA = {
 };
 export const coverStrataOf = (region) => (typeof region.strata === "string" ? COVER_STRATA[region.strata] : region.strata ?? COVER_STRATA.outline);
 
+/** What the orange is on this cover, "ring" for an outline and "band" otherwise, and the object's name. */
+export const coverWords = (region) => ({
+  orange: coverStrataOf(region)?.outline ? "ring" : "band",
+  object: (typeof region.shape === "object" && SILHOUETTES[region.shape?.like]?.noun) || null,
+});
+
+/** The legend a cover's picture says: the object, how its parts are cut, and what the orange is. */
+export function coverLegend(region, product, accent) {
+  const { orange, object } = coverWords(region);
+  const outline = orange === "ring";
+  return `This ${object ?? "shape"} is the code of ${product}, one ${outline ? "layer" : "band"} per part, each as big as its share. The orange ${outline ? "outer ring" : "band"} is ${accent}.`;
+}
+
 // Inter Medium's and Inter Display SemiBold's advances from space to tilde, in thousandths of an em, from the
 // bundled fonts: the template's lines are wrapped by these in Node and in the page alike.
 const COVER_SMALL_EM = [267, 304, 494, 639, 646, 993, 653, 313, 369, 369, 521, 667, 303, 462, 303, 370, 646, 415, 616, 627, 656, 618, 630, 571, 629, 630, 303, 315, 667, 667, 667, 527, 982, 709, 657, 733, 722, 603, 589, 748, 745, 272, 575, 688, 565, 913, 756, 767, 642, 769, 648, 646, 653, 740, 709, 1003, 701, 696, 641, 369, 370, 369, 477, 463, 337, 568, 618, 577, 618, 587, 379, 620, 602, 252, 252, 559, 252, 888, 602, 604, 618, 618, 387, 539, 340, 602, 575, 829, 557, 575, 559, 440, 346, 440, 667];

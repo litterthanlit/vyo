@@ -87,7 +87,7 @@ export function partsFromFacts(facts, { minShare = PART_DEFAULTS.minShare, maxPa
 
   return [...parts]
     .sort(([a], [b]) => treeOrder(a, b))
-    .map(([id, p], order) => ({ id, name: names[id] ?? areas.get(id)?.name ?? (files.has(id) ? fileName(id) : id.slice(5)), loc: p.loc, files: p.files, order }));
+    .map(([id, p], order) => ({ id, name: names[id] ?? areas.get(id)?.name ?? (files.has(id) ? fileName(id) : id.slice(5)), loc: p.loc, files: p.files, order, ...(files.has(id) ? { file: true } : {}) }));
 }
 
 // A part over `share` of the lines, or fewer than `parts` parts, draws a shape as one slab. The cold runs' flask
@@ -106,7 +106,25 @@ export function dominance(facts, options = {}) {
   if (!big || (big.loc / total <= DOMINANT.share && parts.length >= DOMINANT.parts)) return null;
   const finer = partsFromFacts(facts, { ...options, split: [...(options.split ?? []), big.id] });
   const largest = Math.max(...finer.map((p) => p.loc)) / total;
-  return { part: big, share: big.loc / total, count: parts.length, split: finer.length > parts.length ? { id: big.id, count: finer.length, largest } : null };
+  return { part: big, share: big.loc / total, count: parts.length, split: finer.length > parts.length ? { id: big.id, count: finer.length, largest, into: finer.some((p) => p.file) ? "files" : "folders" } : null };
+}
+
+// Folders that hold code around the product, never the product itself, by the plain word for what they hold.
+const AROUND = [
+  [/^(examples?|samples?|demos?|playground|sandbox)$/i, "sample code"],
+  [/^(tests?|__tests__|specs?|e2e|fixtures?|bench(marks?)?)$/i, "tests"],
+  [/^(docs?|documentation|website|guides?)$/i, "docs"],
+  [/^(scripts?|ci|\.github)$/i, "scripts"],
+];
+
+/**
+ * What a part holds when it is code around the product rather than the product: "sample code", "tests", "docs",
+ * "scripts", or "setup" for the files at the root. Null for a part the product could be about.
+ */
+export function aroundProduct(id) {
+  if (id === ROOT) return "setup";
+  for (const seg of segmentsOf(id)) for (const [re, word] of AROUND) if (re.test(seg)) return word;
+  return null;
 }
 
 /** Groups of two or more parts whose names read the same, ignoring case: a reader cannot tell them apart. */

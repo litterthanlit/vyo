@@ -8,7 +8,7 @@ import { partsFromFacts, partOptions, regionParts, unplainName, sameNames, domin
 import { shapeMask } from "./mask.mjs";
 import { coverOf } from "./cover-render.mjs";
 import { coverFindings, COVER_LIMITS } from "./cover-report.mjs";
-import { COVER } from "./cover.mjs";
+import { COVER, coverLegend, coverWords } from "./cover.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { shapeReport, shapeFindings, SHAPE_LIMITS, SHAPE_LIMB } from "./shape-report.mjs";
 import { RINGS } from "./fields/shape-rings.mjs";
@@ -111,7 +111,7 @@ const COVER_ONLY = ["cover"];
 /** A cover check judged on the frames the page drew: the still, and the loop when render drew one. */
 const coverCheck = (id, about) => ({
   id, level: "fail", stage: "page", frames: COVER_ONLY, about,
-  run: ({ spec, facts, page }) => (page.cover ? coverFindings(coverOf(spec, facts), { still: page.cover.report, loop: page.loop ?? null })[id] : []),
+  run: ({ spec, facts, page }) => (page.cover ? coverFindings(coverOf(spec, facts), { still: page.cover.report, loop: page.loop ?? null, facts })[id] : []),
 });
 const POSTERS = ["swiss", "loose", "signal"];
 // The spec as render and sketch draw it, with the texts placed and the shape moved for them; once per spec.
@@ -190,6 +190,13 @@ export const CHECKS = [
         // An accent that names no part is field-parts' to report; the legend still owes the measure.
         const named = !names.length || names.some((n) => legend.toLowerCase().includes(n.toLowerCase()));
         const measured = measure.every((group) => group.some((w) => startsWord(legend, w)));
+        if (frameOf(spec) === "cover") {
+          // A cover's legend also names its object and what the orange is, a ring or a band, as the picture shows.
+          const { orange, object } = coverWords(r);
+          // The object by its last word, so "the plane" names a paper plane and "the bolt" a lightning bolt.
+          const says = [orange, object?.split(" ").pop()].every((w) => !w || hasWord(legend, w));
+          return named && measured && says ? [] : [`must say what the picture is: the object, the parts cut by their share of the code, and what the orange is; write "${coverLegend(r, spec.product.name, names[0] ?? "<the accent's plain name>")}"`];
+        }
         return named && measured ? [] : [legendMessage(names, measure)];
       }),
   },
@@ -205,12 +212,12 @@ export const CHECKS = [
   shapeCheck("shape-limb", "warn", "spec", `no even limb under ${SHAPE_LIMB.width * 100}% of a drawn shape's widest row runs from its top or bottom over ${SHAPE_LIMB.height * 100}% of its height while holding at most ${SHAPE_LIMB.area * 100}% of its area`, undefined, ["loose", "cover"]),
   shapeCheck("shape-thin", "warn", "spec", `no feature of a drawn shape, and no cut in it, is under ${SHAPE_LIMITS.thin}px across, a hairline at thumbnail size`, undefined, ["loose", "cover"]),
   {
-    id: "cover-shell", level: "warn", stage: "spec", frames: COVER_ONLY, about: `a cover's outline accent is at least ${COVER_LIMITS.thin}px thick in the still and at most ${COVER_LIMITS.share * 100}% of the code, so it reads as an orange shell round the object`,
+    id: "cover-shell", level: "warn", stage: "spec", frames: COVER_ONLY, about: `a cover's outline accent is at least ${COVER_LIMITS.thin}px thick in the still, so it reads as an orange ring round the object; a thinner one keeps its accent as a band`,
     run: ({ spec, facts }) => coverFindings(coverOf(spec, facts), { facts })["cover-shell"],
   },
   coverCheck("cover-names", `every part of ${COVER.big * 100}% of the lines or more prints its whole name at least once in the cover's still`),
   coverCheck("cover-share", `in every frame a cover draws, each part's share of the glyphs is within ${COVER.gap * 100} point of its share of the lines`),
-  coverCheck("cover-accent", "a cover's accent names exactly one part, and that part prints in every frame drawn"),
+  coverCheck("cover-accent", `a cover's accent names exactly one part of at most ${COVER_LIMITS.share * 100}% of the code, so the orange is an accent and never most of the object, and that part prints in every frame drawn`),
   coverCheck("cover-seam", "a cover's loop closes: the step from its last frame to its first changes no more glyphs than the largest step inside it"),
   shapeCheck("shape-cover", "warn", "spec", `a drawn shape covers at least ${SHAPE_LIMITS.cover * 100}% of the sheet (a relief ${RELIEF.cover * 100}%)`),
   shapeCheck("shape-edge", "warn", "spec", `a drawn shape that runs off an edge runs off by at least ${SHAPE_LIMITS.bleed * 100}% of its own size, so the bleed reads as meant`),
@@ -454,7 +461,7 @@ export const CHECKS = [
     run: ({ spec, facts, page }) => {
       const lines = page.blocks.filter((b) => b.name === "record");
       if (frameOf(spec) === "cover") {
-        if (!spec.product.commit) return ["the record has no commit; set product.commit to the short hash (vyo compose --repo fills it)"];
+        if (!spec.product.commit) return ["the record has no commit, which compose wrote; vyo sketch prints the exact value, or run git -C <repo> log -1 --format=%h and set it as \"commit\" in product"];
         const want = coverOf(spec, facts).record.join(" ");
         return lines.length === 1 && lines[0].text === want ? [] : [`the cover's record reads "${lines.map((l) => l.text).join(" | ")}"; it should read "${want}"`];
       }

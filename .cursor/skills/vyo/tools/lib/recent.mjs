@@ -49,6 +49,27 @@ export function pickField(names, recent, key = 0) {
   return best;
 }
 
+/**
+ * The ready silhouette a cover starts from: of those not in the log, the one whose `words` start the most words of
+ * `text` (the README), each word counted once; ties and a README that names none go by `key`. When every
+ * silhouette is in the log, the least recently used. Returns the name and the words that matched.
+ * @param {Record<string, { words: string[] }>} silhouettes
+ * @param {string} text
+ * @param {string[]} recent newest last
+ * @param {number} key
+ */
+export function pickSilhouette(silhouettes, text, recent, key = 0) {
+  const names = Object.keys(silhouettes);
+  const used = new Set(recent);
+  const fresh = names.filter((n) => !used.has(n));
+  if (!fresh.length) return { name: pickField(names, recent.filter((n) => names.includes(n)), key), matched: [] };
+  const starts = new Set(String(text).toLowerCase().match(/[a-z][a-z-]*/g) ?? []);
+  const matched = (n) => silhouettes[n].words.filter((w) => [...starts].some((s) => s.startsWith(w)));
+  const rotated = fresh.map((_, i) => fresh[(i + Math.abs(Math.trunc(key))) % fresh.length]);
+  const name = rotated.reduce((best, n) => (matched(n).length > matched(best).length ? n : best), rotated[0]);
+  return { name, matched: matched(name) };
+}
+
 /** How many shapes have been picked since `name`, or null when it has never been used. */
 export function usedAgo(shapes, name) {
   const at = shapes.lastIndexOf(name);

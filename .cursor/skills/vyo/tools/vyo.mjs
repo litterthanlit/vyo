@@ -13,8 +13,9 @@ import { scaffoldSpec, coverScaffold, validateSpec, THEMES, PLACEHOLDER } from "
 import { SHAPE_STYLES, DEFAULT_STYLE } from "./lib/fields/shape.mjs";
 import { sketch, sketchImage } from "./lib/sketch.mjs";
 import { coverSketchLines, coverSketchFindings, coverSketchImage } from "./lib/cover-sketch.mjs";
-import { COVER_LIMITS, OUTLINE_SHARE } from "./lib/cover-report.mjs";
-import { COVER_GROUNDS } from "./lib/cover.mjs";
+import { COVER_LIMITS, coverWindow } from "./lib/cover-report.mjs";
+import { coverOf } from "./lib/cover-render.mjs";
+import { COVER_GROUNDS, coverLegend } from "./lib/cover.mjs";
 import { SILHOUETTES, SILHOUETTE_NAMES } from "./lib/silhouettes.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE, SHEET } from "./lib/geometry.mjs";
 import { SHAPE_KINDS, SHAPE_ROOM } from "./lib/mask.mjs";
@@ -26,8 +27,8 @@ import { NoBrowser } from "./lib/browser.mjs";
 import { MaskFailure, BUNDLED_MASKS } from "./lib/png-mask.mjs";
 import { init, chooseEditors, EDITORS } from "./lib/init.mjs";
 import { FIELDS } from "./lib/fields/index.mjs";
-import { partsFromFacts, partOptions, regionParts, accentIds, unplainName, sameNames, dominance, PART_DEFAULTS } from "./lib/parts.mjs";
-import { pickField, readRecent, recordShape, usedAgo } from "./lib/recent.mjs";
+import { partsFromFacts, partOptions, regionParts, accentIds, unplainName, sameNames, dominance, aroundProduct, PART_DEFAULTS } from "./lib/parts.mjs";
+import { pickField, pickSilhouette, readRecent, recordShape, usedAgo } from "./lib/recent.mjs";
 
 const USAGE = `Usage:
   vyo init    [--cursor] [--claude] [--codex] [--dir <repo-dir>]
@@ -175,7 +176,7 @@ function dominantLines(facts, options, file, field) {
   const what = `! "${d.part.name}" (${d.part.id}) holds ${pct(d.share)} of the lines among ${d.count} parts; as a shape's accent it draws one slab of orange`;
   if (!d.split) return [`${what}, and it has no folders inside it to split: put the accent on a smaller part.`];
   const flags = [...(options.split ?? []), d.split.id].map((id) => `--split ${id}`).join(" ");
-  return [`${what}. Split it into the folders inside it: vyo parts ${file} --field shape ${flags} gives ${d.split.count} parts, the largest ${pct(d.split.largest)}${field === "shape" ? "" : " (a shape field only)"}; then write "split": [${[...(options.split ?? []), d.split.id].map((id) => `"${id}"`).join(", ")}] in the region and put the accent on one of them.`];
+  return [`${what}. Split it into the ${d.split.into} inside it: vyo parts ${file} --field shape ${flags} gives ${d.split.count} parts, the largest ${pct(d.split.largest)}${field === "shape" ? "" : " (a shape field only)"}; then write "split": [${[...(options.split ?? []), d.split.id].map((id) => `"${id}"`).join(", ")}] in the region and put the accent on one of them.`];
 }
 
 function cmdShow(argv) {
@@ -311,7 +312,11 @@ function cmdShapes(argv) {
   lines.push(
     "",
     'Ready silhouettes for a shape, as "shape": { "like": "<name>" }. Pick the object that fits the product; draw your own only when none does:',
-    ...SILHOUETTE_NAMES.map((n) => `  ${n.padEnd(width)}  ${SILHOUETTES[n].about}`),
+    ...SILHOUETTE_NAMES.map((n) => {
+      const ago = usedAgo(shapes, n);
+      const used = ago === null ? "" : ago === 0 ? " Picked for the latest cover here." : ` Picked here ${ago + 1} covers ago.`;
+      return `  ${n.padEnd(width)}  for ${SILHOUETTES[n].suits}; drawn as ${SILHOUETTES[n].about.replace(/^[^:]*: /, "")}.${used}`;
+    }),
     "",
     'To draw your own, "shape": { "ops": [...] } in a 100-unit box, y down, the first op an add. One op of each kind:',
     ...Object.entries(OP_EXAMPLES).map(([kind, op]) => `  ${kind.padEnd(8)}  ${JSON.stringify(op)}`),
@@ -332,30 +337,66 @@ function composeCover(factsFile, opt) {
   const date = (opt.repo && git(opt.repo, "%cs")) ?? new Date().toISOString().slice(0, 10);
   if (!opt.repo) warn("no --repo, so no commit: the cover's record needs one; compose again with --repo <repo>");
   else if (!commit) warn(`${opt.repo} has no git history; the cover's record needs a commit, so use the swiss frame instead`);
-  const parts = partsFromFacts(facts, partOptions({ field: "shape", ...(opt.split ? { split: opt.split } : {}) }));
+  const L = COVER_LIMITS;
+  // No part may be most of the object, so every part over the window's top is cut into the folders inside it, or
+  // its files when it has none, until none is left or the region holds the four splits a spec allows.
+  const split = [...(opt.split ?? [])];
+  const cut = [];
+  const partsOf = (s) => partsFromFacts(facts, partOptions({ field: "shape", ...(s.length ? { split: s } : {}) }));
+  let parts = partsOf(split);
   if (!parts.length) throw new Failure(`no parts to draw; the scan found no code, so a cover has nothing to show. Compose a fill poster instead: vyo compose ${factsFile} --from <preset>`);
-  if (opt.accent !== undefined && !accentIds(parts, opt.accent).size) throw new Usage(`--accent ${opt.accent} names no part; vyo parts ${factsFile} --field shape lists the part ids`);
+  const linesIn = (list) => list.reduce((s, p) => s + p.loc, 0) || 1;
+  for (let big; split.length < 4 && (big = parts.find((p) => p.loc / linesIn(parts) > L.share && !split.includes(p.id))); ) {
+    const finer = partsOf([...split, big.id]);
+    if (finer.length <= parts.length) break;
+    cut.push(`${big.id} (${pct(big.loc / linesIn(parts))}) into ${finer.length - parts.length + 1} parts`);
+    split.push(big.id);
+    parts = finer;
+  }
+  if (opt.accent !== undefined && !accentIds(parts, opt.accent).size) throw new Usage(`--accent ${opt.accent} names no part; vyo parts ${factsFile} --field shape${split.map((s) => ` --split ${s}`).join("")} lists the part ids`);
   const out = opt.out ?? path.join(path.dirname(factsFile), `${facts.repo.name}-poster.json`);
   if (fs.existsSync(out) && !opt.force) throw new Failure(`${out} exists; it may hold your words. Pass --force to replace it with a fresh scaffold`);
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-  const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
-  const L = COVER_LIMITS;
-  const share = (p) => p.loc / total;
-  // With no part to make a good outline, the scaffold stacks the parts in bands, where any part from 5% shows.
-  const outline = parts.some((p) => share(p) >= OUTLINE_SHARE[0] && share(p) <= L.share);
-  const good = (p) => (outline ? share(p) >= OUTLINE_SHARE[0] : share(p) >= L.least) && share(p) <= L.share;
-  const d = dominance(facts, partOptions({ field: "shape", ...(opt.split ? { split: opt.split } : {}) }));
-  fs.writeFileSync(out, JSON.stringify(coverScaffold(facts, { commit, date, accent: opt.accent, split: opt.split, parts, strata: outline ? "outline" : "down" }), null, 2) + "\n");
+  // The object: the one a scaffold already at `out` used, so composing again keeps it; else the silhouette the
+  // README points to most among those this folder's covers have not used lately.
+  const earlier = (() => {
+    try {
+      return JSON.parse(fs.readFileSync(out, "utf8")).figure.regions[0].shape.like;
+    } catch {
+      return undefined;
+    }
+  })();
+  const logFile = opt["shapes-log"] ?? path.join(path.dirname(path.resolve(out)), "recent-shapes.json");
+  const readme = opt.repo ? fs.readdirSync(opt.repo).find((f) => /^readme/i.test(f)) : undefined;
+  const text = readme ? fs.readFileSync(path.join(opt.repo, readme), "utf8").slice(0, 6000) : "";
+  const hashKey = parseInt(String(facts.hash).slice(0, 8), 16) || 0;
+  const pick = SILHOUETTES[earlier] ? { name: earlier, matched: null } : pickSilhouette(SILHOUETTES, text, readRecent(logFile).shapes, hashKey);
+  const like = pick.name;
+  if (pick.matched) recordShape(logFile, like);
+  const share = (p) => p.loc / linesIn(parts);
+  const around = (p) => aroundProduct(p.id);
+  // The window, measured on this object: an outline when a part the product could be about makes a ring there,
+  // else bands.
+  const probe = coverScaffold(facts, { commit, date, split: split.length ? split : undefined, parts, strata: "outline", like, accent: parts[parts.length - 1].id });
+  Object.assign(probe, { product: { ...probe.product, name: facts.repo.name }, headline: "One plain sentence about what the product does for a person." });
+  probe.figure.texts[0].text = coverLegend(probe.figure.regions[0], facts.repo.name, "a plain name");
+  const win = coverWindow(coverOf(probe, facts));
+  const fits = (p, [lo, hi]) => share(p) >= lo && share(p) <= hi;
+  const outline = !!win.ring && parts.some((p) => !around(p) && fits(p, win.ring));
+  const window = outline ? win.ring : win.band;
+  const scaffold = coverScaffold(facts, { commit, date, accent: opt.accent, split: split.length ? split : undefined, parts, strata: outline ? "outline" : "down", like });
+  fs.writeFileSync(out, JSON.stringify(scaffold, null, 2) + "\n");
+  const S = SILHOUETTES[like];
   const width = Math.max(...parts.map((p) => p.id.length));
+  const orange = outline ? `orange outer ring on the ${S.noun}` : `orange band across the ${S.noun}`;
   const lines = [
-    `Wrote ${out}: a cover of ${parts.length} parts. Replace every "…" value; product.commit and product.date are the engine's, so leave them.`,
-    ...(d?.split ? [`! "${d.part.name}" (${d.part.id}) holds ${pct(d.share)} of the code: compose again with --split ${d.split.id} --force to cut it into ${d.split.count} parts, then pick the accent among them.`] : []),
-    `parts (id, share of the code, scanned name); * marks a good accent, ${outline ? `${Math.round(OUTLINE_SHARE[0] * 100)}% to ${Math.round(L.share * 100)}% of the code, which makes the orange outer shell` : `${Math.round(L.least * 100)}% to ${Math.round(L.share * 100)}% of the code, an orange band`}:`,
-    ...parts.map((p) => `  ${good(p) ? "*" : " "} ${p.id.padEnd(width)} ${pct(share(p)).padStart(4)}  ${p.name}${unplainName(p.name) ? "  ! needs a plain name" : ""}`),
-    outline
-      ? `accent: the id of the part the product is about, best one marked *. "strata": "outline" makes it the orange outer shell.`
-      : `accent: no part is ${Math.round(OUTLINE_SHARE[0] * 100)}% to ${Math.round(L.share * 100)}% of the code, so an orange outline would be a sliver or most of the object, and compose wrote "strata": "down": the parts stack top to bottom. Put the accent on the part marked * that the story is about.`,
-    `shape: { "like": "<name>" }, one of ${SILHOUETTE_NAMES.join(", ")} (vyo shapes says what each suits). Draw your own { "ops": [...] } only when none fits.`,
+    `Wrote ${out}. Edit that file: replace each value that starts with "…" and change nothing else.`,
+    ...(cut.length ? [`Split ${cut.join(", and ")}, so no part is most of the object.`] : []),
+    `parts (id, share of the code, scanned name). * marks a part that makes a good ${orange}: ${pct(window[0])} to ${pct(window[1])} of the code. - marks code around the product, never the accent.`,
+    ...parts.map((p) => `  ${around(p) ? "-" : fits(p, window) ? "*" : " "} ${p.id.padEnd(width)} ${pct(share(p)).padStart(4)}  ${p.name}${around(p) ? `  ${around(p)}, never the accent` : ""}${unplainName(p.name) ? "  ! needs a plain name" : ""}`),
+    `accent: the id of the part the product is about. If it has no *, write it anyway: the sketch says how to make it show.`,
+    `shape: compose picked the ${S.noun} ("like": "${like}"), for ${S.suits}${pick.matched?.length ? `; the README says ${pick.matched.map((w) => `"${w}…"`).join(", ")}` : ""}. If another object in vyo shapes suits the product better, write its name and put its name in the legend for "${S.noun}".`,
+    `legend: the pattern is written; replace <product> and <the accent's plain name>, and delete the leading "…".`,
     `ground: ${Object.keys(COVER_GROUNDS).join(", ")}. Names: every part, lowercase, at most 24 characters, saying what it does for a person.`,
     `Then: vyo sketch ${out}, open the sketch PNG, act on every finding, then vyo render ${out} --gif.`,
   ];
@@ -478,7 +519,19 @@ function factsFor(specFile, spec, opt) {
  */
 function coverSketch(file, spec, opt) {
   const errors = validateSpec(spec);
-  const drawable = !errors.some((e) => /^(version|frame|product|ground|figure\.regions(\[0\])?(:|\.(kind|field|shape|strata|solid|turn|split|accent))|figure\.texts(:|\[\d+\]\.role))/.test(e) && !/\.names\[/.test(e));
+  // compose wrote the commit and the date; a spec rewritten by hand loses them, so say the exact values to put back.
+  const p = spec?.product;
+  if (p && typeof p === "object" && (p.commit === undefined || p.date === undefined)) {
+    const repo = path.dirname(path.dirname(path.resolve(file)));
+    // Only the repo the spec names: a spec kept elsewhere must not borrow another repo's commit.
+    const [commit, date] = path.basename(repo) === p.repo ? [git(repo, "%h"), git(repo, "%cs")] : [];
+    process.stdout.write(
+      commit
+        ? `✗ record: product has no ${p.commit === undefined ? "commit" : "date"}, which compose wrote; set "commit": "${commit}" and "date": "${date}" in product, and edit the spec compose writes in place next time\n`
+        : `✗ record: product has no ${p.commit === undefined ? "commit" : "date"}, which compose wrote; run git -C <repo> log -1 --format=%h and --format=%cs and set them as "commit" and "date" in product\n`,
+    );
+  }
+  const drawable =!errors.some((e) => /^(version|frame|product|ground|figure\.regions(\[0\])?(:|\.(kind|field|shape|strata|solid|turn|split|accent))|figure\.texts(:|\[\d+\]\.role))/.test(e) && !/\.names\[/.test(e));
   for (const e of errors) process.stdout.write(`✗ spec: ${e}\n`);
   if (!drawable) {
     process.stdout.write("Fix the ✗ spec lines above, then sketch again: the cover cannot be drawn until its shape, ground and parts are valid.\n");
