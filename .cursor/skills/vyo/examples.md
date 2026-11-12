@@ -16,10 +16,11 @@
 
 ## Choosing the field
 
-Write the product's story in one sentence, then pick the silhouette that acts it out. Do not start from wave. Run `vyo shapes` and take a primitive that has not been used in the last few posters; a new shape beats a familiar one. `compose` without `--field` does the same and will not pick wave. Pass `--field` only when the story clearly matches.
+Write the product's story in one sentence, then pick the silhouette that acts it out. If one object a stranger would name stands for the product, take shape and draw it (below). Otherwise pick a generated field. Do not start from wave. Run `vyo shapes` and take a primitive that has not been used in the last few posters; a new shape beats a familiar one. `compose` without `--field` does the same and will not pick wave. Pass `--field` only when the story clearly matches.
 
 | Field | When to use it | Keywords |
 |---|---|---|
+| shape | One object stands for the product; you draw it, or trace it from a PNG with `mask` | object, thing, picture, shape, looks |
 | wave | Something moves or is handed on | travel, flow, hand, move |
 | terrain | What is big is what matters | big, weight, matters, most |
 | river | Many things merge into one | merge, join, many, one |
@@ -29,10 +30,9 @@ Write the product's story in one sentence, then pick the silhouette that acts it
 | shatter | A grid breaks or splits | break, grid, split, apart |
 | glyph | The story is a letter or a mark | letter, mark, sign, name |
 | bleed | The form is cropped off the sheet | crop, bleed, edge, off |
-| bands | Layers, stacked | stack, band, bar, layer |
+| slabs | Layers, stacked | stack, slab, bar, layer |
 | spiral | It turns | spin, coil, spiral, turn |
 | contour | Levels, a ridge, a map | contour, level, map, ridge |
-| trace | The silhouette comes from an image | trace, mask, image, from |
 
 Then run `vyo parts` with that field and put the accent on the part the story is about. For a high-contrast poster, set `frame: "signal"`.
 
@@ -81,7 +81,7 @@ Tally is made up. Pantry is the `recipe` test fixture. Hypher's parts come from 
 
 Pantry is the `recipe` test fixture. It has 6 screens (recipes, a recipe, a new recipe, the weekly plan, settings, home), recipes with ingredients, a weekly plan, a shopping list, AI suggestions, and a weekly email every Monday at 8. It has payment code but no checkout screen, so the chat reply lists "paid plans" as not built.
 
-Each block below is the preset file in the package's `tools/presets/`. `compose --field <id>` writes the same shape with placeholders and its own text positions. The `facts` value is a placeholder: yours is the hash from your own scan, and `compose` writes it. The commit is made up, since the fixture is not a git repo. Each spec names every part, not only the flagged ones, because the scanned names repeat ("Plan", "Recipes", "Main app").
+Each block below is the preset file in the package's `tools/presets/`, except the relief jar on the dark sheet, which the tests keep as a fixture. `compose --field <id>` writes the same shape with placeholders and its own text positions. The `facts` value is a placeholder: yours is the hash from your own scan, and `compose` writes it. The commit is made up, since the fixture is not a git repo. Each spec names every part, not only the flagged ones, because the scanned names repeat ("Plan", "Recipes", "Main app").
 
 The legend names the accent part as the poster colours it. On a light wave the accent rows are black. On dark, and on a terrain or river, they are orange.
 
@@ -332,6 +332,324 @@ The legend names "the plan" and the measure "merge". The fits sentence passes wi
   }
 }
 ```
+### shape
+
+Pantry keeps a week of recipes the way a jar keeps preserves, so the poster draws one jar and fills it with Pantry's code. The lid and the shoulders make it a jar at thumbnail size: a rounded lid, a narrow neck, and a body with 24-unit corners, three ops in a 100 by 130 box. It is turned 9 degrees and bleeds off the bottom on purpose: `fit` asks for it (leave `fit` out and the engine fits the jar below the label, headline and legend and centres it in the room they leave). `"style": "relief"` is the default, so `compose --field shape` writes it without being asked: a lit volume in 6px type on paper. The layers run from the lid down in tree order, each as much of the jar as its code, so "screens" is the thickest and "buttons" the thinnest; every part keeps a whole name somewhere. The orange layer is the plan. The texts have no coordinates: the engine sets the label, headline and legend in the room the jar leaves, top right. The legend names the measure as "big" and "code".
+
+Before rendering, `vyo sketch` printed the jar's strata, its 62% of the sheet and where it placed each text block, and wrote `recipe-sketch.png` with the shaded thumbnail it predicts. It printed no `!` line.
+
+```json
+{
+  "version": 3,
+  "frame": "loose",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "light",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "shape",
+        "field": "shape",
+        "style": "relief",
+        "fits": "Pantry keeps a week of recipes the way a jar keeps preserves, so the picture is a jar of its code.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "shape": {
+          "rotate": 9,
+          "fit": { "h": 0.9, "cx": 0.52, "cy": 0.64 },
+          "ops": [
+            { "add": "rect", "at": [16, 0], "size": [68, 16], "round": 3 },
+            { "add": "rect", "at": [22, 15], "size": [56, 9] },
+            { "add": "rect", "at": [4, 22], "size": [92, 108], "round": 24 }
+          ]
+        }
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label" },
+      { "role": "headline", "id": "headline" },
+      {
+        "role": "legend",
+        "id": "legend",
+        "text": "Every layer in the jar is a part of Pantry, as big as its code. The orange layer is the plan."
+      }
+    ]
+  }
+}
+```
+
+### shape in rings
+
+The same jar, set in rings (`compose --field shape --style rings` writes the style). Pantry's jar is fat and round, so its outline has room for rings: the lid floats 3 units above the neck and gets rings of its own, and a cut in the body makes the label, a hole the legend is pinned in with `x` and `y`; the label and headline have no coordinates, so the engine places them. `"style": "rings"` runs the parts' names round the outline, ring inside ring, each part as much of the jar's area as its code; the order of the rings means nothing. The plan's band runs one ring in, under a rim of screen pieces, so the orange draws the jar, its lid and its label. Where the rings would fold, past the shoulders, they stop, and the cores in the lid and above and below the label are set in level lines on a tone of their own. The plan is a solid orange band with its name reversed out. Its share is under two rings, so it takes two, and the sketch says so. `"echo": 4` draws four faded outlines around the jar. The legend names the measure as "area".
+
+Before rendering, `vyo sketch` printed 22 rings of 7px for 12 parts, the accent's two-ring floor, one line per part with its rings and its share of the area beside its share of the lines, and no `!` line.
+
+```json
+{
+  "version": 3,
+  "frame": "loose",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "shape",
+        "field": "shape",
+        "style": "rings",
+        "fits": "Pantry keeps a week of recipes the way a jar keeps preserves, so the picture is a jar of its code.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "shape": {
+          "fit": {
+            "h": 0.74,
+            "cy": 0.6
+          },
+          "ops": [
+            {
+              "add": "rect",
+              "at": [
+                22,
+                0
+              ],
+              "size": [
+                56,
+                13
+              ],
+              "round": 4
+            },
+            {
+              "add": "rect",
+              "at": [
+                28,
+                16
+              ],
+              "size": [
+                44,
+                10
+              ]
+            },
+            {
+              "add": "rect",
+              "at": [
+                6,
+                22
+              ],
+              "size": [
+                88,
+                108
+              ],
+              "round": 26
+            },
+            {
+              "cut": "rect",
+              "at": [
+                22,
+                62
+              ],
+              "size": [
+                56,
+                30
+              ],
+              "round": 4
+            }
+          ]
+        },
+        "echo": 4
+      }
+    ],
+    "texts": [
+      {
+        "role": "label",
+        "id": "label"
+      },
+      {
+        "role": "headline",
+        "id": "headline"
+      },
+      {
+        "role": "legend",
+        "id": "legend",
+        "x": 300,
+        "y": 790,
+        "w": 240,
+        "align": "center",
+        "text": "Every ring is a part of Pantry, its area as big as its share of the code. The orange rings are the plan."
+      }
+    ]
+  }
+}
+```
+
+### shape, relief
+
+The same jar as a lit volume, on the dark sheet: `"style": "relief"`, which `compose --field shape --style relief --theme dark` writes. The jar is drawn upright this time, with a 3-unit cut between the lid and the neck so the lid reads as a separate piece. Two creases ridge the lid and a creased rectangle is the label; both fold the surface and leave the outline alone. `bevel` 0.8 rounds the body almost to a cylinder, and `strata` at 90 degrees stacks the parts from the lid down like layers of preserves; a part too small for a whole glyph line takes part of one, so every layer keeps its share. Only the type draws the jar, lit from the top left: no outline, no fill. Each line is set word by word in 6px type. A word runs across a layer's edge to its end and belongs to the layer it is owed, so the layers' edges step where names begin and end, and a line enters and leaves the jar partway through a name. The plan's letters glow orange, on paper too, and a faint dot grid on the sheet carries the jar's shadow. The engine sets the headline top left, as large as it fits in at most four lines. The legend names the measure as "big" and "code".
+
+Before rendering, `vyo sketch` printed each stratum's share of the area against its share of the lines, the accent's thickness, the predicted thumbnail's lit side and spread, and wrote the shaded `recipe-sketch.png`. It printed no `!` line. Without the creases, `bevel` and `strata`, the jar still renders as a rounded volume; the hints only add the folds.
+
+```json
+{
+  "version": 3,
+  "frame": "loose",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "shape",
+        "field": "shape",
+        "style": "relief",
+        "fits": "Pantry keeps a week of recipes the way a jar keeps preserves, so the picture is a jar of its code.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "bevel": 0.8,
+        "strata": { "by": "angle", "angle": 90 },
+        "shape": {
+          "fit": { "h": 0.74, "cx": 0.5, "cy": 0.6 },
+          "ops": [
+            { "add": "rect", "at": [12, 0], "size": [76, 16], "round": 4 },
+            { "add": "rect", "at": [20, 15], "size": [60, 10] },
+            { "add": "rect", "at": [0, 24], "size": [100, 112], "round": 26 },
+            { "cut": "rect", "at": [0, 14], "size": [100, 3] },
+            { "crease": "capsule", "from": [16, 6], "to": [84, 6] },
+            { "crease": "capsule", "from": [16, 10], "to": [84, 10] },
+            { "crease": "rect", "at": [12, 58], "size": [76, 42], "round": 4 }
+          ]
+        }
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label" },
+      { "role": "headline", "id": "headline" },
+      {
+        "role": "legend",
+        "id": "legend",
+        "text": "Every layer in the jar is a part of Pantry, as big as its code. The orange layer is the plan."
+      }
+    ]
+  }
+}
+```
+
+## A cover, as a full spec for Pantry
+
+`vyo compose <facts> --frame cover --repo <repo>` writes this with `…` in the product name, the headline, the accent, the names and the legend, and picks the object; this is it filled in, and the `cover` preset. The pear is a ready silhouette, so the spec has no ops; `"strata": "outline"` makes the accent, the screens (19% of the code), the orange shell, and the other parts stack inside it. Before rendering, `vyo sketch` printed `shell: the orange shell is 16px thick, 18.5% of the code`, one line per part with its share of the lines and of the glyphs in the still, and the still as a 280px PNG; `vyo render --gif` then wrote the PNG, the PDF and a 7-second loop.
+
+```json
+{
+  "version": 3,
+  "frame": "cover",
+  "facts": "69fdfb929a85",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "ground": "navy",
+  "headline": "A week of dinners, planned in one go from the recipes you already cook.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "shape",
+        "field": "shape",
+        "accent": "area:app/(app)",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "shape": {
+          "like": "pear"
+        },
+        "strata": "outline"
+      }
+    ],
+    "texts": [
+      {
+        "role": "legend",
+        "id": "legend",
+        "text": "This pear is the code of Pantry, one layer per part, each as big as its share. The orange outer ring is the screens."
+      }
+    ]
+  },
+  "motion": {
+    "kind": "turn"
+  }
+}
+```
+
 ## Sample chat reply
 
 ```markdown
@@ -658,7 +976,7 @@ A grid of globes that flatten down the page. Fits uses "round" and "folds".
 
 ## Drawing your own silhouette
 
-Use this path when the owner asks for a picture, or the scan is empty. You invent one silhouette that acts out the product's main moment and describe it as fill regions and texts. Fill figures sit in the swiss frame, with its masthead and footer. Start from `compose --from <preset>`, then sketch, render and check as for a field.
+When the owner asks for a picture and the scan has code, draw it as a shape field instead, like the jar above: the field cuts your silhouette into the parts. Use this path when the scan is empty, or the owner wants the swiss frame. The table under "Find the shape" helps with either. You invent one silhouette that acts out the product's main moment and describe it as fill regions and texts. Fill figures sit in the swiss frame, with its masthead and footer. Start from `compose --from <preset>`, then sketch, render and check as for a field.
 
 ### Find the shape
 
@@ -1265,9 +1583,9 @@ Rendered posters for Pantry, the `recipe` fixture, live in `examples/posters/` o
 | `shatter.png` / `shatter.gif` | Paper shatter grid, resolve GIF |
 | `glyph.png` | Charcoal letter P |
 | `bleed.png` | Paper bleed, form off the right edge |
-| `bands.png` | Swiss bands, stacked bars |
+| `slabs.png` | Swiss slabs, stacked bars |
 | `spiral.png` / `spiral.gif` | Charcoal coil, resolve GIF |
 | `contour.png` | Charcoal contour rings |
-| `trace.png` | Dark loose trace of a keyhole |
-| `brutal.png` | Paper signal: posed bands, a highlighted accent band, the stepped capitals list and an archive line |
-| `wings.png` | Charcoal signal trace of the bundled wings mask in `symbols`, orange accent band |
+| `wings-relief.png` | Dark loose relief of a shape traced from the bundled wings mask |
+| `brutal.png` | Paper signal: posed slabs, a highlighted accent slab, the stepped capitals list and an archive line |
+| `wings.png` | Charcoal signal shape traced from the bundled wings mask, in the `symbols` style, orange accent band; `wings.gif` resolves it from the top |

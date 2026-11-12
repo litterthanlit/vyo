@@ -3,7 +3,14 @@ import { isJargon } from "./jargon.mjs";
 import { SHEET, SHAPE_KEYS, parsePath, flattenPath } from "./geometry.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { WAVE } from "./fields/wave.mjs";
+import { SHAPE_STYLES, DEFAULT_STYLE } from "./fields/shape.mjs";
+import { RINGS } from "./fields/shape-rings.mjs";
+import { SHAPE_KINDS, opKind, shapeMask } from "./mask.mjs";
+// Loads a traced shape's image for shapeMask, in Node.
+import "./png-mask.mjs";
 import { ROLES as FRAME_ROLES, FRAMES, RECORD_FRAMES, frameOf, sizeRange, LIST } from "./frame.mjs";
+import { SILHOUETTES, SILHOUETTE_NAMES } from "./silhouettes.mjs";
+import { COVER_GROUNDS, COVER_STRATA, coverLegend } from "./cover.mjs";
 
 /**
  * @typedef {"soft" | "mid" | "ink" | "cold" | "cool"} ToneName
@@ -14,7 +21,7 @@ import { ROLES as FRAME_ROLES, FRAMES, RECORD_FRAMES, frameOf, sizeRange, LIST }
  *                     band?: 1 | 2 | 3 | 4, size?: 7 | 8 | 9 | 10 | 11 | 12, hot?: boolean }} FillRegion
  * @typedef {{ kind: "dots", id: string, lines: string[], x: number, y: number, cell: number, tones: (ToneName | "hot")[] }} DotsRegion
  * @typedef {{ kind: "field", id: string, field: keyof typeof FIELDS, fits: string, accent?: string, names?: Record<string, string>,
- *             sentence?: string, every?: number, seed?: number, letter?: string, mask?: string, minShare?: number, maxParts?: number }} FieldRegion  drawn from facts.json at render
+ *             sentence?: string, every?: number, seed?: number, letter?: string, symbols?: boolean, minShare?: number, maxParts?: number }} FieldRegion  drawn from facts.json at render
  * @typedef {{ role: string, id: string, text?: string, x: number, y: number, w: number, size?: number,
  *             align?: "left" | "right" | "center", hot?: boolean, parts?: true, items?: string[] }} Text  roles per frame in lib/frame.mjs
  * @typedef {{
@@ -38,7 +45,7 @@ export const PLACEHOLDER = "…";
 export const LIMITS = {
   name: 24, headline: 72, hot: 24, noteTitle: 24, noteText: 220, notBuilt: 6, notBuiltItem: 32, audience: 40,
   fits: 160, regions: 6, texts: 14, words: [2, 14], word: 24, lines: [2, 4], line: 5,
-  profile: [3, 24], polygon: [3, 40], holes: 4, path: 4000, fields: 1, partName: 24, sentence: 40, every: [2, 20], minShare: [0, 0.2], maxParts: [2, 24],
+  profile: [3, 24], polygon: [3, 40], holes: 4, path: 4000, fields: 1, partName: 24, sentence: 40, every: [2, 20], minShare: [0, 0.2], maxParts: [2, 24], ops: 24, fit: [0.05, 3], centre: [-0.5, 1.5],
 };
 export const TONES = ["soft", "mid", "ink", "cold", "cool"];
 export const DOT_TONES = [...TONES, "hot"];
@@ -49,7 +56,7 @@ const RESERVED = ["note", "counts", "notBuilt", "provenance", "credit", "record"
 // Keys that only some kinds of field take, like the wave's sentence.
 const FIELD_OPTIONS = [...new Set(Object.values(FIELDS).flatMap((f) => f.options))];
 const KEYS = {
-  spec: ["version", "frame", "facts", "product", "theme", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience", "motion"],
+  spec: ["version", "frame", "facts", "product", "theme", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience", "motion", "ground", "series"],
   product: ["name", "repo", "commit", "date"],
   note: ["title", "text"],
   figure: ["fits", "regions", "texts"],
@@ -64,11 +71,22 @@ const KEYS = {
     swiss: ["role", "id", "text", "x", "y", "w", "size", "align", "hot"],
     loose: ["role", "id", "text", "x", "y", "w", "size", "align", "parts", "items"],
     signal: ["role", "id", "text", "x", "y", "w", "h", "size", "align", "parts", "items"],
+    cover: ["role", "id", "text"],
   },
   ellipse: ["cx", "cy", "rx", "ry"],
+  shape: ["ops", "like", "mask", "rotate", "fit"],
+  fit: ["w", "h", "cx", "cy"],
 };
 export const ROUTE_TONES = [...TONES, "hot"];
-export const MOTION = { kinds: ["nodes", "resolve", "wipe"], frames: [8, 36], fps: [6, 24] };
+// turn is the cover's loop, 7 seconds at 24 fps, so it takes no frames or fps; the others take both.
+export const MOTION = { kinds: ["nodes", "resolve", "wipe", "turn"], frames: [8, 36], fps: [6, 24] };
+// The cover's solid and turn, each key's range. The yaw stays under 40 degrees so the form never goes edge-on.
+export const COVER_RANGES = {
+  solid: { bevel: [0, 1], depth: [0.2, 1.5], tilt: [0, 1], groove: [2, 30] },
+  turn: { yaw: [0, 40], pitch: [0, 20], lean: [-30, 30] },
+};
+const GROUND_LIST = Object.keys(COVER_GROUNDS).map((g) => `"${g}"`).join(", ");
+const STRATA_LIST = Object.keys(COVER_STRATA).map((g) => `"${g}"`).join(", ");
 
 const isStr = (v) => typeof v === "string";
 const isNum = (v) => typeof v === "number" && Number.isFinite(v);
@@ -221,13 +239,128 @@ function checkDots(f, r, err) {
   if (!Number.isInteger(r.cell) || r.cell < 8 || r.cell > 32) err(`${f}.cell: a whole number of px, 8 to 32`);
 }
 
-function checkField(f, r, err, copy) {
+// What each of a shape op's keys must hold, and how to say so.
+const OP_TYPES = {
+  point: [(v) => Array.isArray(v) && v.length === 2 && v.every(isNum), "[x, y]"],
+  positive: [(v) => isNum(v) && v > 0, "a number above 0"],
+  pair: [(v) => Array.isArray(v) && v.length === 2 && v.every((n) => isNum(n) && n > 0), "two numbers above 0"],
+  number: [isNum, "a number of degrees, clockwise from twelve o'clock"],
+  optional: [(v) => v === undefined || (isNum(v) && v >= 0), "a number, 0 or more"],
+  points: [(v) => Array.isArray(v) && v.length >= LIMITS.polygon[0] && v.length <= LIMITS.polygon[1] && v.every((p) => Array.isArray(p) && p.length === 2 && p.every(isNum)), `${LIMITS.polygon[0]} to ${LIMITS.polygon[1]} points of [x, y]`],
+  string: [(v) => isStr(v) && !!v.trim() && v.length <= LIMITS.path, `an SVG path of at most ${LIMITS.path} characters`],
+};
+
+const SHAPE_FACES = ["lit", "dim", "round"];
+const CREASE_LINE = { capsule: "r", arc: "width" };
+
+/** Rules for a drawn silhouette: each op one verb and one kind with its keys, the first an add, and something painted. */
+function checkShapeSpec(f, shape, err) {
+  if (isPlaceholder(shape)) return err(`${f}: still the placeholder; draw the silhouette as { ops: [...] } (vyo compose --field shape prints the format), or name a ready one as { "like": "<name>" } (vyo shapes lists them)`);
+  if (!isObj(shape)) return err(`${f}: must be { ops, rotate, fit }`);
+  const before = err.count();
+  unknownKeys(shape, KEYS.shape, `${f}.`, err);
+  if (shape.rotate !== undefined && !isNum(shape.rotate)) err(`${f}.rotate: a number of degrees, clockwise`);
+  if (shape.fit !== undefined) {
+    if (!isObj(shape.fit)) err(`${f}.fit: must be { w, h, cx, cy }`);
+    else {
+      unknownKeys(shape.fit, KEYS.fit, `${f}.fit.`, err);
+      for (const [k, side] of [["w", "width"], ["h", "height"]]) {
+        if (shape.fit[k] !== undefined && !inRange(shape.fit[k], ...LIMITS.fit)) err(`${f}.fit.${k}: ${LIMITS.fit[0]} to ${LIMITS.fit[1]}, a share of the sheet's ${side} (over 1 bleeds off)`);
+      }
+      for (const [k, side] of [["cx", "width"], ["cy", "height"]]) {
+        if (shape.fit[k] !== undefined && !inRange(shape.fit[k], ...LIMITS.centre)) err(`${f}.fit.${k}: ${LIMITS.centre[0]} to ${LIMITS.centre[1]}, where the centre sits as a share of the sheet's ${side}`);
+      }
+    }
+  }
+  if (shape.like !== undefined) {
+    if (!SILHOUETTES[shape.like]) return err(`${f}.like: "${shape.like}" is not a ready silhouette; use one of ${SILHOUETTE_NAMES.join(", ")} (vyo shapes describes them), or draw your own as { ops: [...] }`);
+    if (shape.ops !== undefined || shape.mask !== undefined) err(`${f}: give like, ops or mask, not two of them; like is the whole silhouette`);
+    return;
+  }
+  if (shape.mask !== undefined) {
+    // A traced shape is its image: no ops to paint over it, and no turn (turn the image itself).
+    if (shape.ops !== undefined) err(`${f}: give ops or mask, not both; a mask is the whole silhouette`);
+    if (shape.rotate !== undefined) err(`${f}.rotate: a traced mask is not turned; turn the image itself`);
+    if (err.count() !== before) return;
+    let mask;
+    try {
+      mask = shapeMask(shape);
+    } catch (e) {
+      return err(`${f}.mask: ${e.message}`);
+    }
+    if (!mask?.area) err(`${f}.mask: the image has no dark pixels on the sheet; the silhouette is its pixels darker than mid grey`);
+    return;
+  }
+  if (!Array.isArray(shape.ops) || shape.ops.length < 1 || shape.ops.length > LIMITS.ops) return err(`${f}.ops: a list of 1 to ${LIMITS.ops} ops, each { "add", "cut" or "crease": kind, ... }, or a mask: a bundled name or a path to a PNG`);
+  const kinds = Object.keys(SHAPE_KINDS).join(", ");
+  shape.ops.forEach((op, i) => {
+    const o = `${f}.ops[${i}]`;
+    if (!isObj(op)) return err(`${o}: must be { "add", "cut" or "crease": kind, ... }`);
+    const verbs = ["add", "cut", "crease"].filter((v) => op[v] !== undefined);
+    if (verbs.length !== 1) return err(`${o}: give exactly one of add, cut or crease (found ${verbs.length ? verbs.join(", ") : "none"})`);
+    const [verb, kind] = opKind(op);
+    const keys = SHAPE_KINDS[kind];
+    if (!keys) return err(`${o}.${verb}: "${kind}" is not a kind; use ${kinds}`);
+    for (const k of Object.keys(op)) if (k !== verb && k !== "rotate" && !(k === "face" && verb === "add") && !(k in keys)) err(`${o}.${k}: a ${kind} takes ${Object.keys(keys).join(", ")}${verb === "add" ? ", rotate and face" : " and rotate"}`);
+    for (const [k, type] of Object.entries(keys)) {
+      const [ok, what] = OP_TYPES[type];
+      // A crease along a capsule or an arc is its centre line, so it needs no thickness.
+      if (verb === "crease" && op[k] === undefined && CREASE_LINE[kind] === k) continue;
+      if (!ok(op[k])) err(`${o}.${k}: ${op[k] === undefined ? "missing; it " : ""}must be ${what}`);
+    }
+    if (op.face !== undefined && !SHAPE_FACES.includes(op.face)) err(`${o}.face: one of ${SHAPE_FACES.join(", ")}: a flat facet turned toward the light, away from it, or rounded (the default); only the relief style draws it`);
+    if (kind === "path" && OP_TYPES.string[0](op.d) && parsePath(op.d).error) err(`${o}.d: does not parse: ${parsePath(op.d).error}`);
+    if (op.rotate !== undefined && !isNum(op.rotate)) err(`${o}.rotate: a number of degrees, clockwise about the op's centre`);
+  });
+  if (isObj(shape.ops[0]) && shape.ops[0].cut !== undefined && shape.ops[0].add === undefined) err(`${f}.ops[0]: must be an add; a cut on an empty sheet removes nothing`);
+  if (isObj(shape.ops[0]) && shape.ops[0].crease !== undefined && shape.ops[0].add === undefined) err(`${f}.ops[0]: must be an add; a crease folds a surface the adds have drawn`);
+  if (err.count() === before && !shapeMask(shape)?.area) err(`${f}: the ops paint nothing on the sheet; the cuts remove all of it, or fit.cx and fit.cy move it off`);
+}
+
+function checkField(f, r, err, copy, frame) {
   const kind = FIELDS[r.field];
   if (!kind) return err(`${f}.field: "${r.field}" is not a field; use ${Object.keys(FIELDS).join(" or ")}`);
+  if (kind.frames && !kind.frames.includes(frame)) err(`${f}.field: a ${r.field} field draws only in the ${kind.frames.join(" or ")} frame; remove frame or set it to ${kind.frames[0]}`);
+  if (kind.options.includes("shape")) {
+    if (r.shape === undefined) err(`${f}.shape: missing; draw the silhouette as { ops: [...] } (vyo compose --field shape prints the format)`);
+    else checkShapeSpec(`${f}.shape`, r.shape, err);
+    if (frame === "cover") {
+      for (const k of ["style", "bevel", "echo"]) if (r[k] !== undefined) err(`${f}.${k}: the cover draws its own living relief; remove ${k}${k === "bevel" ? " (solid.bevel sets it)" : ""}`);
+      if (isObj(r.shape) && r.shape.fit !== undefined) err(`${f}.shape.fit: the cover sizes the form to its template; remove fit`);
+      for (const [k, ranges] of Object.entries(COVER_RANGES)) {
+        if (r[k] === undefined) continue;
+        if (!isObj(r[k])) {
+          err(`${f}.${k}: { ${Object.keys(ranges).join(", ")} }, or leave it out for the default`);
+          continue;
+        }
+        for (const key of Object.keys(r[k])) {
+          const range = ranges[key];
+          if (!range) err(`${f}.${k}.${key}: unknown field; ${k} takes ${Object.keys(ranges).join(", ")}`);
+          else if (!inRange(r[k][key], ...range)) err(`${f}.${k}.${key}: ${range[0]} to ${range[1]}`);
+        }
+      }
+    } else {
+      for (const k of ["solid", "turn"]) if (r[k] !== undefined) err(`${f}.${k}: only the cover frame turns a solid; set frame to cover or remove ${k}`);
+    }
+    if (r.style !== undefined && !SHAPE_STYLES[r.style]) err(`${f}.style: "${r.style}" is not a style; use ${Object.keys(SHAPE_STYLES).join(" or ")}, or leave it out`);
+    if (r.bevel !== undefined && !inRange(r.bevel, 0, 1)) err(`${f}.bevel: 0 to 1, the share of the shape's depth that is rounded (1 a full dome, 0.2 a flat top with soft edges)`);
+    const st = r.strata;
+    if (frame === "cover" && isStr(st)) {
+      if (!COVER_STRATA[st]) err(`${f}.strata: "${st}" is not a strata; use ${STRATA_LIST}`);
+    } else if (st !== undefined && !(isObj(st) && ((st.by === "depth" && Object.keys(st).length === 1) || (st.by === "angle" && isNum(st.angle) && Object.keys(st).length === 2)))) {
+      err(`${f}.strata: { "by": "angle", "angle": degrees } (90 stacks the parts top to bottom, 0 left to right) or { "by": "depth" } (shells from the outline in)`);
+    }
+    if (r.split !== undefined && !(Array.isArray(r.split) && r.split.length >= 1 && r.split.length <= 4 && r.split.every((id) => isStr(id) && /^area:\S+$/.test(id)))) {
+      err(`${f}.split: a list of 1 to 4 part ids, like ["area:source"], each cut into the folders inside it, or its files when it has none (vyo parts --field shape --split <id> lists the parts it gives)`);
+    }
+    if (r.echo !== undefined && (!Number.isInteger(r.echo) || r.echo < 0 || r.echo > RINGS.maxEcho)) err(`${f}.echo: a whole number of faded outlines from 0 to ${RINGS.maxEcho}`);
+    else if (r.echo && r.style !== "rings") err(`${f}.echo: only the rings style draws echoes; set style to rings or remove echo`);
+  }
   for (const k of FIELD_OPTIONS) {
     if (r[k] !== undefined && !kind.options.includes(k)) err(`${f}.${k}: a ${r.field} field has no ${k}; only ${Object.keys(FIELDS).filter((n) => FIELDS[n].options.includes(k)).join(", ")} takes it`);
   }
-  if (r.accent !== undefined && !(isStr(r.accent) && /^area:\S+$/.test(r.accent))) err(`${f}.accent: an area id like "area:lib/plan", or a glob of them; vyo parts lists the ids`);
+  if (isPlaceholder(r.accent)) err(`${f}.accent: still the placeholder; write the id of the part the product is about (compose and vyo parts list the ids)`);
+  else if (r.accent !== undefined && !(isStr(r.accent) && /^area:\S+$/.test(r.accent))) err(`${f}.accent: an area id like "area:lib/plan", or a glob of them; vyo parts lists the ids`);
   const plain = (where, v, max, what) => {
     if (!isStr(v) || !v.trim()) return err(`${where}: missing`);
     if (isPlaceholder(v)) return err(`${where}: still the placeholder; write ${what}`);
@@ -245,9 +378,9 @@ function checkField(f, r, err, copy) {
   if (r.sentence !== undefined) plain(`${f}.sentence`, r.sentence, LIMITS.sentence, "one plain sentence, or remove it");
   if (r.seed !== undefined && !(Number.isInteger(r.seed) && inRange(r.seed, 0, 2147483647))) err(`${f}.seed: a whole number, 0 to 2147483647`);
   if (r.letter !== undefined && kind.options.includes("letter") && !/^[A-Z0-9]$/.test(r.letter)) err(`${f}.letter: one character A to Z or 0 to 9`);
-  if (r.mask !== undefined && kind.options.includes("mask") && !(isStr(r.mask) && r.mask.trim())) err(`${f}.mask: a path to a PNG`);
   if (r.symbols !== undefined && kind.options.includes("symbols") && typeof r.symbols !== "boolean") err(`${f}.symbols: true or false`);
-  plain(`${f}.fits`, r.fits, LIMITS.fits, "one sentence on why this field matches the product's story");
+  // A cover's picture is its own case, so it needs no fits.
+  if (frame !== "cover" || r.fits !== undefined) plain(`${f}.fits`, r.fits, LIMITS.fits, "one sentence on why this field matches the product's story");
   const whole = (k) => {
     const [lo, hi] = LIMITS[k];
     if (r[k] !== undefined && !(Number.isInteger(r[k]) && inRange(r[k], lo, hi))) err(`${f}.${k}: a whole number, ${lo} to ${hi}`);
@@ -259,7 +392,7 @@ function checkField(f, r, err, copy) {
 
 const sentences = (text) => text.split(/[.!?]+(?:\s+|$)/).filter((x) => x.trim()).length;
 
-function checkText(f, t, err, copy, frame) {
+function checkText(f, t, err, copy, frame, placed) {
   const roles = FRAME_ROLES[frame];
   const role = roles[t.role];
   if (!role) return err(`${f}.role: "${t.role}" is not a role in the ${frame} frame; use ${Object.keys(roles).join(", ")}`);
@@ -293,9 +426,13 @@ function checkText(f, t, err, copy, frame) {
       copy.push([`${f}.text`, t.text.replace(/\*\*/g, "")]);
     }
   }
+  if (frame === "cover") return;
   if (t.hot !== undefined && (t.role !== "label" || typeof t.hot !== "boolean")) err(`${f}.hot: only a label can be hot`);
-  if (!inRange(t.x, 0, SHEET.width) || !inRange(t.y, 0, SHEET.height)) err(`${f}: x must be 0 to ${SHEET.width} and y 0 to ${SHEET.height}`);
-  if (!inRange(t.w, 16, SHEET.width)) err(`${f}.w: 16 to ${SHEET.width}`);
+  // Around a drawn shape the engine places a block that leaves out x and y; w, if given, is the widest it may be.
+  const auto = placed && t.x === undefined && t.y === undefined;
+  if (placed && (t.x === undefined) !== (t.y === undefined)) err(`${f}: give x and y together, or leave both out and the engine places the block`);
+  else if (!auto && (!inRange(t.x, 0, SHEET.width) || !inRange(t.y, 0, SHEET.height))) err(`${f}: x must be 0 to ${SHEET.width} and y 0 to ${SHEET.height}`);
+  if (!(placed && t.w === undefined) && !inRange(t.w, 16, SHEET.width)) err(`${f}.w: 16 to ${SHEET.width}`);
   const [, lo, hi] = sizeRange({ frame }, t);
   if (t.size !== undefined && !inRange(t.size, lo, hi)) err(`${f}.size: ${lo} to ${hi}`);
   if (t.align !== undefined && !["left", "right", "center"].includes(t.align)) err(`${f}.align: left, right or center`);
@@ -329,23 +466,30 @@ function checkFigure(fig, err, copy, frame) {
       if (r.kind === "fill") checkFill(f, r, err);
       else if (r.kind === "dots") checkDots(f, r, err);
       else if (r.kind === "routes") checkRoutes(f, r, err);
-      else checkField(f, r, err, copy);
+      else checkField(f, r, err, copy, frame);
       for (const [k, list] of [["words", r.words], ["lines", r.lines]]) if (Array.isArray(list) && !list.some(isPlaceholder)) list.forEach((w, j) => isStr(w) && copy.push([`${f}.${k}[${j}]`, w]));
     });
 
   if (Array.isArray(fig.regions) && fig.regions.filter((r) => isObj(r) && r.kind === "field").length > LIMITS.fields) err(`figure.regions: at most ${LIMITS.fields} field region`);
   if (frame === "loose" && Array.isArray(fig.regions) && !hasField(fig)) err("figure.regions: the loose frame draws a field; add a field region, or set frame to swiss for fill and dots figures");
+  if (frame === "cover" && Array.isArray(fig.regions) && !(fig.regions.length === 1 && isObj(fig.regions[0]) && fig.regions[0].kind === "field" && fig.regions[0].field === "shape")) {
+    err('figure.regions: the cover draws exactly one region, { "kind": "field", "field": "shape", ... }; vyo compose --frame cover writes it');
+  }
   if (frame === "signal" && Array.isArray(fig.regions) && !hasField(fig) && !fig.regions.some((r) => isObj(r) && r.kind === "fill")) {
     err("figure.regions: the signal frame draws a field or a fill; add one, or set frame to swiss");
   }
 
   if (!Array.isArray(fig.texts) || fig.texts.length < 1 || fig.texts.length > LIMITS.texts) return err(`figure.texts: 1 to ${LIMITS.texts} texts`);
+  const placed = RECORD_FRAMES.includes(frame) && Array.isArray(fig.regions) && fig.regions.some((r) => isObj(r) && r.kind === "field" && r.field === "shape");
   fig.texts.forEach((t, i) => {
     const f = `figure.texts[${i}]`;
     if (!isObj(t)) return err(`${f}: must be a text`);
-    unknownKeys(t, KEYS.text[frame], `${f}.`, err);
+    if (frame === "cover") {
+      for (const k of Object.keys(t)) if (!KEYS.text.cover.includes(k)) err(`${f}.${k}: the cover places every block itself; remove ${k}`);
+    } else unknownKeys(t, KEYS.text[frame], `${f}.`, err);
     idOk(f, t.id);
-    checkText(f, t, err, copy, frame);
+    // A highlighter mark lies over type at a spot the agent picks, so it always has x and y.
+    checkText(f, t, err, copy, frame, placed && t.role !== "mark");
   });
   for (const [role, { count: [lo, hi] }] of Object.entries(FRAME_ROLES[frame])) {
     const n = fig.texts.filter((t) => isObj(t) && t.role === role).length;
@@ -374,6 +518,7 @@ function hotPool(fig) {
 export function validateSpec(spec) {
   const errors = [];
   const err = (m) => errors.push(m);
+  err.count = () => errors.length;
   if (!isObj(spec)) return ["spec: must be a JSON object"];
   unknownKeys(spec, KEYS.spec, "", err);
 
@@ -386,15 +531,27 @@ export function validateSpec(spec) {
   if (!isObj(p)) err("product: missing");
   else {
     unknownKeys(p, KEYS.product, "product.", err);
-    if (!isStr(p.name) || !p.name.trim() || isPlaceholder(p.name)) err("product.name: missing");
+    if (isPlaceholder(p.name)) err("product.name: still the placeholder; write the name customers see, as the product's docs write it");
+    else if (!isStr(p.name) || !p.name.trim()) err("product.name: missing");
     else if (p.name.length > LIMITS.name) err(`product.name: ${p.name.length} characters; at most ${LIMITS.name}`);
     if (!isStr(p.repo) || !p.repo || p.repo.includes("/")) err("product.repo: must be the folder name of the project");
     if (p.commit !== undefined && !(isStr(p.commit) && /^[0-9a-f]{4,40}$/.test(p.commit))) err("product.commit: must be a short commit hash");
     if (!isStr(p.date) || !/^\d{4}-\d{2}-\d{2}$/.test(p.date)) err("product.date: must be YYYY-MM-DD");
   }
 
-  if (!THEMES.includes(spec.theme)) err(`theme: "${spec.theme}" is not a theme; use light or dark`);
-  if (spec.accent !== undefined && !(isStr(spec.accent) && /^#[0-9a-f]{6}$/i.test(spec.accent))) err("accent: a hex colour like #9284FF");
+  if (frame === "cover") {
+    if (spec.theme !== undefined) err(`theme: the cover takes a ground instead; remove theme and set ground to ${GROUND_LIST}`);
+    if (spec.accent !== undefined) err("accent: the cover's accent is always its ground's orange; remove accent");
+    if (!isStr(spec.ground) || !COVER_GROUNDS[spec.ground]) {
+      const free = isStr(spec.ground) && /^#|rgb|hsl/i.test(spec.ground);
+      err(`ground: ${spec.ground === undefined ? "missing" : `"${spec.ground}" is not a ground${free ? "; a free colour is not offered" : ""}`}; use ${GROUND_LIST}`);
+    }
+    if (spec.series !== undefined && !(isStr(spec.series) && /^\d{1,2}\/\d{1,2}$/.test(spec.series))) err('series: the cover\'s place in a series, like "02/04", or leave it out');
+  } else {
+    for (const k of ["ground", "series"]) if (spec[k] !== undefined) err(`${k}: only the cover frame takes ${k}; set frame to cover or remove ${k}`);
+    if (!THEMES.includes(spec.theme)) err(`theme: "${spec.theme}" is not a theme; use light or dark`);
+  }
+  if (frame !== "cover" && spec.accent !== undefined && !(isStr(spec.accent) && /^#[0-9a-f]{6}$/i.test(spec.accent))) err("accent: a hex colour like #9284FF");
 
   const copy = [];
   const field = (name, v, max) => {
@@ -420,7 +577,9 @@ export function validateSpec(spec) {
     }
   }
 
-  if (RECORD_FRAMES.includes(frame)) {
+  if (frame === "cover") {
+    for (const k of ["notes", "notBuilt", "record"]) if (spec[k] !== undefined) err(`${k}: the cover's template has no ${k}; remove it`);
+  } else if (RECORD_FRAMES.includes(frame)) {
     for (const k of ["notes", "notBuilt"]) if (spec[k] !== undefined) err(`${k}: the ${frame} frame has no footer; write paragraphs in figure.texts, or set frame to swiss`);
     if (spec.record !== undefined && !["bottom", "left"].includes(spec.record)) err('record: "bottom" or "left", or leave it out and the engine picks');
   } else {
@@ -447,7 +606,14 @@ export function validateSpec(spec) {
     if (!isObj(spec.motion)) err("motion: must be { kind, frames, fps }");
     else {
       unknownKeys(spec.motion, KEYS.motion, "motion.", err);
-      if (!MOTION.kinds.includes(spec.motion.kind)) err(`motion.kind: "${spec.motion.kind}" is not a motion; use ${MOTION.kinds.join(" or ")}`);
+      const kinds = frame === "cover" ? ["turn"] : MOTION.kinds.filter((k) => k !== "turn");
+      if (!kinds.includes(spec.motion.kind)) err(`motion.kind: "${spec.motion.kind}" is not a motion; use ${kinds.join(" or ")}`);
+    }
+  }
+  if (isObj(spec.motion) && spec.motion.kind === "turn") {
+    for (const k of ["frames", "fps"]) if (spec.motion[k] !== undefined) err(`motion.${k}: a turn is a 7 second loop at 24 fps; remove ${k}`);
+  } else if (spec.motion !== undefined) {
+    if (isObj(spec.motion)) {
       const [flo, fhi] = MOTION.frames;
       if (!Number.isInteger(spec.motion.frames) || !inRange(spec.motion.frames, flo, fhi)) err(`motion.frames: a whole number, ${flo} to ${fhi}`);
       const [plo, phi] = MOTION.fps;
@@ -469,15 +635,15 @@ const hold = (prompt) => `${PLACEHOLDER} ${prompt}`;
 
 /**
  * The figure `compose` writes by default: one field region and the three usual texts, placed where the field
- * leaves room. Parts with unplain names get a placeholder in `names`.
+ * leaves room. Every part gets a placeholder in `names`.
  * @param {keyof typeof FIELDS} field
  * @param {number} floor
- * @param {{ accent?: string, unplain: { id: string, name: string }[] }} o
+ * @param {{ accent?: string, parts: { id: string, name: string }[] }} o
  */
-function fieldFigure(field, floor, { accent, unplain, seed, letter }) {
+function fieldFigure(field, floor, { accent, parts, seed, letter }) {
   const at = FIELDS[field].texts(floor);
   return {
-    regions: [fieldRegion(field, { accent, unplain, seed, letter })],
+    regions: [fieldRegion(field, { accent, parts, seed, letter })],
     texts: [
       { role: "masthead", id: "masthead", x: 50, y: 36, w: 490 },
       { role: "headline", id: "headline", ...at.headline },
@@ -489,7 +655,7 @@ function fieldFigure(field, floor, { accent, unplain, seed, letter }) {
 const quoted = (words) => words.map((w) => `"${w}"`).join(" or ");
 
 /** The field region a scaffold starts from, in either frame. */
-function fieldRegion(field, { accent, unplain, seed, letter }) {
+function fieldRegion(field, { accent, parts, seed, letter }) {
   return {
     kind: "field",
     id: field,
@@ -498,26 +664,38 @@ function fieldRegion(field, { accent, unplain, seed, letter }) {
     ...(accent ? { accent } : {}),
     ...(seed !== undefined ? { seed } : {}),
     ...(letter ? { letter } : {}),
-    ...(unplain.length ? { names: Object.fromEntries(unplain.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])) } : {}),
+    ...(parts.length ? { names: Object.fromEntries(parts.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])) } : {}),
+    ...(FIELDS[field].options.includes("shape") ? { shape: hold("the silhouette as { ops: [...] }, in the format vyo compose --field shape prints") } : {}),
     ...(FIELDS[field].options.includes("sentence") ? { sentence: hold(`a sentence woven in every ${WAVE.every}th row, at most ${LIMITS.sentence} characters, or remove it`) } : {}),
   };
 }
 
+// A shape's legend by style: what one part is drawn as, and the measure in the words the legend check wants.
+const SHAPE_LEGEND = {
+  rings: { unit: "ring", measure: "its area as big as its share of the code" },
+  symbols: { unit: "band of marks", measure: "as big as its share of the code" },
+  relief: { unit: "layer", measure: "as big as its code" },
+};
+
 /**
  * The loose figure `compose` writes: the field, and the label, headline, legend, paragraph and parts list in
  * the corners the field leaves empty (`places`, from lib/frame.mjs). The legend's placeholder spells out its rule.
- * @param {{ accent?: string, accentNames: string[], unplain: { id: string, name: string }[], places: Record<string, object> }} o
+ * @param {{ accent?: string, accentNames: string[], parts: { id: string, name: string }[], places: Record<string, object> }} o
  */
-function looseFigure(field, { accent, accentNames, unplain, places, seed, letter }) {
-  const name = accentNames.length ? quoted(accentNames) : "the accent part";
+function looseFigure(field, { accent, split, style, accentNames, parts, places, seed, letter }) {
+  const name = accentNames.length ? quoted(accentNames) : "the accent part by the plain name you give it in names";
   const measure = FIELDS[field].measure.map(quoted).join(", and ");
+  const look = field === "shape" && SHAPE_LEGEND[style ?? DEFAULT_STYLE];
+  const legend = look
+    ? `at most 2 sentences and ${FRAME_ROLES.loose.legend.max} characters, like "Every ${look.unit} is a part of <product>, ${look.measure}. The orange ${look.unit} is <the accent's plain name>."`
+    : `what the picture encodes, at most 2 sentences and ${FRAME_ROLES.loose.legend.max} characters: name ${name} and the measure (${measure})`;
   return {
-    regions: [fieldRegion(field, { accent, unplain, seed, letter })],
+    regions: [{ ...fieldRegion(field, { accent, parts, seed, letter }), ...(split ? { split } : {}), ...(style ? { style } : {}) }],
     texts: [
       { role: "label", id: "label", ...places.label },
       { role: "headline", id: "headline", ...places.headline },
-      { role: "legend", id: "legend", ...places.legend, text: hold(`what the picture encodes, at most 2 sentences and ${FRAME_ROLES.loose.legend.max} characters: name ${name} and the measure (${measure})`) },
-      ...(places.paragraph ? [{ role: "paragraph", id: "paragraph", ...places.paragraph, text: hold(`what the product does for its user, at most 2 sentences and ${FRAME_ROLES.loose.paragraph.max} characters, or remove it`) }] : []),
+      { role: "legend", id: "legend", ...places.legend, text: hold(legend) },
+      ...(places.paragraph ? [{ role: "paragraph", id: "paragraph", ...places.paragraph, text: hold(`what the product does for its user, at most 2 sentences and ${FRAME_ROLES.loose.paragraph.max} characters, or remove the block`) }] : []),
       ...(places.list ? [{ role: "list", id: "list", ...places.list, parts: true }] : []),
     ],
   };
@@ -543,11 +721,11 @@ function blankFigure(fig) {
  * where the field's registry entry puts them, above a footer of notes.
  * @param {{ hash: string, repo: { name: string } }} facts
  * @param {{ frame?: "loose" | "swiss", theme: "light" | "dark", commit?: string, date: string, floor: number, preset?: Spec,
- *           field?: keyof typeof FIELDS, accent?: string, accentNames?: string[], unplain?: { id: string, name: string }[],
+ *           field?: keyof typeof FIELDS, accent?: string, split?: string[], style?: string, accentNames?: string[], parts?: { id: string, name: string }[],
  *           places?: Record<string, object> }} o
  * @returns {Spec}
  */
-export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", theme, commit, date, floor, field, accent, accentNames = [], unplain = [], places, seed, letter }) {
+export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", theme, commit, date, floor, field, accent, split, style, accentNames = [], parts = [], places, seed, letter }) {
   if (!preset && !field) throw new Error("scaffoldSpec needs a field");
   const loose = RECORD_FRAMES.includes(frame);
   const notes = preset ? preset.notes.length : 3;
@@ -560,12 +738,46 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
     ...(preset?.accent ? { accent: preset.accent } : {}),
     headline: hold(`one plain sentence about the outcome, at most ${LIMITS.headline} characters`),
     ...(preset ? { hot: hold("the one word set in the accent colour: a word of a fill region, a dots line or a hot label") } : {}),
-    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, accentNames, unplain, places, seed, letter }) : fieldFigure(field, floor, { accent, unplain, seed, letter }),
+    figure: preset ? blankFigure(preset.figure) : loose ? looseFigure(field, { accent, split, style, accentNames, parts, places, seed, letter }) : fieldFigure(field, floor, { accent, parts, seed, letter }),
     ...(loose
       ? {}
       : {
           notes: Array.from({ length: notes }, () => ({ title: hold(`at most ${LIMITS.noteTitle} characters`), text: hold(`at most ${LIMITS.noteText} characters`) })),
           notBuilt: [],
         }),
+  };
+}
+
+/**
+ * The spec `compose --frame cover` writes: the template's words, the names, the accent and the shape left to write,
+ * and everything else a working default: the navy ground, the outline strata and the turn.
+ * @param {{ hash: string, repo: { name: string } }} facts
+ * @param {{ commit?: string, date: string, accent?: string, split?: string[], parts: { id: string, name: string }[] }} o
+ */
+export function coverScaffold(facts, { commit, date, accent, split, parts, strata = "outline", like }) {
+  const region = { shape: like ? { like } : undefined, strata };
+  return {
+    version: 3,
+    frame: "cover",
+    facts: facts.hash,
+    product: { name: hold("the name customers see, as the product's docs write it"), repo: facts.repo.name, ...(commit ? { commit } : {}), date },
+    ground: "navy",
+    headline: hold(`one plain sentence about what the product does for a person, at most ${LIMITS.headline} characters`),
+    figure: {
+      regions: [
+        {
+          kind: "field",
+          id: "shape",
+          field: "shape",
+          accent: accent ?? hold("the id of the part the product is about, from the list compose printed"),
+          ...(split ? { split } : {}),
+          names: Object.fromEntries(parts.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])),
+          shape: like ? { like } : hold(`{ "like": "<name>" }, one of ${SILHOUETTE_NAMES.join(", ")}`),
+          strata,
+        },
+      ],
+      texts: [{ role: "legend", id: "legend", text: hold(coverLegend(region, "<product>", "<the accent's plain name>")) }],
+    },
+    motion: { kind: "turn" },
   };
 }

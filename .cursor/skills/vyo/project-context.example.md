@@ -32,9 +32,10 @@ Copy this file into the target app's repo beside the skill, at `.cursor/skills/v
 
 ## Field preference
 
-<!-- wave | terrain | river | radial | sphere | scatter | shatter | glyph | bleed | bands | spiral | contour | trace.
-     Wave is not the fallback. Leave blank and the skill picks an unused primitive (vyo shapes), never wave
-     unless you write it here. -->
+<!-- shape | wave | terrain | river | radial | sphere | scatter | shatter | glyph | bleed | slabs | spiral | contour.
+     shape for one object that stands for the product (name it under "The picture"); the rest are generated.
+     Wave is not the fallback. Leave blank and the skill picks: a drawn shape when one object fits the story,
+     else an unused generated field (vyo shapes), never wave unless you write it here. -->
 
 ## Accent part
 
@@ -42,7 +43,7 @@ Copy this file into the target app's repo beside the skill, at `.cursor/skills/v
 
 ## The picture
 
-<!-- Optional. Fill this only if you want a drawn silhouette instead of a field.
+<!-- Optional. Fill this only if you want a drawn silhouette: the shape field cuts it into the parts.
      One sentence describing the silhouette, and what it acts out.
      e.g. "An hourglass: everything we juggle in a week pours through one plan into a shopping list."
      Leave blank to let the skill invent one from the main moment. -->

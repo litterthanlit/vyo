@@ -33,6 +33,8 @@ const GLYPHS = {
 };
 
 const F = JSON.parse(document.getElementById("figure").textContent);
+// A traced shape's image comes in the figure, read by render in Node.
+setMaskImages((name) => F.images[name]);
 const isHot = (w) => !!F.hot && window.hasWord(w, F.hot);
 
 function el(className, data, style, text) {
@@ -57,18 +59,41 @@ function drawRow(S, r, data, height, weight, tone) {
     "row",
     data,
     {
-      fontSize: r.size + "px", lineHeight: height + "px", height: height + "px",
+      fontSize: r.size + "px", lineHeight: (r.lineHeight ?? height) + "px", height: height + "px",
       left: r.x + "px", top: r.y + "px", width: Math.ceil(r.width) + 1 + "px", letterSpacing: r.spacing + "px",
       color: `var(--${tone})`, fontWeight: weight, opacity: r.alpha ?? 1,
     },
-    text.slice(0, -1),
+    r.spans ? undefined : text.slice(0, -1),
   );
-  // The last letter carries no tracking, so the letters span the run exactly.
-  const last = document.createElement("span");
-  last.style.letterSpacing = "0";
-  last.textContent = text.slice(-1);
-  e.appendChild(last);
+  // A row with spans shades its letters span by span; its width leaves room for the last letter's tracking.
+  for (const s of r.spans ?? []) {
+    const span = document.createElement("span");
+    span.style.cssText = `opacity:${s.alpha};font-weight:${s.weight};color:var(--${s.tone})${s.glow ? `;text-shadow:0 0 ${s.glow}px var(--${s.tone})` : ""}`;
+    span.textContent = s.text.replace(/ /g, " ");
+    e.appendChild(span);
+  }
+  if (!r.spans) {
+    // The last letter carries no tracking, so the letters span the run exactly.
+    const last = document.createElement("span");
+    last.style.letterSpacing = "0";
+    last.textContent = text.slice(-1);
+    e.appendChild(last);
+  }
   S.appendChild(e);
+}
+
+/** A row set letter by letter along a curve: each glyph at its own origin and angle, from a field layout. */
+function drawGlyphs(svg, r, data) {
+  const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  t.setAttribute("class", "row");
+  for (const [k, v] of Object.entries(data)) if (v !== false && v !== undefined) t.dataset[k] = v === true ? "" : v;
+  const f = (n) => Math.round(n * 100) / 100;
+  t.setAttribute("x", r.glyphs.map((g) => f(g[0])).join(" "));
+  t.setAttribute("y", r.glyphs.map((g) => f(g[1])).join(" "));
+  t.setAttribute("rotate", r.glyphs.map((g) => f(g[2])).join(" "));
+  Object.assign(t.style, { fontSize: r.size + "px", fontWeight: r.weight ?? 400, fill: `var(--${r.tone})`, color: `var(--${r.tone})`, whiteSpace: "pre" });
+  t.textContent = r.text;
+  svg.appendChild(t);
 }
 
 function drawFill(S, region, blocks) {
@@ -81,13 +106,51 @@ function drawFill(S, region, blocks) {
   return { id: region.id, kind: "fill", bbox: bbox(shapeRings(region)), rows: rows.length };
 }
 
+/** The sheet's own marks, each blanked within 10px across or 8px down of a block of words or the record line. */
+function drawSheet(S, region, frame) {
+  const origin = S.getBoundingClientRect();
+  const record = S.querySelector("[data-block=record]")?.getBoundingClientRect();
+  const clear = [...frame.blocks, ...(record ? [{ left: record.left - origin.left, top: record.top - origin.top, right: record.right - origin.left, bottom: record.bottom - origin.top }] : [])];
+  const near = (x, y) => clear.some((b) => x > b.left - 10 && x < b.right + 10 && y > b.top - 8 && y < b.bottom + 8);
+  for (const r of FIELDS[region.field].sheet?.(region, region.parts, frame) ?? []) {
+    const cw = r.width / r.text.length;
+    const e = el("sheet-marks", {}, { position: "absolute", fontSize: r.size + "px", lineHeight: r.lineHeight + "px", height: r.height + "px", left: r.x + "px", top: r.y + "px", letterSpacing: r.spacing + "px", whiteSpace: "pre" });
+    e.setAttribute("aria-hidden", "true");
+    let k = 0;
+    for (const s of r.spans) {
+      const span = document.createElement("span");
+      span.style.cssText = `opacity:${s.alpha};font-weight:${s.weight};color:var(--${s.tone})`;
+      span.textContent = [...s.text].map((ch) => (near(r.x + (k++ + 0.5) * cw, r.y + r.height / 2) ? " " : ch)).join("");
+      e.appendChild(span);
+    }
+    S.appendChild(e);
+  }
+}
+
 function drawField(S, region, blocks) {
-  const items = FIELDS[region.field].layout(region, region.parts, { floor: F.floor, mirror: F.mirror, theme: F.theme, frame: F.frame, blocks, measure });
+  const frame = { floor: F.floor, mirror: F.mirror, theme: F.theme, frame: F.frame, blocks, measure };
+  drawSheet(S, region, frame);
+  for (const g of FIELDS[region.field].ground?.(region, region.parts, frame) ?? []) {
+    // A ground may bring its own path, traced from the field, in place of its rows.
+    const d = g.path ?? runsPath(g.rows);
+    if (!d) continue;
+    const fill = el("ground", { region: region.id, part: g.part ?? false, hot: g.hot }, { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", background: `var(--${g.tone})`, clipPath: `path("${d}")`, opacity: g.alpha ?? 1 });
+    // A blur on the clipped fill itself would be clipped too, so a soft ground blurs a wrapper.
+    const soft = g.blur && el("", {}, { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", filter: `blur(${g.blur}px)` });
+    if (soft) soft.appendChild(fill);
+    S.appendChild(soft || fill);
+  }
+  const items = FIELDS[region.field].layout(region, region.parts, frame);
   // On signal paper the accent part is ink on a highlighter block of the signal colour, as lime type would not read.
   const highlight = F.frame === "signal" && F.theme === "light";
+  const set = items.some((r) => r.glyphs) && S.appendChild(document.createElementNS("http://www.w3.org/2000/svg", "svg"));
+  if (set) Object.assign(set.style, { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", overflow: "visible", fontFamily: '"Commit Mono", monospace' });
   for (const r of items) {
-    drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, 400, r.tone);
-    if (highlight && r.hot) S.lastChild.style.background = "var(--hot)";
+    if (r.glyphs) drawGlyphs(set, r, { word: r.word, region: region.id, part: r.part, hot: r.hot });
+    else {
+      drawRow(S, r, { word: r.word, region: region.id, part: r.part, hot: r.hot }, r.height, r.weight ?? 400, r.tone);
+      if (highlight && r.hot) S.lastChild.style.background = "var(--hot)";
+    }
   }
   const box = items.length ? bbox([items.flatMap((r) => [[r.x, r.y], [r.x + r.width, r.y + r.height]])]) : { left: 0, top: 0, right: 0, bottom: 0 };
   return { id: region.id, kind: "field", bbox: box, rows: items.length };
@@ -165,6 +228,10 @@ function drawDots(S, region) {
   await window.fontsReady;
   const S = document.querySelector(".sheet");
   for (const m of S.querySelectorAll("[data-role=masthead]")) window.fitWidth(m, parseFloat(m.style.width));
+  for (const h of S.querySelectorAll("[data-halo]")) {
+    const b = S.querySelector(`[data-block="${h.dataset.halo}"]`);
+    Object.assign(h.style, { fontSize: b.style.fontSize, lineHeight: b.style.lineHeight });
+  }
   const origin = S.getBoundingClientRect();
   const blocks = [...S.querySelectorAll("[data-role]")].map((b) => {
     const range = document.createRange();

@@ -10,8 +10,11 @@ import { frameOf, hasRecord, textSize, lineHeight, ruleText, recordSpot, RECORD 
 import { bandCounts, bandLine, provenance } from "./band.mjs";
 import { regionParts, partTies } from "./parts.mjs";
 import { FIELDS } from "./fields/index.mjs";
-import { traceChords } from "./fields/png.mjs";
+import { loadMaskImage } from "./png-mask.mjs";
 import { launchChromium } from "./browser.mjs";
+import { placeTexts } from "./place.mjs";
+import { coverPage, COVER_FONTS } from "./cover-render.mjs";
+import { COVER, COVER_GROUNDS } from "./cover.mjs";
 
 const TOOLS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const FONT_DIR = path.join(TOOLS, "..", "fonts");
@@ -21,9 +24,9 @@ const FONTS = [
   ["Newsreader", 400, "newsreader-400.ttf", "font/ttf"],
 ];
 export const FONT_FACES = FONTS.map(([family, weight]) => ({ family, weight }));
+/** The faces a poster in `frame` loads. */
+export const fontFacesOf = (frame) => (frame === "cover" ? COVER_FONTS : FONTS).map(([family, weight]) => ({ family, weight }));
 const MAST_FONT = `"Inter Display", Inter, "Helvetica Neue", Helvetica, Arial, sans-serif`;
-// A paper halo drawn as shadows: unlike a text stroke, it never paints over the line above.
-const HALO = [[0, 5], [0, -5], [5, 0], [-5, 0], [4, 4], [-4, 4], [4, -4], [-4, -4]].map(([x, y]) => `${x}px ${y}px 2px var(--paper)`).join(",");
 export { SHEET };
 
 // Theme tokens. Rows, dots and texts use only these; `accent` replaces hot.
@@ -34,12 +37,16 @@ export const THEMES = {
   "signal-dark": { paper: "#111111", ink: "#F4F0E6", soft: "#6A675F", mid: "#A8A49A", cold: "#3D4A5C", cool: "#6B7C94", hot: "#C8FF00" },
 };
 export const tokensOf = (spec) => {
+  if (frameOf(spec) === "cover") {
+    const g = COVER_GROUNDS[spec.ground];
+    return { paper: g.ground, ink: g.ink, hot: g.accent };
+  }
   const key = frameOf(spec) === "signal" ? `signal-${spec.theme}` : spec.theme;
   return { ...THEMES[key], ...(spec.accent ? { hot: spec.accent.toUpperCase() } : {}) };
 };
 /** The colour tokens each field region adds for its own rows, by region id. */
 export const fieldTokensOf = (spec) =>
-  Object.fromEntries(spec.figure.regions.filter((r) => r.kind === "field").map((r) => [r.id, FIELDS[r.field].tokens(spec.theme, frameOf(spec))]));
+  frameOf(spec) === "cover" ? {} : Object.fromEntries(spec.figure.regions.filter((r) => r.kind === "field").map((r) => [r.id, FIELDS[r.field].tokens(spec.theme, frameOf(spec))]));
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const hotStop = `<span data-hot data-owner="render" style="color:var(--hot)">.</span>`;
@@ -97,6 +104,12 @@ ${notBuilt.length ? `<div data-block="notBuilt" data-owner="notBuilt" style="${m
 </div>`;
 }
 
+// The halo: paper shadows at 6px and 3px all round, close enough together to read as one outline.
+const HALO = [6, 3]
+  .flatMap((r) => Array.from({ length: r * 4 }, (_, i) => [r * Math.cos((i * Math.PI) / (r * 2)), r * Math.sin((i * Math.PI) / (r * 2))]))
+  .map(([x, y]) => `${x.toFixed(2)}px ${y.toFixed(2)}px 0 var(--paper)`)
+  .join(",");
+
 const SERIF = `font-family:${esc(`"Newsreader", serif`)}`;
 // Per frame, per role: the block's own CSS and what it prints. Sizes and line heights are in lib/frame.mjs.
 const ROLE_PAGE = {
@@ -121,7 +134,7 @@ const ROLE_PAGE = {
     paragraph: { style: `font-family:${esc(MAST_FONT)};letter-spacing:-.01em`, body: (spec, t) => line(t.text) },
     legend: { style: "letter-spacing:.04em", body: (spec, t) => line(t.text) },
     list: {
-      style: `white-space:pre;font-family:${esc(MAST_FONT)};font-weight:700;letter-spacing:-.02em;text-transform:uppercase;-webkit-text-stroke:0;text-shadow:${HALO}`,
+      style: `white-space:pre;font-family:${esc(MAST_FONT)};font-weight:700;letter-spacing:-.02em;text-transform:uppercase`,
       body: (spec, t, facts) => listItems(spec, t, facts).map((s, i) => `${"\u00a0".repeat((i % 4) * 4)}\u2022\u2009${esc(s)}`).join("\n"),
     },
     rule: { style: "white-space:nowrap;overflow:hidden", body: (spec, t) => esc(ruleText(t)) },
@@ -147,7 +160,13 @@ function textBlock(spec, t, facts) {
   const style = `left:${t.x}px;top:${t.y}px;width:${t.w}px;${box}text-align:${t.align || "left"};${
     hot && t.role !== "mark" ? "font-weight:700;letter-spacing:.18em;color:var(--hot)" : own
   }`;
-  return `<div class="t" data-block="${esc(t.id)}" data-role="${t.role}" data-owner="figure"${hot ? " data-hot" : ""}${t.role === "mark" ? ` data-mark-w="${t.w}"` : ""} style="${style}">${body(spec, t, facts)}</div>`;
+  const inner = body(spec, t, facts);
+  const block = `<div class="t" data-block="${esc(t.id)}" data-role="${t.role}" data-owner="figure"${hot ? " data-hot" : ""}${t.role === "mark" ? ` data-mark-w="${t.w}"` : ""} style="${style}">${inner}</div>`;
+  // A mark is a highlighter laid over the type, so it has no halo of its own.
+  if (t.role === "mark") return block;
+  // The halo is a copy of the block under every block's letters, so no block's halo covers another's descenders.
+  return `<div class="t" data-halo="${esc(t.id)}" aria-hidden="true" style="${style}">${inner}</div>
+${block}`;
 }
 
 /** The record line's words, without the accent full stop render adds. */
@@ -155,18 +174,25 @@ export const recordText = (product) => `${provenance(product)}. Drawn by Vyo`;
 
 /** The field's rows as Node lays them out with Commit Mono's fixed advance, around `blocks`. */
 export function fieldItems(spec, region, facts, blocks, measure = fixedMeasure) {
-  const r = fieldInput(region, facts, spec);
+  const r = fieldInput(region, facts);
   return FIELDS[region.field].layout(r, r.parts, { ...fieldFrame(spec), blocks, measure });
 }
 
-/** A field region as its layout reads it: parts, import ties, and for a trace the chords of its PNG. */
-function fieldInput(region, facts, spec) {
+/** The fills a field draws under its rows (only a shape has any), as its style lays them out. */
+export function fieldGround(spec, region, facts) {
+  const ground = FIELDS[region.field].ground;
+  if (!ground) return [];
+  const r = fieldInput(region, facts);
+  return ground(r, r.parts, { ...fieldFrame(spec), blocks: [], measure: fixedMeasure });
+}
+
+/** Ground fills as one rect per span, for the corners and the record line to keep clear of. */
+export const groundRects = (ground) => ground.flatMap((g) => g.rows.flatMap(([y, spans]) => spans.map(([l, r]) => ({ left: l, top: y, right: r, bottom: y + 1 }))));
+
+/** A field region as its layout reads it: with its parts and the imports that tie them, both from facts.json. */
+function fieldInput(region, facts) {
   const parts = regionParts(region, facts);
-  const base = { ...region, parts, ties: partTies(parts, facts) };
-  if (region.field !== "trace") return base;
-  const frame = spec ? fieldFrame(spec) : { floor: 1190, mirror: false };
-  const traced = traceChords(region, frame.floor, frame.mirror);
-  return { ...base, chords: traced.chords, pitch: traced.pitch };
+  return { ...region, parts, ties: partTies(parts, facts) };
 }
 
 /**
@@ -174,8 +200,9 @@ function fieldInput(region, facts, spec) {
  * the centre of the accent part's rows (of all rows when nothing is hot). Compose, sketch and the record read it.
  */
 export function fieldSpace(spec, facts) {
-  const items = spec.figure.regions.filter((r) => r.kind === "field").flatMap((r) => fieldItems(spec, r, facts, []));
-  const rects = items.map((it) => ({ left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + it.height }));
+  const fields = spec.figure.regions.filter((r) => r.kind === "field");
+  const items = fields.flatMap((r) => fieldItems(spec, r, facts, []));
+  const rects = [...items.map((it) => ({ left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + it.height })), ...fields.flatMap((r) => groundRects(fieldGround(spec, r, facts)))];
   const hot = items.some((it) => it.hot) ? items.filter((it) => it.hot) : items;
   const mean = (f) => hot.reduce((s, it) => s + f(it), 0) / (hot.length || 1);
   return { rects, corners: corners(rects), accent: { x: mean((it) => it.x + it.width / 2), y: mean((it) => it.y + it.height / 2) } };
@@ -223,14 +250,14 @@ window.fitWidth = (el, max) => {
 // concatenated into one script: their imports are each other, so they are dropped.
 const LIB = path.join(TOOLS, "lib");
 const FIELD_DIR = path.join(LIB, "fields");
-// pose, wave and chords first: the other fields call them. png.mjs stays out; it reads files.
+// pose, wave and chords first: the other fields call them. index.mjs last: its table names them all.
 const FIELD_FIRST = ["pose.mjs", "wave.mjs", "chords.mjs"];
-const FIELD_SKIP = new Set([...FIELD_FIRST, "index.mjs", "png.mjs"]);
+const FIELD_SKIP = new Set([...FIELD_FIRST, "index.mjs"]);
 const fieldModules = () => {
   const rest = fs.readdirSync(FIELD_DIR).filter((f) => f.endsWith(".mjs") && !FIELD_SKIP.has(f)).sort();
   return [...FIELD_FIRST, ...rest, "index.mjs"].map((f) => `fields/${f}`);
 };
-export const PAGE_MODULES = ["geometry.mjs", ...fieldModules()];
+export const PAGE_MODULES = ["geometry.mjs", "silhouettes.mjs", "mask.mjs", ...fieldModules()];
 const figureScript = () =>
   [...PAGE_MODULES.map((f) => fs.readFileSync(path.join(LIB, f), "utf8").replace(/^import .*\n/gm, "").replace(/^export /gm, "")), fs.readFileSync(path.join(LIB, "fill.js"), "utf8")]
     .join("\n")
@@ -242,9 +269,10 @@ export function fieldFrame(spec) {
   return { floor: floorOf(spec), mirror: !!m && m.x + m.w / 2 > SHEET.width / 2, theme: spec.theme, frame: frameOf(spec) };
 }
 
-/** The figure as the page reads it: field regions carry their parts, computed from facts.json. */
+/** The figure as the page reads it: field regions carry their parts, computed from facts.json, and a traced shape its image. */
 const figureData = (spec, facts) => ({
-  regions: spec.figure.regions.map((r) => (r.kind === "field" ? fieldInput(r, facts, spec) : r.kind === "routes" ? routeData(r) : r)),
+  regions: spec.figure.regions.map((r) => (r.kind === "field" ? fieldInput(r, facts) : r.kind === "routes" ? routeData(r) : r)),
+  images: Object.fromEntries(spec.figure.regions.filter((r) => r.shape?.mask !== undefined).map((r) => [r.shape.mask, loadMaskImage(r.shape.mask)])),
   hot: spec.hot ?? null,
   motion: spec.motion ?? null,
   ...fieldFrame(spec),
@@ -258,7 +286,9 @@ function routeData(r) {
 }
 
 /** The poster as one HTML string. Throws when the fonts are missing. */
-export function buildPage(spec, facts) {
+export function buildPage(given, facts) {
+  if (frameOf(given) === "cover") return coverPage(given, facts, PRELUDE);
+  const spec = placeTexts(given, facts);
   const vars = Object.entries(Object.assign({}, ...Object.values(fieldTokensOf(spec)), tokensOf(spec))).map(([k, v]) => `--${k}:${v}`).join(";");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(spec.product.name)} poster</title><style>
 ${fontFaces()}
@@ -269,11 +299,16 @@ html, body { background: var(--paper) }
 .row { position: absolute; white-space: nowrap; overflow: hidden }
 .dots { position: absolute }
 .t { position: absolute; font-size: 12px; line-height: 18px }
+/* A field runs on behind the figure's texts: each sits above the rows with a 6px paper halo. The halos are copies
+   of the blocks one layer down, so no halo covers letters: a text-stroke on the block itself painted line by line
+   and covered the descenders of the line above, and a block's halo covered the block above it. */
+[data-halo] { z-index: 1; color: transparent; text-shadow: ${HALO} }
+[data-halo] * { color: transparent !important }
+[data-role] { z-index: 2 }
+/* A mark blends over the letters under it, so they stay legible through the highlighter. */
+[data-role=mark] { z-index: 3; mix-blend-mode: ${spec.theme === "dark" ? "difference" : "multiply"} }
 .routes { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 0; overflow: visible; pointer-events: none }
 .node { position: absolute; border-radius: 50%; z-index: 0; pointer-events: none }
-/* A field runs on behind the figure's texts: each sits above the rows with a 6px paper outline. */
-[data-role] { z-index: 1; -webkit-text-stroke: 12px var(--paper); paint-order: stroke fill }
-[data-role=mark] { z-index: 2; -webkit-text-stroke: 0; paint-order: normal; mix-blend-mode: ${spec.theme === "dark" ? "difference" : "multiply"} }
 </style><script>${PRELUDE}</script></head><body><div class="sheet">
 ${spec.figure.texts.map((t) => textBlock(spec, t, facts)).join("\n")}
 ${CHROME[frameOf(spec)](spec, facts)}
@@ -307,6 +342,81 @@ async function writeThumb(browser, shot, file) {
 }
 
 /**
+ * How much of each figure text block's letters something else paints over: the block screenshotted as the poster
+ * draws it, then alone on the sheet with no halo. A pixel that is letter alone and not letter in the poster is
+ * covered, by a field's ground, an echo, or a halo of its own lines.
+ * @returns {Promise<{ block: string, ink: number, covered: number, x: number, y: number }[]>}  pixels at 2x, sheet px
+ */
+async function coveredText(page) {
+  // A highlighter mark is laid over type on purpose: it is never covered, and it covers nothing.
+  const names = await page.evaluate(() => {
+    for (const el of document.querySelectorAll(".sheet > [data-role=mark]")) el.style.visibility = "hidden";
+    return [...document.querySelectorAll(".sheet > [data-role]:not([data-role=mark])")].map((el) => el.dataset.block);
+  });
+  const out = [];
+  for (const name of names) {
+    const clip = await page.evaluate((n) => {
+      const el = document.querySelector(`.sheet > [data-block="${n}"]`);
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const r = range.getBoundingClientRect();
+      const s = document.querySelector(".sheet").getBoundingClientRect();
+      const [x, y] = [Math.max(s.left, Math.floor(r.left - 3)), Math.max(s.top, Math.floor(r.top - 3))];
+      return { x, y, width: Math.min(s.right, Math.ceil(r.right + 3)) - x, height: Math.min(s.bottom, Math.ceil(r.bottom + 3)) - y };
+    }, name);
+    if (!(clip.width > 0 && clip.height > 0)) continue;
+    const full = (await page.screenshot({ clip })).toString("base64");
+    await page.evaluate((n) => {
+      for (const el of document.querySelector(".sheet").children) {
+        if (el.dataset.block === n) Object.assign(el.style, { textShadow: "none", webkitTextStroke: "0" });
+        else el.style.visibility = "hidden";
+      }
+    }, name);
+    const alone = (await page.screenshot({ clip })).toString("base64");
+    await page.evaluate(() => {
+      for (const el of document.querySelector(".sheet").children) Object.assign(el.style, { textShadow: "", webkitTextStroke: "", visibility: el.dataset.role === "mark" ? "hidden" : "" });
+    });
+    out.push({ block: name, ...(await page.evaluate(compareInk, { full, alone, name, clip })) });
+  }
+  await page.evaluate(() => {
+    for (const el of document.querySelectorAll(".sheet > [data-role=mark]")) el.style.visibility = "";
+  });
+  return out;
+}
+
+/** In the page: the letter pixels of `alone` that `full` does not show, against the block's paper and ink. */
+async function compareInk({ full, alone, name, clip }) {
+  const pixels = async (b64) => {
+    const img = new Image();
+    img.src = `data:image/png;base64,${b64}`;
+    await img.decode();
+    const c = Object.assign(document.createElement("canvas"), { width: img.width, height: img.height });
+    const ctx = c.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    return { w: img.width, data: ctx.getImageData(0, 0, img.width, img.height).data };
+  };
+  const [a, b] = [await pixels(alone), await pixels(full)];
+  const rgb = (s) => s.match(/\d+/g).slice(0, 3).map(Number);
+  const lum = ([r, g, bl]) => 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  const el = document.querySelector(`.sheet > [data-block="${name}"]`);
+  const paper = lum(rgb(getComputedStyle(document.querySelector(".sheet")).backgroundColor));
+  const span = lum(rgb(getComputedStyle(el).color)) - paper || 1;
+  let [ink, covered, sx, sy] = [0, 0, 0, 0];
+  for (let i = 0; i < a.data.length; i += 4) {
+    const la = lum([a.data[i], a.data[i + 1], a.data[i + 2]]);
+    if ((la - paper) / span < 0.5) continue;
+    ink++;
+    const lf = lum([b.data[i], b.data[i + 1], b.data[i + 2]]);
+    if (Math.abs(lf - la) / Math.abs(span) > 0.35) {
+      covered++;
+      sx += (i / 4) % a.w;
+      sy += Math.floor(i / 4 / a.w);
+    }
+  }
+  return { ink, covered, x: Math.round(clip.x + sx / (covered || 1) / 2), y: Math.round(clip.y + sy / (covered || 1) / 2) };
+}
+
+/**
  * Write <base>.html, then render it: PNG at 2x and PDF unless turned off. Returns the page measurements.
  * @param {{ html: string, base: string, png?: boolean, pdf?: boolean, paper?: string, gif?: boolean, motion?: { kind: string, frames: number, fps: number } }} o
  */
@@ -319,9 +429,10 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.setContent(html, { waitUntil: "load" });
-    await page.waitForFunction(() => window.drawn === true, null, { timeout: 15000 }).catch(() => {});
+    await page.waitForFunction(() => window.drawn === true, null, { timeout: 120000 }).catch(() => {});
     const report = await page.evaluate(`(${fs.readFileSync(path.join(TOOLS, "lib", "inspect.js"), "utf8").replace(/^\/\/.*\n/, "")})()`);
     report.errors = errors;
+    report.covered = await coveredText(page);
     if (png) {
       const shot = await page.locator(".sheet").screenshot({ path: `${base}.png` });
       await writeThumb(browser, shot, `${base}-thumb.png`);
@@ -330,10 +441,37 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
       await page.emulateMedia({ media: "screen" });
       await page.pdf({ path: `${base}.pdf`, printBackground: true, ...PAPER[paper]() });
     }
-    if (gif && motion) await writeGif(page, base, motion);
+    if (gif && motion) report.loop = motion.kind === "turn" ? await writeTurn(page, base) : await writeGif(page, base, motion);
     return report;
   } finally {
     await browser.close();
+  }
+}
+
+/**
+ * A cover's loop: every frame drawn at 1x and measured, the glyph changes per step, then the GIF at every other
+ * frame in 32 colours without dither (the crawling type dithers into noise and past 8 MB) and the MP4 at all of
+ * them. The still is drawn back last, so the page ends as the PNG shows it.
+ * @returns {Promise<{ reports: object[], steps: number[] }>}
+ */
+async function writeTurn(page, base) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-turn-"));
+  try {
+    const n = await page.evaluate(() => window.cover.frames);
+    const reports = [];
+    for (let f = 0; f < n; f++) {
+      reports.push(await page.evaluate((k) => window.coverFrame(k, 1), f));
+      await page.locator(".sheet").screenshot({ path: path.join(dir, `frame-${String(f).padStart(3, "0")}.png`), scale: "css" });
+    }
+    const steps = await page.evaluate(() => window.coverSteps());
+    await page.evaluate(() => window.coverFrame(window.cover.still, 2));
+    const seq = path.join(dir, "frame-%03d.png");
+    const gif = `fps=${COVER.gifFps},scale=560:-1:flags=area,split[a][b];[a]palettegen=max_colors=32:stats_mode=full[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`;
+    ffmpeg(["-framerate", String(COVER.fps), "-i", seq, "-filter_complex", gif, "-loop", "0", `${base}.gif`], "GIF");
+    ffmpeg(["-framerate", String(COVER.fps), "-i", seq, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", "-vf", "scale=840:-2", `${base}.mp4`], "MP4");
+    return { reports, steps };
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 }
 

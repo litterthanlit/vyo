@@ -1,6 +1,8 @@
 # vyo
 
-vyo explains an app to someone who does not code. It scans a repository and draws the codebase as one poster: every part of the code as a row, peak, stream, triangle or globe sized by its code, the part the product is about in an accent colour, a legend that says what the picture shows, and a few plain sentences. You get a PNG and a PDF to send to a client, a PM or a stakeholder. A signal-frame poster is high-contrast charcoal or paper; `vyo render --gif` writes a short GIF when the spec has motion.
+<p align="center"><img src="https://raw.githubusercontent.com/litterthanlit/vyo/main/docs/posters/relief-pantry-dark-web.png" width="420" alt="A dark poster headed 'A week of dinners, planned in one go.' A jar drawn as a lit, rounded volume in dense small type, one layer per part of the code. The layer for the plan glows orange."></p>
+
+vyo explains an app to someone who does not code. It scans a repository and draws the codebase as one poster: every part of the code as a row, peak, stream or layer of a drawn object, sized by its code, the part the product is about in an accent colour, a legend that says what the picture shows, and a few plain sentences. You get a PNG and a PDF to send to a client, a PM or a stakeholder. A signal-frame poster is high-contrast charcoal or paper; a cover (`vyo compose --frame cover`) turns one of twelve ready objects in a seven-second loop with the accent as its orange outline; `vyo render --gif` writes the GIF when the spec has motion.
 
 vyo has two halves. The skill tells your coding agent (Cursor, Claude Code or Codex) how to read the repo, choose the picture and write the words. The `vyo` command does the drawing and checks the result: it rejects jargon, file paths, placeholder text and text that collides with the picture.
 
@@ -26,10 +28,14 @@ Ask your agent: "Explain this app as a poster." It follows the skill, runs `vyo 
 
 To steer the result, copy `project-context.example.md` from the skill folder to `project-context.md` beside it, and fill in the product's name, its audience and the story you want told.
 
+## Languages
+
+JavaScript, TypeScript and Python get full detection: screens, requests and saved records. Every other listed language (Go, Ruby, Rust, PHP, Java, Kotlin, Swift, C#, C and C++, Dart, Scala, Elixir, Lua and Zig) is drawn by size.
+
 ## Requirements
 
 Node.js 20 or later (Playwright needs it), and Chromium for `render` and `check`. The other commands need no browser.
 
 ## Licence
 
-The fonts, Commit Mono and Newsreader, are under the SIL Open Font License 1.1. See `fonts/LICENSE.md`.
+The fonts, Commit Mono, Newsreader and Inter (subset), are under the SIL Open Font License 1.1. See `fonts/LICENSE.md`.

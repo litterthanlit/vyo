@@ -1,0 +1,62 @@
+{
+  "version": 3,
+  "frame": "loose",
+  "facts": "000000000000",
+  "product": {
+    "name": "Pantry",
+    "repo": "recipe",
+    "commit": "04186f4",
+    "date": "2026-11-07"
+  },
+  "theme": "dark",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "shape",
+        "field": "shape",
+        "style": "relief",
+        "fits": "Pantry keeps a week of recipes the way a jar keeps preserves, so the picture is a jar of its code.",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "bevel": 0.8,
+        "strata": { "by": "angle", "angle": 90 },
+        "shape": {
+          "fit": { "h": 0.74, "cx": 0.5, "cy": 0.6 },
+          "ops": [
+            { "add": "rect", "at": [12, 0], "size": [76, 16], "round": 4 },
+            { "add": "rect", "at": [20, 15], "size": [60, 10] },
+            { "add": "rect", "at": [0, 24], "size": [100, 112], "round": 26 },
+            { "cut": "rect", "at": [0, 14], "size": [100, 3] },
+            { "crease": "capsule", "from": [16, 6], "to": [84, 6] },
+            { "crease": "capsule", "from": [16, 10], "to": [84, 10] },
+            { "crease": "rect", "at": [12, 58], "size": [76, 42], "round": 4 }
+          ]
+        }
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label" },
+      { "role": "headline", "id": "headline" },
+      {
+        "role": "legend",
+        "id": "legend",
+        "text": "Every layer in the jar is a part of Pantry, as big as its code. The orange layer is the plan."
+      }
+    ]
+  }
+}

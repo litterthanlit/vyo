@@ -18,7 +18,7 @@
   const texts = [];
   const boxes = [];
   for (const el of [sheet, ...sheet.querySelectorAll("*")]) {
-    if (el.tagName === "SCRIPT" || !visible(el)) continue;
+    if (el.tagName === "SCRIPT" || el.closest("[data-halo]") || !visible(el)) continue;
     const cs = getComputedStyle(el);
     const where = el.closest("[data-block], [data-region]");
     const tagged = !!el.closest("[data-hot]");
@@ -33,8 +33,10 @@
     region: el.dataset.region,
     part: el.dataset.part,
     hot: el.dataset.hot !== undefined,
-    scrollWidth: el.scrollWidth,
-    clientWidth: el.clientWidth,
+    text: el.textContent.replace(/\u00a0/g, " "),
+    // A row set glyph by glyph in SVG has no box to overflow.
+    scrollWidth: el instanceof SVGElement ? 0 : el.scrollWidth,
+    clientWidth: el instanceof SVGElement ? 0 : el.clientWidth,
     opacity: Number(getComputedStyle(el).opacity),
     rect: box(el.getBoundingClientRect()),
   }));
@@ -66,5 +68,8 @@
   const footerTop = hairline ? hairline.getBoundingClientRect().top : sr.bottom;
   const regions = (window.figure && window.figure.regions) || [];
 
-  return { sheet: sr, footerTop, texts, boxes, rows, dots, blocks, regions, figureHot, faces, inter: probe('"Inter Display"') || probe("Inter"), drawn: window.drawn === true };
+  // A cover's canvas: the still it should show, the frame it shows, and the still's measurements.
+  const cover = window.cover ? { still: window.cover.still, shown: window.coverShown, report: window.cover.report } : null;
+
+  return { sheet: sr, footerTop, texts, boxes, rows, dots, blocks, regions, figureHot, faces, inter: probe('"Inter Display"') || probe("Inter"), drawn: window.drawn === true, cover, coverError: window.coverError ?? null };
 }

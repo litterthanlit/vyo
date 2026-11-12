@@ -7,6 +7,7 @@ import { validateSpec, textProblems, hasWord, scaffoldSpec } from "../lib/spec.m
 import { FIELDS } from "../lib/fields/index.mjs";
 import { BANNED, isJargon } from "../lib/jargon.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
+import { partsFromFacts, partOptions } from "../lib/parts.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PRESETS = path.join(HERE, "..", "presets");
@@ -25,7 +26,7 @@ const rejects = (mutate, re, base) => {
 };
 
 test("every preset is a valid spec", () => {
-  assert.deepEqual(IDS.sort(), ["bands", "bleed", "contour", "eye", "glyph", "hourglass", "radial", "ribbon", "river", "scatter", "shatter", "signal-paper", "signal-wave", "sphere", "spiral", "terrain", "trace", "warm-start", "wave", "wave-swiss", "wings"]);
+  assert.deepEqual(IDS.sort(), ["bleed", "contour", "cover", "eye", "glyph", "hourglass", "radial", "ribbon", "river", "scatter", "shape", "shape-rings", "shape-traced", "shatter", "signal-paper", "signal-wave", "slabs", "sphere", "spiral", "terrain", "warm-start", "wave", "wave-swiss", "wings"]);
   for (const id of IDS) assert.deepEqual(validateSpec(preset(id)), [], id);
 });
 
@@ -116,7 +117,7 @@ test("a scaffold is rejected until every placeholder is written: a field by defa
   const fillPresets = IDS.filter((id) => !preset(id).figure.regions.some((r) => r.kind === "field"));
   for (const from of [undefined, ...fillPresets]) {
     const p = from && preset(from);
-    const spec = scaffoldSpec(facts, { frame: "swiss", theme: p ? p.theme : "light", date: "2026-10-28", floor: 884, preset: p, field: p ? undefined : "wave", unplain: [{ id: "area:lib", name: "Convex" }] });
+    const spec = scaffoldSpec(facts, { frame: "swiss", theme: p ? p.theme : "light", date: "2026-10-28", floor: 884, preset: p, field: p ? undefined : "wave", parts: [{ id: "area:lib", name: "Convex" }] });
     const errors = validateSpec(spec);
     const field = p ? [/^hot: still the placeholder/, /still the placeholder; write \d+ to \d+ (nouns|words)/] : [/^figure\.regions\[0\]\.sentence: still the placeholder/, /^figure\.regions\[0\]\.names\["area:lib"\]: still the placeholder/];
     const fits = p ? /^figure\.fits: still the placeholder/ : /^figure\.regions\[0\]\.fits: still the placeholder/;
@@ -128,6 +129,16 @@ test("a scaffold is rejected until every placeholder is written: a field by defa
   }
   const terrain = scaffoldSpec(facts, { frame: "swiss", theme: "dark", date: "2026-10-28", floor: 884, field: "terrain", accent: "area:lib/ai" });
   assert.deepEqual(terrain.figure.regions.map(({ fits, ...r }) => r), [{ kind: "field", id: "terrain", field: "terrain", accent: "area:lib/ai" }]);
+});
+
+test("a loose scaffold names every part with a placeholder, and each one is rejected until written", () => {
+  const facts = scanRepo(path.join(HERE, "fixtures", "recipe"));
+  const parts = partsFromFacts(facts, partOptions({ field: "wave" }));
+  const spec = scaffoldSpec(facts, { theme: "light", date: "2026-11-07", floor: 1190, field: "wave", parts, places: {} });
+  const names = spec.figure.regions[0].names;
+  assert.deepEqual(Object.keys(names).sort(), parts.map((p) => p.id).sort());
+  const errors = validateSpec(spec);
+  for (const p of parts) assert.ok(errors.some((e) => e.startsWith(`figure.regions[0].names["${p.id}"]: still the placeholder`)), `${p.id} is rejected`);
 });
 
 test("isJargon is exact, whole-word tokens", () => {
@@ -165,7 +176,6 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
   assert.deepEqual(validateSpec(withField({ seed: 0 })()), []);
   assert.deepEqual(validateSpec(withField({ seed: 2147483647 })()), []);
   assert.deepEqual(validateSpec(withField({ field: "glyph", letter: "Q" })()), []);
-  assert.deepEqual(validateSpec(withField({ field: "trace", mask: "masks/trace.png" })()), []);
   assert.deepEqual(validateSpec(withField({ field: "terrain" })()), [], "accent and hot are optional");
   const cases = [
     [{ field: "lake" }, new RegExp(`^figure\\.regions\\[0\\]\\.field: "lake" is not a field; use ${Object.keys(FIELDS).join(" or ")}$`)],
@@ -181,10 +191,9 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
     [{ seed: 1.5 }, /seed: a whole number, 0 to 2147483647/],
     [{ seed: 2147483648 }, /seed: a whole number, 0 to 2147483647/],
     [{ letter: "A" }, /letter: a wave field has no letter; only glyph takes it/],
-    [{ mask: "mark.png" }, /mask: a wave field has no mask; only trace takes it/],
+    [{ mask: "mark.png" }, /^figure\.regions\[0\]\.mask: unknown field$/],
     [{ field: "glyph", letter: "a" }, /letter: one character A to Z or 0 to 9/],
     [{ field: "glyph", letter: "AA" }, /letter: one character A to Z or 0 to 9/],
-    [{ field: "trace", mask: "  " }, /mask: a path to a PNG/],
     [{ words: ["a", "b"] }, /^figure\.regions\[0\]\.words: unknown field$/],
   ];
   for (const [region, re] of cases) rejects(() => {}, re, withField(region));
@@ -212,7 +221,7 @@ test("frames: loose takes its own roles and counts, no notes, and a field; swiss
   const loose = () => ({ ...preset("wave"), frame: "loose", notes: undefined, notBuilt: undefined });
   rejects((s) => (s.figure.texts = [{ role: "masthead", id: "masthead", x: 50, y: 36, w: 490 }]), /^figure\.texts\[0\]\.role: "masthead" is not a role in the loose frame; use label, headline, paragraph, legend, list, rule$/, loose);
   rejects((s) => (s.notes = []), /^notes: the loose frame has no footer/, loose);
-  rejects((s) => (s.frame = "poster"), /^frame: "poster" is not a frame; use swiss or loose or signal$/);
+  rejects((s) => (s.frame = "poster"), /^frame: "poster" is not a frame; use swiss or loose or signal or cover$/);
   rejects((s) => (s.record = "left"), /^record: only the loose and signal frames have a record line/);
 });
 

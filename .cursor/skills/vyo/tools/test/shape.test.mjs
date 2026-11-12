@@ -1,0 +1,365 @@
+// The shape field: its validation, its mask and fit, its feedback in sketch and the checks.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import zlib from "node:zlib";
+import { fileURLToPath } from "node:url";
+import { validateSpec } from "../lib/spec.mjs";
+import { shapeMask, maskGrid, runsPath, SHAPE_ROOM } from "../lib/mask.mjs";
+import { shapeReport, shapeFindings, thinFeatures, SHAPE_CHECKS } from "../lib/shape-report.mjs";
+import { CHECKS } from "../lib/check.mjs";
+import { sketch, sketchImage } from "../lib/sketch.mjs";
+import { regionParts } from "../lib/parts.mjs";
+import { scanRepo } from "../lib/scan/index.mjs";
+import { fixedMeasure, SHEET } from "../lib/geometry.mjs";
+import { encodePng } from "../lib/png.mjs";
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const recipe = scanRepo(path.join(HERE, "fixtures", "recipe"));
+const jar = () => ({ ...JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "shape.json"), "utf8")), facts: recipe.hash });
+const withShape = (shape, over = {}) => {
+  const s = jar();
+  Object.assign(s.figure.regions[0], { shape }, over);
+  return s;
+};
+const rect = (at, size, extra = {}) => ({ add: "rect", at, size, ...extra });
+const near = (a, b, tol, what) => assert.ok(Math.abs(a - b) <= tol, `${what}: ${a} is not within ${tol} of ${b}`);
+const W = SHEET.width;
+const H = SHEET.height;
+
+test("the jar preset is a valid spec, and every kind of op validates", () => {
+  assert.deepEqual(validateSpec(jar()), []);
+  const ops = [
+    { add: "circle", at: [0, 0], r: 10 },
+    { add: "ellipse", at: [30, 0], r: [12, 6], rotate: 20 },
+    rect([0, 20], [40, 10], { round: 3 }),
+    { add: "capsule", from: [0, 40], to: [40, 50], r: 4 },
+    { add: "arc", at: [20, 70], r: 12, from: 270, to: 90, width: 5 },
+    { add: "polygon", points: [[0, 90], [40, 90], [20, 110]], round: 2 },
+    { add: "path", d: "M 0 120 L 40 120 Q 20 140 0 120 Z" },
+    { cut: "circle", at: [20, 25], r: 2 },
+  ];
+  assert.deepEqual(validateSpec(withShape({ ops, rotate: 5, fit: { w: 0.6, h: 0.7, cx: 0.5, cy: 0.6 } })), []);
+});
+
+test("every shape error is reported at once, by op index, in the house style", () => {
+  const errors = validateSpec(
+    withShape({
+      ops: [
+        { cut: "circle", at: [0, 0], r: 5 },
+        { add: "square", at: [0, 0] },
+        { add: "rect", cut: "rect", at: [0, 0], size: [1, 1] },
+        rect([0, 0], [0, 4]),
+        { add: "circle", at: [0, 0] },
+        { add: "circle", at: [0, 0], r: 3, radius: 3 },
+        { add: "polygon", points: [[0, 0], [1, 1]] },
+        { add: "path", d: "M 0 0 X 3" },
+        { add: "arc", at: [0, 0], r: 4, from: "noon", to: 90, width: 1 },
+        { add: "circle", at: [0, 0], r: 3, rotate: "a bit" },
+      ],
+      fit: { h: 5, cx: 9 },
+      spin: 3,
+    }),
+  );
+  const f = "figure.regions[0].shape";
+  for (const want of [
+    `${f}.spin: unknown field`,
+    `${f}.fit.h: 0.05 to 3, a share of the sheet's height (over 1 bleeds off)`,
+    `${f}.fit.cx: -0.5 to 1.5, where the centre sits as a share of the sheet's width`,
+    `${f}.ops[1].add: "square" is not a kind; use circle, ellipse, rect, capsule, arc, polygon, path`,
+    `${f}.ops[2]: give exactly one of add, cut or crease (found add, cut)`,
+    `${f}.ops[3].size: must be two numbers above 0`,
+    `${f}.ops[4].r: missing; it must be a number above 0`,
+    `${f}.ops[5].radius: a circle takes at, r, rotate and face`,
+    `${f}.ops[6].points: must be 3 to 40 points of [x, y]`,
+    `${f}.ops[7].d: does not parse: cannot read "X 3"`,
+    `${f}.ops[8].from: must be a number of degrees, clockwise from twelve o'clock`,
+    `${f}.ops[9].rotate: a number of degrees, clockwise about the op's centre`,
+    `${f}.ops[0]: must be an add; a cut on an empty sheet removes nothing`,
+  ]) assert.ok(errors.includes(want), `expected ${JSON.stringify(want)} in ${JSON.stringify(errors, null, 1)}`);
+});
+
+test("a shape that paints nothing, a placeholder, a missing shape, a swiss shape and a stray style are refused", () => {
+  const f = "figure.regions[0]";
+  assert.deepEqual(validateSpec(withShape({ ops: [rect([0, 0], [10, 10]), { cut: "rect", at: [-1, -1], size: [12, 12] }] })), [`${f}.shape: the ops paint nothing on the sheet; the cuts remove all of it, or fit.cx and fit.cy move it off`]);
+  assert.match(validateSpec(withShape("… the silhouette"))[0], /^figure\.regions\[0\]\.shape: still the placeholder; draw the silhouette as \{ ops: \[\.\.\.\] \}/);
+  assert.match(validateSpec(withShape(undefined)).join("\n"), /^figure\.regions\[0\]\.shape: missing; draw the silhouette/m);
+  assert.ok(validateSpec(withShape(jar().figure.regions[0].shape, { style: "spiral" })).some((e) => /^figure\.regions\[0\]\.style: "spiral" is not a style; use rings or relief or symbols, or leave it out$/.test(e)));
+  assert.ok(validateSpec(withShape(jar().figure.regions[0].shape, { style: "bands" })).includes(`${f}.style: "bands" is not a style; use rings or relief or symbols, or leave it out`), "bands no longer ships");
+  const swiss = { ...jar(), frame: "swiss" };
+  assert.ok(validateSpec(swiss).includes(`${f}.field: a shape field draws only in the loose or signal or cover frame; remove frame or set it to loose`));
+  const wave = JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "wave.json"), "utf8"));
+  wave.figure.regions[0].shape = { ops: [rect([0, 0], [1, 1])] };
+  assert.ok(validateSpec(wave).includes(`${f}.shape: a wave field has no shape; only shape takes it`));
+});
+
+test("the mask fits the painted extent: fit.w, fit.h, the default, the centre and bleed", () => {
+  const box = (m) => m.box;
+  const wide = shapeMask({ ops: [rect([5, 5], [200, 100])], fit: { w: 0.5 } });
+  near(box(wide).right - box(wide).left, 420, 1, "fit.w 0.5 is 420px wide");
+  near(box(wide).bottom - box(wide).top, 210, 1, "and keeps its proportions");
+  near((box(wide).left + box(wide).right) / 2, W / 2, 1, "centred across by default");
+  near((box(wide).top + box(wide).bottom) / 2, 0.61 * H, 1, "a little low by default");
+  near(wide.area, 420 * 210, 420 * 2, "every covered px counted");
+  const both = shapeMask({ ops: [rect([0, 0], [10, 10])], fit: { w: 0.5, h: 0.2 } });
+  near(both.box.bottom - both.box.top, 0.2 * H, 1, "with both, the smaller scale wins");
+  const tall = shapeMask({ ops: [rect([0, 0], [10, 40])] });
+  near(tall.box.top, SHAPE_ROOM.top, 1, "with no fit, a tall shape fills the room's height, below the words");
+  near(tall.box.bottom, H - SHAPE_ROOM.bottom, 1, "and stands on the bottom margin");
+  for (const ops of [[rect([0, 0], [400, 40])], [rect([0, 0], [100, 100])], [{ add: "circle", at: [0, 0], r: 5 }, rect([-50, 0], [100, 2])]]) {
+    const m = shapeMask({ ops });
+    assert.ok(m.box.left >= SHAPE_ROOM.left - 0.5 && m.box.right <= W - SHAPE_ROOM.right + 0.5 && m.box.top >= SHAPE_ROOM.top - 0.5 && m.box.bottom <= H - SHAPE_ROOM.bottom + 0.5, `whatever its aspect, the default keeps it inside the margins (${JSON.stringify(m.box)})`);
+    assert.ok(m.box.right - m.box.left > W - 81 || m.box.bottom - m.box.top > H - SHAPE_ROOM.top - SHAPE_ROOM.bottom - 1, "and as large as they allow");
+  }
+  const bleed = shapeMask({ ops: [rect([0, 0], [10, 10])], fit: { w: 1.4, cx: 0.5, cy: 0.5 } });
+  assert.ok(bleed.box.left < 0 && bleed.box.right > W, "over 1 runs off the sheet");
+  assert.ok(bleed.runs.every((row) => row.every(([l, r]) => l >= 0 && r <= W)), "runs are clipped to the sheet");
+  const cutExtent = shapeMask({ ops: [rect([0, 0], [100, 100]), { cut: "rect", at: [0, 50], size: [100, 60] }], fit: { h: 0.5 } });
+  near(cutExtent.box.bottom - cutExtent.box.top, 0.5 * H, 1, "the fit measures what survives the cuts");
+});
+
+test("each kind paints its area, cuts subtract, rotate turns about the op's centre and the shape's", () => {
+  const areaOf = (ops, extra = {}) => shapeMask({ ops: [rect([0, 0], [100, 100]), { cut: "rect", at: [0, 0], size: [100, 100] }, ...ops], fit: { w: 0.8 }, ...extra });
+  const unit = (m) => (m.box.right - m.box.left) / 100;
+  const circle = shapeMask({ ops: [{ add: "circle", at: [50, 50], r: 50 }], fit: { w: 0.8 } });
+  near(circle.area, Math.PI * (0.4 * W) ** 2, 0.01 * circle.area, "a circle is pi r squared");
+  const ring = shapeMask({ ops: [{ add: "arc", at: [50, 50], r: 40, from: 0, to: 360, width: 20 }], fit: { w: 0.8 } });
+  const u = unit(ring);
+  near(ring.area, Math.PI * ((50 * u) ** 2 - (30 * u) ** 2), 0.02 * ring.area, "a full arc is a ring");
+  const half = shapeMask({ ops: [{ add: "arc", at: [50, 50], r: 40, from: 0, to: 180, width: 20 }], fit: { h: 0.8 } });
+  assert.ok(half.box.right - half.box.left < half.box.bottom - half.box.top, "an arc from twelve to six o'clock is the right half");
+  const holed = shapeMask({ ops: [rect([0, 0], [100, 100]), { cut: "circle", at: [50, 50], r: 25 }], fit: { w: 0.8 } });
+  near(holed.area, (0.8 * W) ** 2 * (1 - Math.PI / 16), 0.01 * holed.area, "a cut takes its area out");
+  const flat = shapeMask({ ops: [rect([0, 0], [100, 20])], fit: { w: 0.5 } });
+  const upright = shapeMask({ ops: [rect([0, 0], [100, 20], { rotate: 90 })], fit: { h: 0.5 } });
+  near(upright.box.right - upright.box.left, 0.2 * 0.5 * H, 2, "an op's rotate turns it about its centre");
+  const turned = shapeMask({ ops: [rect([0, 0], [100, 20])], rotate: 90, fit: { h: 0.5 } });
+  assert.deepEqual(turned.runs.map((r) => r.length), upright.runs.map((r) => r.length), "the shape's rotate turns the whole");
+  assert.ok(flat.box.right - flat.box.left > flat.box.bottom - flat.box.top);
+  const rounded = shapeMask({ ops: [rect([0, 0], [100, 100], { round: 50 })], fit: { w: 0.5 } });
+  near(rounded.area, Math.PI * (0.25 * W) ** 2, 0.01 * rounded.area, "a fully rounded square is a circle");
+  const path = shapeMask({ ops: [{ add: "path", d: "M0 0 H100 V100 H0 Z" }, { add: "capsule", from: [0, 150], to: [100, 150], r: 10 }], fit: { w: 0.5 } });
+  assert.ok(path.area > 340 * 340, "a path and a capsule both paint");
+  assert.equal(areaOf([]), null, "an add then a whole cut paints nothing");
+});
+
+test("the mask is a grid for pixel work and a smooth SVG path for the page", () => {
+  const m = shapeMask({ ops: [rect([0, 0], [100, 100])], fit: { w: 0.5, cx: 0.5, cy: 0.5 } });
+  const g = maskGrid(m, 20);
+  assert.equal(g.w, 42);
+  assert.equal(g.bits.reduce((a, b) => a + b, 0), 21 * 21);
+  const d = runsPath([[0, [[10, 20]]], [1, [[11, 21]]]]);
+  assert.equal(d, "M10 0H20V0.5H10ZM10 0.5H20L21 1.5H11ZM11 1.5H21V2H11Z", "neighbouring rows join centre to centre, half rows close the ends");
+});
+
+test("findings: the jar has none, and each planted shape trips its own, with a number and an instruction", () => {
+  const findings = (spec, blocks = []) => shapeFindings(shapeReport(spec, spec.figure.regions[0], recipe), { blocks });
+  const nothing = (f) => Object.values(f).flat();
+  assert.deepEqual(nothing(findings(jar())), []);
+  const base = jar().figure.regions[0].shape;
+
+  const hairline = findings(withShape({ ...base, ops: [...base.ops, { add: "capsule", from: [96, 60], to: [130, 40], r: 0.6 }] }));
+  assert.match(hairline["shape-thin"][0], /^the shape is \d+px thick near \d+,\d+; under 18px it is a hairline at thumbnail size, so make that feature at least 18px thick or remove it$/);
+  const slit = findings(withShape({ ...base, ops: [...base.ops, { cut: "rect", at: [0, 70], size: [100, 0.8] }] }));
+  assert.match(slit["shape-thin"][0], /^a cut in the shape is \d+px wide near \d+,\d+; under 18px it closes up at thumbnail size, so widen the cut to at least 18px or remove it$/);
+
+  const tiny = findings(withShape({ ...base, fit: { h: 0.3 } }));
+  assert.match(tiny["shape-cover"][0], /^the shape covers 7% of the sheet; it needs 18% to read as the picture, so scale it up 1\.\d+x \(set fit\.h to 0\.4\d, it is 0\.3\) or draw it fatter$/);
+  const tinySymbols = findings(withShape({ ...base, fit: { h: 0.3 } }, { style: "symbols" }));
+  assert.match(tinySymbols["shape-cover"][0], /^the shape covers 7% of the sheet; it needs 35% to read as the picture, so scale it up 2\.\d+x \(set fit\.h to 0\.6\d, it is 0\.3\) or draw it fatter$/, "every style but relief needs 35%");
+
+  // The cold run's flask: fit h 0.76 at cy 0.63 runs 12px off the bottom.
+  const flask = findings(withShape({ ops: [{ add: "circle", at: [50, 66], r: 34 }, rect([39, 12], [22, 34]), rect([33, 4], [34, 10], { round: 3 })], fit: { h: 0.76, cx: 0.6, cy: 0.63 } }));
+  assert.match(flask["shape-edge"][0], /^the shape runs 1\dpx off the bottom edge, too little to read as a bleed, so it looks cut by mistake; leave out fit\.w and fit\.h to fit it inside the sheet, or move it \d+px up \(fit\.cy 0\.6\d to 0\.5\d\), or bleed it boldly/);
+  assert.deepEqual(findings(withShape({ ...base, fit: undefined }))["shape-edge"], [], "the default fit never bleeds");
+  // A shape as large as the sheet allows cannot be scaled up: the advice is to draw it fatter, never a fit it already has.
+  const wide = findings(withShape({ ops: [rect([0, 0], [100, 14], { round: 7 })], fit: { w: 0.96 } }))["shape-cover"][0];
+  assert.match(wide, /so draw it fatter: it fills \d+% of its \d+ by \d+px box; thicken its thin parts/);
+  const lean = findings(withShape({ ops: [rect([0, 0], [100, 14], { round: 7 })] }))["shape-cover"][0];
+  assert.match(lean, /already as large as the room the text leaves/);
+  for (const m of [wide, lean]) assert.doesNotMatch(m, /scale it up 1x|set fit\.\w to ([\d.]+), it is \1\)/);
+
+  const stem = findings(withShape({ ops: [rect([0, 0], [6, 120]), rect([-40, 120], [84, 60], { round: 10 })], fit: { h: 0.8 } }));
+  assert.match(stem["shape-name"][0], /^part "saved recipes" never shows its whole name: its stratum's widest run of type is \d+px and the name needs \d+px; widen the shape where the stratum falls, turn the strata \(strata\.angle\) so it crosses the shape's long side, or give the part a shorter name$/);
+
+  const room = findings(jar(), [{ id: "legend", left: 400, top: 600, right: 660, bottom: 680 }]);
+  assert.match(room["shape-room"][0], /^the legend \(260 by 80 at 400,600\) sits on the shape or within 16px of it; move it into the top-(left|right) corner, \d+ by \d+ at \d+,0$/);
+  const crowded = findings(withShape({ ...base, fit: { w: 1, h: 1, cy: 0.5 } }), [{ id: "legend", left: 40, top: 40, right: 300, bottom: 120 }]);
+  assert.match(crowded["shape-room"][0], /; no corner holds it \(the largest, [a-z-]+, is \d+ by \d+\), so shrink the shape \(fit\.h 0\.\d+ to 0\.\d+\) or move it with fit\.cx and fit\.cy$/);
+});
+
+test("shape-dominant: Got's accent, 95% of its code in 3 parts, is one slab; split names the fix and the fix works", () => {
+  const got = JSON.parse(fs.readFileSync(path.join(HERE, "fixtures", "got-facts.json"), "utf8"));
+  const bone = { ops: [{ add: "capsule", from: [22, 50], to: [78, 50], r: 19 }, ...[[13, 38], [13, 62], [87, 38], [87, 62]].map((at) => ({ add: "circle", at, r: 13 }))], rotate: -50 };
+  const spec = (over) => withShape(bone, { style: "relief", names: {}, ...over });
+  const found = (s) => shapeFindings(shapeReport(s, s.figure.regions[0], got))["shape-dominant"];
+  assert.deepEqual(found(spec({ accent: "area:source" })), [
+    'the accent "Source" holds 95% of the lines and the shape has 3 parts, so every style draws it as one slab; add "split": ["area:source"] to the region to cut "Source" into the folders inside it (6 parts, the largest 63%), then put the accent on the one the story is about (vyo parts <facts> --field shape --split area:source lists them)',
+  ]);
+  // The cold run's bone at bevel 1 with faces stayed at a 14% spread: no hint moves a 95% accent, so tone waits for the split.
+  const slab = spec({ accent: "area:source", bevel: 1 });
+  assert.match(found(spec({ split: ["area:source"], accent: "area:source/core" })).join(""), /^$/, "63% is under the slab line");
+  const big = spec({ split: ["area:source"], accent: "area:source/core" });
+  // The relief's glow hugs the accent's letters, so a 63% accent still shades: its grey ends and its own letters show the volume.
+  assert.deepEqual(shapeFindings(shapeReport(big, big.figure.regions[0], got))["shape-tone"], [], "a 63% accent still reads as a volume");
+  assert.deepEqual(shapeFindings(shapeReport(slab, slab.figure.regions[0], got))["shape-tone"], []);
+  const split = spec({ split: ["area:source"], accent: "area:source/core/utils" });
+  assert.deepEqual(shapeFindings(shapeReport(split, split.figure.regions[0], got))["shape-tone"], [], "split, the bone shades as a volume");
+  assert.deepEqual(validateSpec({ ...split, facts: got.hash }).filter((e) => /split/.test(e)), []);
+  assert.deepEqual(found(split), [], "the accent on one folder of six is quiet");
+  assert.equal(shapeReport(split, split.figure.regions[0], got).parts.length, 6);
+  const lone = { hash: got.hash, facts: [{ id: "area:app", kind: "area", name: "App", meta: { leaf: true } }, { id: "area:docs", kind: "area", name: "Docs", meta: { leaf: true } }], files: { "app/a.js": { area: "area:app", loc: 900 }, "docs/b.js": { area: "area:docs", loc: 100 } } };
+  const one = spec({ accent: "area:app" });
+  assert.deepEqual(shapeFindings(shapeReport(one, one.figure.regions[0], lone))["shape-dominant"], ['the accent "App" holds 90% of the lines, so relief draws it as one slab of the accent; "App" has no folders inside it to split, so put the accent on a smaller part']);
+});
+
+test("shape-dominant: a small accent among few parts is fine unless the big part can be split, and then the split keeps the accent", () => {
+  const got = JSON.parse(fs.readFileSync(path.join(HERE, "fixtures", "got-facts.json"), "utf8"));
+  const found = (s, facts) => shapeFindings(shapeReport(s, s.figure.regions[0], facts))["shape-dominant"];
+  // The requests cold run: the accent is the 2% part of two, and the 98% part has no folders. Nothing can change it.
+  const mug = { hash: got.hash, facts: [{ id: "area:.", kind: "area", name: "Root" }, { id: "area:src", kind: "area", name: "Src", meta: { leaf: true } }], files: { "README.py": { area: "area:.", loc: 40 }, "src/a.py": { area: "area:src", loc: 1960 } } };
+  for (const style of ["rings", "relief", "symbols"]) assert.deepEqual(found(withShape(jar().figure.regions[0].shape, { style, accent: "area:.", names: {} }), mug), [], `${style}: nothing to say`);
+  // Got with the accent on its documentation: Source is the slab, and splitting Source is the fix.
+  const doc = withShape(jar().figure.regions[0].shape, { style: "rings", accent: "area:documentation", names: {} });
+  assert.deepEqual(found(doc, got), ['"Source" holds 95% of the lines and the shape has 3 parts, so it draws as one slab around the accent; add "split": ["area:source"] to the region to cut "Source" into the folders inside it (6 parts, the largest 63%); the accent stays where it is']);
+  const fixed = withShape(jar().figure.regions[0].shape, { style: "rings", accent: "area:documentation", split: ["area:source"], names: {} });
+  assert.deepEqual(found(fixed, got), [], "the split it names quiets it");
+});
+
+test("shape-simple: the cold run's 11-op locomotive is too busy and its wheels merge; the 3-op flask and the bone's four knobs are fine", () => {
+  const simple = (shape) => shapeFindings(shapeReport(withShape(shape), withShape(shape).figure.regions[0], recipe))["shape-simple"];
+  const loco = {
+    ops: [
+      { add: "capsule", from: [20, 52], to: [72, 52], r: 22 }, rect([66, 12], [32, 64], { round: 2 }), rect([62, 6], [40, 9]), rect([22, 6], [12, 26]), rect([16, 0], [24, 8]),
+      { add: "circle", at: [48, 30], r: 10 }, rect([8, 72], [94, 12]), ...[28, 58, 84].map((x) => ({ add: "circle", at: [x, 92], r: 16 })), { add: "polygon", points: [[10, 70], [0, 104], [26, 104], [26, 70]] },
+    ],
+  };
+  assert.deepEqual(simple(loco), [
+    "the shape has 11 ops; past 8 a silhouette stops reading as one object at thumbnail size, so simplify it: one object with one telling feature, in 3 to 6 ops",
+    "ops 7, 8, 9 are 3 circles of about 9% of the shape each: small repeated details like wheels or windows merge at thumbnail size, so drop them or draw them as one shape",
+  ]);
+  assert.deepEqual(simple({ ops: [{ add: "circle", at: [50, 66], r: 34 }, rect([39, 12], [22, 34]), rect([33, 4], [34, 10], { round: 3 })] }), []);
+  assert.deepEqual(simple({ ops: [{ add: "capsule", from: [22, 50], to: [78, 50], r: 19 }, ...[[13, 38], [13, 62], [87, 38], [87, 62]].map((at) => ({ add: "circle", at, r: 13 }))], rotate: -50 }), []);
+});
+
+test("a sharp tip is not a thin feature, a bleed is not thin, and a 10px bar is", () => {
+  assert.deepEqual(thinFeatures(shapeMask({ ops: [{ add: "polygon", points: [[0, 0], [100, 50], [0, 100]] }], fit: { w: 0.7 } })), []);
+  assert.deepEqual(thinFeatures(shapeMask({ ops: [rect([0, 0], [100, 100])], fit: { w: 1.5 } })), []);
+  const bar = thinFeatures(shapeMask({ ops: [rect([0, 0], [100, 100]), rect([100, 45], [60, 2])], fit: { w: 0.8 } }));
+  assert.equal(bar.length, 1);
+  assert.equal(bar[0].kind, "part");
+  near(bar[0].width, 0.8 * W * (2 / 160), 3, "its width is measured");
+});
+
+test("sketch of the jar: the mask at 20px with the accent stratum, each stratum's numbers, the corners, no warnings", () => {
+  const out = sketch(jar(), recipe);
+  const grid = out.split("\n\nregions:")[0].split("\n");
+  assert.ok(grid.every((l) => l.length <= 42));
+  assert.match(out, /@{20}/, "the accent stratum");
+  assert.match(out, /^regions: A shape \(shape, 12 strata; @ marks the accent stratum, ·:-=\+\*# the light\); · marks hot rows$/m);
+  assert.match(out, /^shape: covers 6\d% of the sheet \(needs 18%\), \d+ by \d+px \(fit\.w 0\.9\d, fit\.h 0\.9\), bleeds bottom$/m);
+  assert.match(out, /^ {4}screens {18}\d+\.\d% of the area for \d+\.\d% of the lines, \d+ glyph cells, whole name \d+x$/m);
+  assert.match(out, /^ {2}\* the plan {17}\d+\.\d% of the area for \d+\.\d% of the lines, \d+ glyph cells, whole name \d+x, \d+px thick$/m);
+  assert.match(out, /^corners: top-left at 0,0 is 420 by \d+;/m);
+  assert.doesNotMatch(out, /^! /m);
+  const tiny = sketch(withShape({ ...jar().figure.regions[0].shape, fit: { h: 0.3 } }), recipe);
+  assert.match(tiny, /^! shape-cover: the shape covers 7% of the sheet; it needs 18%/m);
+});
+
+test("shape-limb: the cold run's mailbox on a long bare post reads as a signpost; a short post, a flask's neck and a tapering tip pass", () => {
+  const limb = (shape) => shapeFindings(shapeReport(withShape(shape), withShape(shape).figure.regions[0], recipe))["shape-limb"];
+  const head = [rect([10, 0], [80, 70], { round: 38 }), rect([10, 40], [80, 42], { round: 4 })];
+  assert.deepEqual(limb({ ops: [...head, rect([41, 80], [18, 40]), rect([88, 12], [8, 36], { round: 2 })] }).map((m) => m.replace(/\d+/g, "#")), [
+    "a thin limb at the bottom (y # to #, #px wide) takes #% of the shape's height for #% of its area; at thumbnail size the object reads as a post with a small head, and its parts there are too narrow to read, so shorten it to under #% of the height or drop it",
+  ]);
+  assert.match(limb({ ops: [...head, rect([41, 80], [18, 40])] })[0], /takes 3\d% of the shape's height for 1\d% of its area;.* shorten it to under 25% of the height or drop it$/);
+  assert.deepEqual(limb({ ops: [...head, rect([41, 80], [18, 20])] }), [], "a short post");
+  assert.deepEqual(limb({ ops: [{ add: "circle", at: [50, 66], r: 34 }, rect([39, 12], [22, 34]), rect([33, 4], [34, 10], { round: 3 })] }), [], "the flask's neck");
+  assert.deepEqual(limb({ ops: [{ add: "polygon", points: [[0, 0], [100, 0], [50, 120]] }] }), [], "a tapering tip");
+  const post = withShape({ ops: [...head, rect([41, 80], [18, 40])] });
+  assert.match(sketch(post, recipe), /^! shape-limb: a thin limb at the bottom/m, "the sketch warns");
+});
+
+test("the sketch prints each shape finding at the level render gives it: a block on the shape is a ✗ in both", () => {
+  for (const id of SHAPE_CHECKS) assert.ok(CHECKS.some((c) => c.id === id), `${id} is a check`);
+  const s = jar();
+  const legend = s.figure.texts.find((t) => t.role === "legend");
+  Object.assign(legend, { x: 300, y: 700, w: 200 });
+  const out = sketch(s, recipe);
+  assert.match(out, /^✗ shape-room: the legend \(\d+ by \d+ at \d+,\d+\) sits on the shape/m);
+  assert.equal(CHECKS.find((c) => c.id === "shape-room").level, "fail");
+  assert.doesNotMatch(out, /^! shape-room/m);
+  const tiny = sketch(withShape({ ...jar().figure.regions[0].shape, fit: { h: 0.3 } }), recipe);
+  assert.match(tiny, /^! shape-cover: /m, "a warning stays a warning");
+});
+
+test("the sketch PNG is a 280px picture of the silhouette with its accent, encoded without a browser", () => {
+  const png = sketchImage(jar(), recipe);
+  assert.deepEqual([...png.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  assert.equal(png.readUInt32BE(16), 280);
+  assert.equal(png.readUInt32BE(20), 397);
+  const idat = png.subarray(png.indexOf("IDAT") + 4, png.indexOf("IEND") - 8);
+  const raw = zlib.inflateSync(idat);
+  const pixels = new Set();
+  let hot = 0;
+  for (let y = 0; y < 397; y++) {
+    for (let x = 0; x < 280; x++) {
+      const [r, g, b] = raw.subarray(y * 841 + 1 + x * 3, y * 841 + 4 + x * 3);
+      pixels.add([r, g, b].map((v) => v.toString(16).padStart(2, "0")).join(""));
+      if (r > 100 && r > g + 50) hot++;
+    }
+  }
+  assert.ok(pixels.has("eae8e2"), "the paper appears");
+  assert.ok(hot > 2000, `the accent shows (${hot} orange pixels)`);
+  assert.equal(sketchImage(JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "wave.json"), "utf8")), recipe), null, "no PNG without a drawn shape");
+});
+
+/** The sketch PNG's pixels as hex strings, row by row. */
+function sketchPixels(spec) {
+  const png = sketchImage(spec, recipe);
+  const raw = zlib.inflateSync(png.subarray(png.indexOf("IDAT") + 4, png.indexOf("IEND") - 8));
+  return Array.from({ length: 397 }, (_, y) => Array.from({ length: 280 }, (_, x) => raw.subarray(y * 841 + 1 + x * 3, y * 841 + 4 + x * 3).toString("hex")));
+}
+
+test("the sketch PNG draws creases", () => {
+  const relief = JSON.parse(fs.readFileSync(path.join(HERE, "fixtures", "relief-jar.json"), "utf8"));
+  relief.facts = recipe.hash;
+  const count = (spec) => sketchPixels(spec).flat().filter((c) => c === "0e1424").length;
+  const creased = count(relief);
+  relief.figure.regions[0].shape.ops = relief.figure.regions[0].shape.ops.filter((o) => !o.crease);
+  assert.ok(creased > count(relief) + 200, "the relief's creases show as lines of paper across the form");
+});
+
+test("a traced shape: a bundled or path mask validates; ops beside it, a turn, a missing file or a blank image are refused", () => {
+  const f = "figure.regions[0].shape";
+  assert.deepEqual(validateSpec(withShape({ mask: "wings" })), []);
+  assert.deepEqual(validateSpec(withShape({ mask: "wings", fit: { h: 0.8 } })), []);
+  assert.ok(validateSpec(withShape({ mask: "wings", ops: [rect([0, 0], [10, 10])] })).includes(`${f}: give ops or mask, not both; a mask is the whole silhouette`));
+  assert.ok(validateSpec(withShape({ mask: "wings", rotate: 10 })).includes(`${f}.rotate: a traced mask is not turned; turn the image itself`));
+  assert.ok(validateSpec(withShape({ mask: "no-such.png" })).some((e) => e.startsWith(`${f}.mask: shape mask not found: no-such.png`)));
+  const white = path.join(HERE, ".blank-mask.png");
+  fs.writeFileSync(white, encodePng(4, 4, Buffer.alloc(4 * 4 * 3, 255)));
+  try {
+    assert.ok(validateSpec(withShape({ mask: white })).includes(`${f}.mask: the image has no dark pixels on the sheet; the silhouette is its pixels darker than mid grey`));
+  } finally {
+    fs.rmSync(white, { force: true });
+  }
+});
+
+test("the symbols style: the drawn mask in shaded symbols, every part a band of rows by its lines, the accent's rows in the accent", () => {
+  const spec = jar();
+  const region = { ...spec.figure.regions[0], style: "symbols" };
+  const report = shapeReport({ ...spec, frame: "signal", theme: "dark" }, region, recipe);
+  const rows = report.rows;
+  assert.ok(rows.length > 50 && rows.every((r) => /^[-:=+# ]+$/.test(r.text)), "only the ramp's symbols and gaps");
+  for (const p of report.parts) assert.ok(rows.some((r) => r.part === p.id), `${p.id} has rows`);
+  assert.ok(rows.filter((r) => r.hot).every((r) => r.tone === "hot"), "the accent's rows take the accent colour on charcoal");
+  const tops = report.parts.map((p) => Math.min(...rows.filter((r) => r.part === p.id).map((r) => r.y)));
+  assert.deepEqual(tops, [...tops].sort((a, b) => a - b), "the parts run top to bottom in tree order");
+  for (const r of rows) assert.ok(report.mask.runs[Math.floor(r.y + r.height / 2)].some(([l, rr]) => r.x >= l - 1 && r.x <= rr), `a row at ${r.x},${r.y} starts inside the mask`);
+  const found = shapeFindings(report);
+  assert.deepEqual(found["shape-name"], [], "symbols draw no names, so shape-name does not apply");
+  const sketch = sketchImage({ ...spec, frame: "signal", figure: { ...spec.figure, regions: [region] } }, recipe);
+  assert.ok(sketch && sketch.length > 1000, "the sketch PNG draws the symbols");
+});

@@ -7,6 +7,9 @@ import { fileURLToPath } from "node:url";
 import { buildPage, renderPage } from "../lib/render.mjs";
 import { fieldItems } from "../lib/sketch.mjs";
 import { BROWSER_NOTE } from "../lib/browser.mjs";
+import { runChecks } from "../lib/check.mjs";
+import { coverOf } from "../lib/cover-render.mjs";
+import { COVER_FRAMES } from "../lib/cover.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TOOLS = path.join(HERE, "..");
@@ -14,7 +17,7 @@ const OUT = path.join(HERE, ".out");
 const VYO = path.join(TOOLS, "vyo.mjs");
 const PRESETS = fs.readdirSync(path.join(TOOLS, "presets")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
 
-const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "docs", "init", "recent", "png"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
+const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "shape", "place", "rings", "shape-relief", "docs", "init", "recent", "png", "cover"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
@@ -26,7 +29,8 @@ if (scan.status !== 0) {
   process.exit(1);
 }
 const hash = JSON.parse(fs.readFileSync(factsFile, "utf8")).hash;
-const preset = (id) => ({ ...JSON.parse(fs.readFileSync(path.join(TOOLS, "presets", `${id}.json`), "utf8")), facts: hash });
+// The relief jar on the dark sheet is a test fixture, not a preset: in the presets it was the light jar's twin.
+const preset = (id) => ({ ...JSON.parse(fs.readFileSync(id === "relief-jar" ? path.join(HERE, "fixtures", "relief-jar.json") : path.join(TOOLS, "presets", `${id}.json`), "utf8")), facts: hash });
 
 let failed = 0;
 const result = (ok, name, detail) => {
@@ -37,7 +41,7 @@ const result = (ok, name, detail) => {
   }
 };
 
-for (const id of PRESETS) {
+for (const id of [...PRESETS, "relief-jar"]) {
   const dir = path.join(OUT, id);
   fs.mkdirSync(dir, { recursive: true });
   const specFile = path.join(dir, "recipe-poster.json");
@@ -101,7 +105,59 @@ const PLANTED = [
   ],
   ["a record line with no commit", "terrain", (s) => delete s.product.commit, /^✗ record: the record line has no commit; set product\.commit to the short hash/m],
   ["a fits without the field's keyword", "wave", (s) => (s.figure.regions[0].fits = "Pantry as a band of its own parts."), /^✗ fits: region wave: fits must say why a wave matches the product's story; use "travel" or "flow" or "hand" or "move"$/m],
+  [
+    "a shape whose first stratum falls in a stem too narrow for its name",
+    "shape",
+    (s) => (s.figure.regions[0].shape = { ops: [{ add: "rect", at: [0, 0], size: [6, 120] }, { add: "rect", at: [-40, 120], size: [84, 60], round: 10 }], fit: { h: 0.8 } }),
+    /^✗ shape-name: part "saved recipes" never shows its whole name: its stratum's widest run of type is \d+px and the name needs \d+px; widen the shape where the stratum falls/m,
+  ],
+  ["a legend placed on the shape", "shape", (s) => Object.assign(s.figure.texts.find((t) => t.role === "legend"), { x: 300, y: 600 }), /^✗ shape-room: the legend \(\d+ by \d+ at \d+,\d+\) sits on the shape or within 16px of it; move it into the top-(left|right) corner/m],
+  ["a shape that paints nothing", "shape", (s) => s.figure.regions[0].shape.ops.push({ cut: "rect", at: [-50, -50], size: [300, 300] }), /^✗ spec: figure\.regions\[0\]\.shape: the ops paint nothing on the sheet/m],
 ];
+
+// A drawn shape's flaws are warnings: the poster still renders, and the agent weighs the `!` line.
+const jarShape = () => preset("shape").figure.regions[0].shape;
+const SHAPE_WARNINGS = [
+  ["a hairline handle", (s) => s.ops.push({ add: "capsule", from: [96, 60], to: [130, 40], r: 0.6 }), /^! shape-thin: the shape is \d+px thick near \d+,\d+; under 18px it is a hairline at thumbnail size, so make that feature at least 18px thick or remove it$/m],
+  ["a tiny jar", (s) => (s.fit = { h: 0.3, cx: 0.52, cy: 0.64 }), /^! shape-cover: the shape covers 7% of the sheet; it needs 18% to read as the picture, so scale it up 1\.\d+x \(set fit\.h to 0\.\d+, it is 0\.3\) or draw it fatter$/m],
+];
+const RINGS_WARNINGS = [
+  ["a thin bar in rings", { ops: [{ add: "rect", at: [0, 0], size: [100, 12], round: 4 }], fit: { w: 0.9 } }, /^! shape-rings: the shape is \d+px across at its thickest, room for \d rings of 7px; its 12 parts need about 18, so draw it fatter/m],
+  ["a bar of rings turned 45 degrees", { ops: [{ add: "rect", at: [0, 0], size: [40, 100], round: 2 }], rotate: 45, fit: { h: 0.7 } }, /^! shape-upright: part "[a-z ]+" never reads upright: none of its \d+ names leans under 30 degrees/m],
+];
+for (const [name, shape, expect] of RINGS_WARNINGS) {
+  const spec = preset("shape-rings");
+  spec.figure.regions[0].shape = shape;
+  const file = path.join(OUT, "planted-rings.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(expect.test(r.stderr), `planted rings flaw (${name}) warns with ${expect}`, `exit ${r.status}\n${r.stderr}`);
+}
+
+for (const [name, mutate, expect] of SHAPE_WARNINGS) {
+  const spec = preset("shape");
+  const shape = jarShape();
+  mutate(shape);
+  spec.figure.regions[0].shape = shape;
+  const file = path.join(OUT, "planted-shape.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(expect.test(r.stderr), `planted shape flaw (${name}) warns with ${expect}`, `exit ${r.status}\n${r.stderr}`);
+}
+
+// A relief's flaws, through the CLI: a form turned away from the light, and an accent stratum too thin to see.
+const RELIEF_WARNINGS = [
+  ["every face dim", (r) => r.shape.ops.forEach((o) => o.add && (o.face = "dim")), /^! shape-tone: at thumbnail size the relief's lit side reaches \d+\.\d% of the ink's contrast \(90th percentile\); it needs 25\.0% to stand off the sheet, so turn a dim face to lit or drop its face$/m],
+  ["a flat strip", (r) => (r.shape = { ops: [{ add: "rect", at: [0, 0], size: [100, 40] }], fit: { w: 0.95 } }), /^! shape-accent: the accent stratum "the plan" is \d+px thick at its thickest; it needs 40px to show in the thumbnail, so turn the strata \(strata\.angle\) to cut across the shape's narrow side/m],
+];
+for (const [name, mutate, expect] of RELIEF_WARNINGS) {
+  const spec = preset("relief-jar");
+  mutate(spec.figure.regions[0]);
+  const file = path.join(OUT, "planted-relief.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(expect.test(r.stderr), `planted relief flaw (${name}) warns with ${expect}`, `exit ${r.status}\n${r.stderr}`);
+}
 
 for (const [name, id, mutate, expect] of PLANTED) {
   const spec = preset(id);
@@ -133,7 +189,7 @@ for (const [name, id, mutate, expect] of PLANTED) {
 // The sketch lays a field out in Node with Commit Mono's fixed advance; the page measures the font. Given the
 // page's own text blocks, both must place every row within 2px.
 const facts = JSON.parse(fs.readFileSync(factsFile, "utf8"));
-for (const id of PRESETS.filter((p) => preset(p).figure.regions.some((r) => r.kind === "field"))) {
+for (const id of PRESETS.filter((p) => preset(p).frame !== "cover" && preset(p).figure.regions.some((r) => r.kind === "field"))) {
   const spec = preset(id);
   const page = await renderPage({ html: buildPage(spec, facts), base: path.join(OUT, `${id}-twin`), png: false, pdf: false });
   const blocks = page.blocks.filter((b) => b.role).map((b) => b.rect);
@@ -143,6 +199,16 @@ for (const id of PRESETS.filter((p) => preset(p).figure.regions.some((r) => r.ki
     return !r || Math.abs(r.left - n.x) > 2 || Math.abs(r.top - n.y) > 2 || Math.abs(r.right - (n.x + n.width)) > 2;
   });
   result(node.length === page.rows.length && !far.length, `${id}: the sketch and the page place the same ${node.length} rows within 2px`, `node ${node.length} rows, page ${page.rows.length}; first apart: ${JSON.stringify(far[0])} vs ${JSON.stringify(page.rows[node.indexOf(far[0])]?.rect)}`);
+}
+
+// A halo drawn line by line covered the y of "type" with the stroke of "The" below it; text-clear must see that.
+{
+  const spec = preset("river");
+  const html = buildPage(spec, facts);
+  const stroked = html.replace("[data-role] { z-index: 2 }", "[data-role] { z-index: 2; -webkit-text-stroke: 12px var(--paper); paint-order: stroke fill }");
+  const covered = async (h) => runChecks("page", { spec, facts, presets: {}, page: await renderPage({ html: h, base: path.join(OUT, "halo"), png: false, pdf: false }) }).filter((f) => f.id === "text-clear");
+  const [now, then] = [await covered(html), await covered(stroked)];
+  result(stroked !== html && !now.length && /^\d+ px of the (legend|paragraph)'s letters are painted over near \d+,\d+;/.test(then[0]?.message ?? ""), "text-clear passes the halo and catches a stroke that covers the line above", `now ${JSON.stringify(now)}\nthen ${JSON.stringify(then)}`);
 }
 
 const emptyFacts = path.join(OUT, "empty-facts.json");
@@ -164,6 +230,28 @@ vyo("scan", path.join(HERE, "fixtures", "empty"), "--out", emptyFacts);
   fs.writeFileSync(file, JSON.stringify(preset("wave"), null, 2));
   const r = spawnSync(process.execPath, [VYO, "render", file, "--facts", factsFile], { encoding: "utf8", env: { ...process.env, VYO_CHROMIUM: path.join(OUT, "no-such-chromium") } });
   result(r.status === 1 && r.stderr === `✗ ${BROWSER_NOTE}\n` && !fs.existsSync(path.join(OUT, "recipe-poster.png")), "render with no browser prints the browser note and exits 1", `exit ${r.status}\n${r.stderr}`);
+}
+
+{
+  const spec = preset("terrain");
+  spec.figure.regions[0].accent = "area:nowhere";
+  const file = path.join(OUT, "render-fails.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("render", file, "--facts", factsFile);
+  const last = r.stderr.trimEnd().split("\n").at(-1);
+  result(
+    r.status === 1 && /^Wrote, with failures: /m.test(r.stdout) && /^POSTER NOT FINISHED: fix the 1 ✗ line above, then run vyo render again\./.test(last),
+    "a render with a failing check exits 1 and ends on a line that says the poster is not finished",
+    `exit ${r.status}\n${r.stdout}\n${r.stderr}`,
+  );
+}
+{
+  const spec = preset("wave");
+  spec.figure.texts = spec.figure.texts.filter((t) => t.role !== "legend");
+  const file = path.join(OUT, "render-spec-fails.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = spawnSync(process.execPath, [VYO, "render", file, "--facts", factsFile], { encoding: "utf8", env: { ...process.env, VYO_CHROMIUM: path.join(OUT, "no-such-chromium") } });
+  result(r.status === 1 && /^POSTER NOT FINISHED: fix the 1 ✗ line above/.test(r.stderr.trimEnd().split("\n").at(-1)), "a failing spec exits 1 with a nonexistent VYO_CHROMIUM and ends on the not-finished line", `exit ${r.status}\n${r.stderr}`);
 }
 
 {
@@ -191,7 +279,41 @@ for (const kind of ["resolve", "wipe"]) {
   result(r.status === 0 && /^PASS$/m.test(r.stdout), `a spec with ${kind} motion renders its still as the finished poster`, `exit ${r.status}\n${r.stdout}${r.stderr}`);
 }
 
-console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length} planted bugs caught`);
+// The cover: its loop through render --gif, the page's still against the sketch's, and planted flaws.
+{
+  const dir = path.join(OUT, "cover-loop");
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, "recipe-poster.json");
+  fs.writeFileSync(file, JSON.stringify(preset("cover"), null, 2));
+  const r = vyo("render", file, "--facts", factsFile, "--gif", "--no-pdf");
+  const gif = path.join(dir, "recipe-poster.gif");
+  const size = fs.existsSync(gif) ? fs.statSync(gif).size : 0;
+  const probe = size ? spawnSync("ffprobe", ["-v", "error", "-count_frames", "-select_streams", "v:0", "-show_entries", "stream=nb_read_frames", "-of", "csv=p=0", gif], { encoding: "utf8" }) : null;
+  const frames = probe ? Number(probe.stdout.trim()) : 0;
+  result(r.status === 0 && /^PASS$/m.test(r.stdout) && size > 0 && size < 8e6 && frames === COVER_FRAMES / 2 && fs.existsSync(path.join(dir, "recipe-poster.mp4")), "the cover preset renders its loop with --gif: every frame passes, a GIF of 84 frames under 8 MB, and an MP4", `exit ${r.status}, ${size} bytes, ${frames} frames\n${r.stdout}${r.stderr}`);
+}
+{
+  const spec = preset("cover");
+  const page = await renderPage({ html: buildPage(spec, facts), base: path.join(OUT, "cover-twin"), png: false, pdf: false });
+  const node = coverOf(spec, facts).still;
+  const same = ["frame", "shares", "whole", "letters", "accentCells"].every((k) => JSON.stringify(page.cover?.report?.[k]) === JSON.stringify(node[k]));
+  result(same && page.cover.shown === node.frame && !runChecks("page", { spec, facts, presets: {}, page }).length, "the cover's page draws the still the sketch measures, cell for cell, and passes every page check", `page ${JSON.stringify(page.cover?.report)}\nnode ${JSON.stringify(node)}`);
+}
+const COVER_PLANTED = [
+  ["a free colour for the ground", (s) => (s.ground = "#14281F"), /^✗ spec: ground: "#14281F" is not a ground; a free colour is not offered; use "navy", "charcoal", "forest", "paper"$/m],
+  ["an accent that names no part", (s) => (s.figure.regions[0].accent = "area:nowhere"), /^✗ cover-accent: the accent area:nowhere names no part, so nothing prints in orange; put the accent on /m],
+  ["a form as thin as a pole", (s) => (s.figure.regions[0].shape = { ops: [{ add: "rect", at: [0, 0], size: [6, 100] }] }), /^✗ cover-names: "[a-z ]+" \(\d+% of the code\) never prints its whole name in the still, frame \d+; at \d+ characters it does not fit its stratum there, so shorten it to \d+ characters or fewer$/m],
+];
+for (const [name, mutate, expect] of COVER_PLANTED) {
+  const spec = preset("cover");
+  mutate(spec);
+  const file = path.join(OUT, "planted-cover.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(r.status === 1 && expect.test(r.stderr), `planted cover flaw (${name}) fails with ${expect}`, `exit ${r.status}\n${r.stderr}`);
+}
+
+console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length + SHAPE_WARNINGS.length + RINGS_WARNINGS.length + RELIEF_WARNINGS.length + COVER_PLANTED.length} planted bugs caught`);
 
 const pack = spawnSync(process.execPath, ["--test", path.join(HERE, "pack.test.mjs")], { stdio: "inherit" });
 

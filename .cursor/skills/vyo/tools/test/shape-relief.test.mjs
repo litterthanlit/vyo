@@ -1,0 +1,234 @@
+// The relief style of the shape field: its hints' validation, its strata and whole words, its light, its
+// findings, and its sketch.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import zlib from "node:zlib";
+import { fileURLToPath } from "node:url";
+import { validateSpec } from "../lib/spec.mjs";
+import { shapeMask } from "../lib/mask.mjs";
+import { shapeReport, shapeFindings } from "../lib/shape-report.mjs";
+import { reliefTone, RELIEF } from "../lib/fields/shape-relief.mjs";
+import { sketch, sketchImage } from "../lib/sketch.mjs";
+import { scanRepo } from "../lib/scan/index.mjs";
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const recipe = scanRepo(path.join(HERE, "fixtures", "recipe"));
+const preset = () => ({ ...JSON.parse(fs.readFileSync(path.join(HERE, "fixtures", "relief-jar.json"), "utf8")), facts: recipe.hash });
+/** The relief preset with its region changed by `over` (a shape replaces the preset's). */
+const relief = (over = {}, theme = "dark") => {
+  const s = preset();
+  s.theme = theme;
+  Object.assign(s.figure.regions[0], over);
+  return s;
+};
+const report = (spec) => shapeReport(spec, spec.figure.regions[0], recipe);
+const findings = (spec, rows) => shapeFindings(report(spec), rows ? { rows } : {});
+const plainJar = { fit: { h: 0.74, cx: 0.5, cy: 0.6 }, ops: [{ add: "rect", at: [12, 0], size: [76, 16], round: 4 }, { add: "rect", at: [20, 15], size: [60, 10] }, { add: "rect", at: [0, 24], size: [100, 112], round: 26 }] };
+const noHints = () => {
+  const s = relief({ shape: plainJar });
+  delete s.figure.regions[0].bevel;
+  delete s.figure.regions[0].strata;
+  return s;
+};
+
+test("the relief preset is valid, and face, crease, bevel and strata validate", () => {
+  assert.deepEqual(validateSpec(preset()), []);
+  const ops = [
+    { add: "polygon", points: [[0, 0], [100, 0], [50, 80]], face: "lit" },
+    { add: "rect", at: [0, 0], size: [40, 40], face: "dim" },
+    { add: "circle", at: [80, 80], r: 20, face: "round" },
+    { crease: "capsule", from: [10, 10], to: [90, 10] },
+    { crease: "arc", at: [50, 50], r: 20, from: 0, to: 180 },
+    { crease: "rect", at: [20, 20], size: [30, 30] },
+  ];
+  assert.deepEqual(validateSpec(relief({ shape: { ops }, bevel: 0.4, strata: { by: "depth" } })), []);
+  assert.deepEqual(validateSpec(relief({ strata: { by: "angle", angle: 135 } })), []);
+});
+
+test("bad hints are each reported, in the house style", () => {
+  const f = "figure.regions[0]";
+  const errors = validateSpec(
+    relief({
+      bevel: 2,
+      strata: { by: "spiral" },
+      shape: { ops: [{ crease: "capsule", from: [0, 0], to: [1, 1] }, { add: "rect", at: [0, 0], size: [9, 9], face: "shiny" }, { cut: "rect", at: [0, 0], size: [2, 2], face: "lit" }, { add: "rect", crease: "rect", at: [0, 0], size: [1, 1] }] },
+    }),
+  );
+  for (const want of [
+    `${f}.bevel: 0 to 1, the share of the shape's depth that is rounded (1 a full dome, 0.2 a flat top with soft edges)`,
+    `${f}.strata: { "by": "angle", "angle": degrees } (90 stacks the parts top to bottom, 0 left to right) or { "by": "depth" } (shells from the outline in)`,
+    `${f}.shape.ops[0]: must be an add; a crease folds a surface the adds have drawn`,
+    `${f}.shape.ops[1].face: one of lit, dim, round: a flat facet turned toward the light, away from it, or rounded (the default); only the relief style draws it`,
+    `${f}.shape.ops[2].face: a rect takes at, size, round and rotate`,
+    `${f}.shape.ops[3]: give exactly one of add, cut or crease (found add, crease)`,
+  ]) assert.ok(errors.includes(want), `expected ${JSON.stringify(want)} in ${JSON.stringify(errors, null, 1)}`);
+});
+
+test("a crease never changes the silhouette, and the rings style ignores every hint", () => {
+  const plain = shapeMask(plainJar);
+  const creased = shapeMask({ ...plainJar, ops: [...plainJar.ops, { crease: "rect", at: [12, 58], size: [76, 42] }, { crease: "capsule", from: [16, 6], to: [84, 6] }] });
+  assert.deepEqual(creased.runs, plain.runs);
+  const rings = (over) => {
+    const s = relief(over);
+    s.figure.regions[0].style = "rings";
+    return report(s).rows.map((r) => [r.text, Math.round(r.x), Math.round(r.y)]);
+  };
+  const faced = { ...plainJar, ops: plainJar.ops.map((o) => ({ ...o, face: "dim" })) };
+  assert.deepEqual(rings({ shape: faced, bevel: 0.1, strata: { by: "depth" } }), rings({ shape: plainJar }));
+});
+
+test("strata hold each part's share of the area, and the glyphs follow it", () => {
+  for (const strata of [{ by: "angle", angle: 90 }, { by: "angle", angle: 135 }, { by: "depth" }]) {
+    const r = report(relief({ strata }));
+    const glyphs = r.strata.reduce((s, x) => s + x.glyphs, 0);
+    for (const s of r.strata) {
+      assert.ok(Math.abs(s.area - s.lines) < 0.002, `${strata.by} ${strata.angle ?? ""}: ${s.part.name} has ${s.area} of the area for ${s.lines} of the lines`);
+      const share = s.glyphs / glyphs;
+      assert.ok(Math.abs(share - s.lines) <= Math.max(0.006, s.lines * RELIEF.share.part), `${s.part.name}: ${share} of the glyphs for ${s.lines} of the lines`);
+    }
+    assert.deepEqual(Object.values(findings(relief({ strata }))).flat(), [], `${strata.by} ${strata.angle ?? ""} has no findings`);
+  }
+});
+
+test("every part shows its whole name, while words run across seams and lines enter and leave the shape mid-name", () => {
+  for (const strata of [{ by: "angle", angle: 90 }, { by: "angle", angle: 135 }, { by: "depth" }]) {
+    const r = report(relief({ strata }));
+    for (const p of r.parts) assert.ok(r.rows.some((row) => row.part === p.id && row.text.includes(p.name.toLowerCase())), `${p.name} shows whole`);
+    const fragment = (row) => /[a-z]/.test(row.text.split(r.parts.find((p) => p.id === row.part).name.toLowerCase()).join(""));
+    assert.ok(r.rows.filter(fragment).length > 20, `${strata.by} ${strata.angle ?? ""}: rows start and end in part-names`);
+    // A word takes whichever part it starts on is owed most, so a seam steps where whole words begin and end.
+    const byLine = new Map();
+    for (const row of r.rows) byLine.set(row.y, new Set([...(byLine.get(row.y) ?? []), row.part]));
+    assert.ok([...byLine.values()].filter((parts) => parts.size > 1).length >= 5, `${strata.by} ${strata.angle ?? ""}: seams stagger along the lines (${[...byLine.values()].filter((parts) => parts.size > 1).length} lines hold two parts)`);
+  }
+});
+
+test("a stratum too thin for its name across a paper plane still shows it whole", () => {
+  const thin = relief({ strata: { by: "angle", angle: 135 }, shape: { ops: [{ add: "polygon", points: [[0, 400], [1000, 0], [430, 600]] }, { add: "polygon", points: [[430, 600], [1000, 0], [740, 1000]] }], fit: { h: 0.83, cx: 0.52, cy: 0.58 }, rotate: -14 } });
+  const r = report(thin);
+  for (const p of r.parts) assert.ok(r.rows.some((row) => row.part === p.id && row.text.includes(p.name.toLowerCase())), `${p.name} shows whole`);
+  assert.deepEqual(findings(thin)["shape-share"], []);
+});
+
+test("with no hints the default is a rounded volume: lit top left, dim bottom right, a clear spread", () => {
+  for (const theme of ["dark", "light"]) {
+    const spec = noHints();
+    spec.theme = theme;
+    const r = report(spec);
+    const tone = reliefTone(r, r.mask, r.tokens);
+    assert.ok(tone.lit >= RELIEF.tone.lit && tone.spread >= RELIEF.tone.spread, `${theme}: lit ${tone.lit}, spread ${tone.spread}`);
+    const { light, inside, w } = r.surface;
+    const at = (fx, fy) => {
+      const b = r.mask.box;
+      const [x, y] = [b.left + fx * (b.right - b.left), b.top + fy * (b.bottom - b.top)];
+      const i = Math.floor(y / RELIEF.cell) * w + Math.floor(x / RELIEF.cell);
+      assert.ok(inside[i], `${fx},${fy} is inside`);
+      return light[i];
+    };
+    assert.ok(at(0.15, 0.45) > at(0.5, 0.5) && at(0.5, 0.5) > at(0.85, 0.85), "light falls from the top left to the bottom right");
+  }
+});
+
+test("on either sheet the form is only its letters over the accent's glow, and the sheet's dot grid carries its shadow", () => {
+  const inside = (r, x, y) => r.mask.runs[Math.floor(y)]?.some(([l, rr]) => x >= l && x < rr);
+  for (const theme of ["dark", "light"]) {
+    const r = report(relief({}, theme));
+    assert.ok(r.rows.every((row) => row.spans.every((s) => s.tone === (row.hot ? "hot" : "ink"))), `${theme}: ink letters, the accent's in hot`);
+    assert.equal(r.ground.length, 1, `${theme}: no body, haze or shadow slab, only the glow`);
+    const [glow] = r.ground;
+    assert.ok(glow.hot && glow.tone === "hot" && glow.blur >= 5 && glow.blur <= 7 && glow.alpha <= 0.55, `${theme}: a glow hugging the accent's letters`);
+    const hotRows = r.rows.filter((row) => row.hot);
+    assert.ok(glow.rows.every(([y, spans]) => spans.every(([l, rr]) => hotRows.some((h) => y >= Math.floor(h.y) && y < h.y + h.height + 1 && l >= h.x - 0.01 && rr <= h.x + h.width + 0.01))), `${theme}: the glow covers only the accent's letter cells`);
+    // The dots: every other glyph cell outside the shape, faint; the cast shadow down and right takes them away on
+    // the dark sheet and darkens them on paper.
+    const dots = r.sheet.flatMap((row) => {
+      let k = 0;
+      return row.spans.flatMap((s) => [...s.text].map((ch) => [ch, row.x + (k++ + 0.5) * (row.width / row.text.length), row.y + row.height / 2, s.alpha])).filter(([ch]) => ch === "·");
+    });
+    assert.ok(dots.length > 10000, `${theme}: ${dots.length} dots`);
+    assert.ok(dots.every(([, x, y]) => !(inside(r, x - 2, y) && inside(r, x + 2, y))), `${theme}: no dot on the shape, to the 2px grid`);
+    const b = r.mask.box;
+    const under = dots.filter(([, x, y]) => x > b.right - 20 && x < b.right + 20 && y > b.top + 0.5 * (b.bottom - b.top) && y < b.bottom + 20);
+    const far = dots.filter(([, x, y]) => y < 200);
+    const mean = (a) => a.reduce((s, d) => s + d[3], 0) / a.length;
+    if (theme === "dark") assert.ok(far.every((d) => d[3] <= 0.12) && mean(under) < mean(far), "on the dark sheet the shadow takes the faint light away");
+    else assert.ok(mean(under) > mean(far) + 0.05, "on paper the shadow darkens the dots");
+  }
+  const dark = report(relief());
+  assert.ok(dark.rows.some((row) => row.hot && row.spans.some((s) => s.glow > 0)), "on the dark sheet each accent letter glows too");
+});
+
+test("the layout is deterministic", () => {
+  const a = JSON.stringify(report(relief({ strata: { by: "depth" } })).rows);
+  report(relief());
+  const b = JSON.stringify(report(relief({ strata: { by: "depth" } })).rows);
+  assert.equal(a, b);
+});
+
+test("planted relief flaws each warn or fail with a number and an instruction", () => {
+  const strip = relief({ shape: { ops: [{ add: "rect", at: [0, 0], size: [100, 40] }], fit: { w: 0.95 } } });
+  assert.match(findings(strip)["shape-accent"][0], /^the accent stratum "the plan" is \d+px thick at its thickest; it needs 40px to show in the thumbnail, so turn the strata \(strata\.angle\) to cut across the shape's narrow side, use strata by depth, scale the shape up, or put the accent on a bigger part$/);
+
+  const dim = relief({ shape: { ...plainJar, ops: plainJar.ops.map((o) => ({ ...o, face: "dim" })) } });
+  assert.match(findings(dim)["shape-tone"][0], /^at thumbnail size the relief's lit side reaches \d+\.\d% of the ink's contrast \(90th percentile\); it needs 25\.0% to stand off the sheet, so turn a dim face to lit or drop its face$/);
+  assert.match(findings(dim)["shape-tone"].at(-1), /so every face is dim, which turns the whole form one way: give one add the other face, or drop the faces$/);
+
+  const flat = relief({ bevel: 0 });
+  assert.match(findings(flat)["shape-tone"].at(-1), /^at thumbnail size the relief's tones span \d+\.\d% \(10th to 90th percentile\); it needs 22\.0% to read as a volume, so raise bevel \(it is 0\) to 0\.7 or more, so the form rounds toward the light$/);
+  // No message asks for a bevel the spec already has, and an accent over half the shape is shape-dominant's to fix.
+  for (const over of [{ bevel: 1 }, { bevel: 0.7 }, { bevel: 1, shape: { ...plainJar, ops: plainJar.ops.map((o) => ({ ...o, face: "lit" })) } }]) {
+    for (const m of findings(relief(over))["shape-tone"]) assert.doesNotMatch(m, new RegExp(`bevel \\(it is ${over.bevel}\\) to|toward 1`), m);
+  }
+
+  const rows = report(relief()).rows.map((r) => ({ part: r.part, text: r.part === "area:lib/plan" ? r.text.slice(0, 3) : r.text, width: r.width }));
+  const lost = findings(relief(), rows);
+  assert.match(lost["shape-share"][0], /^"the plan" has \d\.\d% of the relief's glyphs for 8\.4% of the lines; its stratum is cut off by the sheet edge or too thin across the glyph lines, so keep the shape on the sheet or turn the strata \(strata\.angle\)$/);
+  assert.match(lost["shape-name"][0], /^part "the plan" never shows its whole name: its stratum's widest run of type is \d+px and the name needs 29px; widen the shape where the stratum falls, turn the strata \(strata\.angle\) so it crosses the shape's long side, or give the part a shorter name$/);
+});
+
+test("sketch of a relief: tone ASCII with the accent stratum, the strata, and a shaded PNG", () => {
+  const out = sketch(relief(), recipe);
+  assert.match(out, /^regions: A shape \(shape, 12 strata; @ marks the accent stratum, ·:-=\+\*# the light\)/m);
+  assert.match(out, /@{20}/);
+  assert.match(out, /#{6}/, "the lit side");
+  assert.match(out, /^relief: bevel 0\.8 \(\d+px rounded\), strata at 90 degrees; thumbnail lit side \d+\.\d% \(needs 25\.0%\), spread \d+\.\d% \(needs 22\.0%\)$/m);
+  assert.match(out, /^ {2}\* the plan {17}8\.4% of the area for 8\.4% of the lines, \d+ glyph cells, whole name \d+x, \d+px thick$/m);
+  assert.doesNotMatch(out, /^! /m);
+  const png = sketchImage(relief(), recipe);
+  const idat = png.subarray(png.indexOf("IDAT") + 4, png.indexOf("IEND") - 8);
+  const raw = zlib.inflateSync(idat);
+  const lum = [];
+  let hot = 0;
+  for (let y = 0; y < 397; y++) {
+    for (let x = 0; x < 280; x++) {
+      const [r, g, b] = raw.subarray(y * 841 + 1 + x * 3, y * 841 + 4 + x * 3);
+      if (r > 100 && r > g + 50) hot++;
+      else if (Math.abs(r - g) < 30) lum.push(r);
+    }
+  }
+  assert.ok(hot > 2000, `the accent stratum shows (${hot} orange pixels)`);
+  assert.ok(new Set(lum.map((v) => v >> 4)).size >= 6, "the shading shows as several greys");
+});
+
+test("a part far under one glyph line keeps its share in level strata: date-fns's hourglass, 0.2% beside 4.7%", () => {
+  // date-fns's seven parts by lines, in tree order; the first is a sixth of one glyph line across the rim.
+  const lines = [228, 4601, 38820, 2226, 44523, 4951, 2707];
+  const names = ["upgrade helpers", "extra tools", "date tools", "chained style", "languages", "reading dates", "time zones"];
+  const ids = lines.map((_, i) => `area:p${i}`);
+  const facts = {
+    hash: recipe.hash,
+    facts: ids.map((id, i) => ({ id, kind: "area", name: names[i], meta: { leaf: true } })),
+    files: Object.fromEntries(ids.map((id, i) => [`p${i}/a.js`, { area: id, loc: lines[i] }])),
+  };
+  const hourglass = { ops: [{ add: "rect", at: [6, 0], size: [88, 10], round: 3 }, { add: "polygon", points: [[14, 8], [86, 8], [57, 50], [43, 50]] }, { add: "polygon", points: [[43, 50], [57, 50], [86, 92], [14, 92]] }, { add: "rect", at: [6, 90], size: [88, 10], round: 3 }] };
+  const s = relief({ shape: hourglass, accent: "area:p2", names: {} });
+  delete s.figure.regions[0].strata;
+  delete s.figure.regions[0].bevel;
+  const r = shapeReport(s, s.figure.regions[0], facts);
+  const found = shapeFindings(r);
+  assert.deepEqual(found["shape-share"], [], "every part within shape-share's tolerance");
+  assert.deepEqual(found["shape-name"], [], "every part shows its name whole");
+  assert.ok(r.strata[0].glyphs < 80, `the 0.2% part draws ${r.strata[0].glyphs} glyph cells, not a whole line of about 200`);
+});

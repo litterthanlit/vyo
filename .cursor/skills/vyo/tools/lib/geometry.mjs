@@ -469,6 +469,12 @@ export function corners(rects) {
   const split = (a, b, size) => {
     const over = out[a][size] + out[b][size] - (size === "w" ? SHEET.width : SHEET.height);
     if (over <= 0 || !out[a][size === "w" ? "h" : "w"] || !out[b][size === "w" ? "h" : "w"]) return;
+    // A strip too narrow for any text block gives up the whole overlap to a corner that can hold one.
+    const narrow = size === "h" ? [a, b].filter((n) => out[n].w < CORNER_MIN_W) : [];
+    if (narrow.length === 1) {
+      out[narrow[0]][size] = Math.max(0, out[narrow[0]][size] - Math.ceil(over / C) * C);
+      return;
+    }
     const cut = Math.ceil(over / 2 / C) * C;
     out[a][size] = Math.max(0, out[a][size] - cut);
     out[b][size] = Math.max(0, out[b][size] - cut);

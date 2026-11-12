@@ -15,13 +15,14 @@
     "regions": [
       {
         "kind": "field",
-        "id": "trace",
-        "field": "trace",
-        "fits": "Pantry lifts a week of dinners off your hands, so its code is traced from a mask of wings.",
+        "id": "shape",
+        "field": "shape",
+        "style": "symbols",
+        "fits": "Pantry lifts a week of dinners off your hands, so the picture is a pair of wings drawn in its code.",
         "accent": "area:lib/plan",
-        "mask": "wings",
-        "symbols": true,
-        "seed": 0,
+        "shape": {
+          "mask": "wings"
+        },
         "names": {
           "area:.": "saved recipes",
           "area:app": "page frame",
@@ -39,10 +40,24 @@
       }
     ],
     "texts": [
-      { "role": "label", "id": "label", "x": 48, "y": 44, "w": 200 },
-      { "role": "headline", "id": "headline", "x": 48, "y": 92, "w": 560, "size": 68 },
-      { "role": "paragraph", "id": "paragraph", "x": 48, "y": 330, "w": 330, "text": "Pantry reads the recipes you already cook and plans the week from them. The first dinner is decided before the day starts." },
-      { "role": "legend", "id": "legend", "x": 48, "y": 1010, "w": 300, "text": "Every row of marks is a part of Pantry, as many rows as it has code. The orange rows are the plan." }
+      {
+        "role": "label",
+        "id": "label"
+      },
+      {
+        "role": "headline",
+        "id": "headline"
+      },
+      {
+        "role": "paragraph",
+        "id": "paragraph",
+        "text": "Pantry reads the recipes you already cook and plans the week from them. The first dinner is decided before the day starts."
+      },
+      {
+        "role": "legend",
+        "id": "legend",
+        "text": "Every band of marks is a part of Pantry, as big as its share of the code. The orange band of marks is the plan."
+      }
     ]
   }
 }

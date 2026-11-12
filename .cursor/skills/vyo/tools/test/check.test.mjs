@@ -39,6 +39,12 @@ const failures = (p, s) => findings(p, s).filter((f) => f.level === "fail");
 
 test("a clean page passes every page check", () => assert.deepEqual(failures(page()), []));
 
+test("product-name asks for the name as the product's docs write it, and says to keep a folder name the docs use", () => {
+  const run = (name) => CHECKS.find((c) => c.id === "product-name").run({ spec: { ...spec, product: { name } }, facts: { ...facts, repo: { name: "axios" } } });
+  assert.deepEqual(run("axios"), ['product name equals the folder name "axios"; write the name customers see, capitalised as the product\'s own docs write it. If the docs write it exactly "axios", keep it: this warning only asks you to check']);
+  assert.deepEqual(run("Axios"), []);
+});
+
 test("each page check catches its defect", () => {
   const cases = [
     ["palette", { boxes: [{ color: "rgb(1, 2, 3)", hot: false, where: "a square" }] }, /a square uses rgb\(1, 2, 3\), not a light token/],
@@ -54,6 +60,7 @@ test("each page check catches its defect", () => {
     ["notes", { blocks: page().blocks.slice(0, 2) }, /the footer shows 2 notes; the spec has 3/],
     ["copy", { rows: [...rows, { ...rows[0], word: "webhooks" }] }, /region top: jargon: "webhooks"/],
     ["drawn", { drawn: false }, /never set window\.drawn/],
+    ["text-clear", { covered: [{ block: "legend", ink: 8000, covered: 22, x: 93, y: 1059 }] }, /^22 px of the legend's letters are painted over near 93,1059; something is drawn on top of the text, so move the block clear of it$/],
     ["path", { regions: [{ id: "bottom", kind: "fill", bbox: rect(75, 560, 765, 910), rows: 20 }] }, /^region bottom reaches 26px below the footer; move it up by 26$/],
     ["path", { regions: [{ id: "bottom", kind: "fill", bbox: rect(75, 560, 900, 800), rows: 20 }] }, /^region bottom runs off the sheet/],
     ["region-size", { regions: [{ id: "top", kind: "fill", bbox: rect(60, 176, 780, 200), rows: 2 }] }, /^region top has 2 rows; it needs at least 4/],
@@ -103,7 +110,7 @@ test("every check has a unique id, a level, a stage and a description", () => {
   for (const c of CHECKS) assert.ok(["fail", "warn"].includes(c.level) && ["spec", "page"].includes(c.stage) && c.about, c.id);
   assert.deepEqual(
     CHECKS.map((c) => c.id).sort(),
-    ["accent-part", "band", "blocks-apart", "blocks-inside", "copy", "drawn", "facts-empty", "facts-hash", "field-parts", "fits", "fonts", "headline-lines", "hot-tagged", "legend", "masthead-font", "notes", "one-region", "palette", "part-name", "path", "preset-copy", "product-name", "record", "region-size", "regions-apart", "row-variety", "rows-fit", "silhouette", "spec", "still", "thin-region", "words-drawn"],
+    ["accent-part", "band", "blocks-apart", "blocks-inside", "copy", "cover-accent", "cover-names", "cover-seam", "cover-share", "cover-shell", "drawn", "facts-empty", "facts-hash", "field-parts", "fits", "fonts", "headline-lines", "hot-tagged", "legend", "masthead-font", "notes", "one-region", "palette", "part-name", "part-unplain", "path", "preset-copy", "product-name", "record", "region-size", "regions-apart", "row-variety", "rows-fit", "shape-accent", "shape-cover", "shape-dominant", "shape-edge", "shape-limb", "shape-name", "shape-rings", "shape-room", "shape-share", "shape-simple", "shape-thin", "shape-tone", "shape-upright", "silhouette", "spec", "still", "text-clear", "thin-region", "words-drawn"],
   );
 });
 
@@ -151,14 +158,14 @@ test("a field poster without a hot word passes words-drawn; with one, the word m
   assert.ok(fieldFindings(fieldPage({ figureHot: [] }), withHot).some((f) => f.id === "words-drawn"));
 });
 
-test("part-name warns for vendor names, stray names and two parts with one name; accent-part warns when no accent is set", () => {
+test("part-unplain fails a vendor name that was never renamed; part-name warns for stray names and two parts with one name; accent-part warns when no accent is set", () => {
   const hypher = { facts: [{ id: "area:.", kind: "area", name: "Hypher", meta: { leaf: false } }, { id: "area:convex", kind: "area", name: "Convex", meta: { leaf: true } }, { id: "area:web", kind: "area", name: "Web", meta: { leaf: true } }], files: { "convex/a.ts": { area: "area:convex", loc: 50 }, "web/a.ts": { area: "area:web", loc: 50 } } };
   const runAll = (region) =>
-    CHECKS.filter((c) => ["part-name", "accent-part"].includes(c.id)).flatMap((c) => c.run({ spec: { product: { name: "Hypher" }, figure: { regions: [region] } }, facts: hypher }).map((message) => ({ id: c.id, level: c.level, message })));
+    CHECKS.filter((c) => ["part-name", "part-unplain", "accent-part"].includes(c.id)).flatMap((c) => c.run({ spec: { product: { name: "Hypher" }, figure: { regions: [region] } }, facts: hypher }).map((message) => ({ id: c.id, level: c.level, message })));
   const run = (region) => runAll(region).filter((f) => !/keeps its scanned name|product name/.test(f.message));
   assert.deepEqual(runAll(field({ accent: "area:web", names: { "area:convex": "server" } })).map((f) => f.message), ['part "Web" (area:web) keeps its scanned name; give every part a plain lowercase name in names']);
   assert.deepEqual(runAll(field({ accent: "area:web", names: { "area:convex": "server", "area:web": "Hypher web" } })).map((f) => f.message), ['part "Hypher web" (area:web) is or contains the product name; give it a plain name in names']);
-  assert.deepEqual(run(field({ accent: "area:web" })).map((f) => [f.id, f.level, f.message]), [["part-name", "warn", 'part "Convex" (area:convex) looks like a vendor or code name; add a plain name in names']]);
+  assert.deepEqual(run(field({ accent: "area:web" })).map((f) => [f.id, f.level, f.message]), [["part-unplain", "fail", 'part "Convex" (area:convex) looks like a vendor or code name; add a plain name in names']]);
   assert.deepEqual(run(field({ accent: "area:web", names: { "area:convex": "server", "area:gone": "old" } })).map((f) => f.message), ["names has area:gone, which is not a part of region wave; vyo parts lists the part ids"]);
   assert.deepEqual(run(field({ accent: undefined, names: { "area:convex": "server" } })).map((f) => [f.id, f.message]), [["accent-part", "no accent part in region wave; set accent to the id of the part the poster is about (vyo parts lists them)"]]);
   assert.deepEqual(run(field({ accent: "area:web", names: { "area:convex": "Web" } })).map((f) => [f.level, f.message]), [["warn", 'parts area:convex and area:web are all called "Web"; give each a plain name of its own in names']]);
@@ -199,4 +206,12 @@ test("record: a loose poster draws one record line with the commit and the date"
   assert.deepEqual(run([]), ["the poster shows 0 record lines; it needs exactly one"]);
   assert.deepEqual(run([{ name: "record", text: "Pantry, 7 November 2026. Drawn by Vyo.", rect: rect(40, 1150, 340, 1160) }], { ...s, product: { ...s.product, commit: undefined } }), ["the record line has no commit; set product.commit to the short hash (vyo compose --repo fills it)"]);
   assert.ok(!runChecks("page", { spec: { ...s, frame: "swiss", notes: [] }, facts: recipe, page: page({ blocks: [] }) }).some((f) => f.id === "record"), "swiss has no record line");
+});
+
+test("facts-empty speaks only in the swiss frame, whose footer prints counts", () => {
+  const empty = { ...recipe, empty: true };
+  const warned = (s) => runChecks("spec", { spec: s, facts: empty, presets: {} }).some((f) => f.id === "facts-empty");
+  assert.equal(warned(loose("x")), false, "a loose field poster has no counts line");
+  const check = CHECKS.find((c) => c.id === "facts-empty");
+  assert.deepEqual([check.frames, check.run({ facts: empty }).length], [["swiss"], 1], "the swiss footer still warns");
 });

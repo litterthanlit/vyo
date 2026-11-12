@@ -1,12 +1,8 @@
 // Package (app root) detection, dependency lookup and tsconfig/jsconfig path aliases.
-import { readSmall } from "./files.mjs";
+import { readSmall, MANIFESTS } from "./files.mjs";
 import { parseJsonc } from "./tokenize.mjs";
 import { basename, dirname, joinPath, cmp } from "./util.mjs";
 
-const MANIFESTS = new Set([
-  "package.json", "pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", "Pipfile", "go.mod",
-  "Cargo.toml", "Gemfile", "composer.json", "pom.xml", "build.gradle", "build.gradle.kts", "Package.swift",
-]);
 const SKIP_SEGS = new Set(["node_modules", "vendor", "venv", ".venv", "dist", "build", "out", "__pycache__", "site-packages", "bower_components", "test", "tests", "__tests__", "e2e", "public", "static", "assets"]);
 
 function underSkipped(rel) {

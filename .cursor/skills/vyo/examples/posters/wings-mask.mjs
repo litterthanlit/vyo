@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { encodePng } from "../../tools/lib/fields/png.mjs";
+import { encodePng } from "../../tools/lib/png.mjs";
 
 const OUT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../tools/presets/masks/wings.png");
 const W = 900;

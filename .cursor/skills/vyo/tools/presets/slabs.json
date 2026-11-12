@@ -14,9 +14,9 @@
     "regions": [
       {
         "kind": "field",
-        "id": "bands",
-        "field": "bands",
-        "fits": "A week stacks up in layers, so Pantry's code sits in bands.",
+        "id": "slabs",
+        "field": "slabs",
+        "fits": "A week stacks up in layers, so Pantry's code sits in slabs.",
         "accent": "area:lib/plan",
         "seed": 0,
         "names": {

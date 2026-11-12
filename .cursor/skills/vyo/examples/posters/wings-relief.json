@@ -14,11 +14,18 @@
     "regions": [
       {
         "kind": "field",
-        "id": "trace",
-        "field": "trace",
-        "fits": "The week's shape is traced from an image, so the code fills that mask.",
+        "id": "shape",
+        "field": "shape",
+        "style": "relief",
+        "strata": {
+          "by": "angle",
+          "angle": 45
+        },
+        "fits": "Pantry lifts a week of dinners off your hands, so the picture is a pair of wings traced from an image.",
         "accent": "area:lib/plan",
-        "seed": 0,
+        "shape": {
+          "mask": "wings"
+        },
         "names": {
           "area:.": "saved recipes",
           "area:app": "page frame",
@@ -38,30 +45,16 @@
     "texts": [
       {
         "role": "label",
-        "id": "label",
-        "x": 40,
-        "y": 24,
-        "w": 160,
-        "align": "left"
+        "id": "label"
       },
       {
         "role": "headline",
-        "id": "headline",
-        "x": 32,
-        "y": 960,
-        "w": 200,
-        "align": "left",
-        "size": 32
+        "id": "headline"
       },
       {
         "role": "legend",
         "id": "legend",
-        "x": 620,
-        "y": 24,
-        "w": 200,
-        "align": "left",
-        "size": 13,
-        "text": "Every row is a part of Pantry, as many as its code. The orange rows are the plan."
+        "text": "Every layer of the wings is a part of Pantry, as big as its code. The orange layer is the plan."
       }
     ]
   }

@@ -1,0 +1,36 @@
+{
+  "version": 3,
+  "frame": "cover",
+  "facts": "69fdfb929a85",
+  "product": { "name": "Pantry", "repo": "recipe", "commit": "04186f4", "date": "2026-11-07" },
+  "ground": "navy",
+  "headline": "A week of dinners, planned in one go from the recipes you already cook.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "shape",
+        "field": "shape",
+        "accent": "area:app/(app)",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        },
+        "shape": { "like": "pear" },
+        "strata": "outline"
+      }
+    ],
+    "texts": [{ "role": "legend", "id": "legend", "text": "This pear is the code of Pantry, one layer per part, each as big as its share. The orange outer ring is the screens." }]
+  },
+  "motion": { "kind": "turn" }
+}

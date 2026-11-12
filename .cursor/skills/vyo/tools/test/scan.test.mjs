@@ -352,6 +352,23 @@ describe("output rules", () => {
   });
 });
 
+describe("a facts file with another name", () => {
+  test("sketch and check say to pass --facts", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "scan-facts-name-"));
+    try {
+      const spec = path.join(tmp, "pantry-spec.json");
+      fs.copyFileSync(path.join(TOOLS, "presets", "wave.json"), spec);
+      for (const cmd of ["sketch", "check", "render"]) {
+        const r = spawnSync("node", [CLI, cmd, spec], { encoding: "utf8" });
+        assert.equal(r.status, 1, cmd);
+        assert.match(r.stderr, /cannot read .*-facts\.json: ENOENT.*pass --facts <path>/, cmd);
+      }
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("show and draft", () => {
   test("show prints fact ids next to every item", () => {
     const text = showFacts(recipe);
@@ -1159,5 +1176,84 @@ describe("scan --out inside the scanned repo", () => {
     } finally {
       fs.rmSync(vyoDir, { recursive: true, force: true });
     }
+  });
+});
+
+function scanTree(files, { cli = false } = {}) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "scan-tree-"));
+  try {
+    for (const [rel, text] of Object.entries(files)) {
+      fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+      fs.writeFileSync(path.join(root, rel), text);
+    }
+    const facts = scanRepo(root);
+    if (!cli) return { facts };
+    const r = spawnSync(process.execPath, [CLI, "scan", root, "--out", "-"], { encoding: "utf8" });
+    return { facts, stderr: r.stderr, stdout: r.stdout };
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
+describe("exclusions drop nothing silently", () => {
+  const body = "package b\n\nfunc B() int {\n\treturn 1\n}\n";
+  test("build, vendor and static folders are source below the repo or package root, output at it", () => {
+    const { facts } = scanTree({
+      "go.mod": "module x\n",
+      "internal/build/b.go": body,
+      "internal/vendor/v.go": body,
+      "build/out.go": body,
+      "vendor/dep/d.go": body,
+      "apps/web/package.json": '{"name":"web","dependencies":{}}',
+      "apps/web/dist/bundle.js": "export const a = 1;\n",
+      "apps/web/src/static/s.js": "export const s = 1;\n",
+    });
+    assert.deepEqual(Object.keys(facts.files), ["apps/web/src/static/s.js", "internal/build/b.go", "internal/vendor/v.go"]);
+    assert.equal(facts.excluded.files, 3);
+    assert.deepEqual(Object.keys(facts.excluded.by).sort(), ["build/", "dist/", "vendor/"]);
+    assert.equal(facts.excluded.by["build/"].lines, 4);
+  });
+
+  test("test folders stay excluded at any depth, and are counted", () => {
+    const { facts } = scanTree({ "src/a.go": body, "src/tests/t.go": body, "pkg/sub/test/u.go": body });
+    assert.deepEqual(Object.keys(facts.files), ["src/a.go"]);
+    assert.equal(facts.excluded.by["tests/"].files, 1);
+    assert.equal(facts.excluded.by["test/"].files, 1);
+  });
+
+  test("C#, C, C++, Dart, Scala, Elixir, Lua and Zig files are counted and drawn as parts", () => {
+    const cs = "using System;\n// it's a comment with a quote\nnamespace App.Orders {\n  public class Cart {\n    public string Sql = @\"select 1\";\n    /* block\n       comment */\n    public int Total() { return 1; }\n  }\n}\n";
+    const { facts } = scanTree({
+      "Orders/Cart.cs": cs,
+      "Orders/Pay.cs": cs,
+      "native/a.c": "int main() { return 0; }\n",
+      "native/a.h": "int main();\n",
+      "native/b.cpp": "int f() { return 1; }\n",
+      "app/a.dart": "void main() {}\n",
+      "app/a.scala": "object A {}\n",
+      "app/a.ex": "defmodule A do\nend\n",
+      "app/a.lua": "-- it's lua\nprint(1)\n",
+      "app/a.zig": "pub fn main() void {}\n",
+    });
+    assert.deepEqual(Object.keys(facts.files).length, 10);
+    const lines = Object.values(facts.files).reduce((s, f) => s + f.loc, 0);
+    assert.ok(lines > 0);
+    assert.ok(facts.files["Orders/Cart.cs"].loc === 10 && facts.files["Orders/Pay.cs"].loc === 10, "blank-free lines, comments included");
+    assert.ok(draftParts(facts).length >= 1);
+  });
+
+  test("code only in a hidden folder is named in scan and show, with the folder to scan", () => {
+    const tree = { "README.md": "x\n", ".tools/app/a.go": body, ".tools/app/b.go": body };
+    const { facts, stderr } = scanTree(tree, { cli: true });
+    assert.deepEqual(Object.keys(facts.files), []);
+    assert.match(stderr, /No code outside hidden folders\. \.tools\/ holds 2 source files \(8 lines\).*vyo scan <repo>\/\.tools\/app /);
+    assert.match(showFacts(facts), /No code outside hidden folders\. \.tools\/ holds 2 source files/);
+    const withCode = scanTree({ ...tree, "src/c.go": body }, { cli: true });
+    assert.doesNotMatch(withCode.stderr, /hidden folders/);
+  });
+
+  test("the CLI says how many files and lines it left out", () => {
+    const { stderr } = scanTree({ "src/a.go": body, "tests/t.go": body, "tests/u.go": body }, { cli: true });
+    assert.match(stderr, /Left out 2 source files \(8 lines\).*tests\/ 2 files\/8 lines/);
   });
 });

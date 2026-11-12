@@ -1,6 +1,6 @@
 # Font licences
 
-The posters use three font files, bundled here unchanged. Both families are licensed under the SIL Open Font License, Version 1.1, whose full text follows.
+The posters use five font files. Commit Mono and Newsreader are bundled here unchanged; all three families are licensed under the SIL Open Font License, Version 1.1, whose full text follows.
 
 ## Commit Mono
 
@@ -18,6 +18,12 @@ Sources:
 Source:
 
 - https://fonts.gstatic.com/s/newsreader/v26/cY9qfjOCX1hbuyalUrK49dLac06G1ZGsZBtoBCzBDXXD9JVF438weI_ADA.ttf
+
+## Inter
+
+`inter-500.woff2` (Inter Medium) and `inter-display-600.woff2` (Inter Display SemiBold), the cover frame's grotesque. Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter). Licensed under the SIL Open Font License, Version 1.1. These two files are modified: subset with fontTools to Basic Latin, Latin-1, Latin Extended-A and common punctuation, and saved as WOFF2. Inter has no Reserved Font Name.
+
+Source: Inter 4.0, `Inter-Medium.otf` and `InterDisplay-SemiBold.otf`.
 
 ## SIL Open Font License, Version 1.1
 

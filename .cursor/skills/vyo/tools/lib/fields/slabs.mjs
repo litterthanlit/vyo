@@ -1,9 +1,9 @@
-// Stacked bars: horizontal slabs with gaps between them. Edges stagger; they do not share a sine.
+// Slabs: stacked bars of type, horizontal slabs with gaps between them. Edges stagger; they do not share a sine.
 import { SHEET } from "../geometry.mjs";
 import { blankMask, poseOf, stampRect } from "./pose.mjs";
 import { fillMask } from "./chords.mjs";
 
-export const BANDS = { size: 6.4, pitch: 7.4 };
+export const SLABS = { size: 6.4, pitch: 7.4 };
 const LEFTS = [56, 180, 48, 240, 96, 200, 64, 150, 80, 220, 52, 120];
 
 function slabs(floor, parts, pose) {
@@ -25,10 +25,10 @@ function slabs(floor, parts, pose) {
 }
 
 /** Rows of staggered horizontal bars. */
-export function bandsRows(region, parts, opts) {
+export function slabsRows(region, parts, opts) {
   if (!parts.length) return [];
   const pose = poseOf(region.seed);
   const mask = blankMask(opts.floor);
   for (const [l, t, r, b] of slabs(opts.floor, parts, pose)) stampRect(mask, l, t, r, b);
-  return fillMask(mask, region, parts, opts, BANDS);
+  return fillMask(mask, region, parts, opts, SLABS);
 }
