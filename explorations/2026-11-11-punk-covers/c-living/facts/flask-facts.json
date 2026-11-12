@@ -1,0 +1,1004 @@
+{
+ "empty": false,
+ "excluded": {
+  "by": {
+   "tests/": {
+    "files": 49,
+    "lines": 6075
+   }
+  },
+  "files": 49,
+  "lines": 6075
+ },
+ "facts": [
+  {
+   "files": [],
+   "id": "area:.",
+   "kind": "area",
+   "loc": 8068,
+   "meta": {
+    "fileCount": 36,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Flask"
+  },
+  {
+   "files": [],
+   "id": "area:examples",
+   "kind": "area",
+   "loc": 376,
+   "meta": {
+    "fileCount": 11,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Examples"
+  },
+  {
+   "files": [],
+   "id": "area:examples/celery",
+   "kind": "area",
+   "loc": 77,
+   "meta": {
+    "fileCount": 4,
+    "leaf": false,
+    "package": "examples/celery"
+   },
+   "name": "Celery"
+  },
+  {
+   "files": [],
+   "id": "area:examples/celery/src",
+   "kind": "area",
+   "loc": 74,
+   "meta": {
+    "fileCount": 3,
+    "leaf": false,
+    "package": "examples/celery"
+   },
+   "name": "Main app"
+  },
+  {
+   "files": [],
+   "id": "area:examples/celery/src/task_app",
+   "kind": "area",
+   "loc": 74,
+   "meta": {
+    "fileCount": 3,
+    "leaf": true,
+    "package": "examples/celery"
+   },
+   "name": "Task app"
+  },
+  {
+   "files": [],
+   "id": "area:examples/tutorial",
+   "kind": "area",
+   "loc": 283,
+   "meta": {
+    "fileCount": 5,
+    "leaf": false,
+    "package": "examples/tutorial"
+   },
+   "name": "Tutorial"
+  },
+  {
+   "files": [],
+   "id": "area:examples/tutorial/flaskr",
+   "kind": "area",
+   "loc": 283,
+   "meta": {
+    "fileCount": 5,
+    "leaf": true,
+    "package": "examples/tutorial"
+   },
+   "name": "Flaskr"
+  },
+  {
+   "files": [],
+   "id": "area:src",
+   "kind": "area",
+   "loc": 7608,
+   "meta": {
+    "fileCount": 24,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Main app"
+  },
+  {
+   "files": [],
+   "id": "area:src/flask",
+   "kind": "area",
+   "loc": 7608,
+   "meta": {
+    "fileCount": 24,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Flask"
+  },
+  {
+   "files": [],
+   "id": "area:src/flask/json",
+   "kind": "area",
+   "loc": 521,
+   "meta": {
+    "fileCount": 3,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Json"
+  },
+  {
+   "files": [],
+   "id": "area:src/flask/sansio",
+   "kind": "area",
+   "loc": 2052,
+   "meta": {
+    "fileCount": 3,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Sansio"
+  },
+  {
+   "files": [
+    "examples/celery/src/task_app/__init__.py"
+   ],
+   "id": "endpoint:/#examples/celery",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET"
+    ],
+    "package": "examples/celery"
+   },
+   "name": "Home"
+  },
+  {
+   "files": [
+    "examples/javascript/js_example/views.py"
+   ],
+   "id": "endpoint:/#examples/javascript",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET"
+    ],
+    "package": "examples/javascript"
+   },
+   "name": "Home"
+  },
+  {
+   "files": [
+    "examples/tutorial/flaskr/blog.py"
+   ],
+   "id": "endpoint:/#examples/tutorial",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET"
+    ],
+    "package": "examples/tutorial"
+   },
+   "name": "Home"
+  },
+  {
+   "files": [
+    "examples/javascript/js_example/views.py"
+   ],
+   "id": "endpoint:/<any(xhr, jquery, fetch):js>",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET"
+    ],
+    "package": "examples/javascript"
+   },
+   "name": "<any(xhr, jquery, fetch):js>"
+  },
+  {
+   "files": [
+    "examples/tutorial/flaskr/blog.py"
+   ],
+   "id": "endpoint:/[id]/delete",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "examples/tutorial"
+   },
+   "name": "Delete"
+  },
+  {
+   "files": [
+    "examples/tutorial/flaskr/blog.py"
+   ],
+   "id": "endpoint:/[id]/update",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET",
+     "POST"
+    ],
+    "package": "examples/tutorial"
+   },
+   "name": "Update"
+  },
+  {
+   "files": [
+    "examples/javascript/js_example/views.py"
+   ],
+   "id": "endpoint:/add",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "examples/javascript"
+   },
+   "name": "Add"
+  },
+  {
+   "files": [
+    "examples/tutorial/flaskr/auth.py"
+   ],
+   "id": "endpoint:/auth/login",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET",
+     "POST"
+    ],
+    "package": "examples/tutorial"
+   },
+   "name": "Login"
+  },
+  {
+   "files": [
+    "examples/tutorial/flaskr/auth.py"
+   ],
+   "id": "endpoint:/auth/logout",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET"
+    ],
+    "package": "examples/tutorial"
+   },
+   "name": "Logout"
+  },
+  {
+   "files": [
+    "examples/tutorial/flaskr/auth.py"
+   ],
+   "id": "endpoint:/auth/register",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET",
+     "POST"
+    ],
+    "package": "examples/tutorial"
+   },
+   "name": "Register"
+  },
+  {
+   "files": [
+    "examples/tutorial/flaskr/blog.py"
+   ],
+   "id": "endpoint:/create",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET",
+     "POST"
+    ],
+    "package": "examples/tutorial"
+   },
+   "name": "Create"
+  },
+  {
+   "files": [
+    "examples/tutorial/flaskr/__init__.py"
+   ],
+   "id": "endpoint:/hello",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET"
+    ],
+    "package": "examples/tutorial"
+   },
+   "name": "Hello"
+  },
+  {
+   "files": [
+    "examples/celery/src/task_app/views.py"
+   ],
+   "id": "endpoint:/tasks/add",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "examples/celery"
+   },
+   "name": "Add task"
+  },
+  {
+   "files": [
+    "examples/celery/src/task_app/views.py"
+   ],
+   "id": "endpoint:/tasks/block",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "examples/celery"
+   },
+   "name": "Block"
+  },
+  {
+   "files": [
+    "examples/celery/src/task_app/views.py"
+   ],
+   "id": "endpoint:/tasks/process",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "examples/celery"
+   },
+   "name": "Process"
+  },
+  {
+   "files": [
+    "examples/celery/src/task_app/views.py"
+   ],
+   "id": "endpoint:/tasks/result/[id]",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET"
+    ],
+    "package": "examples/celery"
+   },
+   "name": "Result detail"
+  },
+  {
+   "files": [
+    "examples/celery/src/task_app/tasks.py"
+   ],
+   "id": "job:add",
+   "kind": "job",
+   "meta": {
+    "package": "examples/celery"
+   },
+   "name": "Add"
+  },
+  {
+   "files": [
+    "examples/celery/src/task_app/tasks.py"
+   ],
+   "id": "job:block",
+   "kind": "job",
+   "meta": {
+    "package": "examples/celery"
+   },
+   "name": "Block"
+  },
+  {
+   "files": [
+    "examples/celery/src/task_app/tasks.py"
+   ],
+   "id": "job:process",
+   "kind": "job",
+   "meta": {
+    "package": "examples/celery"
+   },
+   "name": "Process"
+  },
+  {
+   "files": [
+    "examples/tutorial/flaskr/schema.sql"
+   ],
+   "id": "table:post",
+   "kind": "table",
+   "meta": {
+    "package": "examples/tutorial"
+   },
+   "name": "Post"
+  },
+  {
+   "files": [
+    "examples/tutorial/flaskr/schema.sql"
+   ],
+   "id": "table:user",
+   "kind": "table",
+   "meta": {
+    "package": "examples/tutorial"
+   },
+   "name": "User"
+  }
+ ],
+ "files": {
+  "docs/conf.py": {
+   "area": "area:.",
+   "loc": 84
+  },
+  "examples/celery/make_celery.py": {
+   "area": "area:examples/celery",
+   "loc": 3
+  },
+  "examples/celery/src/task_app/__init__.py": {
+   "area": "area:examples/celery/src/task_app",
+   "defines": [
+    "endpoint:/#examples/celery"
+   ],
+   "loc": 31
+  },
+  "examples/celery/src/task_app/tasks.py": {
+   "area": "area:examples/celery/src/task_app",
+   "defines": [
+    "job:add",
+    "job:block",
+    "job:process"
+   ],
+   "loc": 15
+  },
+  "examples/celery/src/task_app/views.py": {
+   "area": "area:examples/celery/src/task_app",
+   "defines": [
+    "endpoint:/tasks/add",
+    "endpoint:/tasks/block",
+    "endpoint:/tasks/process",
+    "endpoint:/tasks/result/[id]"
+   ],
+   "loc": 28
+  },
+  "examples/javascript/js_example/__init__.py": {
+   "area": "area:examples",
+   "loc": 3
+  },
+  "examples/javascript/js_example/views.py": {
+   "area": "area:examples",
+   "defines": [
+    "endpoint:/#examples/javascript",
+    "endpoint:/<any(xhr, jquery, fetch):js>",
+    "endpoint:/add"
+   ],
+   "loc": 13
+  },
+  "examples/tutorial/flaskr/__init__.py": {
+   "area": "area:examples/tutorial/flaskr",
+   "defines": [
+    "endpoint:/hello"
+   ],
+   "loc": 36
+  },
+  "examples/tutorial/flaskr/auth.py": {
+   "area": "area:examples/tutorial/flaskr",
+   "defines": [
+    "endpoint:/auth/login",
+    "endpoint:/auth/logout",
+    "endpoint:/auth/register"
+   ],
+   "loc": 90
+  },
+  "examples/tutorial/flaskr/blog.py": {
+   "area": "area:examples/tutorial/flaskr",
+   "defines": [
+    "endpoint:/#examples/tutorial",
+    "endpoint:/[id]/delete",
+    "endpoint:/[id]/update",
+    "endpoint:/create"
+   ],
+   "loc": 100
+  },
+  "examples/tutorial/flaskr/db.py": {
+   "area": "area:examples/tutorial/flaskr",
+   "loc": 40
+  },
+  "examples/tutorial/flaskr/schema.sql": {
+   "area": "area:examples/tutorial/flaskr",
+   "defines": [
+    "table:post",
+    "table:user"
+   ],
+   "loc": 17
+  },
+  "src/flask/__init__.py": {
+   "area": "area:src/flask",
+   "loc": 39
+  },
+  "src/flask/__main__.py": {
+   "area": "area:src/flask",
+   "loc": 2
+  },
+  "src/flask/app.py": {
+   "area": "area:src/flask",
+   "loc": 1371
+  },
+  "src/flask/blueprints.py": {
+   "area": "area:src/flask",
+   "loc": 102
+  },
+  "src/flask/cli.py": {
+   "area": "area:src/flask",
+   "loc": 898
+  },
+  "src/flask/config.py": {
+   "area": "area:src/flask",
+   "loc": 286
+  },
+  "src/flask/ctx.py": {
+   "area": "area:src/flask",
+   "loc": 404
+  },
+  "src/flask/debughelpers.py": {
+   "area": "area:src/flask",
+   "loc": 146
+  },
+  "src/flask/globals.py": {
+   "area": "area:src/flask",
+   "loc": 58
+  },
+  "src/flask/helpers.py": {
+   "area": "area:src/flask",
+   "loc": 531
+  },
+  "src/flask/json/__init__.py": {
+   "area": "area:src/flask/json",
+   "loc": 122
+  },
+  "src/flask/json/provider.py": {
+   "area": "area:src/flask/json",
+   "loc": 163
+  },
+  "src/flask/json/tag.py": {
+   "area": "area:src/flask/json",
+   "loc": 236
+  },
+  "src/flask/logging.py": {
+   "area": "area:src/flask",
+   "loc": 55
+  },
+  "src/flask/sansio/app.py": {
+   "area": "area:src/flask/sansio",
+   "loc": 833
+  },
+  "src/flask/sansio/blueprints.py": {
+   "area": "area:src/flask/sansio",
+   "loc": 572
+  },
+  "src/flask/sansio/scaffold.py": {
+   "area": "area:src/flask/sansio",
+   "loc": 647
+  },
+  "src/flask/sessions.py": {
+   "area": "area:src/flask",
+   "loc": 310
+  },
+  "src/flask/signals.py": {
+   "area": "area:src/flask",
+   "loc": 14
+  },
+  "src/flask/templating.py": {
+   "area": "area:src/flask",
+   "loc": 166
+  },
+  "src/flask/testing.py": {
+   "area": "area:src/flask",
+   "loc": 237
+  },
+  "src/flask/typing.py": {
+   "area": "area:src/flask",
+   "loc": 77
+  },
+  "src/flask/views.py": {
+   "area": "area:src/flask",
+   "loc": 146
+  },
+  "src/flask/wrappers.py": {
+   "area": "area:src/flask",
+   "loc": 193
+  }
+ },
+ "hash": "9af954689ce6",
+ "imports": [
+  [
+   "examples/celery/make_celery.py",
+   "examples/celery/src/task_app/__init__.py"
+  ],
+  [
+   "examples/celery/src/task_app/__init__.py",
+   "examples/celery/src/task_app/views.py"
+  ],
+  [
+   "examples/celery/src/task_app/views.py",
+   "examples/celery/src/task_app/tasks.py"
+  ],
+  [
+   "examples/javascript/js_example/__init__.py",
+   "examples/javascript/js_example/views.py"
+  ],
+  [
+   "examples/javascript/js_example/views.py",
+   "examples/javascript/js_example/__init__.py"
+  ],
+  [
+   "examples/tutorial/flaskr/__init__.py",
+   "examples/tutorial/flaskr/auth.py"
+  ],
+  [
+   "examples/tutorial/flaskr/__init__.py",
+   "examples/tutorial/flaskr/blog.py"
+  ],
+  [
+   "examples/tutorial/flaskr/__init__.py",
+   "examples/tutorial/flaskr/db.py"
+  ],
+  [
+   "examples/tutorial/flaskr/auth.py",
+   "examples/tutorial/flaskr/db.py"
+  ],
+  [
+   "examples/tutorial/flaskr/blog.py",
+   "examples/tutorial/flaskr/auth.py"
+  ],
+  [
+   "examples/tutorial/flaskr/blog.py",
+   "examples/tutorial/flaskr/db.py"
+  ],
+  [
+   "src/flask/__init__.py",
+   "src/flask/app.py"
+  ],
+  [
+   "src/flask/__init__.py",
+   "src/flask/blueprints.py"
+  ],
+  [
+   "src/flask/__init__.py",
+   "src/flask/config.py"
+  ],
+  [
+   "src/flask/__init__.py",
+   "src/flask/ctx.py"
+  ],
+  [
+   "src/flask/__init__.py",
+   "src/flask/globals.py"
+  ],
+  [
+   "src/flask/__init__.py",
+   "src/flask/helpers.py"
+  ],
+  [
+   "src/flask/__init__.py",
+   "src/flask/json/__init__.py"
+  ],
+  [
+   "src/flask/__init__.py",
+   "src/flask/signals.py"
+  ],
+  [
+   "src/flask/__init__.py",
+   "src/flask/templating.py"
+  ],
+  [
+   "src/flask/__init__.py",
+   "src/flask/wrappers.py"
+  ],
+  [
+   "src/flask/__main__.py",
+   "src/flask/cli.py"
+  ],
+  [
+   "src/flask/app.py",
+   "src/flask/cli.py"
+  ],
+  [
+   "src/flask/app.py",
+   "src/flask/ctx.py"
+  ],
+  [
+   "src/flask/app.py",
+   "src/flask/debughelpers.py"
+  ],
+  [
+   "src/flask/app.py",
+   "src/flask/globals.py"
+  ],
+  [
+   "src/flask/app.py",
+   "src/flask/helpers.py"
+  ],
+  [
+   "src/flask/app.py",
+   "src/flask/sansio/app.py"
+  ],
+  [
+   "src/flask/app.py",
+   "src/flask/sessions.py"
+  ],
+  [
+   "src/flask/app.py",
+   "src/flask/signals.py"
+  ],
+  [
+   "src/flask/app.py",
+   "src/flask/templating.py"
+  ],
+  [
+   "src/flask/app.py",
+   "src/flask/testing.py"
+  ],
+  [
+   "src/flask/app.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/app.py",
+   "src/flask/wrappers.py"
+  ],
+  [
+   "src/flask/blueprints.py",
+   "src/flask/cli.py"
+  ],
+  [
+   "src/flask/blueprints.py",
+   "src/flask/globals.py"
+  ],
+  [
+   "src/flask/blueprints.py",
+   "src/flask/helpers.py"
+  ],
+  [
+   "src/flask/blueprints.py",
+   "src/flask/sansio/blueprints.py"
+  ],
+  [
+   "src/flask/blueprints.py",
+   "src/flask/sansio/scaffold.py"
+  ],
+  [
+   "src/flask/blueprints.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/cli.py",
+   "src/flask/__init__.py"
+  ],
+  [
+   "src/flask/cli.py",
+   "src/flask/globals.py"
+  ],
+  [
+   "src/flask/cli.py",
+   "src/flask/helpers.py"
+  ],
+  [
+   "src/flask/cli.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/config.py",
+   "src/flask/json/__init__.py"
+  ],
+  [
+   "src/flask/config.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/ctx.py",
+   "src/flask/globals.py"
+  ],
+  [
+   "src/flask/ctx.py",
+   "src/flask/helpers.py"
+  ],
+  [
+   "src/flask/ctx.py",
+   "src/flask/signals.py"
+  ],
+  [
+   "src/flask/ctx.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/debughelpers.py",
+   "src/flask/blueprints.py"
+  ],
+  [
+   "src/flask/debughelpers.py",
+   "src/flask/globals.py"
+  ],
+  [
+   "src/flask/debughelpers.py",
+   "src/flask/sansio/app.py"
+  ],
+  [
+   "src/flask/debughelpers.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/globals.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/helpers.py",
+   "src/flask/globals.py"
+  ],
+  [
+   "src/flask/helpers.py",
+   "src/flask/signals.py"
+  ],
+  [
+   "src/flask/helpers.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/json/__init__.py",
+   "src/flask/globals.py"
+  ],
+  [
+   "src/flask/json/__init__.py",
+   "src/flask/json/provider.py"
+  ],
+  [
+   "src/flask/json/tag.py",
+   "src/flask/json/__init__.py"
+  ],
+  [
+   "src/flask/logging.py",
+   "src/flask/globals.py"
+  ],
+  [
+   "src/flask/logging.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/sansio/app.py",
+   "src/flask/config.py"
+  ],
+  [
+   "src/flask/sansio/app.py",
+   "src/flask/ctx.py"
+  ],
+  [
+   "src/flask/sansio/app.py",
+   "src/flask/helpers.py"
+  ],
+  [
+   "src/flask/sansio/app.py",
+   "src/flask/json/provider.py"
+  ],
+  [
+   "src/flask/sansio/app.py",
+   "src/flask/logging.py"
+  ],
+  [
+   "src/flask/sansio/app.py",
+   "src/flask/sansio/scaffold.py"
+  ],
+  [
+   "src/flask/sansio/app.py",
+   "src/flask/templating.py"
+  ],
+  [
+   "src/flask/sansio/app.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/sansio/blueprints.py",
+   "src/flask/sansio/scaffold.py"
+  ],
+  [
+   "src/flask/sansio/blueprints.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/sansio/scaffold.py",
+   "src/flask/helpers.py"
+  ],
+  [
+   "src/flask/sansio/scaffold.py",
+   "src/flask/templating.py"
+  ],
+  [
+   "src/flask/sansio/scaffold.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/sessions.py",
+   "src/flask/json/tag.py"
+  ],
+  [
+   "src/flask/sessions.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/templating.py",
+   "src/flask/ctx.py"
+  ],
+  [
+   "src/flask/templating.py",
+   "src/flask/debughelpers.py"
+  ],
+  [
+   "src/flask/templating.py",
+   "src/flask/globals.py"
+  ],
+  [
+   "src/flask/templating.py",
+   "src/flask/helpers.py"
+  ],
+  [
+   "src/flask/templating.py",
+   "src/flask/signals.py"
+  ],
+  [
+   "src/flask/templating.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/testing.py",
+   "src/flask/cli.py"
+  ],
+  [
+   "src/flask/testing.py",
+   "src/flask/sessions.py"
+  ],
+  [
+   "src/flask/testing.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/views.py",
+   "src/flask/globals.py"
+  ],
+  [
+   "src/flask/views.py",
+   "src/flask/typing.py"
+  ],
+  [
+   "src/flask/wrappers.py",
+   "src/flask/debughelpers.py"
+  ],
+  [
+   "src/flask/wrappers.py",
+   "src/flask/globals.py"
+  ],
+  [
+   "src/flask/wrappers.py",
+   "src/flask/helpers.py"
+  ],
+  [
+   "src/flask/wrappers.py",
+   "src/flask/json/__init__.py"
+  ],
+  [
+   "src/flask/wrappers.py",
+   "src/flask/typing.py"
+  ]
+ ],
+ "repo": {
+  "name": "flask",
+  "packages": [
+   ".",
+   "examples/celery",
+   "examples/javascript",
+   "examples/tutorial"
+  ]
+ },
+ "unresolved": {},
+ "uses": [],
+ "version": 1
+}
