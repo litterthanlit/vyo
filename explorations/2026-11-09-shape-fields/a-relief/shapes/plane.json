@@ -1,9 +1,0 @@
-{
-  "parts": [
-    { "polygon": [[0, 350], [1000, 0], [450, 550]], "face": "lit" },
-    { "polygon": [[450, 550], [1000, 0], [650, 1000]], "face": "dim" }
-  ],
-  "fit": { "box": [40, 330, 760, 820], "align": "right" },
-  "bevel": 0.2,
-  "strata": { "by": "angle", "angle": 135 }
-}
