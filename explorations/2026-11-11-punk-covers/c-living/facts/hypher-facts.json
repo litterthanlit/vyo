@@ -1,0 +1,5807 @@
+{
+ "empty": false,
+ "facts": [
+  {
+   "files": [
+    "hypher-web/convex/ai.ts",
+    "hypher-web/convex/github.ts",
+    "hypher-web/convex/projectMemoryActions.ts"
+   ],
+   "id": "ai:anthropic",
+   "kind": "ai",
+   "meta": {
+    "tools": 0,
+    "vendor": [
+     "anthropic"
+    ]
+   },
+   "name": "Anthropic"
+  },
+  {
+   "files": [
+    "hypher-web/src/lib/embeddings.ts"
+   ],
+   "id": "ai:huggingface",
+   "kind": "ai",
+   "meta": {
+    "tools": 0,
+    "vendor": [
+     "huggingface"
+    ]
+   },
+   "name": "Hugging Face"
+  },
+  {
+   "files": [],
+   "id": "area:.",
+   "kind": "area",
+   "loc": 47116,
+   "meta": {
+    "fileCount": 305,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Hypher"
+  },
+  {
+   "files": [],
+   "id": "area:Hypher",
+   "kind": "area",
+   "loc": 1470,
+   "meta": {
+    "fileCount": 33,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Hypher"
+  },
+  {
+   "files": [],
+   "id": "area:Hypher/Hypher",
+   "kind": "area",
+   "loc": 1470,
+   "meta": {
+    "fileCount": 33,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Hypher"
+  },
+  {
+   "files": [],
+   "id": "area:Hypher/Hypher/Models",
+   "kind": "area",
+   "loc": 221,
+   "meta": {
+    "fileCount": 9,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Data shapes"
+  },
+  {
+   "files": [],
+   "id": "area:Hypher/Hypher/Services",
+   "kind": "area",
+   "loc": 314,
+   "meta": {
+    "fileCount": 5,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Inner workings"
+  },
+  {
+   "files": [],
+   "id": "area:Hypher/Hypher/Views",
+   "kind": "area",
+   "loc": 835,
+   "meta": {
+    "fileCount": 17,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Screens"
+  },
+  {
+   "files": [],
+   "id": "area:extensions",
+   "kind": "area",
+   "loc": 1468,
+   "meta": {
+    "fileCount": 11,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Extensions"
+  },
+  {
+   "files": [],
+   "id": "area:extensions/chrome",
+   "kind": "area",
+   "loc": 921,
+   "meta": {
+    "fileCount": 8,
+    "leaf": true,
+    "package": "extensions/chrome"
+   },
+   "name": "Chrome"
+  },
+  {
+   "files": [],
+   "id": "area:extensions/chrome/lib",
+   "kind": "area",
+   "loc": 339,
+   "meta": {
+    "fileCount": 4,
+    "leaf": false,
+    "package": "extensions/chrome"
+   },
+   "name": "Inner workings"
+  },
+  {
+   "files": [],
+   "id": "area:extensions/cursor",
+   "kind": "area",
+   "loc": 547,
+   "meta": {
+    "fileCount": 3,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Cursor"
+  },
+  {
+   "files": [],
+   "id": "area:extensions/cursor/scripts",
+   "kind": "area",
+   "loc": 547,
+   "meta": {
+    "fileCount": 3,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Helper scripts"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web",
+   "kind": "area",
+   "loc": 36379,
+   "meta": {
+    "fileCount": 205,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Hypher web"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/convex",
+   "kind": "area",
+   "loc": 10287,
+   "meta": {
+    "fileCount": 54,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Convex"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/convex/lib",
+   "kind": "area",
+   "loc": 2361,
+   "meta": {
+    "fileCount": 17,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Inner workings"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/shared",
+   "kind": "area",
+   "loc": 8637,
+   "meta": {
+    "fileCount": 28,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Shared parts"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src",
+   "kind": "area",
+   "loc": 17020,
+   "meta": {
+    "fileCount": 118,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Main app"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app",
+   "kind": "area",
+   "loc": 3304,
+   "meta": {
+    "fileCount": 42,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Main app"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app/api",
+   "kind": "area",
+   "loc": 1513,
+   "meta": {
+    "fileCount": 18,
+    "leaf": true,
+    "package": "hypher-web"
+   },
+   "name": "Requests"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app/api/capture-tokens",
+   "kind": "area",
+   "loc": 196,
+   "meta": {
+    "fileCount": 2,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Capture tokens"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app/api/cli",
+   "kind": "area",
+   "loc": 209,
+   "meta": {
+    "fileCount": 6,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Helper scripts"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app/api/mcp",
+   "kind": "area",
+   "loc": 486,
+   "meta": {
+    "fileCount": 1,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Mcp"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app/api/projects",
+   "kind": "area",
+   "loc": 136,
+   "meta": {
+    "fileCount": 2,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Projects"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app/api/stripe",
+   "kind": "area",
+   "loc": 225,
+   "meta": {
+    "fileCount": 2,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Stripe"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app/app",
+   "kind": "area",
+   "loc": 736,
+   "meta": {
+    "fileCount": 10,
+    "leaf": true,
+    "package": "hypher-web"
+   },
+   "name": "Main app"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app/app/settings",
+   "kind": "area",
+   "loc": 231,
+   "meta": {
+    "fileCount": 6,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Settings"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app/capture",
+   "kind": "area",
+   "loc": 337,
+   "meta": {
+    "fileCount": 1,
+    "leaf": true,
+    "package": "hypher-web"
+   },
+   "name": "Capture"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app/connect",
+   "kind": "area",
+   "loc": 142,
+   "meta": {
+    "fileCount": 1,
+    "leaf": true,
+    "package": "hypher-web"
+   },
+   "name": "Connect"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app/oauth",
+   "kind": "area",
+   "loc": 413,
+   "meta": {
+    "fileCount": 5,
+    "leaf": true,
+    "package": "hypher-web"
+   },
+   "name": "Oauth"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app/oauth/authorize",
+   "kind": "area",
+   "loc": 157,
+   "meta": {
+    "fileCount": 1,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Authorize"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app/oauth/consent",
+   "kind": "area",
+   "loc": 119,
+   "meta": {
+    "fileCount": 2,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Consent"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/app/oauth/token",
+   "kind": "area",
+   "loc": 101,
+   "meta": {
+    "fileCount": 1,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Token"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/components",
+   "kind": "area",
+   "loc": 7033,
+   "meta": {
+    "fileCount": 43,
+    "leaf": true,
+    "package": "hypher-web"
+   },
+   "name": "Screen pieces"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/components/marketing",
+   "kind": "area",
+   "loc": 3833,
+   "meta": {
+    "fileCount": 20,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Marketing"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/lib",
+   "kind": "area",
+   "loc": 6405,
+   "meta": {
+    "fileCount": 31,
+    "leaf": true,
+    "package": "hypher-web"
+   },
+   "name": "Inner workings"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/src/types",
+   "kind": "area",
+   "loc": 253,
+   "meta": {
+    "fileCount": 1,
+    "leaf": true,
+    "package": "hypher-web"
+   },
+   "name": "Data shapes"
+  },
+  {
+   "files": [],
+   "id": "area:hypher-web/tools",
+   "kind": "area",
+   "loc": 367,
+   "meta": {
+    "fileCount": 2,
+    "leaf": false,
+    "package": "hypher-web"
+   },
+   "name": "Helper scripts"
+  },
+  {
+   "files": [],
+   "id": "area:packages",
+   "kind": "area",
+   "loc": 4613,
+   "meta": {
+    "fileCount": 46,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Shared parts"
+  },
+  {
+   "files": [],
+   "id": "area:packages/core",
+   "kind": "area",
+   "loc": 367,
+   "meta": {
+    "fileCount": 9,
+    "leaf": false,
+    "package": "packages/core"
+   },
+   "name": "Inner workings"
+  },
+  {
+   "files": [],
+   "id": "area:packages/core/src",
+   "kind": "area",
+   "loc": 367,
+   "meta": {
+    "fileCount": 9,
+    "leaf": true,
+    "package": "packages/core"
+   },
+   "name": "Main app"
+  },
+  {
+   "files": [],
+   "id": "area:packages/hypher-cli",
+   "kind": "area",
+   "loc": 4246,
+   "meta": {
+    "fileCount": 37,
+    "leaf": false,
+    "package": "packages/hypher-cli"
+   },
+   "name": "Hypher cli"
+  },
+  {
+   "files": [],
+   "id": "area:packages/hypher-cli/src",
+   "kind": "area",
+   "loc": 4243,
+   "meta": {
+    "fileCount": 36,
+    "leaf": true,
+    "package": "packages/hypher-cli"
+   },
+   "name": "Main app"
+  },
+  {
+   "files": [],
+   "id": "area:packages/hypher-cli/src/commands",
+   "kind": "area",
+   "loc": 1357,
+   "meta": {
+    "fileCount": 10,
+    "leaf": false,
+    "package": "packages/hypher-cli"
+   },
+   "name": "Commands"
+  },
+  {
+   "files": [],
+   "id": "area:packages/hypher-cli/src/hooks",
+   "kind": "area",
+   "loc": 224,
+   "meta": {
+    "fileCount": 1,
+    "leaf": false,
+    "package": "packages/hypher-cli"
+   },
+   "name": "Screen behaviour"
+  },
+  {
+   "files": [],
+   "id": "area:script",
+   "kind": "area",
+   "loc": 3186,
+   "meta": {
+    "fileCount": 10,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Script"
+  },
+  {
+   "files": [],
+   "id": "area:script/baton",
+   "kind": "area",
+   "loc": 2694,
+   "meta": {
+    "fileCount": 5,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Baton"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/agent/events/route.ts"
+   ],
+   "id": "endpoint:/api/agent/events",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "OPTIONS",
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Events"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/capture-tokens/route.ts"
+   ],
+   "id": "endpoint:/api/capture-tokens",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "OPTIONS",
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Capture tokens"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/capture-tokens/[tokenId]/route.ts"
+   ],
+   "id": "endpoint:/api/capture-tokens/[tokenId]",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "DELETE"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Capture token detail"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/clerk-webhook/route.ts"
+   ],
+   "id": "endpoint:/api/clerk-webhook",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Clerk webhook"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/cli/checkpoints/route.ts"
+   ],
+   "id": "endpoint:/api/cli/checkpoints",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET",
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Checkpoints"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/cli/device/route.ts"
+   ],
+   "id": "endpoint:/api/cli/device",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Device"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/cli/device/approve/route.ts"
+   ],
+   "id": "endpoint:/api/cli/device/approve",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Approve"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/cli/device/token/route.ts"
+   ],
+   "id": "endpoint:/api/cli/device/token",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Token"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/cli/key/route.ts"
+   ],
+   "id": "endpoint:/api/cli/key",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "DELETE"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Key"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/cli/ledger/route.ts"
+   ],
+   "id": "endpoint:/api/cli/ledger",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Ledger"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/launch-readiness/route.ts"
+   ],
+   "id": "endpoint:/api/launch-readiness",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Launch readiness"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/mcp/route.ts"
+   ],
+   "id": "endpoint:/api/mcp",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET",
+     "OPTIONS",
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Mcp"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/project-memory/generate/route.ts"
+   ],
+   "id": "endpoint:/api/project-memory/generate",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Generate"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/projects/route.ts"
+   ],
+   "id": "endpoint:/api/projects",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET",
+     "OPTIONS"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Projects"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/projects/[projectId]/agent-context/route.ts"
+   ],
+   "id": "endpoint:/api/projects/[projectId]/agent-context",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Agent context"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/stripe/checkout/route.ts"
+   ],
+   "id": "endpoint:/api/stripe/checkout",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Checkout"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/stripe/webhook/route.ts"
+   ],
+   "id": "endpoint:/api/stripe/webhook",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Webhook"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/tag-suggest/route.ts"
+   ],
+   "id": "endpoint:/api/tag-suggest",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "OPTIONS",
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Tag suggest"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/capture/route.ts"
+   ],
+   "id": "endpoint:/capture",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET",
+     "OPTIONS",
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Capture"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/mcp/route.ts"
+   ],
+   "id": "endpoint:/mcp",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET",
+     "OPTIONS",
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Mcp"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/oauth/authorize/route.ts"
+   ],
+   "id": "endpoint:/oauth/authorize",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Authorize"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/oauth/consent/approve/route.ts"
+   ],
+   "id": "endpoint:/oauth/consent/approve",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "GET"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Approve"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/oauth/register/route.ts"
+   ],
+   "id": "endpoint:/oauth/register",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Register"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/oauth/token/route.ts"
+   ],
+   "id": "endpoint:/oauth/token",
+   "kind": "endpoint",
+   "meta": {
+    "methods": [
+     "POST"
+    ],
+    "package": "hypher-web"
+   },
+   "name": "Token"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/page.tsx"
+   ],
+   "id": "screen:/",
+   "kind": "screen",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Home"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/app/page.tsx"
+   ],
+   "id": "screen:/app",
+   "kind": "screen",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "App"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/app/p/[projectId]/page.tsx"
+   ],
+   "id": "screen:/app/p/[projectId]",
+   "kind": "screen",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "P detail"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/app/settings/page.tsx"
+   ],
+   "id": "screen:/app/settings",
+   "kind": "screen",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Settings"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/app/settings/api-keys/page.tsx"
+   ],
+   "id": "screen:/app/settings/api-keys",
+   "kind": "screen",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Api keys"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/app/settings/beta/page.tsx"
+   ],
+   "id": "screen:/app/settings/beta",
+   "kind": "screen",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Beta"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/app/settings/integrations/page.tsx"
+   ],
+   "id": "screen:/app/settings/integrations",
+   "kind": "screen",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Integrations"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/app/settings/launch-readiness/page.tsx"
+   ],
+   "id": "screen:/app/settings/launch-readiness",
+   "kind": "screen",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Launch readiness"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/beta/request/page.tsx"
+   ],
+   "id": "screen:/beta/request",
+   "kind": "screen",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Request"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/connect/page.tsx"
+   ],
+   "id": "screen:/connect",
+   "kind": "screen",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Connect"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/oauth/consent/page.tsx"
+   ],
+   "id": "screen:/oauth/consent",
+   "kind": "screen",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Consent"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/pricing/page.tsx"
+   ],
+   "id": "screen:/pricing",
+   "kind": "screen",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Pricing"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/sign-in/[[...sign-in]]/page.tsx"
+   ],
+   "id": "screen:/sign-in/[...sign-in]",
+   "kind": "screen",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Sign in detail"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/sign-up/[[...sign-up]]/page.tsx"
+   ],
+   "id": "screen:/sign-up/[...sign-up]",
+   "kind": "screen",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Sign up detail"
+  },
+  {
+   "files": [
+    "hypher-web/instrumentation-client.ts",
+    "hypher-web/src/components/AppErrorBoundary.tsx",
+    "hypher-web/src/lib/convexActionFailed.ts"
+   ],
+   "id": "service:error-alerts",
+   "kind": "service",
+   "meta": {
+    "vendor": [
+     "sentry"
+    ]
+   },
+   "name": "Error alerts"
+  },
+  {
+   "files": [
+    "hypher-web/convex/httpRateLimit.ts",
+    "hypher-web/convex/lib/rateLimit.ts",
+    "hypher-web/src/lib/rateLimit.ts"
+   ],
+   "id": "service:fast-cache",
+   "kind": "service",
+   "meta": {
+    "vendor": [
+     "upstash"
+    ]
+   },
+   "name": "Fast cache"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/stripe/checkout/route.ts",
+    "hypher-web/src/app/api/stripe/webhook/route.ts"
+   ],
+   "id": "service:payments",
+   "kind": "service",
+   "meta": {
+    "vendor": [
+     "stripe"
+    ]
+   },
+   "name": "Payments"
+  },
+  {
+   "files": [
+    "hypher-web/src/app/api/clerk-webhook/route.ts",
+    "hypher-web/src/app/api/mcp/route.ts",
+    "hypher-web/src/app/api/stripe/checkout/route.ts",
+    "hypher-web/src/app/app/page.tsx",
+    "hypher-web/src/app/layout.tsx",
+    "hypher-web/src/app/sign-in/[[...sign-in]]/page.tsx",
+    "hypher-web/src/app/sign-up/[[...sign-up]]/page.tsx",
+    "hypher-web/src/components/AppChromeNav.tsx",
+    "hypher-web/src/components/BetaInviteGate.tsx",
+    "hypher-web/src/components/CaptureHome.tsx",
+    "hypher-web/src/components/ConvexProvider.tsx",
+    "hypher-web/src/components/marketing/PricingCards.tsx",
+    "hypher-web/src/lib/hypherClerkMiddleware.ts",
+    "hypher-web/src/lib/serverAuth.ts",
+    "hypher-web/src/lib/useStore.ts",
+    "hypher-web/src/proxy.ts"
+   ],
+   "id": "service:sign-in",
+   "kind": "service",
+   "meta": {
+    "vendor": [
+     "clerk"
+    ]
+   },
+   "name": "Sign-in"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:actions",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Actions"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:activity",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Activity"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:agentEvents",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Agent events"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:apiKeys",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Api keys"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:betaAccess",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Beta access"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:betaFeedback",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Beta feedback"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:betaInvites",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Beta invites"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:betaRequests",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Beta requests"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:canvasShares",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Canvas shares"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:captureTokens",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Capture tokens"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:cliDeviceGrants",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Cli device grants"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:connections",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Connections"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:digestPrefs",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Digest prefs"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:digestReplyTokens",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Digest reply tokens"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:githubTokens",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Github tokens"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:handoffCheckpoints",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Handoff checkpoints"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:handoffDeliveries",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Handoff deliveries"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:handoffOps",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Handoff ops"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:handoffs",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Handoffs"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:ledgerCheckpoints",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Ledger checkpoints"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:ledgerDisputes",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Ledger disputes"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:ledgerItems",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Ledger items"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:ledgerShadowChecks",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Ledger shadow checks"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:oauthAccessTokens",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Oauth access tokens"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:oauthAuthorizationCodes",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Oauth authorization codes"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:oauthConsentTransactions",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Oauth consent transactions"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:objects",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Objects"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:projectLedger",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Project ledger"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:projectMemories",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Project memories"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:subscriptions",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Subscriptions"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:tags",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Tags"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:userMeta",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "User meta"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:workspacePrefs",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Workspace prefs"
+  },
+  {
+   "files": [
+    "hypher-web/convex/schema.ts"
+   ],
+   "id": "table:workstreams",
+   "kind": "table",
+   "meta": {
+    "package": "hypher-web"
+   },
+   "name": "Workstreams"
+  }
+ ],
+ "files": {
+  "Hypher/Hypher/HypherApp.swift": {
+   "area": "area:Hypher/Hypher",
+   "loc": 84
+  },
+  "Hypher/Hypher/Models/Artifact.swift": {
+   "area": "area:Hypher/Hypher/Models",
+   "loc": 26
+  },
+  "Hypher/Hypher/Models/CaptureDraft.swift": {
+   "area": "area:Hypher/Hypher/Models",
+   "loc": 37
+  },
+  "Hypher/Hypher/Models/CaptureProject.swift": {
+   "area": "area:Hypher/Hypher/Models",
+   "loc": 10
+  },
+  "Hypher/Hypher/Models/CaptureSettings.swift": {
+   "area": "area:Hypher/Hypher/Models",
+   "loc": 28
+  },
+  "Hypher/Hypher/Models/Connection.swift": {
+   "area": "area:Hypher/Hypher/Models",
+   "loc": 33
+  },
+  "Hypher/Hypher/Models/Embeddable.swift": {
+   "area": "area:Hypher/Hypher/Models",
+   "loc": 11
+  },
+  "Hypher/Hypher/Models/Enums.swift": {
+   "area": "area:Hypher/Hypher/Models",
+   "loc": 22
+  },
+  "Hypher/Hypher/Models/Note.swift": {
+   "area": "area:Hypher/Hypher/Models",
+   "loc": 28
+  },
+  "Hypher/Hypher/Models/Project.swift": {
+   "area": "area:Hypher/Hypher/Models",
+   "loc": 26
+  },
+  "Hypher/Hypher/Services/ActiveContextService.swift": {
+   "area": "area:Hypher/Hypher/Services",
+   "loc": 71
+  },
+  "Hypher/Hypher/Services/CaptureClient.swift": {
+   "area": "area:Hypher/Hypher/Services",
+   "loc": 63
+  },
+  "Hypher/Hypher/Services/ConnectionEngine.swift": {
+   "area": "area:Hypher/Hypher/Services",
+   "loc": 114
+  },
+  "Hypher/Hypher/Services/EmbeddingService.swift": {
+   "area": "area:Hypher/Hypher/Services",
+   "loc": 19
+  },
+  "Hypher/Hypher/Services/HotkeyService.swift": {
+   "area": "area:Hypher/Hypher/Services",
+   "loc": 47
+  },
+  "Hypher/Hypher/Utilities/VectorMath.swift": {
+   "area": "area:Hypher/Hypher",
+   "loc": 16
+  },
+  "Hypher/Hypher/Views/Capture/CaptureSettingsView.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 33
+  },
+  "Hypher/Hypher/Views/Capture/QuickCaptureView.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 116
+  },
+  "Hypher/Hypher/Views/ContentView.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 59
+  },
+  "Hypher/Hypher/Views/Detail/ArtifactDetailView.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 62
+  },
+  "Hypher/Hypher/Views/Detail/ConnectionRow.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 43
+  },
+  "Hypher/Hypher/Views/Detail/DetailView.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 34
+  },
+  "Hypher/Hypher/Views/Detail/NoteDetailView.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 56
+  },
+  "Hypher/Hypher/Views/Detail/ProjectDetailView.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 65
+  },
+  "Hypher/Hypher/Views/Forms/ArtifactFormView.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 49
+  },
+  "Hypher/Hypher/Views/Forms/NoteFormView.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 47
+  },
+  "Hypher/Hypher/Views/Forms/ProjectFormView.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 49
+  },
+  "Hypher/Hypher/Views/Shared/ConfidenceBadge.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 18
+  },
+  "Hypher/Hypher/Views/Shared/EmptyStateView.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 13
+  },
+  "Hypher/Hypher/Views/Sidebar/SidebarRow.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 20
+  },
+  "Hypher/Hypher/Views/Sidebar/SidebarView.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 66
+  },
+  "Hypher/Hypher/Views/Suggestions/SuggestionCard.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 66
+  },
+  "Hypher/Hypher/Views/Suggestions/SuggestionsPanel.swift": {
+   "area": "area:Hypher/Hypher/Views",
+   "loc": 39
+  },
+  "extensions/chrome/background.ts": {
+   "area": "area:extensions/chrome",
+   "loc": 94
+  },
+  "extensions/chrome/content/selection-helper.ts": {
+   "area": "area:extensions/chrome",
+   "loc": 16
+  },
+  "extensions/chrome/lib/api.ts": {
+   "area": "area:extensions/chrome/lib",
+   "loc": 58
+  },
+  "extensions/chrome/lib/auth.ts": {
+   "area": "area:extensions/chrome/lib",
+   "loc": 31
+  },
+  "extensions/chrome/lib/capture.ts": {
+   "area": "area:extensions/chrome/lib",
+   "loc": 218
+  },
+  "extensions/chrome/lib/origins.ts": {
+   "area": "area:extensions/chrome/lib",
+   "loc": 32
+  },
+  "extensions/chrome/options.tsx": {
+   "area": "area:extensions/chrome",
+   "loc": 234
+  },
+  "extensions/chrome/popup.tsx": {
+   "area": "area:extensions/chrome",
+   "loc": 238
+  },
+  "extensions/cursor/scripts/hypher-session.mjs": {
+   "area": "area:extensions/cursor/scripts",
+   "loc": 515
+  },
+  "extensions/cursor/scripts/session-end.mjs": {
+   "area": "area:extensions/cursor/scripts",
+   "loc": 12
+  },
+  "extensions/cursor/scripts/session-start.mjs": {
+   "area": "area:extensions/cursor/scripts",
+   "loc": 20
+  },
+  "hypher-web/convex/_generated/api.js": {
+   "area": "area:hypher-web/convex",
+   "gen": 1,
+   "loc": 21
+  },
+  "hypher-web/convex/_generated/server.js": {
+   "area": "area:hypher-web/convex",
+   "gen": 1,
+   "loc": 92
+  },
+  "hypher-web/convex/actions.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 151
+  },
+  "hypher-web/convex/activity.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 73
+  },
+  "hypher-web/convex/agentEvents.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 851
+  },
+  "hypher-web/convex/ai.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 45
+  },
+  "hypher-web/convex/apiKeys.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 241
+  },
+  "hypher-web/convex/authz.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 9
+  },
+  "hypher-web/convex/beta.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 517
+  },
+  "hypher-web/convex/captureTokens.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 322
+  },
+  "hypher-web/convex/cliDevice.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 241
+  },
+  "hypher-web/convex/connections.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 64
+  },
+  "hypher-web/convex/crons.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 3
+  },
+  "hypher-web/convex/github.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 381
+  },
+  "hypher-web/convex/githubIntegrations.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 88
+  },
+  "hypher-web/convex/githubInternal.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 60
+  },
+  "hypher-web/convex/githubPat.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 95
+  },
+  "hypher-web/convex/githubProjectActions.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 178
+  },
+  "hypher-web/convex/githubTokens.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 36
+  },
+  "hypher-web/convex/handoffCheckpoints.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 96
+  },
+  "hypher-web/convex/handoffs.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 116
+  },
+  "hypher-web/convex/http.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 308
+  },
+  "hypher-web/convex/httpRateLimit.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 57
+  },
+  "hypher-web/convex/launchReadiness.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 135
+  },
+  "hypher-web/convex/ledger.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 251
+  },
+  "hypher-web/convex/ledgerApi.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 294
+  },
+  "hypher-web/convex/legacy.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 131
+  },
+  "hypher-web/convex/lib/actionAuth.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 18
+  },
+  "hypher-web/convex/lib/auth.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 45
+  },
+  "hypher-web/convex/lib/authenticatedAction.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 69
+  },
+  "hypher-web/convex/lib/captureChecks.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 33
+  },
+  "hypher-web/convex/lib/clerk.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 39
+  },
+  "hypher-web/convex/lib/githubAgentEvents.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 135
+  },
+  "hypher-web/convex/lib/githubBind.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 22
+  },
+  "hypher-web/convex/lib/handoffRows.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 66
+  },
+  "hypher-web/convex/lib/ledgerBrief.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 42
+  },
+  "hypher-web/convex/lib/ledgerBriefRows.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 16
+  },
+  "hypher-web/convex/lib/ledgerEngine.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 1191
+  },
+  "hypher-web/convex/lib/ledgerSchedule.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 40
+  },
+  "hypher-web/convex/lib/ledgerValidators.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 116
+  },
+  "hypher-web/convex/lib/mcpContext.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 135
+  },
+  "hypher-web/convex/lib/projectMemoryWrite.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 249
+  },
+  "hypher-web/convex/lib/rateLimit.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 70
+  },
+  "hypher-web/convex/lib/structuredHandoffValidators.ts": {
+   "area": "area:hypher-web/convex/lib",
+   "loc": 75
+  },
+  "hypher-web/convex/mcpApiKey.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 25
+  },
+  "hypher-web/convex/oauth.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 288
+  },
+  "hypher-web/convex/oauthContext.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 40
+  },
+  "hypher-web/convex/objects.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 419
+  },
+  "hypher-web/convex/projectMemories.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 385
+  },
+  "hypher-web/convex/projectMemoryActions.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 186
+  },
+  "hypher-web/convex/projectMemoryMcp.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 186
+  },
+  "hypher-web/convex/projects.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 52
+  },
+  "hypher-web/convex/schema.ts": {
+   "area": "area:hypher-web/convex",
+   "defines": [
+    "table:actions",
+    "table:activity",
+    "table:agentEvents",
+    "table:apiKeys",
+    "table:betaAccess",
+    "table:betaFeedback",
+    "table:betaInvites",
+    "table:betaRequests",
+    "table:canvasShares",
+    "table:captureTokens",
+    "table:cliDeviceGrants",
+    "table:connections",
+    "table:digestPrefs",
+    "table:digestReplyTokens",
+    "table:githubTokens",
+    "table:handoffCheckpoints",
+    "table:handoffDeliveries",
+    "table:handoffOps",
+    "table:handoffs",
+    "table:ledgerCheckpoints",
+    "table:ledgerDisputes",
+    "table:ledgerItems",
+    "table:ledgerShadowChecks",
+    "table:oauthAccessTokens",
+    "table:oauthAuthorizationCodes",
+    "table:oauthConsentTransactions",
+    "table:objects",
+    "table:projectLedger",
+    "table:projectMemories",
+    "table:subscriptions",
+    "table:tags",
+    "table:userMeta",
+    "table:workspacePrefs",
+    "table:workstreams"
+   ],
+   "loc": 723
+  },
+  "hypher-web/convex/structuredHandoffs.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 729
+  },
+  "hypher-web/convex/subscriptions.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 68
+  },
+  "hypher-web/convex/tags.ts": {
+   "area": "area:hypher-web/convex",
+   "loc": 82
+  },
+  "hypher-web/instrumentation-client.ts": {
+   "area": "area:hypher-web",
+   "loc": 3
+  },
+  "hypher-web/instrumentation.ts": {
+   "area": "area:hypher-web",
+   "loc": 8
+  },
+  "hypher-web/sentry.shared.ts": {
+   "area": "area:hypher-web",
+   "loc": 57
+  },
+  "hypher-web/shared/capture.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 241
+  },
+  "hypher-web/shared/cliDevice.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 138
+  },
+  "hypher-web/shared/githubRepo.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 29
+  },
+  "hypher-web/shared/handoffCheckpoint.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 62
+  },
+  "hypher-web/shared/handoffNote.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 283
+  },
+  "hypher-web/shared/handoffSeal.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 253
+  },
+  "hypher-web/shared/ledgerApi.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 508
+  },
+  "hypher-web/shared/ledgerCall.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 121
+  },
+  "hypher-web/shared/ledgerCheckpoint.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 238
+  },
+  "hypher-web/shared/ledgerFakeConvex.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 375
+  },
+  "hypher-web/shared/ledgerFold.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 980
+  },
+  "hypher-web/shared/ledgerNote.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 217
+  },
+  "hypher-web/shared/ledgerNoteLocal.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 137
+  },
+  "hypher-web/shared/ledgerOps.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 413
+  },
+  "hypher-web/shared/ledgerRouteWorld.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 153
+  },
+  "hypher-web/shared/ledgerSeal.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 309
+  },
+  "hypher-web/shared/ledgerShadow.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 149
+  },
+  "hypher-web/shared/ledgerStore.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 326
+  },
+  "hypher-web/shared/ledgerSync.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 243
+  },
+  "hypher-web/shared/ledgerTestKit.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 238
+  },
+  "hypher-web/shared/ledgerV1.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 406
+  },
+  "hypher-web/shared/ledgerWorld.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 113
+  },
+  "hypher-web/shared/oauthClients.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 186
+  },
+  "hypher-web/shared/oauthResources.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 67
+  },
+  "hypher-web/shared/projectMemoryGenerate.ts": {
+   "area": "area:hypher-web/shared",
+   "kit": 1,
+   "loc": 1103
+  },
+  "hypher-web/shared/secretScan.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 44
+  },
+  "hypher-web/shared/structuredHandoff.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 1217
+  },
+  "hypher-web/shared/synthesisOwnership.ts": {
+   "area": "area:hypher-web/shared",
+   "loc": 88
+  },
+  "hypher-web/src/app/api/agent/events/route.ts": {
+   "area": "area:hypher-web/src/app/api",
+   "defines": [
+    "endpoint:/api/agent/events"
+   ],
+   "loc": 77
+  },
+  "hypher-web/src/app/api/capture-tokens/[tokenId]/route.ts": {
+   "area": "area:hypher-web/src/app/api/capture-tokens",
+   "defines": [
+    "endpoint:/api/capture-tokens/[tokenId]"
+   ],
+   "loc": 54
+  },
+  "hypher-web/src/app/api/capture-tokens/route.ts": {
+   "area": "area:hypher-web/src/app/api/capture-tokens",
+   "defines": [
+    "endpoint:/api/capture-tokens"
+   ],
+   "loc": 142
+  },
+  "hypher-web/src/app/api/clerk-webhook/route.ts": {
+   "area": "area:hypher-web/src/app/api",
+   "defines": [
+    "endpoint:/api/clerk-webhook"
+   ],
+   "loc": 10
+  },
+  "hypher-web/src/app/api/cli/checkpoints/route.ts": {
+   "area": "area:hypher-web/src/app/api/cli",
+   "defines": [
+    "endpoint:/api/cli/checkpoints"
+   ],
+   "loc": 31
+  },
+  "hypher-web/src/app/api/cli/device/approve/route.ts": {
+   "area": "area:hypher-web/src/app/api/cli",
+   "defines": [
+    "endpoint:/api/cli/device/approve"
+   ],
+   "loc": 48
+  },
+  "hypher-web/src/app/api/cli/device/route.ts": {
+   "area": "area:hypher-web/src/app/api/cli",
+   "defines": [
+    "endpoint:/api/cli/device"
+   ],
+   "loc": 61
+  },
+  "hypher-web/src/app/api/cli/device/token/route.ts": {
+   "area": "area:hypher-web/src/app/api/cli",
+   "defines": [
+    "endpoint:/api/cli/device/token"
+   ],
+   "loc": 28
+  },
+  "hypher-web/src/app/api/cli/key/route.ts": {
+   "area": "area:hypher-web/src/app/api/cli",
+   "defines": [
+    "endpoint:/api/cli/key"
+   ],
+   "loc": 14
+  },
+  "hypher-web/src/app/api/cli/ledger/route.ts": {
+   "area": "area:hypher-web/src/app/api/cli",
+   "defines": [
+    "endpoint:/api/cli/ledger"
+   ],
+   "loc": 27
+  },
+  "hypher-web/src/app/api/launch-readiness/route.ts": {
+   "area": "area:hypher-web/src/app/api",
+   "defines": [
+    "endpoint:/api/launch-readiness"
+   ],
+   "loc": 14
+  },
+  "hypher-web/src/app/api/mcp/route.ts": {
+   "area": "area:hypher-web/src/app/api/mcp",
+   "defines": [
+    "endpoint:/api/mcp"
+   ],
+   "loc": 486
+  },
+  "hypher-web/src/app/api/project-memory/generate/route.ts": {
+   "area": "area:hypher-web/src/app/api",
+   "defines": [
+    "endpoint:/api/project-memory/generate"
+   ],
+   "loc": 73
+  },
+  "hypher-web/src/app/api/projects/[projectId]/agent-context/route.ts": {
+   "area": "area:hypher-web/src/app/api/projects",
+   "defines": [
+    "endpoint:/api/projects/[projectId]/agent-context"
+   ],
+   "loc": 73
+  },
+  "hypher-web/src/app/api/projects/route.ts": {
+   "area": "area:hypher-web/src/app/api/projects",
+   "defines": [
+    "endpoint:/api/projects"
+   ],
+   "loc": 63
+  },
+  "hypher-web/src/app/api/stripe/checkout/route.ts": {
+   "area": "area:hypher-web/src/app/api/stripe",
+   "defines": [
+    "endpoint:/api/stripe/checkout"
+   ],
+   "loc": 89
+  },
+  "hypher-web/src/app/api/stripe/webhook/route.ts": {
+   "area": "area:hypher-web/src/app/api/stripe",
+   "defines": [
+    "endpoint:/api/stripe/webhook"
+   ],
+   "loc": 136
+  },
+  "hypher-web/src/app/api/tag-suggest/route.ts": {
+   "area": "area:hypher-web/src/app/api",
+   "defines": [
+    "endpoint:/api/tag-suggest"
+   ],
+   "loc": 87
+  },
+  "hypher-web/src/app/app/HypherApp.tsx": {
+   "area": "area:hypher-web/src/app/app",
+   "loc": 412
+  },
+  "hypher-web/src/app/app/SignInRequired.tsx": {
+   "area": "area:hypher-web/src/app/app",
+   "loc": 29
+  },
+  "hypher-web/src/app/app/p/[projectId]/page.tsx": {
+   "area": "area:hypher-web/src/app/app",
+   "defines": [
+    "screen:/app/p/[projectId]"
+   ],
+   "loc": 23
+  },
+  "hypher-web/src/app/app/page.tsx": {
+   "area": "area:hypher-web/src/app/app",
+   "defines": [
+    "screen:/app"
+   ],
+   "loc": 41
+  },
+  "hypher-web/src/app/app/settings/api-keys/page.tsx": {
+   "area": "area:hypher-web/src/app/app/settings",
+   "defines": [
+    "screen:/app/settings/api-keys"
+   ],
+   "loc": 4
+  },
+  "hypher-web/src/app/app/settings/beta/page.tsx": {
+   "area": "area:hypher-web/src/app/app/settings",
+   "defines": [
+    "screen:/app/settings/beta"
+   ],
+   "loc": 6
+  },
+  "hypher-web/src/app/app/settings/integrations/page.tsx": {
+   "area": "area:hypher-web/src/app/app/settings",
+   "defines": [
+    "screen:/app/settings/integrations"
+   ],
+   "loc": 168
+  },
+  "hypher-web/src/app/app/settings/launch-readiness/page.tsx": {
+   "area": "area:hypher-web/src/app/app/settings",
+   "defines": [
+    "screen:/app/settings/launch-readiness"
+   ],
+   "loc": 6
+  },
+  "hypher-web/src/app/app/settings/layout.tsx": {
+   "area": "area:hypher-web/src/app/app/settings",
+   "loc": 17
+  },
+  "hypher-web/src/app/app/settings/page.tsx": {
+   "area": "area:hypher-web/src/app/app/settings",
+   "defines": [
+    "screen:/app/settings"
+   ],
+   "loc": 30
+  },
+  "hypher-web/src/app/beta/request/page.tsx": {
+   "area": "area:hypher-web/src/app",
+   "defines": [
+    "screen:/beta/request"
+   ],
+   "loc": 9
+  },
+  "hypher-web/src/app/capture/route.ts": {
+   "area": "area:hypher-web/src/app/capture",
+   "defines": [
+    "endpoint:/capture"
+   ],
+   "loc": 337
+  },
+  "hypher-web/src/app/connect/page.tsx": {
+   "area": "area:hypher-web/src/app/connect",
+   "defines": [
+    "screen:/connect"
+   ],
+   "loc": 142
+  },
+  "hypher-web/src/app/layout.tsx": {
+   "area": "area:hypher-web/src/app",
+   "loc": 76
+  },
+  "hypher-web/src/app/mcp/route.ts": {
+   "area": "area:hypher-web/src/app",
+   "defines": [
+    "endpoint:/mcp"
+   ],
+   "loc": 2
+  },
+  "hypher-web/src/app/oauth/authorize/route.ts": {
+   "area": "area:hypher-web/src/app/oauth/authorize",
+   "defines": [
+    "endpoint:/oauth/authorize"
+   ],
+   "loc": 157
+  },
+  "hypher-web/src/app/oauth/consent/approve/route.ts": {
+   "area": "area:hypher-web/src/app/oauth/consent",
+   "defines": [
+    "endpoint:/oauth/consent/approve"
+   ],
+   "loc": 53
+  },
+  "hypher-web/src/app/oauth/consent/page.tsx": {
+   "area": "area:hypher-web/src/app/oauth/consent",
+   "defines": [
+    "screen:/oauth/consent"
+   ],
+   "loc": 66
+  },
+  "hypher-web/src/app/oauth/register/route.ts": {
+   "area": "area:hypher-web/src/app/oauth",
+   "defines": [
+    "endpoint:/oauth/register"
+   ],
+   "loc": 36
+  },
+  "hypher-web/src/app/oauth/token/route.ts": {
+   "area": "area:hypher-web/src/app/oauth/token",
+   "defines": [
+    "endpoint:/oauth/token"
+   ],
+   "loc": 101
+  },
+  "hypher-web/src/app/page.tsx": {
+   "area": "area:hypher-web/src/app",
+   "defines": [
+    "screen:/"
+   ],
+   "loc": 14
+  },
+  "hypher-web/src/app/pricing/page.tsx": {
+   "area": "area:hypher-web/src/app",
+   "defines": [
+    "screen:/pricing"
+   ],
+   "loc": 44
+  },
+  "hypher-web/src/app/sign-in/[[...sign-in]]/page.tsx": {
+   "area": "area:hypher-web/src/app",
+   "defines": [
+    "screen:/sign-in/[...sign-in]"
+   ],
+   "loc": 9
+  },
+  "hypher-web/src/app/sign-up/[[...sign-up]]/page.tsx": {
+   "area": "area:hypher-web/src/app",
+   "defines": [
+    "screen:/sign-up/[...sign-up]"
+   ],
+   "loc": 9
+  },
+  "hypher-web/src/components/AgentCliSetupSection.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 196
+  },
+  "hypher-web/src/components/AgentInboxPanel.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 139
+  },
+  "hypher-web/src/components/ApiKeysPanel.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 238
+  },
+  "hypher-web/src/components/AppChromeNav.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 35
+  },
+  "hypher-web/src/components/AppErrorBoundary.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 45
+  },
+  "hypher-web/src/components/BetaAdminPanel.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 439
+  },
+  "hypher-web/src/components/BetaInviteGate.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 89
+  },
+  "hypher-web/src/components/BetaRequestForm.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 215
+  },
+  "hypher-web/src/components/CaptureHome.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 283
+  },
+  "hypher-web/src/components/ConvexProvider.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 20
+  },
+  "hypher-web/src/components/CreateForm.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 68
+  },
+  "hypher-web/src/components/HypherLockup.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 26
+  },
+  "hypher-web/src/components/HypherMark.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 27
+  },
+  "hypher-web/src/components/Icons.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 51
+  },
+  "hypher-web/src/components/LaunchReadinessPanel.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 230
+  },
+  "hypher-web/src/components/ProjectAssignPopup.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 134
+  },
+  "hypher-web/src/components/ProjectDashboard.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 66
+  },
+  "hypher-web/src/components/ProjectPulse.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 454
+  },
+  "hypher-web/src/components/SearchDialog.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 190
+  },
+  "hypher-web/src/components/Sidebar.tsx": {
+   "area": "area:hypher-web/src/components",
+   "loc": 128
+  },
+  "hypher-web/src/components/hypherLockupPath.ts": {
+   "area": "area:hypher-web/src/components",
+   "loc": 17
+  },
+  "hypher-web/src/components/hypherMarkPath.ts": {
+   "area": "area:hypher-web/src/components",
+   "loc": 11
+  },
+  "hypher-web/src/components/marketing/LandingPage.tsx": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 341
+  },
+  "hypher-web/src/components/marketing/LandingVisuals.tsx": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 230
+  },
+  "hypher-web/src/components/marketing/LongExposureField.tsx": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 259
+  },
+  "hypher-web/src/components/marketing/MarketingBrand.tsx": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 27
+  },
+  "hypher-web/src/components/marketing/MarketingChrome.tsx": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 91
+  },
+  "hypher-web/src/components/marketing/MarketingHeaderTone.tsx": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 70
+  },
+  "hypher-web/src/components/marketing/MarketingHeroStage.tsx": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 206
+  },
+  "hypher-web/src/components/marketing/MarketingMotion.tsx": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 62
+  },
+  "hypher-web/src/components/marketing/MarketingPhoto.tsx": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 28
+  },
+  "hypher-web/src/components/marketing/PricingCards.tsx": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 158
+  },
+  "hypher-web/src/components/marketing/agentLogos.tsx": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 108
+  },
+  "hypher-web/src/components/marketing/landingCopy.ts": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 196
+  },
+  "hypher-web/src/components/marketing/longExposureLayout.ts": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 158
+  },
+  "hypher-web/src/components/marketing/longExposureRenderer.ts": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 259
+  },
+  "hypher-web/src/components/marketing/longExposureShader.ts": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 438
+  },
+  "hypher-web/src/components/marketing/marketingHeroDemo.ts": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 109
+  },
+  "hypher-web/src/components/marketing/marketingPhotos.ts": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 83
+  },
+  "hypher-web/src/components/marketing/marketingVisuals.ts": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 92
+  },
+  "hypher-web/src/components/marketing/warpCanvas.ts": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 377
+  },
+  "hypher-web/src/components/marketing/warpStars.ts": {
+   "area": "area:hypher-web/src/components/marketing",
+   "loc": 541
+  },
+  "hypher-web/src/components/svgPath.testkit.ts": {
+   "area": "area:hypher-web/src/components",
+   "loc": 99
+  },
+  "hypher-web/src/lib/acceptAgentEvent.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 108
+  },
+  "hypher-web/src/lib/actions.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 79
+  },
+  "hypher-web/src/lib/activation.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 43
+  },
+  "hypher-web/src/lib/agentCliSetup.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 119
+  },
+  "hypher-web/src/lib/agentContextApi.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 67
+  },
+  "hypher-web/src/lib/agentEvents.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 136
+  },
+  "hypher-web/src/lib/beta.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 190
+  },
+  "hypher-web/src/lib/builderBriefDriftFixture.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 158
+  },
+  "hypher-web/src/lib/cliRoutes.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 36
+  },
+  "hypher-web/src/lib/convexActionFailed.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 13
+  },
+  "hypher-web/src/lib/crystallizeRecentActivity.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 330
+  },
+  "hypher-web/src/lib/cursorPlugin.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 53
+  },
+  "hypher-web/src/lib/db.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 101
+  },
+  "hypher-web/src/lib/embeddings.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 55
+  },
+  "hypher-web/src/lib/engine.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 23
+  },
+  "hypher-web/src/lib/handoffResults.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 60
+  },
+  "hypher-web/src/lib/hypherClerkMiddleware.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 104
+  },
+  "hypher-web/src/lib/launchReadiness.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 270
+  },
+  "hypher-web/src/lib/launchReadinessChecklist.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 94
+  },
+  "hypher-web/src/lib/mcpTools.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 1156
+  },
+  "hypher-web/src/lib/oauthBridge.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 324
+  },
+  "hypher-web/src/lib/projectContext.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 1323
+  },
+  "hypher-web/src/lib/projectMemory.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 192
+  },
+  "hypher-web/src/lib/projectPulse.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 215
+  },
+  "hypher-web/src/lib/publicRoutes.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 31
+  },
+  "hypher-web/src/lib/rateLimit.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 66
+  },
+  "hypher-web/src/lib/requestBody.ts": {
+   "area": "area:hypher-web/src/lib",
+   "kit": 1,
+   "loc": 40
+  },
+  "hypher-web/src/lib/serverAuth.ts": {
+   "area": "area:hypher-web/src/lib",
+   "kit": 1,
+   "loc": 51
+  },
+  "hypher-web/src/lib/settingsAccess.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 12
+  },
+  "hypher-web/src/lib/suggestions.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 175
+  },
+  "hypher-web/src/lib/useStore.ts": {
+   "area": "area:hypher-web/src/lib",
+   "loc": 781
+  },
+  "hypher-web/src/proxy.ts": {
+   "area": "area:hypher-web/src",
+   "loc": 25
+  },
+  "hypher-web/src/types/index.ts": {
+   "area": "area:hypher-web/src/types",
+   "loc": 253
+  },
+  "hypher-web/tools/codex-claude-handoff.mjs": {
+   "area": "area:hypher-web/tools",
+   "loc": 301
+  },
+  "hypher-web/tools/hypher-handoff.mjs": {
+   "area": "area:hypher-web/tools",
+   "loc": 66
+  },
+  "packages/core/src/api.ts": {
+   "area": "area:packages/core/src",
+   "loc": 11
+  },
+  "packages/core/src/browser.ts": {
+   "area": "area:packages/core/src",
+   "loc": 62
+  },
+  "packages/core/src/hooks.ts": {
+   "area": "area:packages/core/src",
+   "loc": 12
+  },
+  "packages/core/src/index.ts": {
+   "area": "area:packages/core/src",
+   "loc": 17
+  },
+  "packages/core/src/origins.ts": {
+   "area": "area:packages/core/src",
+   "loc": 17
+  },
+  "packages/core/src/provider.tsx": {
+   "area": "area:packages/core/src",
+   "loc": 52
+  },
+  "packages/core/src/server.ts": {
+   "area": "area:packages/core/src",
+   "loc": 32
+  },
+  "packages/core/src/types.ts": {
+   "area": "area:packages/core/src",
+   "loc": 44
+  },
+  "packages/core/src/widget.tsx": {
+   "area": "area:packages/core/src",
+   "loc": 120
+  },
+  "packages/hypher-cli/bin/hypher.mjs": {
+   "area": "area:packages/hypher-cli",
+   "loc": 3
+  },
+  "packages/hypher-cli/src/agentsBlock.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 53
+  },
+  "packages/hypher-cli/src/api.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 144
+  },
+  "packages/hypher-cli/src/claude.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 61
+  },
+  "packages/hypher-cli/src/cli.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 105
+  },
+  "packages/hypher-cli/src/cloud.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 133
+  },
+  "packages/hypher-cli/src/codex.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 275
+  },
+  "packages/hypher-cli/src/commands/ack.mjs": {
+   "area": "area:packages/hypher-cli/src/commands",
+   "loc": 40
+  },
+  "packages/hypher-cli/src/commands/doctor.mjs": {
+   "area": "area:packages/hypher-cli/src/commands",
+   "loc": 176
+  },
+  "packages/hypher-cli/src/commands/hook.mjs": {
+   "area": "area:packages/hypher-cli/src/commands",
+   "loc": 53
+  },
+  "packages/hypher-cli/src/commands/init.mjs": {
+   "area": "area:packages/hypher-cli/src/commands",
+   "loc": 304
+  },
+  "packages/hypher-cli/src/commands/link.mjs": {
+   "area": "area:packages/hypher-cli/src/commands",
+   "loc": 63
+  },
+  "packages/hypher-cli/src/commands/mcp.mjs": {
+   "area": "area:packages/hypher-cli/src/commands",
+   "loc": 329
+  },
+  "packages/hypher-cli/src/commands/resume.mjs": {
+   "area": "area:packages/hypher-cli/src/commands",
+   "loc": 39
+  },
+  "packages/hypher-cli/src/commands/seal.mjs": {
+   "area": "area:packages/hypher-cli/src/commands",
+   "loc": 114
+  },
+  "packages/hypher-cli/src/commands/status.mjs": {
+   "area": "area:packages/hypher-cli/src/commands",
+   "loc": 91
+  },
+  "packages/hypher-cli/src/commands/uninstall.mjs": {
+   "area": "area:packages/hypher-cli/src/commands",
+   "loc": 148
+  },
+  "packages/hypher-cli/src/config.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 41
+  },
+  "packages/hypher-cli/src/credentials.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 123
+  },
+  "packages/hypher-cli/src/device.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 58
+  },
+  "packages/hypher-cli/src/env.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 84
+  },
+  "packages/hypher-cli/src/fsutil.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 61
+  },
+  "packages/hypher-cli/src/hookConfig.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 87
+  },
+  "packages/hypher-cli/src/hooks/index.mjs": {
+   "area": "area:packages/hypher-cli/src/hooks",
+   "loc": 224
+  },
+  "packages/hypher-cli/src/ledger.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 124
+  },
+  "packages/hypher-cli/src/manifest.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 118
+  },
+  "packages/hypher-cli/src/outbox.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 129
+  },
+  "packages/hypher-cli/src/repoBlock.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 26
+  },
+  "packages/hypher-cli/src/repoKit.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 248
+  },
+  "packages/hypher-cli/src/secrets.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 2
+  },
+  "packages/hypher-cli/src/session.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 441
+  },
+  "packages/hypher-cli/src/shellPath.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 70
+  },
+  "packages/hypher-cli/src/snapshot.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 53
+  },
+  "packages/hypher-cli/src/startOutcome.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 88
+  },
+  "packages/hypher-cli/src/state.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 46
+  },
+  "packages/hypher-cli/src/throttle.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 40
+  },
+  "packages/hypher-cli/src/tools.mjs": {
+   "area": "area:packages/hypher-cli/src",
+   "loc": 52
+  },
+  "packages/hypher-git/index.mjs": {
+   "area": "area:packages",
+   "gen": 1,
+   "loc": 446
+  },
+  "script/baton-false-alarms.mjs": {
+   "area": "area:script",
+   "loc": 24
+  },
+  "script/baton-rehearse.mjs": {
+   "area": "area:script",
+   "loc": 143
+  },
+  "script/baton/checks.mjs": {
+   "area": "area:script/baton",
+   "loc": 1548
+  },
+  "script/baton/lib.mjs": {
+   "area": "area:script/baton",
+   "loc": 494
+  },
+  "script/baton/register-ts.mjs": {
+   "area": "area:script/baton",
+   "loc": 2
+  },
+  "script/baton/stub.mjs": {
+   "area": "area:script/baton",
+   "loc": 633
+  },
+  "script/baton/ts-hooks.mjs": {
+   "area": "area:script/baton",
+   "loc": 17
+  },
+  "script/ledger-concurrency-check.mjs": {
+   "area": "area:script",
+   "loc": 236
+  },
+  "script/sync-hypher-git.mjs": {
+   "area": "area:script",
+   "loc": 36
+  },
+  "script/sync-hypher-shared.mjs": {
+   "area": "area:script",
+   "loc": 53
+  }
+ },
+ "hash": "f02627b09f16",
+ "imports": [
+  [
+   "extensions/chrome/background.ts",
+   "extensions/chrome/lib/capture.ts"
+  ],
+  [
+   "extensions/chrome/background.ts",
+   "extensions/chrome/lib/origins.ts"
+  ],
+  [
+   "extensions/chrome/lib/api.ts",
+   "extensions/chrome/lib/origins.ts"
+  ],
+  [
+   "extensions/chrome/lib/capture.ts",
+   "extensions/chrome/lib/origins.ts"
+  ],
+  [
+   "extensions/chrome/options.tsx",
+   "extensions/chrome/lib/auth.ts"
+  ],
+  [
+   "extensions/chrome/options.tsx",
+   "extensions/chrome/lib/capture.ts"
+  ],
+  [
+   "extensions/chrome/popup.tsx",
+   "extensions/chrome/lib/api.ts"
+  ],
+  [
+   "extensions/chrome/popup.tsx",
+   "extensions/chrome/lib/capture.ts"
+  ],
+  [
+   "extensions/cursor/scripts/session-end.mjs",
+   "extensions/cursor/scripts/hypher-session.mjs"
+  ],
+  [
+   "extensions/cursor/scripts/session-start.mjs",
+   "extensions/cursor/scripts/hypher-session.mjs"
+  ],
+  [
+   "hypher-web/convex/actions.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/actions.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/activity.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/activity.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/agentEvents.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/agentEvents.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/agentEvents.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/agentEvents.ts",
+   "hypher-web/convex/lib/authenticatedAction.ts"
+  ],
+  [
+   "hypher-web/convex/agentEvents.ts",
+   "hypher-web/convex/lib/githubAgentEvents.ts"
+  ],
+  [
+   "hypher-web/convex/agentEvents.ts",
+   "hypher-web/convex/lib/projectMemoryWrite.ts"
+  ],
+  [
+   "hypher-web/convex/agentEvents.ts",
+   "hypher-web/convex/lib/structuredHandoffValidators.ts"
+  ],
+  [
+   "hypher-web/convex/agentEvents.ts",
+   "hypher-web/shared/githubRepo.ts"
+  ],
+  [
+   "hypher-web/convex/agentEvents.ts",
+   "hypher-web/shared/projectMemoryGenerate.ts"
+  ],
+  [
+   "hypher-web/convex/agentEvents.ts",
+   "hypher-web/shared/structuredHandoff.ts"
+  ],
+  [
+   "hypher-web/convex/ai.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/ai.ts",
+   "hypher-web/convex/lib/actionAuth.ts"
+  ],
+  [
+   "hypher-web/convex/ai.ts",
+   "hypher-web/convex/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/convex/apiKeys.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/apiKeys.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/authz.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/authz.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/beta.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/beta.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/beta.ts",
+   "hypher-web/convex/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/convex/captureTokens.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/captureTokens.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/captureTokens.ts",
+   "hypher-web/convex/apiKeys.ts"
+  ],
+  [
+   "hypher-web/convex/captureTokens.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/captureTokens.ts",
+   "hypher-web/convex/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/convex/cliDevice.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/cliDevice.ts",
+   "hypher-web/convex/apiKeys.ts"
+  ],
+  [
+   "hypher-web/convex/cliDevice.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/cliDevice.ts",
+   "hypher-web/shared/cliDevice.ts"
+  ],
+  [
+   "hypher-web/convex/cliDevice.ts",
+   "hypher-web/shared/githubRepo.ts"
+  ],
+  [
+   "hypher-web/convex/connections.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/connections.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/github.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/github.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/github.ts",
+   "hypher-web/convex/lib/githubAgentEvents.ts"
+  ],
+  [
+   "hypher-web/convex/githubIntegrations.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/githubIntegrations.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/githubIntegrations.ts",
+   "hypher-web/convex/lib/actionAuth.ts"
+  ],
+  [
+   "hypher-web/convex/githubIntegrations.ts",
+   "hypher-web/convex/lib/githubBind.ts"
+  ],
+  [
+   "hypher-web/convex/githubIntegrations.ts",
+   "hypher-web/convex/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/convex/githubInternal.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/githubPat.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/githubPat.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/githubPat.ts",
+   "hypher-web/convex/githubProjectActions.ts"
+  ],
+  [
+   "hypher-web/convex/githubPat.ts",
+   "hypher-web/convex/lib/actionAuth.ts"
+  ],
+  [
+   "hypher-web/convex/githubPat.ts",
+   "hypher-web/convex/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/convex/githubProjectActions.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/githubProjectActions.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/githubProjectActions.ts",
+   "hypher-web/convex/lib/actionAuth.ts"
+  ],
+  [
+   "hypher-web/convex/githubProjectActions.ts",
+   "hypher-web/convex/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/convex/githubTokens.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/githubTokens.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/handoffCheckpoints.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/handoffCheckpoints.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/handoffCheckpoints.ts",
+   "hypher-web/convex/lib/authenticatedAction.ts"
+  ],
+  [
+   "hypher-web/convex/handoffCheckpoints.ts",
+   "hypher-web/shared/githubRepo.ts"
+  ],
+  [
+   "hypher-web/convex/handoffCheckpoints.ts",
+   "hypher-web/shared/handoffCheckpoint.ts"
+  ],
+  [
+   "hypher-web/convex/handoffs.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/handoffs.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/handoffs.ts",
+   "hypher-web/convex/lib/ledgerBrief.ts"
+  ],
+  [
+   "hypher-web/convex/handoffs.ts",
+   "hypher-web/convex/lib/ledgerBriefRows.ts"
+  ],
+  [
+   "hypher-web/convex/http.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/http.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/http.ts",
+   "hypher-web/convex/apiKeys.ts"
+  ],
+  [
+   "hypher-web/convex/http.ts",
+   "hypher-web/convex/httpRateLimit.ts"
+  ],
+  [
+   "hypher-web/convex/http.ts",
+   "hypher-web/convex/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/convex/http.ts",
+   "hypher-web/shared/capture.ts"
+  ],
+  [
+   "hypher-web/convex/launchReadiness.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/launchReadiness.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/ledger.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/ledger.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/ledger.ts",
+   "hypher-web/convex/lib/ledgerEngine.ts"
+  ],
+  [
+   "hypher-web/convex/ledger.ts",
+   "hypher-web/convex/lib/ledgerValidators.ts"
+  ],
+  [
+   "hypher-web/convex/ledger.ts",
+   "hypher-web/shared/ledgerCheckpoint.ts"
+  ],
+  [
+   "hypher-web/convex/ledger.ts",
+   "hypher-web/shared/ledgerFold.ts"
+  ],
+  [
+   "hypher-web/convex/ledger.ts",
+   "hypher-web/shared/ledgerStore.ts"
+  ],
+  [
+   "hypher-web/convex/ledgerApi.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/ledgerApi.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/ledgerApi.ts",
+   "hypher-web/convex/lib/authenticatedAction.ts"
+  ],
+  [
+   "hypher-web/convex/ledgerApi.ts",
+   "hypher-web/convex/lib/handoffRows.ts"
+  ],
+  [
+   "hypher-web/convex/ledgerApi.ts",
+   "hypher-web/convex/lib/ledgerEngine.ts"
+  ],
+  [
+   "hypher-web/convex/ledgerApi.ts",
+   "hypher-web/convex/lib/ledgerValidators.ts"
+  ],
+  [
+   "hypher-web/convex/ledgerApi.ts",
+   "hypher-web/shared/githubRepo.ts"
+  ],
+  [
+   "hypher-web/convex/ledgerApi.ts",
+   "hypher-web/shared/ledgerApi.ts"
+  ],
+  [
+   "hypher-web/convex/ledgerApi.ts",
+   "hypher-web/shared/ledgerOps.ts"
+  ],
+  [
+   "hypher-web/convex/ledgerApi.ts",
+   "hypher-web/shared/ledgerStore.ts"
+  ],
+  [
+   "hypher-web/convex/legacy.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/legacy.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/lib/actionAuth.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/lib/authenticatedAction.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/lib/authenticatedAction.ts",
+   "hypher-web/convex/apiKeys.ts"
+  ],
+  [
+   "hypher-web/convex/lib/authenticatedAction.ts",
+   "hypher-web/convex/lib/actionAuth.ts"
+  ],
+  [
+   "hypher-web/convex/lib/authenticatedAction.ts",
+   "hypher-web/convex/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/convex/lib/githubBind.ts",
+   "hypher-web/shared/githubRepo.ts"
+  ],
+  [
+   "hypher-web/convex/lib/handoffRows.ts",
+   "hypher-web/convex/lib/structuredHandoffValidators.ts"
+  ],
+  [
+   "hypher-web/convex/lib/handoffRows.ts",
+   "hypher-web/shared/githubRepo.ts"
+  ],
+  [
+   "hypher-web/convex/lib/handoffRows.ts",
+   "hypher-web/shared/structuredHandoff.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerBrief.ts",
+   "hypher-web/convex/lib/ledgerEngine.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerBrief.ts",
+   "hypher-web/shared/ledgerApi.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerBrief.ts",
+   "hypher-web/shared/ledgerFold.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerBrief.ts",
+   "hypher-web/shared/ledgerNote.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerBrief.ts",
+   "hypher-web/shared/ledgerStore.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerEngine.ts",
+   "hypher-web/convex/lib/captureChecks.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerEngine.ts",
+   "hypher-web/convex/lib/handoffRows.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerEngine.ts",
+   "hypher-web/shared/ledgerApi.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerEngine.ts",
+   "hypher-web/shared/ledgerCall.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerEngine.ts",
+   "hypher-web/shared/ledgerCheckpoint.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerEngine.ts",
+   "hypher-web/shared/ledgerFold.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerEngine.ts",
+   "hypher-web/shared/ledgerNote.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerEngine.ts",
+   "hypher-web/shared/ledgerOps.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerEngine.ts",
+   "hypher-web/shared/ledgerStore.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerEngine.ts",
+   "hypher-web/shared/ledgerSync.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerEngine.ts",
+   "hypher-web/shared/ledgerV1.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerEngine.ts",
+   "hypher-web/shared/structuredHandoff.ts"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerSchedule.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/lib/ledgerSchedule.ts",
+   "hypher-web/shared/ledgerStore.ts"
+  ],
+  [
+   "hypher-web/convex/lib/mcpContext.ts",
+   "hypher-web/convex/lib/ledgerBrief.ts"
+  ],
+  [
+   "hypher-web/convex/lib/mcpContext.ts",
+   "hypher-web/convex/lib/ledgerBriefRows.ts"
+  ],
+  [
+   "hypher-web/convex/lib/mcpContext.ts",
+   "hypher-web/shared/projectMemoryGenerate.ts"
+  ],
+  [
+   "hypher-web/convex/lib/projectMemoryWrite.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/lib/projectMemoryWrite.ts",
+   "hypher-web/shared/projectMemoryGenerate.ts"
+  ],
+  [
+   "hypher-web/convex/mcpApiKey.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/mcpApiKey.ts",
+   "hypher-web/convex/apiKeys.ts"
+  ],
+  [
+   "hypher-web/convex/mcpApiKey.ts",
+   "hypher-web/convex/lib/mcpContext.ts"
+  ],
+  [
+   "hypher-web/convex/oauth.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/oauth.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/oauth.ts",
+   "hypher-web/shared/oauthClients.ts"
+  ],
+  [
+   "hypher-web/convex/oauth.ts",
+   "hypher-web/shared/oauthResources.ts"
+  ],
+  [
+   "hypher-web/convex/oauthContext.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/oauthContext.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/oauthContext.ts",
+   "hypher-web/convex/lib/mcpContext.ts"
+  ],
+  [
+   "hypher-web/convex/oauthContext.ts",
+   "hypher-web/shared/oauthResources.ts"
+  ],
+  [
+   "hypher-web/convex/objects.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/objects.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/objects.ts",
+   "hypher-web/convex/lib/projectMemoryWrite.ts"
+  ],
+  [
+   "hypher-web/convex/projectMemories.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/projectMemories.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/projectMemories.ts",
+   "hypher-web/convex/lib/projectMemoryWrite.ts"
+  ],
+  [
+   "hypher-web/convex/projectMemories.ts",
+   "hypher-web/shared/projectMemoryGenerate.ts"
+  ],
+  [
+   "hypher-web/convex/projectMemoryActions.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/projectMemoryActions.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/projectMemoryActions.ts",
+   "hypher-web/convex/lib/actionAuth.ts"
+  ],
+  [
+   "hypher-web/convex/projectMemoryActions.ts",
+   "hypher-web/convex/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/convex/projectMemoryActions.ts",
+   "hypher-web/shared/projectMemoryGenerate.ts"
+  ],
+  [
+   "hypher-web/convex/projectMemoryActions.ts",
+   "hypher-web/shared/synthesisOwnership.ts"
+  ],
+  [
+   "hypher-web/convex/projectMemoryMcp.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/projectMemoryMcp.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/projectMemoryMcp.ts",
+   "hypher-web/convex/lib/authenticatedAction.ts"
+  ],
+  [
+   "hypher-web/convex/projectMemoryMcp.ts",
+   "hypher-web/shared/projectMemoryGenerate.ts"
+  ],
+  [
+   "hypher-web/convex/projects.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/projects.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/schema.ts",
+   "hypher-web/convex/lib/ledgerValidators.ts"
+  ],
+  [
+   "hypher-web/convex/schema.ts",
+   "hypher-web/convex/lib/structuredHandoffValidators.ts"
+  ],
+  [
+   "hypher-web/convex/structuredHandoffs.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/convex/structuredHandoffs.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/structuredHandoffs.ts",
+   "hypher-web/convex/lib/authenticatedAction.ts"
+  ],
+  [
+   "hypher-web/convex/structuredHandoffs.ts",
+   "hypher-web/convex/lib/captureChecks.ts"
+  ],
+  [
+   "hypher-web/convex/structuredHandoffs.ts",
+   "hypher-web/convex/lib/handoffRows.ts"
+  ],
+  [
+   "hypher-web/convex/structuredHandoffs.ts",
+   "hypher-web/convex/lib/ledgerEngine.ts"
+  ],
+  [
+   "hypher-web/convex/structuredHandoffs.ts",
+   "hypher-web/convex/lib/ledgerSchedule.ts"
+  ],
+  [
+   "hypher-web/convex/structuredHandoffs.ts",
+   "hypher-web/convex/lib/structuredHandoffValidators.ts"
+  ],
+  [
+   "hypher-web/convex/structuredHandoffs.ts",
+   "hypher-web/shared/ledgerStore.ts"
+  ],
+  [
+   "hypher-web/convex/structuredHandoffs.ts",
+   "hypher-web/shared/structuredHandoff.ts"
+  ],
+  [
+   "hypher-web/convex/subscriptions.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/subscriptions.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/convex/tags.ts",
+   "hypher-web/convex/_generated/server.js"
+  ],
+  [
+   "hypher-web/convex/tags.ts",
+   "hypher-web/convex/lib/auth.ts"
+  ],
+  [
+   "hypher-web/shared/handoffCheckpoint.ts",
+   "hypher-web/shared/githubRepo.ts"
+  ],
+  [
+   "hypher-web/shared/handoffCheckpoint.ts",
+   "hypher-web/shared/secretScan.ts"
+  ],
+  [
+   "hypher-web/shared/handoffSeal.ts",
+   "hypher-web/shared/structuredHandoff.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerApi.ts",
+   "hypher-web/shared/handoffNote.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerApi.ts",
+   "hypher-web/shared/ledgerFold.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerApi.ts",
+   "hypher-web/shared/ledgerNote.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerCall.ts",
+   "hypher-web/shared/ledgerOps.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerCheckpoint.ts",
+   "hypher-web/shared/structuredHandoff.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerFakeConvex.ts",
+   "hypher-web/convex/schema.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerFold.ts",
+   "hypher-web/shared/ledgerOps.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerNote.ts",
+   "hypher-web/shared/handoffNote.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerNote.ts",
+   "hypher-web/shared/ledgerFold.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerNoteLocal.ts",
+   "hypher-web/shared/handoffNote.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerOps.ts",
+   "hypher-web/shared/secretScan.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerOps.ts",
+   "hypher-web/shared/structuredHandoff.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerRouteWorld.ts",
+   "hypher-web/convex/agentEvents.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerRouteWorld.ts",
+   "hypher-web/convex/ledgerApi.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerRouteWorld.ts",
+   "hypher-web/convex/lib/mcpContext.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerRouteWorld.ts",
+   "hypher-web/convex/structuredHandoffs.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerRouteWorld.ts",
+   "hypher-web/shared/ledgerFakeConvex.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerRouteWorld.ts",
+   "hypher-web/shared/ledgerWorld.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerSeal.ts",
+   "hypher-web/shared/handoffNote.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerSeal.ts",
+   "hypher-web/shared/handoffSeal.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerSeal.ts",
+   "hypher-web/shared/ledgerOps.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerShadow.ts",
+   "hypher-web/shared/ledgerV1.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerStore.ts",
+   "hypher-web/shared/structuredHandoff.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerSync.ts",
+   "hypher-web/shared/ledgerCall.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerSync.ts",
+   "hypher-web/shared/ledgerFold.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerSync.ts",
+   "hypher-web/shared/ledgerOps.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerSync.ts",
+   "hypher-web/shared/ledgerShadow.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerSync.ts",
+   "hypher-web/shared/ledgerStore.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerSync.ts",
+   "hypher-web/shared/ledgerV1.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerTestKit.ts",
+   "hypher-web/shared/ledgerCall.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerTestKit.ts",
+   "hypher-web/shared/ledgerFold.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerTestKit.ts",
+   "hypher-web/shared/ledgerOps.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerV1.ts",
+   "hypher-web/shared/ledgerFold.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerV1.ts",
+   "hypher-web/shared/ledgerOps.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerWorld.ts",
+   "hypher-web/convex/ledger.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerWorld.ts",
+   "hypher-web/convex/structuredHandoffs.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerWorld.ts",
+   "hypher-web/shared/ledgerFakeConvex.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerWorld.ts",
+   "hypher-web/shared/ledgerFold.ts"
+  ],
+  [
+   "hypher-web/shared/ledgerWorld.ts",
+   "hypher-web/shared/ledgerStore.ts"
+  ],
+  [
+   "hypher-web/shared/structuredHandoff.ts",
+   "hypher-web/shared/secretScan.ts"
+  ],
+  [
+   "hypher-web/src/app/api/agent/events/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/agent/events/route.ts",
+   "hypher-web/shared/ledgerApi.ts"
+  ],
+  [
+   "hypher-web/src/app/api/agent/events/route.ts",
+   "hypher-web/src/lib/requestBody.ts"
+  ],
+  [
+   "hypher-web/src/app/api/capture-tokens/[tokenId]/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/capture-tokens/[tokenId]/route.ts",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/api/capture-tokens/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/capture-tokens/route.ts",
+   "hypher-web/src/lib/requestBody.ts"
+  ],
+  [
+   "hypher-web/src/app/api/capture-tokens/route.ts",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/checkpoints/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/cli/checkpoints/route.ts",
+   "hypher-web/src/lib/cliRoutes.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/checkpoints/route.ts",
+   "hypher-web/src/lib/requestBody.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/device/approve/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/cli/device/approve/route.ts",
+   "hypher-web/shared/cliDevice.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/device/approve/route.ts",
+   "hypher-web/src/lib/cliRoutes.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/device/approve/route.ts",
+   "hypher-web/src/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/device/approve/route.ts",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/device/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/cli/device/route.ts",
+   "hypher-web/shared/cliDevice.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/device/route.ts",
+   "hypher-web/src/lib/cliRoutes.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/device/route.ts",
+   "hypher-web/src/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/device/route.ts",
+   "hypher-web/src/lib/requestBody.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/device/token/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/cli/device/token/route.ts",
+   "hypher-web/src/lib/cliRoutes.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/device/token/route.ts",
+   "hypher-web/src/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/device/token/route.ts",
+   "hypher-web/src/lib/requestBody.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/key/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/cli/key/route.ts",
+   "hypher-web/src/lib/cliRoutes.ts"
+  ],
+  [
+   "hypher-web/src/app/api/cli/ledger/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/cli/ledger/route.ts",
+   "hypher-web/src/lib/cliRoutes.ts"
+  ],
+  [
+   "hypher-web/src/app/api/launch-readiness/route.ts",
+   "hypher-web/src/lib/launchReadiness.ts"
+  ],
+  [
+   "hypher-web/src/app/api/launch-readiness/route.ts",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/api/mcp/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/mcp/route.ts",
+   "hypher-web/shared/oauthResources.ts"
+  ],
+  [
+   "hypher-web/src/app/api/mcp/route.ts",
+   "hypher-web/shared/projectMemoryGenerate.ts"
+  ],
+  [
+   "hypher-web/src/app/api/mcp/route.ts",
+   "hypher-web/src/lib/mcpTools.ts"
+  ],
+  [
+   "hypher-web/src/app/api/mcp/route.ts",
+   "hypher-web/src/lib/oauthBridge.ts"
+  ],
+  [
+   "hypher-web/src/app/api/mcp/route.ts",
+   "hypher-web/src/lib/projectContext.ts"
+  ],
+  [
+   "hypher-web/src/app/api/mcp/route.ts",
+   "hypher-web/src/lib/requestBody.ts"
+  ],
+  [
+   "hypher-web/src/app/api/project-memory/generate/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/project-memory/generate/route.ts",
+   "hypher-web/src/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/src/app/api/project-memory/generate/route.ts",
+   "hypher-web/src/lib/requestBody.ts"
+  ],
+  [
+   "hypher-web/src/app/api/project-memory/generate/route.ts",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/api/projects/[projectId]/agent-context/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/projects/[projectId]/agent-context/route.ts",
+   "hypher-web/shared/projectMemoryGenerate.ts"
+  ],
+  [
+   "hypher-web/src/app/api/projects/[projectId]/agent-context/route.ts",
+   "hypher-web/src/lib/agentContextApi.ts"
+  ],
+  [
+   "hypher-web/src/app/api/projects/[projectId]/agent-context/route.ts",
+   "hypher-web/src/lib/projectContext.ts"
+  ],
+  [
+   "hypher-web/src/app/api/projects/[projectId]/agent-context/route.ts",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/api/projects/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/projects/route.ts",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/api/stripe/checkout/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/stripe/checkout/route.ts",
+   "hypher-web/src/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/src/app/api/stripe/checkout/route.ts",
+   "hypher-web/src/lib/requestBody.ts"
+  ],
+  [
+   "hypher-web/src/app/api/stripe/checkout/route.ts",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/api/stripe/webhook/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/stripe/webhook/route.ts",
+   "hypher-web/src/lib/requestBody.ts"
+  ],
+  [
+   "hypher-web/src/app/api/tag-suggest/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/api/tag-suggest/route.ts",
+   "hypher-web/src/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/src/app/api/tag-suggest/route.ts",
+   "hypher-web/src/lib/requestBody.ts"
+  ],
+  [
+   "hypher-web/src/app/api/tag-suggest/route.ts",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/app/HypherApp.tsx",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/app/HypherApp.tsx",
+   "hypher-web/src/components/AgentInboxPanel.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/HypherApp.tsx",
+   "hypher-web/src/components/AppChromeNav.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/HypherApp.tsx",
+   "hypher-web/src/components/AppErrorBoundary.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/HypherApp.tsx",
+   "hypher-web/src/components/CaptureHome.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/HypherApp.tsx",
+   "hypher-web/src/components/CreateForm.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/HypherApp.tsx",
+   "hypher-web/src/components/ProjectDashboard.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/HypherApp.tsx",
+   "hypher-web/src/components/ProjectPulse.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/HypherApp.tsx",
+   "hypher-web/src/components/SearchDialog.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/HypherApp.tsx",
+   "hypher-web/src/components/Sidebar.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/HypherApp.tsx",
+   "hypher-web/src/lib/useStore.ts"
+  ],
+  [
+   "hypher-web/src/app/app/SignInRequired.tsx",
+   "hypher-web/src/components/marketing/MarketingBrand.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/SignInRequired.tsx",
+   "hypher-web/src/lib/activation.ts"
+  ],
+  [
+   "hypher-web/src/app/app/page.tsx",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/app/page.tsx",
+   "hypher-web/src/app/app/HypherApp.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/page.tsx",
+   "hypher-web/src/app/app/SignInRequired.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/page.tsx",
+   "hypher-web/src/components/BetaInviteGate.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/page.tsx",
+   "hypher-web/src/lib/activation.ts"
+  ],
+  [
+   "hypher-web/src/app/app/settings/api-keys/page.tsx",
+   "hypher-web/src/components/ApiKeysPanel.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/settings/beta/page.tsx",
+   "hypher-web/src/components/BetaAdminPanel.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/settings/beta/page.tsx",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/app/settings/integrations/page.tsx",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/app/settings/integrations/page.tsx",
+   "hypher-web/src/components/AgentCliSetupSection.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/settings/integrations/page.tsx",
+   "hypher-web/src/lib/agentCliSetup.ts"
+  ],
+  [
+   "hypher-web/src/app/app/settings/integrations/page.tsx",
+   "hypher-web/src/lib/cursorPlugin.ts"
+  ],
+  [
+   "hypher-web/src/app/app/settings/integrations/page.tsx",
+   "hypher-web/src/lib/settingsAccess.ts"
+  ],
+  [
+   "hypher-web/src/app/app/settings/launch-readiness/page.tsx",
+   "hypher-web/src/components/LaunchReadinessPanel.tsx"
+  ],
+  [
+   "hypher-web/src/app/app/settings/launch-readiness/page.tsx",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/app/settings/layout.tsx",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/app/settings/page.tsx",
+   "hypher-web/src/lib/agentCliSetup.ts"
+  ],
+  [
+   "hypher-web/src/app/beta/request/page.tsx",
+   "hypher-web/src/components/BetaRequestForm.tsx"
+  ],
+  [
+   "hypher-web/src/app/capture/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/capture/route.ts",
+   "hypher-web/shared/capture.ts"
+  ],
+  [
+   "hypher-web/src/app/capture/route.ts",
+   "hypher-web/src/lib/engine.ts"
+  ],
+  [
+   "hypher-web/src/app/capture/route.ts",
+   "hypher-web/src/lib/requestBody.ts"
+  ],
+  [
+   "hypher-web/src/app/capture/route.ts",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/capture/route.ts",
+   "hypher-web/src/types/index.ts"
+  ],
+  [
+   "hypher-web/src/app/connect/page.tsx",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/connect/page.tsx",
+   "hypher-web/shared/cliDevice.ts"
+  ],
+  [
+   "hypher-web/src/app/connect/page.tsx",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/layout.tsx",
+   "hypher-web/src/components/ConvexProvider.tsx"
+  ],
+  [
+   "hypher-web/src/app/mcp/route.ts",
+   "hypher-web/src/app/api/mcp/route.ts"
+  ],
+  [
+   "hypher-web/src/app/oauth/authorize/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/oauth/authorize/route.ts",
+   "hypher-web/src/lib/oauthBridge.ts"
+  ],
+  [
+   "hypher-web/src/app/oauth/authorize/route.ts",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/oauth/consent/approve/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/oauth/consent/approve/route.ts",
+   "hypher-web/src/lib/oauthBridge.ts"
+  ],
+  [
+   "hypher-web/src/app/oauth/consent/approve/route.ts",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/oauth/consent/page.tsx",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/oauth/consent/page.tsx",
+   "hypher-web/src/lib/oauthBridge.ts"
+  ],
+  [
+   "hypher-web/src/app/oauth/consent/page.tsx",
+   "hypher-web/src/lib/serverAuth.ts"
+  ],
+  [
+   "hypher-web/src/app/oauth/register/route.ts",
+   "hypher-web/src/lib/oauthBridge.ts"
+  ],
+  [
+   "hypher-web/src/app/oauth/register/route.ts",
+   "hypher-web/src/lib/requestBody.ts"
+  ],
+  [
+   "hypher-web/src/app/oauth/token/route.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/app/oauth/token/route.ts",
+   "hypher-web/shared/oauthResources.ts"
+  ],
+  [
+   "hypher-web/src/app/oauth/token/route.ts",
+   "hypher-web/src/lib/oauthBridge.ts"
+  ],
+  [
+   "hypher-web/src/app/oauth/token/route.ts",
+   "hypher-web/src/lib/rateLimit.ts"
+  ],
+  [
+   "hypher-web/src/app/oauth/token/route.ts",
+   "hypher-web/src/lib/requestBody.ts"
+  ],
+  [
+   "hypher-web/src/app/page.tsx",
+   "hypher-web/src/components/marketing/LandingPage.tsx"
+  ],
+  [
+   "hypher-web/src/app/pricing/page.tsx",
+   "hypher-web/src/components/marketing/MarketingChrome.tsx"
+  ],
+  [
+   "hypher-web/src/app/pricing/page.tsx",
+   "hypher-web/src/components/marketing/PricingCards.tsx"
+  ],
+  [
+   "hypher-web/src/components/AgentCliSetupSection.tsx",
+   "hypher-web/src/lib/agentCliSetup.ts"
+  ],
+  [
+   "hypher-web/src/components/AgentInboxPanel.tsx",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/components/AgentInboxPanel.tsx",
+   "hypher-web/src/lib/agentEvents.ts"
+  ],
+  [
+   "hypher-web/src/components/ApiKeysPanel.tsx",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/components/ApiKeysPanel.tsx",
+   "hypher-web/src/lib/settingsAccess.ts"
+  ],
+  [
+   "hypher-web/src/components/BetaAdminPanel.tsx",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/components/BetaAdminPanel.tsx",
+   "hypher-web/src/lib/beta.ts"
+  ],
+  [
+   "hypher-web/src/components/BetaInviteGate.tsx",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/components/BetaInviteGate.tsx",
+   "hypher-web/src/components/marketing/MarketingBrand.tsx"
+  ],
+  [
+   "hypher-web/src/components/BetaInviteGate.tsx",
+   "hypher-web/src/lib/beta.ts"
+  ],
+  [
+   "hypher-web/src/components/BetaRequestForm.tsx",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/components/BetaRequestForm.tsx",
+   "hypher-web/src/components/marketing/MarketingBrand.tsx"
+  ],
+  [
+   "hypher-web/src/components/BetaRequestForm.tsx",
+   "hypher-web/src/lib/beta.ts"
+  ],
+  [
+   "hypher-web/src/components/CaptureHome.tsx",
+   "hypher-web/src/components/HypherMark.tsx"
+  ],
+  [
+   "hypher-web/src/components/CaptureHome.tsx",
+   "hypher-web/src/components/ProjectAssignPopup.tsx"
+  ],
+  [
+   "hypher-web/src/components/HypherLockup.tsx",
+   "hypher-web/src/components/hypherLockupPath.ts"
+  ],
+  [
+   "hypher-web/src/components/HypherMark.tsx",
+   "hypher-web/src/components/hypherMarkPath.ts"
+  ],
+  [
+   "hypher-web/src/components/LaunchReadinessPanel.tsx",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/components/LaunchReadinessPanel.tsx",
+   "hypher-web/src/lib/launchReadiness.ts"
+  ],
+  [
+   "hypher-web/src/components/LaunchReadinessPanel.tsx",
+   "hypher-web/src/lib/launchReadinessChecklist.ts"
+  ],
+  [
+   "hypher-web/src/components/ProjectPulse.tsx",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/components/ProjectPulse.tsx",
+   "hypher-web/shared/projectMemoryGenerate.ts"
+  ],
+  [
+   "hypher-web/src/components/ProjectPulse.tsx",
+   "hypher-web/src/lib/actions.ts"
+  ],
+  [
+   "hypher-web/src/components/ProjectPulse.tsx",
+   "hypher-web/src/lib/projectContext.ts"
+  ],
+  [
+   "hypher-web/src/components/ProjectPulse.tsx",
+   "hypher-web/src/lib/projectPulse.ts"
+  ],
+  [
+   "hypher-web/src/components/ProjectPulse.tsx",
+   "hypher-web/src/types/index.ts"
+  ],
+  [
+   "hypher-web/src/components/SearchDialog.tsx",
+   "hypher-web/src/components/Icons.tsx"
+  ],
+  [
+   "hypher-web/src/components/SearchDialog.tsx",
+   "hypher-web/src/types/index.ts"
+  ],
+  [
+   "hypher-web/src/components/Sidebar.tsx",
+   "hypher-web/src/components/CreateForm.tsx"
+  ],
+  [
+   "hypher-web/src/components/Sidebar.tsx",
+   "hypher-web/src/components/HypherMark.tsx"
+  ],
+  [
+   "hypher-web/src/components/Sidebar.tsx",
+   "hypher-web/src/components/Icons.tsx"
+  ],
+  [
+   "hypher-web/src/components/marketing/LandingPage.tsx",
+   "hypher-web/src/components/marketing/LandingVisuals.tsx"
+  ],
+  [
+   "hypher-web/src/components/marketing/LandingPage.tsx",
+   "hypher-web/src/components/marketing/LongExposureField.tsx"
+  ],
+  [
+   "hypher-web/src/components/marketing/LandingPage.tsx",
+   "hypher-web/src/components/marketing/MarketingChrome.tsx"
+  ],
+  [
+   "hypher-web/src/components/marketing/LandingPage.tsx",
+   "hypher-web/src/components/marketing/MarketingHeroStage.tsx"
+  ],
+  [
+   "hypher-web/src/components/marketing/LandingPage.tsx",
+   "hypher-web/src/components/marketing/MarketingMotion.tsx"
+  ],
+  [
+   "hypher-web/src/components/marketing/LandingPage.tsx",
+   "hypher-web/src/components/marketing/MarketingPhoto.tsx"
+  ],
+  [
+   "hypher-web/src/components/marketing/LandingPage.tsx",
+   "hypher-web/src/components/marketing/agentLogos.tsx"
+  ],
+  [
+   "hypher-web/src/components/marketing/LandingPage.tsx",
+   "hypher-web/src/components/marketing/landingCopy.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/LandingPage.tsx",
+   "hypher-web/src/components/marketing/marketingPhotos.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/LandingPage.tsx",
+   "hypher-web/src/components/marketing/marketingVisuals.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/LandingVisuals.tsx",
+   "hypher-web/src/components/hypherMarkPath.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/LandingVisuals.tsx",
+   "hypher-web/src/components/marketing/agentLogos.tsx"
+  ],
+  [
+   "hypher-web/src/components/marketing/LandingVisuals.tsx",
+   "hypher-web/src/components/marketing/marketingVisuals.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/LongExposureField.tsx",
+   "hypher-web/src/components/marketing/longExposureLayout.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/LongExposureField.tsx",
+   "hypher-web/src/components/marketing/longExposureRenderer.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/LongExposureField.tsx",
+   "hypher-web/src/components/marketing/longExposureShader.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/MarketingBrand.tsx",
+   "hypher-web/src/components/HypherLockup.tsx"
+  ],
+  [
+   "hypher-web/src/components/marketing/MarketingBrand.tsx",
+   "hypher-web/src/components/HypherMark.tsx"
+  ],
+  [
+   "hypher-web/src/components/marketing/MarketingChrome.tsx",
+   "hypher-web/src/components/marketing/MarketingBrand.tsx"
+  ],
+  [
+   "hypher-web/src/components/marketing/MarketingChrome.tsx",
+   "hypher-web/src/components/marketing/MarketingHeaderTone.tsx"
+  ],
+  [
+   "hypher-web/src/components/marketing/MarketingChrome.tsx",
+   "hypher-web/src/components/marketing/landingCopy.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/MarketingHeroStage.tsx",
+   "hypher-web/src/components/hypherMarkPath.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/MarketingHeroStage.tsx",
+   "hypher-web/src/components/marketing/marketingHeroDemo.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/MarketingHeroStage.tsx",
+   "hypher-web/src/components/marketing/warpCanvas.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/MarketingHeroStage.tsx",
+   "hypher-web/src/components/marketing/warpStars.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/MarketingPhoto.tsx",
+   "hypher-web/src/components/marketing/marketingPhotos.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/longExposureRenderer.ts",
+   "hypher-web/src/components/marketing/longExposureLayout.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/longExposureRenderer.ts",
+   "hypher-web/src/components/marketing/longExposureShader.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/longExposureShader.ts",
+   "hypher-web/src/components/marketing/longExposureLayout.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/marketingVisuals.ts",
+   "hypher-web/src/components/marketing/landingCopy.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/marketingVisuals.ts",
+   "hypher-web/src/components/marketing/marketingHeroDemo.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/warpCanvas.ts",
+   "hypher-web/src/components/hypherMarkPath.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/warpCanvas.ts",
+   "hypher-web/src/components/marketing/longExposureLayout.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/warpCanvas.ts",
+   "hypher-web/src/components/marketing/warpStars.ts"
+  ],
+  [
+   "hypher-web/src/components/marketing/warpStars.ts",
+   "hypher-web/src/components/hypherMarkPath.ts"
+  ],
+  [
+   "hypher-web/src/lib/acceptAgentEvent.ts",
+   "hypher-web/shared/projectMemoryGenerate.ts"
+  ],
+  [
+   "hypher-web/src/lib/acceptAgentEvent.ts",
+   "hypher-web/src/lib/crystallizeRecentActivity.ts"
+  ],
+  [
+   "hypher-web/src/lib/agentCliSetup.ts",
+   "hypher-web/shared/oauthClients.ts"
+  ],
+  [
+   "hypher-web/src/lib/agentContextApi.ts",
+   "hypher-web/src/lib/projectContext.ts"
+  ],
+  [
+   "hypher-web/src/lib/agentEvents.ts",
+   "hypher-web/shared/githubRepo.ts"
+  ],
+  [
+   "hypher-web/src/lib/builderBriefDriftFixture.ts",
+   "hypher-web/src/lib/projectContext.ts"
+  ],
+  [
+   "hypher-web/src/lib/cursorPlugin.ts",
+   "hypher-web/shared/oauthClients.ts"
+  ],
+  [
+   "hypher-web/src/lib/engine.ts",
+   "hypher-web/src/lib/embeddings.ts"
+  ],
+  [
+   "hypher-web/src/lib/engine.ts",
+   "hypher-web/src/lib/suggestions.ts"
+  ],
+  [
+   "hypher-web/src/lib/engine.ts",
+   "hypher-web/src/types/index.ts"
+  ],
+  [
+   "hypher-web/src/lib/mcpTools.ts",
+   "hypher-web/shared/githubRepo.ts"
+  ],
+  [
+   "hypher-web/src/lib/mcpTools.ts",
+   "hypher-web/shared/handoffNote.ts"
+  ],
+  [
+   "hypher-web/src/lib/mcpTools.ts",
+   "hypher-web/shared/ledgerApi.ts"
+  ],
+  [
+   "hypher-web/src/lib/mcpTools.ts",
+   "hypher-web/shared/projectMemoryGenerate.ts"
+  ],
+  [
+   "hypher-web/src/lib/mcpTools.ts",
+   "hypher-web/shared/structuredHandoff.ts"
+  ],
+  [
+   "hypher-web/src/lib/mcpTools.ts",
+   "hypher-web/src/lib/agentContextApi.ts"
+  ],
+  [
+   "hypher-web/src/lib/mcpTools.ts",
+   "hypher-web/src/lib/agentEvents.ts"
+  ],
+  [
+   "hypher-web/src/lib/mcpTools.ts",
+   "hypher-web/src/lib/projectContext.ts"
+  ],
+  [
+   "hypher-web/src/lib/mcpTools.ts",
+   "hypher-web/src/lib/projectMemory.ts"
+  ],
+  [
+   "hypher-web/src/lib/oauthBridge.ts",
+   "hypher-web/shared/oauthClients.ts"
+  ],
+  [
+   "hypher-web/src/lib/oauthBridge.ts",
+   "hypher-web/shared/oauthResources.ts"
+  ],
+  [
+   "hypher-web/src/lib/projectContext.ts",
+   "hypher-web/shared/projectMemoryGenerate.ts"
+  ],
+  [
+   "hypher-web/src/lib/projectContext.ts",
+   "hypher-web/shared/structuredHandoff.ts"
+  ],
+  [
+   "hypher-web/src/lib/projectContext.ts",
+   "hypher-web/src/lib/actions.ts"
+  ],
+  [
+   "hypher-web/src/lib/projectContext.ts",
+   "hypher-web/src/lib/handoffResults.ts"
+  ],
+  [
+   "hypher-web/src/lib/projectContext.ts",
+   "hypher-web/src/lib/projectMemory.ts"
+  ],
+  [
+   "hypher-web/src/lib/projectMemory.ts",
+   "hypher-web/shared/projectMemoryGenerate.ts"
+  ],
+  [
+   "hypher-web/src/lib/projectPulse.ts",
+   "hypher-web/shared/projectMemoryGenerate.ts"
+  ],
+  [
+   "hypher-web/src/lib/projectPulse.ts",
+   "hypher-web/src/lib/projectContext.ts"
+  ],
+  [
+   "hypher-web/src/lib/serverAuth.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/lib/serverAuth.ts",
+   "hypher-web/src/lib/beta.ts"
+  ],
+  [
+   "hypher-web/src/lib/suggestions.ts",
+   "hypher-web/src/types/index.ts"
+  ],
+  [
+   "hypher-web/src/lib/useStore.ts",
+   "hypher-web/convex/_generated/api.js"
+  ],
+  [
+   "hypher-web/src/lib/useStore.ts",
+   "hypher-web/shared/capture.ts"
+  ],
+  [
+   "hypher-web/src/lib/useStore.ts",
+   "hypher-web/src/lib/activation.ts"
+  ],
+  [
+   "hypher-web/src/lib/useStore.ts",
+   "hypher-web/src/lib/convexActionFailed.ts"
+  ],
+  [
+   "hypher-web/src/lib/useStore.ts",
+   "hypher-web/src/lib/engine.ts"
+  ],
+  [
+   "hypher-web/src/lib/useStore.ts",
+   "hypher-web/src/lib/suggestions.ts"
+  ],
+  [
+   "hypher-web/src/lib/useStore.ts",
+   "hypher-web/src/types/index.ts"
+  ],
+  [
+   "hypher-web/src/proxy.ts",
+   "hypher-web/src/lib/hypherClerkMiddleware.ts"
+  ],
+  [
+   "hypher-web/src/proxy.ts",
+   "hypher-web/src/lib/publicRoutes.ts"
+  ],
+  [
+   "hypher-web/tools/codex-claude-handoff.mjs",
+   "packages/hypher-git/index.mjs"
+  ],
+  [
+   "packages/core/src/api.ts",
+   "packages/core/src/server.ts"
+  ],
+  [
+   "packages/core/src/browser.ts",
+   "packages/core/src/origins.ts"
+  ],
+  [
+   "packages/core/src/hooks.ts",
+   "packages/core/src/provider.tsx"
+  ],
+  [
+   "packages/core/src/index.ts",
+   "packages/core/src/api.ts"
+  ],
+  [
+   "packages/core/src/index.ts",
+   "packages/core/src/browser.ts"
+  ],
+  [
+   "packages/core/src/index.ts",
+   "packages/core/src/hooks.ts"
+  ],
+  [
+   "packages/core/src/index.ts",
+   "packages/core/src/origins.ts"
+  ],
+  [
+   "packages/core/src/index.ts",
+   "packages/core/src/provider.tsx"
+  ],
+  [
+   "packages/core/src/index.ts",
+   "packages/core/src/widget.tsx"
+  ],
+  [
+   "packages/core/src/provider.tsx",
+   "packages/core/src/browser.ts"
+  ],
+  [
+   "packages/core/src/server.ts",
+   "packages/core/src/origins.ts"
+  ],
+  [
+   "packages/core/src/widget.tsx",
+   "packages/core/src/hooks.ts"
+  ],
+  [
+   "packages/hypher-cli/bin/hypher.mjs",
+   "packages/hypher-cli/src/cli.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/api.mjs",
+   "packages/hypher-cli/src/config.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/api.mjs",
+   "packages/hypher-cli/src/credentials.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/api.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/claude.mjs",
+   "packages/hypher-cli/src/hookConfig.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cli.mjs",
+   "packages/hypher-cli/src/commands/ack.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cli.mjs",
+   "packages/hypher-cli/src/commands/doctor.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cli.mjs",
+   "packages/hypher-cli/src/commands/hook.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cli.mjs",
+   "packages/hypher-cli/src/commands/init.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cli.mjs",
+   "packages/hypher-cli/src/commands/link.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cli.mjs",
+   "packages/hypher-cli/src/commands/mcp.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cli.mjs",
+   "packages/hypher-cli/src/commands/resume.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cli.mjs",
+   "packages/hypher-cli/src/commands/seal.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cli.mjs",
+   "packages/hypher-cli/src/commands/status.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cli.mjs",
+   "packages/hypher-cli/src/commands/uninstall.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cli.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cloud.mjs",
+   "packages/hypher-cli/src/api.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cloud.mjs",
+   "packages/hypher-cli/src/config.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cloud.mjs",
+   "packages/hypher-cli/src/credentials.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cloud.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cloud.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/cloud.mjs",
+   "packages/hypher-cli/src/outbox.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/codex.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/codex.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/codex.mjs",
+   "packages/hypher-cli/src/hookConfig.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/ack.mjs",
+   "packages/hypher-cli/src/api.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/ack.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/ack.mjs",
+   "packages/hypher-cli/src/state.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/doctor.mjs",
+   "packages/hypher-cli/src/agentsBlock.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/doctor.mjs",
+   "packages/hypher-cli/src/api.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/doctor.mjs",
+   "packages/hypher-cli/src/claude.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/doctor.mjs",
+   "packages/hypher-cli/src/cloud.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/doctor.mjs",
+   "packages/hypher-cli/src/codex.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/doctor.mjs",
+   "packages/hypher-cli/src/config.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/doctor.mjs",
+   "packages/hypher-cli/src/credentials.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/doctor.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/doctor.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/doctor.mjs",
+   "packages/hypher-cli/src/outbox.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/doctor.mjs",
+   "packages/hypher-cli/src/repoKit.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/doctor.mjs",
+   "packages/hypher-cli/src/tools.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/hook.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/hook.mjs",
+   "packages/hypher-cli/src/hooks/index.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/agentsBlock.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/api.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/claude.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/codex.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/config.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/credentials.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/device.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/hookConfig.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/manifest.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/repoBlock.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/repoKit.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/shellPath.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/init.mjs",
+   "packages/hypher-cli/src/tools.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/link.mjs",
+   "packages/hypher-cli/src/api.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/link.mjs",
+   "packages/hypher-cli/src/config.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/link.mjs",
+   "packages/hypher-cli/src/device.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/link.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/link.mjs",
+   "packages/hypher-cli/src/manifest.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/link.mjs",
+   "packages/hypher-cli/src/repoBlock.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/mcp.mjs",
+   "packages/hypher-cli/src/api.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/mcp.mjs",
+   "packages/hypher-cli/src/commands/ack.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/mcp.mjs",
+   "packages/hypher-cli/src/commands/seal.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/mcp.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/mcp.mjs",
+   "packages/hypher-cli/src/session.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/resume.mjs",
+   "packages/hypher-cli/src/ledger.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/resume.mjs",
+   "packages/hypher-cli/src/session.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/seal.mjs",
+   "packages/hypher-cli/src/session.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/seal.mjs",
+   "packages/hypher-cli/src/state.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/status.mjs",
+   "packages/hypher-cli/src/cloud.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/status.mjs",
+   "packages/hypher-cli/src/config.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/status.mjs",
+   "packages/hypher-cli/src/credentials.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/status.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/status.mjs",
+   "packages/hypher-cli/src/outbox.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/status.mjs",
+   "packages/hypher-cli/src/repoKit.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/status.mjs",
+   "packages/hypher-cli/src/startOutcome.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/uninstall.mjs",
+   "packages/hypher-cli/src/agentsBlock.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/uninstall.mjs",
+   "packages/hypher-cli/src/api.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/uninstall.mjs",
+   "packages/hypher-cli/src/claude.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/uninstall.mjs",
+   "packages/hypher-cli/src/codex.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/uninstall.mjs",
+   "packages/hypher-cli/src/config.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/uninstall.mjs",
+   "packages/hypher-cli/src/credentials.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/uninstall.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/uninstall.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/uninstall.mjs",
+   "packages/hypher-cli/src/manifest.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/uninstall.mjs",
+   "packages/hypher-cli/src/repoKit.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/uninstall.mjs",
+   "packages/hypher-cli/src/shellPath.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/commands/uninstall.mjs",
+   "packages/hypher-cli/src/tools.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/config.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/config.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/device.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/hooks/index.mjs",
+   "packages/hypher-cli/src/api.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/hooks/index.mjs",
+   "packages/hypher-cli/src/cloud.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/hooks/index.mjs",
+   "packages/hypher-cli/src/config.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/hooks/index.mjs",
+   "packages/hypher-cli/src/outbox.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/hooks/index.mjs",
+   "packages/hypher-cli/src/secrets.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/hooks/index.mjs",
+   "packages/hypher-cli/src/session.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/hooks/index.mjs",
+   "packages/hypher-cli/src/snapshot.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/hooks/index.mjs",
+   "packages/hypher-cli/src/startOutcome.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/hooks/index.mjs",
+   "packages/hypher-cli/src/state.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/hooks/index.mjs",
+   "packages/hypher-cli/src/throttle.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/ledger.mjs",
+   "packages/hypher-cli/src/api.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/manifest.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/manifest.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/outbox.mjs",
+   "packages/hypher-cli/src/api.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/outbox.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/outbox.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/repoBlock.mjs",
+   "packages/hypher-cli/src/agentsBlock.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/repoBlock.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/repoBlock.mjs",
+   "packages/hypher-cli/src/manifest.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/repoKit.mjs",
+   "packages/hypher-cli/src/agentsBlock.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/repoKit.mjs",
+   "packages/hypher-cli/src/claude.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/repoKit.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/repoKit.mjs",
+   "packages/hypher-cli/src/hookConfig.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/repoKit.mjs",
+   "packages/hypher-cli/src/manifest.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/repoKit.mjs",
+   "packages/hypher-cli/src/repoBlock.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/session.mjs",
+   "packages/hypher-cli/src/api.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/session.mjs",
+   "packages/hypher-cli/src/cloud.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/session.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/session.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/session.mjs",
+   "packages/hypher-cli/src/ledger.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/session.mjs",
+   "packages/hypher-cli/src/outbox.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/session.mjs",
+   "packages/hypher-cli/src/secrets.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/session.mjs",
+   "packages/hypher-cli/src/snapshot.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/session.mjs",
+   "packages/hypher-cli/src/state.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/startOutcome.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/startOutcome.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/state.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/state.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/throttle.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/throttle.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/tools.mjs",
+   "packages/hypher-cli/src/env.mjs"
+  ],
+  [
+   "packages/hypher-cli/src/tools.mjs",
+   "packages/hypher-cli/src/fsutil.mjs"
+  ],
+  [
+   "script/baton-rehearse.mjs",
+   "script/baton/checks.mjs"
+  ],
+  [
+   "script/baton-rehearse.mjs",
+   "script/baton/lib.mjs"
+  ],
+  [
+   "script/baton/checks.mjs",
+   "packages/hypher-git/index.mjs"
+  ],
+  [
+   "script/baton/checks.mjs",
+   "script/baton/lib.mjs"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "hypher-web/shared/cliDevice.ts"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "hypher-web/shared/githubRepo.ts"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "hypher-web/shared/handoffCheckpoint.ts"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "hypher-web/shared/handoffNote.ts"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "hypher-web/shared/ledgerApi.ts"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "hypher-web/shared/ledgerCall.ts"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "hypher-web/shared/ledgerFold.ts"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "hypher-web/shared/ledgerNote.ts"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "hypher-web/shared/ledgerOps.ts"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "hypher-web/shared/ledgerStore.ts"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "hypher-web/shared/ledgerSync.ts"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "hypher-web/shared/ledgerV1.ts"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "hypher-web/shared/structuredHandoff.ts"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "hypher-web/src/lib/mcpTools.ts"
+  ]
+ ],
+ "repo": {
+  "name": "hypher",
+  "packages": [
+   ".",
+   "extensions/chrome",
+   "hypher-web",
+   "packages/core",
+   "packages/hypher-cli",
+   "packages/hypher-git"
+  ]
+ },
+ "unresolved": {},
+ "uses": [
+  [
+   "extensions/chrome/lib/api.ts",
+   "endpoint:/api/projects",
+   "http"
+  ],
+  [
+   "extensions/chrome/lib/api.ts",
+   "endpoint:/api/tag-suggest",
+   "http"
+  ],
+  [
+   "extensions/chrome/lib/capture.ts",
+   "endpoint:/capture",
+   "http"
+  ],
+  [
+   "hypher-web/convex/ai.ts",
+   "ai:anthropic",
+   "package"
+  ],
+  [
+   "hypher-web/convex/github.ts",
+   "ai:anthropic",
+   "package"
+  ],
+  [
+   "hypher-web/convex/http.ts",
+   "endpoint:/api/projects",
+   "http"
+  ],
+  [
+   "hypher-web/convex/http.ts",
+   "endpoint:/capture",
+   "http"
+  ],
+  [
+   "hypher-web/convex/httpRateLimit.ts",
+   "service:fast-cache",
+   "package"
+  ],
+  [
+   "hypher-web/convex/lib/rateLimit.ts",
+   "service:fast-cache",
+   "package"
+  ],
+  [
+   "hypher-web/convex/projectMemoryActions.ts",
+   "ai:anthropic",
+   "package"
+  ],
+  [
+   "hypher-web/instrumentation-client.ts",
+   "service:error-alerts",
+   "package"
+  ],
+  [
+   "hypher-web/shared/oauthResources.ts",
+   "endpoint:/api/mcp",
+   "http"
+  ],
+  [
+   "hypher-web/shared/oauthResources.ts",
+   "endpoint:/mcp",
+   "http"
+  ],
+  [
+   "hypher-web/src/app/api/clerk-webhook/route.ts",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/app/api/mcp/route.ts",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/app/api/stripe/checkout/route.ts",
+   "service:payments",
+   "package"
+  ],
+  [
+   "hypher-web/src/app/api/stripe/checkout/route.ts",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/app/api/stripe/webhook/route.ts",
+   "service:payments",
+   "package"
+  ],
+  [
+   "hypher-web/src/app/app/page.tsx",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/app/connect/page.tsx",
+   "endpoint:/api/cli/device/approve",
+   "http"
+  ],
+  [
+   "hypher-web/src/app/layout.tsx",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/app/sign-in/[[...sign-in]]/page.tsx",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/app/sign-up/[[...sign-up]]/page.tsx",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/components/AppChromeNav.tsx",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/components/AppErrorBoundary.tsx",
+   "service:error-alerts",
+   "package"
+  ],
+  [
+   "hypher-web/src/components/BetaInviteGate.tsx",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/components/CaptureHome.tsx",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/components/ConvexProvider.tsx",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/components/LaunchReadinessPanel.tsx",
+   "endpoint:/api/launch-readiness",
+   "http"
+  ],
+  [
+   "hypher-web/src/components/marketing/PricingCards.tsx",
+   "endpoint:/api/stripe/checkout",
+   "http"
+  ],
+  [
+   "hypher-web/src/components/marketing/PricingCards.tsx",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/lib/convexActionFailed.ts",
+   "service:error-alerts",
+   "package"
+  ],
+  [
+   "hypher-web/src/lib/embeddings.ts",
+   "ai:huggingface",
+   "package"
+  ],
+  [
+   "hypher-web/src/lib/hypherClerkMiddleware.ts",
+   "endpoint:/api/mcp",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/hypherClerkMiddleware.ts",
+   "endpoint:/mcp",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/hypherClerkMiddleware.ts",
+   "endpoint:/oauth/authorize",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/hypherClerkMiddleware.ts",
+   "endpoint:/oauth/register",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/hypherClerkMiddleware.ts",
+   "endpoint:/oauth/token",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/hypherClerkMiddleware.ts",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/lib/launchReadiness.ts",
+   "endpoint:/api/stripe/webhook",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/oauthBridge.ts",
+   "endpoint:/api/mcp",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/oauthBridge.ts",
+   "endpoint:/mcp",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/oauthBridge.ts",
+   "endpoint:/oauth/authorize",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/oauthBridge.ts",
+   "endpoint:/oauth/consent/approve",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/oauthBridge.ts",
+   "endpoint:/oauth/register",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/oauthBridge.ts",
+   "endpoint:/oauth/token",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/publicRoutes.ts",
+   "endpoint:/api/cli/checkpoints",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/publicRoutes.ts",
+   "endpoint:/api/cli/device",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/publicRoutes.ts",
+   "endpoint:/api/cli/device/token",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/publicRoutes.ts",
+   "endpoint:/api/cli/key",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/publicRoutes.ts",
+   "endpoint:/api/cli/ledger",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/publicRoutes.ts",
+   "endpoint:/capture",
+   "http"
+  ],
+  [
+   "hypher-web/src/lib/rateLimit.ts",
+   "service:fast-cache",
+   "package"
+  ],
+  [
+   "hypher-web/src/lib/serverAuth.ts",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/lib/useStore.ts",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "hypher-web/src/proxy.ts",
+   "service:sign-in",
+   "package"
+  ],
+  [
+   "packages/core/src/browser.ts",
+   "endpoint:/api/projects",
+   "http"
+  ],
+  [
+   "packages/core/src/browser.ts",
+   "endpoint:/capture",
+   "http"
+  ],
+  [
+   "packages/core/src/server.ts",
+   "endpoint:/api/projects",
+   "http"
+  ],
+  [
+   "packages/core/src/server.ts",
+   "endpoint:/capture",
+   "http"
+  ],
+  [
+   "packages/hypher-cli/src/api.mjs",
+   "endpoint:/api/mcp",
+   "http"
+  ],
+  [
+   "packages/hypher-cli/src/api.mjs",
+   "endpoint:/mcp",
+   "http"
+  ],
+  [
+   "packages/hypher-cli/src/commands/uninstall.mjs",
+   "endpoint:/api/cli/key",
+   "http"
+  ],
+  [
+   "packages/hypher-cli/src/device.mjs",
+   "endpoint:/api/cli/device",
+   "http"
+  ],
+  [
+   "packages/hypher-cli/src/device.mjs",
+   "endpoint:/api/cli/device/token",
+   "http"
+  ],
+  [
+   "packages/hypher-cli/src/ledger.mjs",
+   "endpoint:/api/cli/ledger",
+   "http"
+  ],
+  [
+   "packages/hypher-cli/src/outbox.mjs",
+   "endpoint:/api/cli/checkpoints",
+   "http"
+  ],
+  [
+   "packages/hypher-cli/src/session.mjs",
+   "endpoint:/api/cli/checkpoints",
+   "http"
+  ],
+  [
+   "script/baton/checks.mjs",
+   "endpoint:/api/cli/checkpoints",
+   "http"
+  ],
+  [
+   "script/baton/checks.mjs",
+   "endpoint:/api/cli/ledger",
+   "http"
+  ],
+  [
+   "script/baton/checks.mjs",
+   "endpoint:/api/mcp",
+   "http"
+  ],
+  [
+   "script/baton/checks.mjs",
+   "endpoint:/mcp",
+   "http"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "endpoint:/api/cli/checkpoints",
+   "http"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "endpoint:/api/cli/device",
+   "http"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "endpoint:/api/cli/device/token",
+   "http"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "endpoint:/api/cli/key",
+   "http"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "endpoint:/api/cli/ledger",
+   "http"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "endpoint:/api/mcp",
+   "http"
+  ],
+  [
+   "script/baton/stub.mjs",
+   "endpoint:/mcp",
+   "http"
+  ],
+  [
+   "script/ledger-concurrency-check.mjs",
+   "endpoint:/api/agent/events",
+   "http"
+  ],
+  [
+   "script/ledger-concurrency-check.mjs",
+   "endpoint:/api/cli/ledger",
+   "http"
+  ]
+ ],
+ "version": 1
+}

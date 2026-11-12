@@ -1,0 +1,26 @@
+{
+  "facts": "../../../2026-11-07-abstract-fields/hypher-facts.json",
+  "product": "Hypher",
+  "commit": "7e1ff3a",
+  "date": "2026-11-07",
+  "theme": "light",
+  "headline": "Switch agents without starting over.",
+  "legend": "Every band of the plane is a part of Hypher, as big as its code. The orange band is the handoff note.",
+  "accent": "area:hypher-web/shared",
+  "names": {
+    "area:Hypher": "mac app",
+    "area:extensions": "browser add-ons",
+    "area:hypher-web": "website frame",
+    "area:hypher-web/convex": "server",
+    "area:hypher-web/convex/lib": "server helpers",
+    "area:hypher-web/shared": "handoff note",
+    "area:hypher-web/src/app": "web pages",
+    "area:hypher-web/src/app/api": "requests",
+    "area:hypher-web/src/components": "screen pieces",
+    "area:hypher-web/src/lib": "web helpers",
+    "area:packages": "shared tools",
+    "area:packages/hypher-cli/src": "command line",
+    "area:script": "upkeep scripts"
+  },
+  "shape": "../shapes/plane.json"
+}

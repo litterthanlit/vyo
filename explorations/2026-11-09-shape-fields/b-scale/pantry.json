@@ -1,0 +1,31 @@
+{
+  "product": "Pantry",
+  "facts": "recipe-facts.json",
+  "headline": "A week of dinners, planned in one go.",
+  "legend": "Every band is a part of Pantry. The more code it has, the bigger its type. The orange band is the plan.",
+  "accent": "area:lib/plan",
+  "names": {
+    "area:.": "saved recipes",
+    "area:app": "page frame",
+    "area:app/(app)": "screens",
+    "area:app/api": "requests",
+    "area:components": "screen pieces",
+    "area:components/plan": "week view",
+    "area:components/recipes": "recipe cards",
+    "area:components/ui": "buttons",
+    "area:lib": "accounts and email",
+    "area:lib/ai": "suggestions",
+    "area:lib/plan": "the plan",
+    "area:lib/recipes": "recipe book"
+  },
+  "shape": {
+    "viewBox": [0, 0, 100, 130],
+    "rotate": 9,
+    "fit": { "h": 0.9, "cx": 0.52, "cy": 0.64 },
+    "parts": [
+      { "rect": [16, 0, 68, 16], "r": 3 },
+      { "rect": [22, 15, 56, 9] },
+      { "rect": [4, 22, 92, 108], "r": 24 }
+    ]
+  }
+}

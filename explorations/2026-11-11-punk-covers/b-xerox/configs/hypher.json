@@ -1,0 +1,36 @@
+{
+  "id": "hypher",
+  "facts": "../../../2026-11-07-abstract-fields/hypher-facts.json",
+  "product": "Hypher",
+  "commit": "7e1ff3a",
+  "date": "2026-11-07",
+  "archive": "027",
+  "series": "02/04",
+  "headline": "Switch agents without starting over.",
+  "legend": "Every patch of type is a part of Hypher, as big as its share of the code. The yellow block is the handoff note.",
+  "accent": "area:hypher-web/shared",
+  "names": {
+    "area:.": "mac app and add-ons",
+    "area:Hypher": "mac app",
+    "area:extensions": "browser add-on",
+    "area:hypher-web/convex": "server",
+    "area:hypher-web/convex/lib": "server helpers",
+    "area:hypher-web/shared": "handoff note",
+    "area:hypher-web/src/app": "web pages",
+    "area:hypher-web/src/app/api": "web requests",
+    "area:hypher-web/src/components": "screen pieces",
+    "area:hypher-web/src/lib": "web helpers",
+    "area:packages/hypher-cli/src": "command line",
+    "area:script": "scripts"
+  },
+  "ground": "#E0151B",
+  "ink": "#111111",
+  "spot": "#EBFF00",
+  "seed": 27,
+  "strata": 96,
+  "shape": {
+    "ops": [
+      { "add": "polygon", "points": [[60, 0], [14, 58], [44, 58], [26, 112], [88, 42], [58, 42], [80, 0]], "round": 2 }
+    ]
+  }
+}

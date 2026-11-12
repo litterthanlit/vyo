@@ -1,0 +1,37 @@
+{
+  "facts": "../facts/pantry-facts.json",
+  "product": "Pantry",
+  "number": "01/04",
+  "commit": "04186f4",
+  "date": "2026-11-07",
+  "headline": "A week of dinners, planned in one go from the recipes you already cook.",
+  "legend": "Every band of the pear is a part of Pantry, as big as its share of the code. The orange band is the plan.",
+  "accent": "area:lib/plan",
+  "names": {
+    "area:.": "saved recipes",
+    "area:app": "page frame",
+    "area:app/(app)": "screens",
+    "area:app/api": "requests",
+    "area:components": "screen pieces",
+    "area:components/plan": "week view",
+    "area:components/recipes": "recipe cards",
+    "area:components/ui": "buttons",
+    "area:lib": "accounts and email",
+    "area:lib/ai": "suggestions",
+    "area:lib/plan": "the plan",
+    "area:lib/recipes": "recipe book"
+  },
+  "palette": {"ground": "#EAE8E2", "ink": "#161616", "accent": "#FF4F12"},
+  "shape": {
+    "ops": [
+      {"add": "ellipse", "at": [50, 67], "r": [33, 31]},
+      {"add": "ellipse", "at": [50, 35], "r": [17, 20]},
+      {"add": "polygon", "points": [[34, 36], [66, 36], [80, 58], [20, 58]], "round": 4},
+      {"add": "capsule", "from": [50, 17], "to": [54, 4], "r": 2.4},
+      {"add": "ellipse", "at": [65, 10], "r": [11, 5], "rotate": -28}
+    ]
+  },
+  "strata": {"by": "angle", "angle": 90},
+  "solid": {"bevel": 1, "depth": 0.9},
+  "turn": {"yaw": 34, "pitch": 12, "lean": 0}
+}
