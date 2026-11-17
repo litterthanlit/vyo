@@ -16,10 +16,14 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - name: Install Chromium and ffmpeg
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          echo "VYO_CHROMIUM=$(node -p "require('playwright').chromium.executablePath()")" >> "$GITHUB_ENV"
       - run: npm test
