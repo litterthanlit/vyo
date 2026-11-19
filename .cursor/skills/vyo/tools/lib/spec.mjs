@@ -1,6 +1,6 @@
 // The poster spec: the one file the agent writes. Pure validation, no I/O, no text measuring.
 import { isJargon } from "./jargon.mjs";
-import { SHEET, SHAPE_KEYS, parsePath, flattenPath } from "./geometry.mjs";
+import { SHEET, FORMAT_NAMES, SHAPE_KEYS, parsePath, flattenPath } from "./geometry.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { WAVE } from "./fields/wave.mjs";
 import { SHAPE_STYLES, DEFAULT_STYLE } from "./fields/shape.mjs";
@@ -10,7 +10,7 @@ import { SHAPE_KINDS, opKind, shapeMask } from "./mask.mjs";
 import "./png-mask.mjs";
 import { ROLES as FRAME_ROLES, FRAMES, RECORD_FRAMES, frameOf, sizeRange, LIST } from "./frame.mjs";
 import { SILHOUETTES, SILHOUETTE_NAMES } from "./silhouettes.mjs";
-import { COVER_GROUNDS, COVER_STRATA, coverLegend } from "./cover.mjs";
+import { COVER_GROUNDS, COVER_STRATA, COVER_LOOKS, COVER_CROPS, COVER_SOLID_KINDS, coverLegend } from "./cover.mjs";
 
 /**
  * @typedef {"soft" | "mid" | "ink" | "cold" | "cool"} ToneName
@@ -26,7 +26,7 @@ import { COVER_GROUNDS, COVER_STRATA, coverLegend } from "./cover.mjs";
  *             align?: "left" | "right" | "center", hot?: boolean, parts?: true, items?: string[] }} Text  roles per frame in lib/frame.mjs
  * @typedef {{
  *   version: 3,
- *   frame?: "loose" | "swiss" | "signal",  loose unless it says swiss or signal
+ *   frame?: "loose" | "swiss" | "signal" | "cover",  loose unless it says swiss, signal or cover
  *   facts: string,
  *   product: { name: string, repo: string, commit?: string, date: string },
  *   theme: "light" | "dark",
@@ -56,7 +56,7 @@ const RESERVED = ["note", "counts", "notBuilt", "provenance", "credit", "record"
 // Keys that only some kinds of field take, like the wave's sentence.
 const FIELD_OPTIONS = [...new Set(Object.values(FIELDS).flatMap((f) => f.options))];
 const KEYS = {
-  spec: ["version", "frame", "facts", "product", "theme", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience", "motion", "ground", "series"],
+  spec: ["version", "frame", "facts", "product", "theme", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience", "motion", "ground", "series", "look", "crop", "format"],
   product: ["name", "repo", "commit", "date"],
   note: ["title", "text"],
   figure: ["fits", "regions", "texts"],
@@ -78,15 +78,19 @@ const KEYS = {
   fit: ["w", "h", "cx", "cy"],
 };
 export const ROUTE_TONES = [...TONES, "hot"];
-// turn is the cover's loop, 7 seconds at 24 fps, so it takes no frames or fps; the others take both.
-export const MOTION = { kinds: ["nodes", "resolve", "wipe", "turn"], frames: [8, 36], fps: [6, 24] };
-// The cover's solid and turn, each key's range. The yaw stays under 40 degrees so the form never goes edge-on.
+// turn and copier are the cover's loops, so they take no frames or fps; the others take both.
+export const MOTION = { kinds: ["nodes", "resolve", "wipe", "turn", "copier"], frames: [8, 36], fps: [6, 24] };
+// The cover's solid and turn, each key's range. The yaw stays under 40 degrees so a living/xerox form never goes edge-on.
 export const COVER_RANGES = {
   solid: { bevel: [0, 1], depth: [0.2, 1.5], tilt: [0, 1], groove: [2, 30] },
   turn: { yaw: [0, 40], pitch: [0, 20], lean: [-30, 30] },
 };
 const GROUND_LIST = Object.keys(COVER_GROUNDS).map((g) => `"${g}"`).join(", ");
 const STRATA_LIST = Object.keys(COVER_STRATA).map((g) => `"${g}"`).join(", ");
+const LOOK_LIST = COVER_LOOKS.map((g) => `"${g}"`).join(", ");
+const CROP_LIST = COVER_CROPS.map((g) => `"${g}"`).join(", ");
+const FORMAT_LIST = FORMAT_NAMES.map((g) => `"${g}"`).join(", ");
+const SOLID_KIND_LIST = COVER_SOLID_KINDS.map((g) => `"${g}"`).join(", ");
 
 const isStr = (v) => typeof v === "string";
 const isNum = (v) => typeof v === "number" && Number.isFinite(v);
@@ -334,8 +338,12 @@ function checkField(f, r, err, copy, frame) {
           continue;
         }
         for (const key of Object.keys(r[k])) {
+          if (k === "solid" && key === "kind") {
+            if (!COVER_SOLID_KINDS.includes(r[k].kind)) err(`${f}.solid.kind: "${r[k].kind}" is not a solid kind; use ${SOLID_KIND_LIST}`);
+            continue;
+          }
           const range = ranges[key];
-          if (!range) err(`${f}.${k}.${key}: unknown field; ${k} takes ${Object.keys(ranges).join(", ")}`);
+          if (!range) err(`${f}.${k}.${key}: unknown field; ${k} takes ${k === "solid" ? `kind, ${Object.keys(ranges).join(", ")}` : Object.keys(ranges).join(", ")}`);
           else if (!inRange(r[k][key], ...range)) err(`${f}.${k}.${key}: ${range[0]} to ${range[1]}`);
         }
       }
@@ -541,14 +549,17 @@ export function validateSpec(spec) {
 
   if (frame === "cover") {
     if (spec.theme !== undefined) err(`theme: the cover takes a ground instead; remove theme and set ground to ${GROUND_LIST}`);
-    if (spec.accent !== undefined) err("accent: the cover's accent is always its ground's orange; remove accent");
+    if (spec.accent !== undefined) err("accent: the cover's accent comes from its ground; remove accent");
     if (!isStr(spec.ground) || !COVER_GROUNDS[spec.ground]) {
       const free = isStr(spec.ground) && /^#|rgb|hsl/i.test(spec.ground);
       err(`ground: ${spec.ground === undefined ? "missing" : `"${spec.ground}" is not a ground${free ? "; a free colour is not offered" : ""}`}; use ${GROUND_LIST}`);
     }
     if (spec.series !== undefined && !(isStr(spec.series) && /^\d{1,2}\/\d{1,2}$/.test(spec.series))) err('series: the cover\'s place in a series, like "02/04", or leave it out');
+    if (spec.look !== undefined && !COVER_LOOKS.includes(spec.look)) err(`look: "${spec.look}" is not a cover look; use ${LOOK_LIST}`);
+    if (spec.crop !== undefined && !COVER_CROPS.includes(spec.crop)) err(`crop: "${spec.crop}" is not a cover crop; use ${CROP_LIST}`);
+    if (spec.format !== undefined && !FORMAT_NAMES.includes(spec.format)) err(`format: "${spec.format}" is not a format; use ${FORMAT_LIST}`);
   } else {
-    for (const k of ["ground", "series"]) if (spec[k] !== undefined) err(`${k}: only the cover frame takes ${k}; set frame to cover or remove ${k}`);
+    for (const k of ["ground", "series", "look", "crop", "format"]) if (spec[k] !== undefined) err(`${k}: only the cover frame takes ${k}; set frame to cover or remove ${k}`);
     if (!THEMES.includes(spec.theme)) err(`theme: "${spec.theme}" is not a theme; use light or dark`);
   }
   if (frame !== "cover" && spec.accent !== undefined && !(isStr(spec.accent) && /^#[0-9a-f]{6}$/i.test(spec.accent))) err("accent: a hex colour like #9284FF");
@@ -606,12 +617,12 @@ export function validateSpec(spec) {
     if (!isObj(spec.motion)) err("motion: must be { kind, frames, fps }");
     else {
       unknownKeys(spec.motion, KEYS.motion, "motion.", err);
-      const kinds = frame === "cover" ? ["turn"] : MOTION.kinds.filter((k) => k !== "turn");
+      const kinds = frame === "cover" ? ["turn", "copier"] : MOTION.kinds.filter((k) => k !== "turn" && k !== "copier");
       if (!kinds.includes(spec.motion.kind)) err(`motion.kind: "${spec.motion.kind}" is not a motion; use ${kinds.join(" or ")}`);
     }
   }
-  if (isObj(spec.motion) && spec.motion.kind === "turn") {
-    for (const k of ["frames", "fps"]) if (spec.motion[k] !== undefined) err(`motion.${k}: a turn is a 7 second loop at 24 fps; remove ${k}`);
+  if (isObj(spec.motion) && (spec.motion.kind === "turn" || spec.motion.kind === "copier")) {
+    for (const k of ["frames", "fps"]) if (spec.motion[k] !== undefined) err(`motion.${k}: a ${spec.motion.kind} loop sets its own length and rate; remove ${k}`);
   } else if (spec.motion !== undefined) {
     if (isObj(spec.motion)) {
       const [flo, fhi] = MOTION.frames;
@@ -754,14 +765,17 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
  * @param {{ hash: string, repo: { name: string } }} facts
  * @param {{ commit?: string, date: string, accent?: string, split?: string[], parts: { id: string, name: string }[] }} o
  */
-export function coverScaffold(facts, { commit, date, accent, split, parts, strata = "outline", like }) {
+export function coverScaffold(facts, { commit, date, accent, split, parts, strata = "outline", like, ground = "navy", look, format, crop }) {
   const region = { shape: like ? { like } : undefined, strata };
   return {
     version: 3,
     frame: "cover",
     facts: facts.hash,
     product: { name: hold("the name customers see, as the product's docs write it"), repo: facts.repo.name, ...(commit ? { commit } : {}), date },
-    ground: "navy",
+    ground,
+    ...(look && look !== "living" ? { look } : {}),
+    ...(format && format !== "poster" ? { format } : {}),
+    ...(crop && crop !== "center" ? { crop } : {}),
     headline: hold(`one plain sentence about what the product does for a person, at most ${LIMITS.headline} characters`),
     figure: {
       regions: [
@@ -776,8 +790,8 @@ export function coverScaffold(facts, { commit, date, accent, split, parts, strat
           strata,
         },
       ],
-      texts: [{ role: "legend", id: "legend", text: hold(coverLegend(region, "<product>", "<the accent's plain name>")) }],
+      texts: [{ role: "legend", id: "legend", text: hold(coverLegend(region, "<product>", "<the accent's plain name>", ground)) }],
     },
-    motion: { kind: "turn" },
+    motion: { kind: look === "xerox" ? "copier" : "turn" },
   };
 }

@@ -21,6 +21,8 @@ Write the product's story in one sentence, then pick the silhouette that acts it
 | Field | When to use it | Keywords |
 |---|---|---|
 | shape | One object stands for the product; you draw it, or trace it from a PNG with `mask` | object, thing, picture, shape, looks |
+| seismic | Stacked Joy Division–style codebase ridgelines from LOC, files and cross-area imports | pulse, ridge, wave, signal, peak |
+| orbit | Architectural dependency constellation: discs by LOC, rings by centrality, chords for imports | orbit, centre, center, core, link, tie |
 | wave | Something moves or is handed on | travel, flow, hand, move |
 | terrain | What is big is what matters | big, weight, matters, most |
 | river | Many things merge into one | merge, join, many, one |
@@ -64,6 +66,164 @@ A scatter with a seed, the short form. `seed` 0 would leave the clouds where the
       { "role": "legend", "id": "legend", "x": 40, "y": 980, "w": 320, "text": "Every speck is a part of Pantry, as many as its code. The bright specks are the plan." }
     ]
   }
+}
+```
+
+### Seismic ridgelines and orbital constellations
+
+`seismic` draws Joy Division–style stacked ridgelines from real part LOC, file counts, and cross-area import coupling:
+
+```json
+{
+  "version": 3,
+  "frame": "signal",
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "commit": "04186f4", "date": "2026-11-07" },
+  "theme": "dark",
+  "accent": "#FF5A1F",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "seismic",
+        "field": "seismic",
+        "seed": 7,
+        "fits": "Every part of Pantry pulses as its own stacked ridge of code.",
+        "accent": "area:lib/plan"
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 40, "y": 40, "w": 220 },
+      { "role": "headline", "id": "headline", "x": 40, "y": 72, "w": 420, "size": 48 },
+      { "role": "legend", "id": "legend", "x": 540, "y": 40, "w": 260, "align": "right", "text": "Each ridge is a part of Pantry, as tall as its code. The orange ridge is the plan." }
+    ]
+  }
+}
+```
+
+`orbit` arranges parts by real import centrality into a dependency constellation wired by dotted import chords:
+
+```json
+{
+  "version": 3,
+  "frame": "loose",
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "commit": "04186f4", "date": "2026-11-07" },
+  "theme": "dark",
+  "headline": "A week of dinners, planned in one go.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "orbit",
+        "field": "orbit",
+        "seed": 11,
+        "fits": "Every part of Pantry orbits the core, linked by real imports.",
+        "accent": "area:lib/plan"
+      }
+    ],
+    "texts": [
+      { "role": "label", "id": "label", "x": 40, "y": 40, "w": 220 },
+      { "role": "headline", "id": "headline", "x": 40, "y": 72, "w": 360, "size": 42 },
+      { "role": "legend", "id": "legend", "x": 520, "y": 1000, "w": 280, "align": "right", "text": "Each disc is a part of Pantry, sized by its code, linked by imports. The orange disc is the plan." }
+    ]
+  }
+}
+```
+
+### Cover looks: xerox, spin, and OG landscape
+
+A punk `xerox` cover on `blood` red with the `fast-forward` silhouette and `copier` loop:
+
+```json
+{
+  "version": 3,
+  "frame": "cover",
+  "look": "xerox",
+  "ground": "blood",
+  "series": "01/04",
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "commit": "04186f4", "date": "2026-11-07" },
+  "headline": "A week of dinners, planned in one go from the recipes you already cook.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "cover",
+        "field": "shape",
+        "shape": { "like": "fast-forward" },
+        "strata": "down",
+        "accent": "area:app/(app)"
+      }
+    ],
+    "texts": [
+      { "role": "legend", "id": "legend", "text": "This fast-forward mark is the code of Pantry, one band per part, each as big as its share. The yellow band is screens." }
+    ]
+  },
+  "motion": { "kind": "copier" }
+}
+```
+
+A kinetic 360° `spin` cover on `acid` green with an extruded `plug` slab, and a landscape `og` (`1280×640`) cover on `cobalt`:
+
+```json
+{
+  "version": 3,
+  "frame": "cover",
+  "look": "spin",
+  "ground": "acid",
+  "format": "square",
+  "series": "02/04",
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "commit": "04186f4", "date": "2026-11-07" },
+  "headline": "A week of dinners, planned in one go from the recipes you already cook.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "cover",
+        "field": "shape",
+        "shape": { "like": "plug" },
+        "solid": { "kind": "extrude", "depth": 1.1 },
+        "strata": "down",
+        "accent": "area:app/(app)"
+      }
+    ],
+    "texts": [
+      { "role": "legend", "id": "legend", "text": "This plug is the code of Pantry, one band per part, each as big as its share. The pink band is screens." }
+    ]
+  },
+  "motion": { "kind": "turn" }
+}
+```
+
+```json
+{
+  "version": 3,
+  "frame": "cover",
+  "look": "xerox",
+  "ground": "cobalt",
+  "format": "og",
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "commit": "04186f4", "date": "2026-11-07" },
+  "headline": "A week of dinners, planned in one go from the recipes you already cook.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "cover",
+        "field": "shape",
+        "shape": { "like": "compass" },
+        "strata": "down",
+        "accent": "area:app/(app)"
+      }
+    ],
+    "texts": [
+      { "role": "legend", "id": "legend", "text": "This compass is the code of Pantry, one band per part, each as big as its share. The yellow band is screens." }
+    ]
+  },
+  "motion": { "kind": "copier" }
 }
 ```
 

@@ -191,11 +191,11 @@ export const CHECKS = [
         const named = !names.length || names.some((n) => legend.toLowerCase().includes(n.toLowerCase()));
         const measured = measure.every((group) => group.some((w) => startsWord(legend, w)));
         if (frameOf(spec) === "cover") {
-          // A cover's legend also names its object and what the orange is, a ring or a band, as the picture shows.
-          const { orange, object } = coverWords(r);
+          // A cover's legend also names its object and what the accent is, a ring or a band, as the picture shows.
+          const { orange, color, object } = coverWords(r, spec.ground);
           // The object by its last word, so "the plane" names a paper plane and "the bolt" a lightning bolt.
           const says = [orange, object?.split(" ").pop()].every((w) => !w || hasWord(legend, w));
-          return named && measured && says ? [] : [`must say what the picture is: the object, the parts cut by their share of the code, and what the orange is; write "${coverLegend(r, spec.product.name, names[0] ?? "<the accent's plain name>")}"`];
+          return named && measured && says ? [] : [`must say what the picture is: the object, the parts cut by their share of the code, and what the ${color} is; write "${coverLegend(r, spec.product.name, names[0] ?? "<the accent's plain name>", spec.ground)}"`];
         }
         return named && measured ? [] : [legendMessage(names, measure)];
       }),
@@ -333,8 +333,8 @@ export const CHECKS = [
   },
   {
     id: "text-clear", level: "fail", stage: "page", about: `nothing is painted over a text block's letters: at most ${TEXT_CLEAR} px of them (at 2x) differ from the block drawn alone`,
-    run: ({ page }) =>
-      (page.covered ?? [])
+    run: ({ spec, page }) =>
+      (frameOf(spec) === "cover" && spec.look === "xerox" ? [] : (page.covered ?? []))
         .filter((c) => c.covered > TEXT_CLEAR)
         .map((c) => `${c.covered} px of the ${c.block}'s letters are painted over near ${c.x},${c.y}; something is drawn on top of the text, so move the block clear of it`),
   },

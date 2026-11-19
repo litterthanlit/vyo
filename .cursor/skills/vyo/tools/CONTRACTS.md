@@ -29,12 +29,13 @@ One dispatcher, `tools/vyo.mjs`, the bin `vyo` of the npm package `@litterthanli
 vyo init    [--cursor] [--claude] [--codex] [--dir <repo-dir>]
 vyo scan    <repo-dir> --out <dir>/<repo>-facts.json
 vyo show    <facts.json>
-vyo parts   <facts.json> [--field wave|terrain|river|shape|radial|sphere|scatter|shatter|glyph|bleed|slabs|spiral|contour] [--split <part id>]...
+vyo parts   <facts.json> [--field wave|terrain|river|shape|radial|sphere|scatter|shatter|glyph|bleed|slabs|spiral|contour|seismic|orbit] [--split <part id>]...
 vyo shapes  [--log <file>]
 vyo presets [<id>]
-vyo compose <facts.json> [--frame loose|swiss|signal] [--field wave|terrain|river|shape|radial|sphere|scatter|shatter|glyph|bleed|slabs|spiral|contour] [--style rings|relief|symbols] [--split <part id>]... [--seed <n>] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light|dark] [--out <spec.json>] [--shapes-log <file>] [--force]
+vyo compose <facts.json> [--frame loose|swiss|signal|cover] [--field wave|terrain|river|shape|radial|sphere|scatter|shatter|glyph|bleed|slabs|spiral|contour|seismic|orbit] [--style rings|relief|symbols] [--look living|xerox|spin] [--ground <ground>] [--format poster|square|og] [--crop center|bleed-right|macro] [--split <part id>]... [--seed <n>] [--accent <part id>] [--from <preset>] [--repo <dir>] [--theme light|dark] [--out <spec.json>] [--shapes-log <file>] [--force]
 vyo sketch  <spec.json> [--facts <facts.json>]
 vyo render  <spec.json> [--out <dir>] [--facts <facts.json>] [--no-png] [--no-pdf] [--gif] [--paper fit|a4|letter]
+vyo series  <spec1.json> <spec2.json> [...] --out <base> [--facts <facts.json>] [--gif]
 vyo check   <spec.json> [--facts <facts.json>]
 ```
 
@@ -43,7 +44,7 @@ vyo check   <spec.json> [--facts <facts.json>]
 - `parts` prints the parts a field draws with that field's default `minShare` and `maxParts` (§4b; `--field river` uses the river's 0.002 and 24, the others 0.02 and 14): a header line `<repo>: <n> parts, <lines> lines in <files> files (parts under 2% of the lines merge into their parent; at most 14)`, a column header `id  share  lines  files  name`, one line per part in tree order, `  ! looks like a vendor or code name` after each unplain name, `  ! same name as <id>` after each name another part shares, and a closing line on setting `accent` and `names`.
 - `presets` prints, for each preset in `tools/presets/`, its id, its `fits` sentence and a one-line summary of its regions and texts. `presets <id>` prints that preset's `figure` as JSON.
 - `compose` writes a scaffold spec (§3). It fills `facts` from the facts file, `product.name` and `product.repo` from `facts.repo.name`, and `theme` from `--theme`. It refuses to overwrite an existing spec, which may hold the agent's words, unless `--force` is given.
-  - With `--frame cover`: the cover scaffold of §3c, whatever `--field`; `--from`, `--style`, `--theme` and `--seed` are refused. It splits every part over 40% of the code into the folders inside it, or its files when it has none (at most four splits), and writes the `split`. It picks the object: the one the spec already at `--out` names, else the ready silhouette whose README words match most among those not in the folder's shapes log, and records that pick in the log. It measures the outline window on that object, from the share whose ring is 16px in the still to 40%, writes `"strata": "outline"` when a part the product could be about falls in it and `"down"` otherwise (window 5% to 40%), and writes the legend's pattern for that object and strata. It prints every part's id, share and scanned name, `*` beside the parts in the window, `-` beside code around the product (samples, tests, docs, scripts, the root's setup), the window once, the object and why, and the next commands.
+  - With `--frame cover`: the cover scaffold of §3c, whatever `--field`; `--from`, `--style`, `--theme` and `--seed` are refused. Accepts `--look living|xerox|spin`, `--ground <one of 10 curated grounds>`, `--format poster|square|og`, and `--crop center|bleed-right|macro`. It splits every part over 40% of the code into the folders inside it, or its files when it has none (at most four splits), and writes the `split`. It picks the object: the one the spec already at `--out` names, else the ready silhouette whose README words match most among those not in the folder's shapes log, and records that pick in the log. It measures the outline window on that object, from the share whose ring is 16px in the still to 40%, writes `"strata": "outline"` when a part the product could be about falls in it and `"down"` otherwise (window 5% to 40%), and writes the legend's pattern for that object, ground and strata. It prints every part's id, share and scanned name, `*` beside the parts in the window, `-` beside code around the product (samples, tests, docs, scripts, the root's setup), the window once, the object and why, and the next commands.
   - Without `--from`: a field figure (§4b), in the loose frame unless `--frame swiss` or `signal`. When the facts hold no parts, it writes nothing and exits 1 with `✗ no parts to draw; the scan found no code. Compose a fill poster instead: vyo compose <facts.json> --from <preset> (vyo presets lists them)`. One field region of kind `--field`. With no `--field`, compose picks a registered field other than `wave`: one absent from the recent log if any remain, chosen by the facts hash plus the log's length so repos with empty logs start on different shapes, otherwise the least recently used non-wave field, and prints `picked <field> (avoided recent: …)`. It never defaults to wave. It writes `seed` (`--seed`, or `(parseInt(facts.hash.slice(0, 8), 16) % 2147483646) + 1`; `--seed 0` is the identity) and, for a glyph, `letter` from the first A–Z or 0–9 of the repo name. The region id equals the kind, `accent` comes from `--accent` (which must name a part), a placeholder goes in `names` for each part whose scanned name is unplain or shared with another part, and a placeholder `sentence` when the kind takes one. After a successful write it appends the field to `<dirname of --out>/recent-shapes.json` (`--shapes-log` overrides the path), newest last, keeping 8. `--from` does not record. In the loose and signal frames it lays the field out, finds the empty corners, and places `label`, `headline`, `legend`, a `paragraph` and a `list` of the parts into them (§3b); it writes no notes. The spec has no `hot`.
   - With `--from <preset>`: a fill preset's figure with its geometry kept and every word replaced by a placeholder. A field preset is refused with `--from <id> is a field preset, drawn from its own scan; use --field <kind>`, and `--field` or `--accent` beside `--from` is a usage error.
   - Validation rejects placeholders, so a scaffold cannot render.
@@ -52,9 +53,10 @@ vyo check   <spec.json> [--facts <facts.json>]
   - With `--repo <dir>`: `product.commit` is `git -C <dir> log -1 --format=%h` and `product.date` is `git -C <dir> log -1 --format=%cs`, so reruns are stable.
   - Without it: no `commit`, and `date` is today's ISO date. `facts.json` stays free of timestamps.
 - `sketch` validates the spec and prints the sheet as ASCII (§4.4). A figure with a field reads the facts, from `--facts` or `<repo>-facts.json` beside the spec as `render` does. It needs no browser.
-- `render` validates the spec, builds the HTML, writes a PNG at 2× and a PDF, then runs every check (§6). Default `--facts` is `<repo>-facts.json` beside the spec, where `<repo>` is `product.repo`. Default `--out` is the spec's directory. Outputs: `<repo>-poster.html`, `<repo>-poster.png`, `<repo>-poster-thumb.png` (the poster at 1/6 scale, 140×198 CSS px at 2×, written with the PNG), `<repo>-poster.pdf`. `--gif` also writes `<repo>-poster.gif` (560px wide, 48 colours) and `<repo>-poster.mp4` (840px); the spec must have `motion: { kind: nodes|resolve|wipe, frames, fps }`. The HTML embeds its fonts as base64 data URIs.
+- `render` validates the spec, builds the HTML, writes a PNG at 2× and a PDF, then runs every check (§6). Default `--facts` is `<repo>-facts.json` beside the spec, where `<repo>` is `product.repo`. Default `--out` is the spec's directory. Outputs: `<repo>-poster.html`, `<repo>-poster.png`, `<repo>-poster-thumb.png` (the poster at 1/6 scale, 140×198 CSS px at 2× for poster format, proportional for square/og, written with the PNG), `<repo>-poster.pdf`. `--gif` also writes `<repo>-poster.gif` and `<repo>-poster.mp4`; the spec must have `motion`. The HTML embeds its fonts as base64 data URIs.
+- `series` renders 2 to 4 cover specs side by side into one gallery contact sheet `<base>.png` (and optional synchronized `<base>.gif` with `--gif`), auto-numbering `01/N .. NN/N` when `series` is unset.
 - `check` does what `render` does in a temporary directory and writes nothing to `--out`.
-- `shapes` lists every registered field: name, its one-line `about`, and `last used N ago` or `never`. `--log` or `--shapes-log` names the recent file; otherwise `./vyo/recent-shapes.json`, where compose writes it when the spec is in `<repo>/vyo/`.
+- `shapes` lists every registered field: name, its one-line `about`, and `last used N ago` or `never`, plus all 22 ready silhouettes for `shape: { like }`. `--log` or `--shapes-log` names the recent file; otherwise `./vyo/recent-shapes.json`, where compose writes it when the spec is in `<repo>/vyo/`.
 - Exit codes: 0 ok (warnings on stderr, prefixed `! `), 1 rule error (`✗ ` lines on stderr), 2 usage.
 - `VYO_CHROMIUM` names the Chromium binary when Playwright's own is not installed. When no browser starts, `render` and `check` print `BROWSER_NOTE` from `tools/lib/browser.mjs` (set `VYO_CHROMIUM`, or `npx playwright@<version> install chromium` for the Playwright vyo resolved) and exit 1. Install never downloads a browser: `postinstall` only prints that note.
 - The fonts ship in `fonts/` at the package root. When a file is missing there, `render` and `check` exit 1 with `reinstall @litterthanlit/vyo`.
@@ -206,7 +208,7 @@ Show, in this order:
 ```ts
 type Spec = {
   version: 3;
-  frame?: "loose" | "swiss" | "signal";     // default loose. §3b
+  frame?: "loose" | "swiss" | "signal" | "cover";     // default loose. §3b, §3c
   facts: string;                 // facts.json `hash`. Render refuses a mismatch (a stale spec)
   product: {
     name: string;                // customer-facing name. compose copies facts.repo.name, and render warns until it differs
@@ -272,7 +274,7 @@ type Region =
 type FieldRegion = {             // drawn from facts.json at render (§4b); the agent writes no geometry
   kind: "field";
   id: string;
-  field: "wave" | "terrain" | "river" | "shape" | "radial" | "sphere" | "scatter" | "shatter" | "glyph" | "bleed" | "slabs" | "spiral" | "contour";   // a key of FIELDS in lib/fields/index.mjs
+  field: "wave" | "terrain" | "river" | "shape" | "radial" | "sphere" | "scatter" | "shatter" | "glyph" | "bleed" | "slabs" | "spiral" | "contour" | "seismic" | "orbit";   // a key of FIELDS in lib/fields/index.mjs
   fits: string;                  // ≤ 160 chars: why this field matches the product's story. Never drawn. Replaces figure.fits on a field poster (§3b)
   accent?: string;               // a part id, an area id or a glob over part ids ("area:lib/*"). Unset: check warns accent-part
   names?: Record<string, string>;   // part id → plain name, ≤ 24 chars, for parts whose scanned name is a vendor or code name
@@ -280,6 +282,7 @@ type FieldRegion = {             // drawn from facts.json at render (§4b); the 
   every?: number;                // wave only: 2 to 20, default 5
   seed?: number;                 // 0 to 2147483647. Omitted or 0 is the identity pose
   letter?: string;               // glyph only: one of A–Z or 0–9
+  symbols?: boolean;             // scatter–contour, seismic, orbit: true draws shaded - : = + # clusters
   shape?: Shape;                 // shape only, required: the silhouette the agent draws (§4b)
   style?: "rings" | "relief" | "symbols";   // shape only: the look over the mask, default relief
   echo?: number;                 // rings only: 0 to 12 faded outlines outside the shape, default 0
@@ -329,7 +332,6 @@ Validation lives in `lib/spec.mjs`. It is pure and every error names the field.
 - `**bold**` markup is allowed only at the start of an aside. It renders as `<b>`.
 - **`hot`** matches case-folded, as a whole word (`hasWord`), against a word of some fill region, a dots line, or the `text` of a label with `hot: true`. It may also stand alone when some region has `hot: true`. When the figure has a field, `hot` is optional, and a given `hot` is checked on the page only (`words-drawn`), since part names come from the facts.
 - A field region takes only the keys of its kind: `sentence` and `every` on a `terrain` fail with `a terrain field has no sentence; only wave takes it`. `letter` is glyph only (one A–Z or 0–9); `symbols` (true or false) is for scatter, shatter, glyph, bleed, slabs, spiral and contour. `seed` is a whole number from 0 to 2147483647. `accent` and the keys of `names` start with `area:`. `names` values and `sentence` follow the copy rules below. `mask` is a path and is not copy.
-- A field region takes only the keys of its kind: `sentence` and `every` on a `terrain` fail with `a terrain field has no sentence; only wave takes it`. `accent` and the keys of `names` start with `area:`. `names` values and `sentence` follow the copy rules below.
 - A `shape` field draws only in the loose or signal frame and requires `shape`. Every shape error is reported at once, by op index: `figure.regions[0].shape.ops[2]: give exactly one of add, cut or crease (found add, cut)`, `….ops[1].add: "square" is not a kind; use circle, ellipse, rect, capsule, arc, polygon, path`, `….ops[0].size: must be two numbers above 0`, `….ops[3].r: missing; it must be a number above 0`, `….ops[1].radius: a circle takes at, r, rotate and face` (a cut or crease: `…at, r and rotate`), `….ops[0]: must be an add; a cut on an empty sheet removes nothing` (a crease first: `…; a crease folds a surface the adds have drawn`), `….ops[1].face: one of lit, dim, round: …`, `figure.regions[0].bevel: 0 to 1, …`, `figure.regions[0].strata: { "by": "angle", "angle": degrees } … or { "by": "depth" } …`. A crease on a capsule or an arc may leave out `r` or `width`. The hints are valid on any style; only relief draws them. `….fit.h: 0.05 to 3, a share of the sheet's height (over 1 bleeds off)`. When the ops are well formed but paint nothing on the sheet: `figure.regions[0].shape: the ops paint nothing on the sheet; the cuts remove all of it, or fit.cx and fit.cy move it off`. The scaffold's placeholder string fails with `still the placeholder`, and `vyo sketch` refuses it too.
 - Every visible string passes `isJargon` from `lib/jargon.mjs` (exact tokens, whole word, case-folded).
 - No file paths: no `/`-containing token with an extension, no `src/`, no `lib/`, no `.tsx` and the like.
@@ -353,7 +355,7 @@ Validation lives in `lib/spec.mjs`. It is pure and every error names the field.
 | `profile` | 3 to 24 stops, y strictly increasing |
 | `polygon` | 3 to 40 points |
 | `band` | 1 to 4 |
-| `size` (fill) | 11 or 12 |
+| `size` (fill) | 7 to 12 |
 | Field regions | At most 1 |
 | Field `names` values | 24 characters |
 | Field `sentence` | 40 characters |
@@ -410,14 +412,17 @@ A loose text takes `role, id, x, y, w, size?, align?` and `text`, `parts` or `it
 
 `frame: "cover"` (`lib/cover.mjs`, `lib/cover-render.mjs`, `lib/cover-page.js`, `lib/cover-report.mjs`, `lib/cover-sketch.mjs`). The spec:
 
-- `ground`: required, one of `COVER_GROUNDS`: `navy`, `charcoal`, `forest`, `paper`. Anything else: `ground: "<v>" is not a ground[; a free colour is not offered]; use "navy", "charcoal", "forest", "paper"`. `theme` and `accent` are refused.
-- `series`: optional, `\d{1,2}/\d{1,2}`, printed top right before `Vyo` with a hairline between them. A single cover leaves it out and shows the mark alone.
-- `figure.regions`: exactly one `{ kind: "field", field: "shape", ... }`; `fits` optional; `style`, `bevel`, `echo` and `shape.fit` refused; `strata` one of `COVER_STRATA` (`"outline"`, the default, `"down"`, `"diagonal"`) or the relief's object; `solid` `{ bevel 0–1, depth 0.2–1.5, tilt 0–1, groove 2–30 }` and `turn` `{ yaw 0–40, pitch 0–20, lean −30–30 }`, both optional.
+- `ground`: required, one of `COVER_GROUNDS`: `navy`, `charcoal`, `forest`, `paper`, `blood`, `acid`, `cobalt`, `xerox`, `riso`, `obsidian`. Anything else: `ground: "<v>" is not a ground[; a free colour is not offered]; use "navy", "charcoal", "forest", "paper", "blood", "acid", "cobalt", "xerox", "riso", "obsidian"`. `theme` and `accent` are refused.
+- `look`: optional, one of `COVER_LOOKS`: `"living"` (default), `"xerox"`, or `"spin"`.
+- `format`: optional, one of `FORMAT_NAMES`: `"poster"` (default, 840×1190), `"square"` (960×960), or `"og"` (1280×640).
+- `crop`: optional, one of `COVER_CROPS`: `"center"` (default), `"bleed-right"`, or `"macro"`.
+- `series`: optional, `\d{1,2}/\d{1,2}`, printed top right before `Vyo` with a hairline between them (or inside the rubber archive stamp on `xerox`, or tilted badge on `spin`). A single cover leaves it out and shows the mark alone.
+- `figure.regions`: exactly one `{ kind: "field", field: "shape", ... }`; `fits` optional; `style`, `bevel`, `echo` and `shape.fit` refused; `strata` one of `COVER_STRATA` (`"outline"`, the default, `"down"`, `"diagonal"`) or the relief's object; `solid` `{ kind?: "dome" | "extrude" | "revolve", bevel 0–1, depth 0.2–1.5, tilt 0–1, groove 2–30 }` and `turn` `{ yaw 0–40, pitch 0–20, lean −30–30 }`, both optional.
 - `figure.texts`: exactly one `{ role: "legend", id, text }`; any other key: `the cover places every block itself; remove <key>`.
-- `motion`: absent or `{ kind: "turn" }`, no `frames` or `fps`.
+- `motion`: absent, `{ kind: "turn" }` (living/spin), or `{ kind: "copier" }` (xerox), no `frames` or `fps`.
 - `notes`, `notBuilt` and `record` are refused.
 
-`shape.like` names a ready silhouette in `SILHOUETTES` (`lib/silhouettes.mjs`), with its `noun` for the legend, the products it `suits` and the README `words` compose matches, whose `ops` every frame and style paint and whose `solid` and `turn` the cover takes unless the region gives its own; `like` beside `ops` or `mask` is refused.
+`shape.like` names one of 22 ready silhouettes in `SILHOUETTES` (`lib/silhouettes.mjs`), with its `noun` for the legend, the products it `suits` and the README `words` compose matches, whose `ops` every frame and style paint and whose `solid` and `turn` the cover takes unless the region gives its own; `like` beside `ops` or `mask` is refused.
 
 The model (`coverModel`): the shape fitted with `fit { w: 0.78, h: 0.5 }`, inflated by `coverSolid` on a 1.5px grid, sampled by `coverSurface` (front, back, and a rim between them where the surface slopes over 0.8), and fitted, over 24 poses, into the box between the top columns (`44 + max(3, headline lines) × 14.5 + 34`) and the legend (30px above it). The template wraps the headline at 230px and the legend at 330px with Inter Medium's advances (`coverWrap`), so Node and the page break the same lines; the name is 168px, or less when wider than 752px. `coverCells(m, f)` gives frame `f`'s printed cells (§3b of the prototype's README is the rule, ported exactly: under `{ by: "depth" }` and the angle strata the shipped cells match the prototype's reports frame for frame), and `coverMeasure` its shares, gap, accent cells, whole names and letters. For `"outline"` the accent's share of the cells, in depth order, is cut first, and the rest stack by height. `coverStill` measures frames nearest 55% of the turn first and stops at the first band where every part of 2% or more prints whole; this is the frame a full sort of all 168 gives. `coverShell` gives the accent's depth in sheet px at the still and the depth any share would reach.
 

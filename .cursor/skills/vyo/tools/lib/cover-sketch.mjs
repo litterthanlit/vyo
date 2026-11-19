@@ -17,10 +17,11 @@ export function coverSketchLines(spec, facts) {
   const look = region.shape.like ? `the ready ${region.shape.like}` : region.shape.mask !== undefined ? "a traced mask" : `${region.shape.ops.length} drawn ops`;
   const strata = typeof region.strata === "string" ? region.strata : region.strata ? JSON.stringify(region.strata) : "outline (the default)";
   const order = model.order.map((i) => ({ ...model.parts[i], i }));
+  const color = model.colors.colorName ?? "orange";
   const lines = [
-    `cover: ${spec.ground} ground, ${look}, ${model.parts.length} parts; the still is frame ${still.frame} of ${COVER_FRAMES} (${Math.round(still.turned * 100)}% into the turn)`,
+    `cover: ${spec.ground} ground${model.look !== "living" ? ` (${model.look})` : ""}${model.format !== "poster" ? `, ${model.format}` : ""}, ${look}, ${model.parts.length} parts; the still is frame ${still.frame} of ${model.frames} (${Math.round(still.turned * 100)}% into the turn)`,
     `strata: ${strata}${model.strata.outline ? ", the accent the outer shell and the others inside it" : ""}`,
-    ...(shell ? [`shell: the orange shell is ${Math.round(shell.px)}px thick, ${pct(shell.share)} of the code (good: ${COVER_LIMITS.thin}px or more, at most ${Math.round(COVER_LIMITS.share * 100)}%)`] : []),
+    ...(shell ? [`shell: the ${color} shell is ${Math.round(shell.px)}px thick, ${pct(shell.share)} of the code (good: ${COVER_LIMITS.thin}px or more, at most ${Math.round(COVER_LIMITS.share * 100)}%)`] : []),
     `parts, ${model.strata.outline ? "from the outline in" : "in strata order"}: share of the lines, share of the glyphs in the still, whole names in the still`,
     ...order.map((p) => `  ${p.hot ? "*" : " "} ${p.id.padEnd(Math.max(28, ...order.map((q) => q.id.length)))} ${p.name.padEnd(24)} ${pct(p.share).padStart(6)} ${pct(still.shares[p.i]).padStart(6)} ${String(still.whole[p.i]).padStart(4)}${p.share >= COVER.big && !still.whole[p.i] ? "  ! never whole" : ""}`),
   ];
@@ -33,10 +34,10 @@ export const coverSketchFindings = (spec, facts) => {
   return coverFindings(c, { facts, cells: (f) => coverCells(c.model, f) });
 };
 
-/** The still at a third of its size, 280px wide, drawn from its cells: the form in its tones, the accent in orange, the words as bars. */
+/** The still at a third of its size, drawn from its cells: the form in its tones, the accent in its colour, the words as bars. */
 export function coverSketchImage(spec, facts) {
   const { model, still } = coverOf(spec, facts);
-  const { width: W, height: H } = SHEET;
+  const { width: W, height: H, cols, cw, lh, x0 } = model.grid;
   const S = 3;
   const [w, h] = [Math.ceil(W / S), Math.ceil(H / S)];
   const rgb = (hex) => [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16));
@@ -54,12 +55,11 @@ export function coverSketchImage(spec, facts) {
       }
     }
   };
-  const { cols, cw, lh, x0 } = COVER_GRID;
   for (const c of coverCells(model, still.frame)) {
     const [x, y] = [x0 + (c.i % cols) * cw, Math.floor(c.i / cols) * lh];
     const hot = c.part === model.hot;
-    const fill = hot && model.colors.fill ? model.colors.fill * (0.6 + 0.4 * c.v) * Math.max(0.5, c.fade) : 0;
-    const a = fill || (hot ? INK.hot : c.kind === "mark" ? INK.mark : c.letter ? INK.letter : INK.gap) * (hot ? Math.max(0.5, c.fade) : coverInkAlpha(model, c.kind, c.v) * c.fade);
+    const fill = hot && (model.colors.fill || model.look === "xerox") ? (model.colors.fill ?? 0.9) * (0.6 + 0.4 * c.v) * Math.max(0.5, c.fade) : 0;
+    const a = fill || (hot ? INK.hot : c.kind === "mark" || c.kind === "wall" ? INK.mark : c.letter ? INK.letter : INK.gap) * (hot ? Math.max(0.5, c.fade) : coverInkAlpha(model, c.kind, c.v) * c.fade);
     lay(x, y, x + cw, y + lh, hot ? accent : ink, a);
   }
   const B = coverBlocks(spec, facts);

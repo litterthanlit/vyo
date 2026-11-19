@@ -2,6 +2,13 @@
 // file into the page and `vyo sketch` imports it, so the sketch and the poster lay out the same rows.
 
 export const SHEET = { width: 840, height: 1190 };
+export const FORMATS = {
+  poster: { width: 840, height: 1190 },
+  square: { width: 960, height: 960 },
+  og: { width: 1280, height: 640 },
+};
+export const FORMAT_NAMES = Object.keys(FORMATS);
+export const sheetOf = (format) => FORMATS[format] ?? SHEET;
 export const SHAPE_KEYS = ["profile", "ellipse", "polygon", "path"];
 // Row pitch and the two heights a row samples, per font size. A row is inside where both are.
 export const GRID = {

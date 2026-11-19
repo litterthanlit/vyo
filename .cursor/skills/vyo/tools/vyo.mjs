@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { stableStringify, factsHash } from "./lib/hash.mjs";
@@ -15,9 +15,9 @@ import { sketch, sketchImage } from "./lib/sketch.mjs";
 import { coverSketchLines, coverSketchFindings, coverSketchImage } from "./lib/cover-sketch.mjs";
 import { COVER_LIMITS, coverWindow } from "./lib/cover-report.mjs";
 import { coverOf } from "./lib/cover-render.mjs";
-import { COVER_GROUNDS, coverLegend } from "./lib/cover.mjs";
+import { COVER_GROUNDS, COVER_LOOKS, COVER_CROPS, coverLegend } from "./lib/cover.mjs";
 import { SILHOUETTES, SILHOUETTE_NAMES } from "./lib/silhouettes.mjs";
-import { SHAPE_KEYS, GRID, ADVANCE, SHEET } from "./lib/geometry.mjs";
+import { SHAPE_KEYS, GRID, ADVANCE, SHEET, FORMAT_NAMES } from "./lib/geometry.mjs";
 import { SHAPE_KINDS, SHAPE_ROOM } from "./lib/mask.mjs";
 import { buildPage, renderPage, GifFailure, PAPERS, floorFor, FLOOR_STEP, fieldSpace } from "./lib/render.mjs";
 import { ROLES, FRAMES, RECORD_FRAMES, scaffoldPlaces } from "./lib/frame.mjs";
@@ -37,9 +37,10 @@ const USAGE = `Usage:
   vyo presets [<id>]
   vyo parts   <facts.json> [--field ${Object.keys(FIELDS).join("|")}] [--split <part id>]...
   vyo shapes  [--log <file>]
-  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--style ${Object.keys(SHAPE_STYLES).join("|")}] [--split <part id>]... [--seed <n>] [--accent <part id>] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--shapes-log <file>] [--force]
+  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--style ${Object.keys(SHAPE_STYLES).join("|")}] [--look ${COVER_LOOKS.join("|")}] [--ground ${Object.keys(COVER_GROUNDS).join("|")}] [--format ${FORMAT_NAMES.join("|")}] [--crop ${COVER_CROPS.join("|")}] [--split <part id>]... [--seed <n>] [--accent <part id>] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--shapes-log <file>] [--force]
   vyo sketch  <spec.json> [--facts <facts.json>]
   vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--gif] [--paper ${PAPERS.join("|")}]
+  vyo series  <spec1.json> <spec2.json> [...] --out <base> [--gif]
   vyo check   <spec.json> [--facts <facts.json>]
 
 Exit codes: 0 ok (warnings start with "! "), 1 a rule failed (lines start with "✗ "), 2 usage.`;
@@ -330,16 +331,22 @@ function cmdShapes(argv) {
  * parts printed with the ones that make a good outline accent marked.
  */
 function composeCover(factsFile, opt) {
-  for (const k of ["from", "style", "theme", "seed"]) if (opt[k] !== undefined) throw new Usage(`--${k} has no place on a cover; ${k === "theme" ? "set ground in the spec (navy, paper, charcoal or forest)" : `leave out --${k}`}`);
+  for (const k of ["from", "style", "theme", "seed"]) if (opt[k] !== undefined) throw new Usage(`--${k} has no place on a cover; ${k === "theme" ? `set ground in the spec (${Object.keys(COVER_GROUNDS).join(", ")})` : `leave out --${k}`}`);
   if (opt.field !== undefined && opt.field !== "shape") throw new Usage("a cover draws a shape; leave out --field");
+  const look = opt.look ?? "living";
+  if (!COVER_LOOKS.includes(look)) throw new Usage(`--look ${look} is not a cover look; use ${COVER_LOOKS.join(", ")}`);
+  const ground = opt.ground ?? (look === "xerox" ? "paper" : look === "spin" ? "acid" : "navy");
+  if (!COVER_GROUNDS[ground]) throw new Usage(`--ground ${ground} is not a ground; use ${Object.keys(COVER_GROUNDS).join(", ")}`);
+  const format = opt.format ?? "poster";
+  if (!FORMAT_NAMES.includes(format)) throw new Usage(`--format ${format} is not a format; use ${FORMAT_NAMES.join(", ")}`);
+  const crop = opt.crop ?? "center";
+  if (!COVER_CROPS.includes(crop)) throw new Usage(`--crop ${crop} is not a crop; use ${COVER_CROPS.join(", ")}`);
   const facts = readFacts(factsFile);
   const commit = opt.repo ? git(opt.repo, "%h") : undefined;
   const date = (opt.repo && git(opt.repo, "%cs")) ?? new Date().toISOString().slice(0, 10);
   if (!opt.repo) warn("no --repo, so no commit: the cover's record needs one; compose again with --repo <repo>");
   else if (!commit) warn(`${opt.repo} has no git history; the cover's record needs a commit, so use the swiss frame instead`);
   const L = COVER_LIMITS;
-  // No part may be most of the object, so every part over the window's top is cut into the folders inside it, or
-  // its files when it has none, until none is left or the region holds the four splits a spec allows.
   const split = [...(opt.split ?? [])];
   const cut = [];
   const partsOf = (s) => partsFromFacts(facts, partOptions({ field: "shape", ...(s.length ? { split: s } : {}) }));
@@ -357,8 +364,6 @@ function composeCover(factsFile, opt) {
   const out = opt.out ?? path.join(path.dirname(factsFile), `${facts.repo.name}-poster.json`);
   if (fs.existsSync(out) && !opt.force) throw new Failure(`${out} exists; it may hold your words. Pass --force to replace it with a fresh scaffold`);
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-  // The object: the one a scaffold already at `out` used, so composing again keeps it; else the silhouette the
-  // README points to most among those this folder's covers have not used lately.
   const earlier = (() => {
     try {
       return JSON.parse(fs.readFileSync(out, "utf8")).figure.regions[0].shape.like;
@@ -375,29 +380,28 @@ function composeCover(factsFile, opt) {
   if (pick.matched) recordShape(logFile, like);
   const share = (p) => p.loc / linesIn(parts);
   const around = (p) => aroundProduct(p.id);
-  // The window, measured on this object: an outline when a part the product could be about makes a ring there,
-  // else bands.
-  const probe = coverScaffold(facts, { commit, date, split: split.length ? split : undefined, parts, strata: "outline", like, accent: parts[parts.length - 1].id });
+  const probe = coverScaffold(facts, { commit, date, split: split.length ? split : undefined, parts, strata: "outline", like, ground, look, format, crop, accent: parts[parts.length - 1].id });
   Object.assign(probe, { product: { ...probe.product, name: facts.repo.name }, headline: "One plain sentence about what the product does for a person." });
-  probe.figure.texts[0].text = coverLegend(probe.figure.regions[0], facts.repo.name, "a plain name");
+  probe.figure.texts[0].text = coverLegend(probe.figure.regions[0], facts.repo.name, "a plain name", ground);
   const win = coverWindow(coverOf(probe, facts));
   const fits = (p, [lo, hi]) => share(p) >= lo && share(p) <= hi;
-  const outline = !!win.ring && parts.some((p) => !around(p) && fits(p, win.ring));
+  const outline = look === "living" && !!win.ring && parts.some((p) => !around(p) && fits(p, win.ring));
   const window = outline ? win.ring : win.band;
-  const scaffold = coverScaffold(facts, { commit, date, accent: opt.accent, split: split.length ? split : undefined, parts, strata: outline ? "outline" : "down", like });
+  const scaffold = coverScaffold(facts, { commit, date, accent: opt.accent, split: split.length ? split : undefined, parts, strata: outline ? "outline" : "down", like, ground, look, format, crop });
   fs.writeFileSync(out, JSON.stringify(scaffold, null, 2) + "\n");
   const S = SILHOUETTES[like];
   const width = Math.max(...parts.map((p) => p.id.length));
-  const orange = outline ? `orange outer ring on the ${S.noun}` : `orange band across the ${S.noun}`;
+  const color = COVER_GROUNDS[ground].colorName ?? "orange";
+  const accentLabel = outline ? `${color} outer ring on the ${S.noun}` : `${color} band across the ${S.noun}`;
   const lines = [
     `Wrote ${out}. Edit that file: replace each value that starts with "…" and change nothing else.`,
     ...(cut.length ? [`Split ${cut.join(", and ")}, so no part is most of the object.`] : []),
-    `parts (id, share of the code, scanned name). * marks a part that makes a good ${orange}: ${pct(window[0])} to ${pct(window[1])} of the code. - marks code around the product, never the accent.`,
+    `parts (id, share of the code, scanned name). * marks a part that makes a good ${accentLabel}: ${pct(window[0])} to ${pct(window[1])} of the code. - marks code around the product, never the accent.`,
     ...parts.map((p) => `  ${around(p) ? "-" : fits(p, window) ? "*" : " "} ${p.id.padEnd(width)} ${pct(share(p)).padStart(4)}  ${p.name}${around(p) ? `  ${around(p)}, never the accent` : ""}${unplainName(p.name) ? "  ! needs a plain name" : ""}`),
     `accent: the id of the part the product is about. If it has no *, write it anyway: the sketch says how to make it show.`,
     `shape: compose picked the ${S.noun} ("like": "${like}"), for ${S.suits}${pick.matched?.length ? `; the README says ${pick.matched.map((w) => `"${w}…"`).join(", ")}` : ""}. If another object in vyo shapes suits the product better, write its name and put its name in the legend for "${S.noun}".`,
     `legend: the pattern is written; replace <product> and <the accent's plain name>, and delete the leading "…".`,
-    `ground: ${Object.keys(COVER_GROUNDS).join(", ")}. Names: every part, lowercase, at most 24 characters, saying what it does for a person.`,
+    `ground: ${Object.keys(COVER_GROUNDS).join(", ")}. look: ${COVER_LOOKS.join(", ")}. format: ${FORMAT_NAMES.join(", ")}. Names: every part, lowercase, at most 24 characters, saying what it does for a person.`,
     `Then: vyo sketch ${out}, open the sketch PNG, act on every finding, then vyo render ${out} --gif.`,
   ];
   process.stdout.write(lines.join("\n") + "\n");
@@ -411,6 +415,10 @@ function cmdCompose(argv) {
       frame: { type: "string" },
       field: { type: "string" },
       style: { type: "string" },
+      look: { type: "string" },
+      ground: { type: "string" },
+      format: { type: "string" },
+      crop: { type: "string" },
       split: { type: "string", multiple: true },
       accent: { type: "string" },
       from: { type: "string" },
@@ -443,6 +451,7 @@ function cmdCompose(argv) {
   const frame = opt.frame ?? preset?.frame ?? "loose";
   if (!FRAMES.includes(frame)) throw new Usage(`--frame ${frame} is not a frame; use ${FRAMES.join(" or ")}`);
   if (frame === "cover") return composeCover(pos[0], opt);
+  for (const k of ["look", "ground", "format", "crop"]) if (opt[k] !== undefined) throw new Usage(`--${k} is for --frame cover; pass --frame cover or leave out --${k}`);
   if (opt.field && FIELDS[opt.field].frames && !FIELDS[opt.field].frames.includes(frame)) throw new Usage(`--field ${opt.field} draws only in the ${FIELDS[opt.field].frames.join(" or ")} frame; leave out --frame`);
   if (preset && frame !== preset.frame) throw new Usage(`--from ${opt.from} is a ${preset.frame} preset; the loose frame draws a field, so use --field`);
   const theme = opt.theme ?? preset?.theme ?? "light";
@@ -608,7 +617,7 @@ async function poster(specFile, opt, outDir, files) {
   } catch (e) {
     throw new Failure(e.message);
   }
-  const page = await renderPage({ html, base, motion: spec.motion ?? null, ...files });
+  const page = await renderPage({ html, base, motion: spec.motion ?? null, format: spec.format ?? "poster", ...files });
   return report(runChecks("page", { ...input, page }));
 }
 
@@ -632,6 +641,70 @@ async function cmdRender(argv) {
   return code;
 }
 
+/** Render 2+ poster/cover specs and tile them horizontally on paper into <out>.png (and <out>.gif/.mp4 with --gif). */
+async function cmdSeries(argv) {
+  let parsed;
+  try {
+    parsed = parseArgs({ args: argv, options: { out: { type: "string" }, gif: { type: "boolean" }, gap: { type: "string", default: "24" } }, allowPositionals: true });
+  } catch (e) {
+    throw new Usage(e.message);
+  }
+  const files = parsed.positionals;
+  const opt = parsed.values;
+  if (files.length < 2) throw new Usage("series needs at least 2 spec files");
+  if (!opt.out) throw new Usage("series needs --out <base> (writes <base>.png, and with --gif <base>.gif and <base>.mp4)");
+  const gap = Math.max(0, Math.min(80, Number(opt.gap) || 24));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-series-"));
+  try {
+    const pngs = [];
+    const mp4s = [];
+    const pad = String(files.length).padStart(2, "0");
+    for (let i = 0; i < files.length; i++) {
+      const specFile = files[i];
+      const spec = readJson(specFile, "poster spec");
+      const facts = factsFor(specFile, spec, {});
+      if (spec.frame === "cover" && !spec.series) spec.series = `${String(i + 1).padStart(2, "0")}/${pad}`;
+      const subDir = path.join(tmp, `s${i}`);
+      fs.mkdirSync(subDir, { recursive: true });
+      const tmpSpec = path.join(subDir, path.basename(specFile));
+      fs.writeFileSync(tmpSpec, JSON.stringify(spec, null, 2));
+      const tmpFacts = path.join(subDir, `${spec.product.repo}-facts.json`);
+      fs.writeFileSync(tmpFacts, JSON.stringify(facts));
+      const fails = await poster(tmpSpec, { facts: tmpFacts }, subDir, { png: true, pdf: false, gif: !!opt.gif, paper: "fit" });
+      if (fails) return 1;
+      pngs.push(path.join(subDir, `${spec.product.repo}-poster.png`));
+      if (opt.gif) mp4s.push(path.join(subDir, `${spec.product.repo}-poster.mp4`));
+    }
+    const base = path.resolve(opt.out.replace(/\.png$/i, ""));
+    fs.mkdirSync(path.dirname(base), { recursive: true });
+    const runFfmpeg = (a, what) => {
+      const r = spawnSync("ffmpeg", ["-y", "-hide_banner", "-loglevel", "error", ...a], { encoding: "utf8" });
+      if (r.error?.code === "ENOENT") throw new GifFailure("vyo series needs ffmpeg on PATH");
+      if (r.error || r.status !== 0) throw new GifFailure(`ffmpeg could not tile ${what}: ${(r.stderr || r.error?.message || `exit ${r.status}`).trim()}`);
+    };
+    const n = pngs.length;
+    const h = 1190;
+    const padColor = "#EAE8E2";
+    const scalePad = (i) => `[${i}:v]scale=-2:${h}:flags=lanczos,pad=iw+${i === 0 ? gap * 2 : gap}:ih+${gap * 2}:${i === 0 ? gap : 0}:${gap}:color=${padColor}[v${i}]`;
+    const filter = `${pngs.map((_, i) => scalePad(i)).join(";")};${pngs.map((_, i) => `[v${i}]`).join("")}hstack=inputs=${n}`;
+    runFfmpeg([...pngs.flatMap((p) => ["-i", p]), "-filter_complex", filter, `${base}.png`], "series PNG");
+    const made = [`${base}.png`];
+    if (opt.gif && mp4s.every((m) => fs.existsSync(m))) {
+      const gh = 540;
+      const gGap = Math.round((gap * gh) / h);
+      const vScale = (i) => `[${i}:v]fps=12,trim=duration=3.5,setpts=PTS-STARTPTS,scale=-2:${gh}:flags=area,pad=iw+${i === 0 ? gGap * 2 : gGap}:ih+${gGap * 2}:${i === 0 ? gGap : 0}:${gGap}:color=${padColor}[v${i}]`;
+      const vFilter = `${mp4s.map((_, i) => vScale(i)).join(";")};${mp4s.map((_, i) => `[v${i}]`).join("")}hstack=inputs=${n}:shortest=1`;
+      runFfmpeg([...mp4s.flatMap((p) => ["-stream_loop", "-1", "-i", p]), "-filter_complex", `${vFilter},split[a][b];[a]palettegen=max_colors=48:stats_mode=full[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`, "-loop", "0", `${base}.gif`], "series GIF");
+      runFfmpeg([...mp4s.flatMap((p) => ["-stream_loop", "-1", "-i", p]), "-filter_complex", vFilter, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", `${base}.mp4`], "series MP4");
+      made.push(`${base}.gif`, `${base}.mp4`);
+    }
+    process.stdout.write(`Wrote: ${made.join(", ")}\nPASS\n`);
+    return 0;
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
 async function cmdCheck(argv) {
   const { pos, opt } = args(argv, { facts: { type: "string" } }, 1);
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-check-"));
@@ -653,7 +726,7 @@ function cmdInit(argv) {
   return 0;
 }
 
-const COMMANDS = { init: cmdInit, scan: cmdScan, show: cmdShow, parts: cmdParts, presets: cmdPresets, shapes: cmdShapes, compose: cmdCompose, sketch: cmdSketch, render: cmdRender, check: cmdCheck };
+const COMMANDS = { init: cmdInit, scan: cmdScan, show: cmdShow, parts: cmdParts, presets: cmdPresets, shapes: cmdShapes, compose: cmdCompose, sketch: cmdSketch, render: cmdRender, series: cmdSeries, check: cmdCheck };
 
 export async function main(argv) {
   const [cmd, ...rest] = argv;

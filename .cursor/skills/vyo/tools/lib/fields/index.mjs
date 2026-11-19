@@ -15,6 +15,8 @@ import { bleedRows } from "./bleed.mjs";
 import { slabsRows } from "./slabs.mjs";
 import { spiralRows } from "./spiral.mjs";
 import { contourRows } from "./contour.mjs";
+import { seismicRows } from "./seismic.mjs";
+import { orbitRows } from "./orbit.mjs";
 
 const cornerTexts = (floor) => ({ headline: { x: 56, y: 150, w: 360 }, aside: { x: 56, y: floor - 120, w: 240 } });
 
@@ -158,6 +160,26 @@ export const FIELDS = {
     layout: contourRows,
     tokens: (theme, frame) => toneSet(theme, frame).tokens,
     behindTexts: true,
+    texts: (floor) => cornerTexts(floor),
+  },
+  seismic: {
+    about: "stacked codebase ridgelines, one per part, peaks driven by lines, files and imports with foreground occlusion",
+    options: ["seed", "symbols"],
+    measure: [["code", "lines"]],
+    fits: ["pulse", "ridge", "signal", "layer", "depth"],
+    layout: seismicRows,
+    tokens: (theme, frame) => toneSet(theme, frame).tokens,
+    behindTexts: false,
+    texts: (floor) => ({ headline: { x: 56, y: 40, w: 460 }, aside: { x: 560, y: 44, w: 224 } }),
+  },
+  orbit: {
+    about: "dependency constellation: discs sized by lines, ringed by real import centrality with dotted wiring links",
+    options: ["seed", "symbols"],
+    measure: [["code", "lines"]],
+    fits: ["orbit", "connect", "link", "center", "centre", "core"],
+    layout: orbitRows,
+    tokens: (theme, frame) => toneSet(theme, frame).tokens,
+    behindTexts: false,
     texts: (floor) => cornerTexts(floor),
   },
 };

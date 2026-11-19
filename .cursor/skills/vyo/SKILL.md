@@ -12,7 +12,7 @@ description: >-
 
 # vyo
 
-The poster is a field: the codebase drawn from a scan, each part sized by its code. Either you draw one object that stands for the product and the engine cuts it into the parts (a `shape`), or the engine generates a form (a wave, a coil, clouds, a letter). The field fills the sheet, and a few plain words sit in the room it leaves. You choose the field, the look, the frame, the accent part, the plain names and the words, and for a shape you draw the silhouette. The tools draw, place and check the rest.
+The poster is a field: the codebase drawn from a scan, each part sized by its code. Either you pick or draw one object that stands for the product and the engine cuts it into the parts (a `cover` or a `shape` field), or the engine generates an architectural form (`seismic` ridgelines, `orbit` dependency constellation, `river`, `slabs`, etc.). The field fills the sheet, and a few plain words sit in the room it leaves. You choose the art direction, the accent part, the plain names and the words. The tools draw, place and check the rest.
 
 Run commands from the target repo. `<repo>` is the app's directory, `<name>` its folder name, and `<facts>` is `<repo>/vyo/<name>-facts.json`.
 
@@ -28,22 +28,42 @@ Without installing it, write `npx -y @litterthanlit/vyo` wherever this file says
 
 **Findings.** Sketch and render print findings. A `✗` line fails the poster and a `!` line weakens it; each names the one change to make, so make it, then run the same command again.
 
+## Pick an art direction
+
+Before composing, choose the visual direction that best fits the product's voice instead of defaulting to one look:
+
+| Art direction | Command | Best for |
+|---|---|---|
+| **Living 3D Cover** | `compose --frame cover --look living --ground obsidian\|navy\|paper\|riso` | Sculpted, slowly turning 3D relief with luminous sheen, rounded pill highlights on light/vivid grounds, 22 ready silhouettes, `dome`/`extrude`/`revolve` solids |
+| **Punk Xerox / Riso Cover** | `compose --frame cover --look xerox --ground blood\|xerox\|cobalt\|acid\|riso` | Raw zine/album-cover energy: 2-plate thresholded toner, paper grain, misregistration shadows, rubber archive stamp, torn-edge spot highlighters, edge-bleeding Black title, `copier` loop |
+| **Kinetic 3D Spin Cover** | `compose --frame cover --look spin --ground acid\|blood\|cobalt\|obsidian` | Bold brutalist 360° turntable in flat 3-color depth-scaled type, `# + :` extruded side walls, tilted stamp badge, and glitch beats |
+| **Editorial Shape Poster** | `compose --field shape --style relief\|rings\|symbols [--frame signal]` | Custom drawn silhouette (`ops`), ready object (`like`), or traced PNG logo/illustration (`mask`) with serif (`loose`) or brutalist (`signal`) typography |
+| **Architectural Field** | `compose --field seismic\|orbit\|slabs\|river\|... [--frame loose\|signal]` | Codebase-structure-as-art: Joy Division `seismic` ridgelines from LOC/files/imports, `orbit` dependency constellation with import chords, or 12 generative fields |
+
+All covers support `--format poster` (`840×1190`, default), `--format square` (`960×960`, album cover / social square), and `--format og` (`1280×640`, landscape Open Graph card), plus `--crop center|bleed-right|macro`. To showcase 2–4 covers side by side in one gallery contact sheet (and optional synchronized GIF), run `npx vyo series <spec1> <spec2> [...] --out <base> [--gif]`.
+
 ## Make a cover
 
-A cover is the quickest strong poster: one ready object, turning slowly, the part the product is about as its orange ring or band. Follow these steps in order; you need nothing else in this file except "Reply in chat".
+A cover is the quickest gallery-grade visual: one bold 3D object, cut into layers by the codebase's real line counts, with the part the product is about in the accent colour. Follow these steps in order; you need nothing else in this file except "Reply in chat".
 
 1. `npx vyo scan <repo> --out <facts>`
-2. `npx vyo compose <facts> --frame cover --repo <repo> --out <repo>/vyo/<name>-poster.json`. Compose sets the cover up: it splits any part over 40% of the code into its folders or files, picks the object and the strata, and writes the legend's pattern. It prints every part with its share of the code. `*` marks a part that makes a good orange accent on this object, and `-` marks code around the product (samples, tests, docs, scripts, setup).
-3. Read the repo's README. Open the spec compose wrote and edit it in place: replace each value that starts with `…`, and change nothing else. Never write the spec again from scratch; it holds the commit, the date and the splits.
+2. `npx vyo compose <facts> --frame cover --look <living|xerox|spin> --ground <ground> [--format poster|square|og] [--crop center|bleed-right|macro] --repo <repo> --out <repo>/vyo/<name>-poster.json`.
+   Compose splits any part over 40% of the code into its folders or files, picks a matching object from the 22 ready silhouettes, sets the strata and motion (`turn` for `living`/`spin`, `copier` for `xerox`), and writes the legend pattern. It prints every part with its share of the code: `*` marks a part that makes a strong accent on this object, and `-` marks surrounding code (samples, tests, docs, scripts, setup).
+3. Read the repo's README. Open the spec compose wrote and edit it in place: replace each value that starts with `…`, and change nothing else. Never write the spec from scratch; it holds the commit, the date and the splits.
    - `product.name`: the name customers see, as the README writes it.
    - `headline`: one plain sentence, at most 72 characters, on what the product does for a person.
    - `accent`: the id of the part the product is about, the code that does the product's main job. Never a part marked `-`. A `*` only says the part will look good; if the part the product is about has none, choose it anyway, and the sketch says how to make it show.
    - `names`: every part, lowercase, at most 24 characters, saying what it does for a person ("sign-in", "the plan"). Never a folder, file or company name.
-   - The legend's `text`: delete the leading `…`, and put the product's name for `<product>` and the accent's plain name for `<the accent's plain name>`.
-   - `shape`: compose picked the object and said why. Keep it, or pick one from `npx vyo shapes` whose "for ..." fits the product better; then also change the object's name in the legend.
-4. Set `ground` to `navy`, `forest`, `charcoal` or `paper`. Leave out `series` for a single cover, so the top right shows only the mark; set it, like `"02/04"`, only for one of a numbered set.
+   - The legend's `text`: delete the leading `…`, and put the product's name for `<product>` and the accent's plain name for `<the accent's plain name>`. Match the accent colour word (`orange`, `yellow`, `pink`, `red`, `vermilion`, `lime`, `gold`, or `blue`) that compose wrote for your chosen `ground`.
+   - `shape`: compose picked one of the 22 objects and said why. Keep it, pick another from `npx vyo shapes` whose "for ..." fits the product better (and update the object's name in the legend), or trace a custom PNG with `{ "mask": "path/to/silhouette.png" }`.
+   - Optional 3D solid override (`region.solid.kind`): `"dome"` (sculpted organic volume, default), `"extrude"` (crisp architectural slab with side walls — great for `plug`, `anvil`, `fast-forward`, `monolith`, `key`, `bolt`, and `spin`), or `"revolve"` (axisymmetric lathe — great for `flask`, `bulb`, `bell`, `pear`, `cup`).
+4. Pick one of the 10 curated `ground` palettes (free hex colours are intentionally refused so contrast always hits):
+   - **Editorial dark:** `navy` (orange), `charcoal` (orange), `forest` (orange), `obsidian` (electric lime `#C8FF00`)
+   - **Editorial / print paper:** `paper` (orange), `xerox` (raw newsprint + punk magenta `#FF0055`), `riso` (warm cream + fluorescent pink `#FF48B0` + cobalt ink)
+   - **High-voltage poster:** `blood` (signal red + acid yellow `#FFEE00`), `acid` (chartreuse `#C8FF00` + vermilion `#FF3B00`), `cobalt` (electric blue `#1E3CFF` + gold `#FFDD00`)
+   Leave out `series` for a single cover; set it, like `"02/04"`, only for a numbered set (or let `vyo series` render a numbered grid of 2–4 covers).
 5. `npx vyo sketch <repo>/vyo/<name>-poster.json`. Act on every finding, then sketch again until none is left. Open the sketch PNG: say in one word what the object is; if the word is wrong, pick another object.
-6. `npx vyo render <repo>/vyo/<name>-poster.json --gif`. It writes the PNG, the PDF and a looping GIF. Act on any finding and render again.
+6. `npx vyo render <repo>/vyo/<name>-poster.json --gif`. It writes the PNG, thumbnail, PDF, looping GIF and MP4. Act on any finding and render again.
 7. Reply as "Reply in chat" says, with the PNG and the GIF.
 
 ## Make the poster
@@ -52,12 +72,12 @@ A cover is the quickest strong poster: one ready object, turning slowly, the par
 2. Summarise: `npx vyo show <facts>`.
 3. List the parts: `npx vyo parts <facts>`. Each line has an id like `area:lib/plan`, its share of the lines, its files and its scanned name. A name followed by `!` needs a plain name.
 4. Read `README*`, `docs/` and `project-context.md` beside this file if the owner wrote one. Write the product's name and its story in one sentence: what it does for a person. Every claim must point at the scan, the docs or the code.
-5. Choose the look (see "Choose the look"): a drawn shape or a generated field, the frame and the theme. Choose the accent part: the part the story is about. Run `parts <facts> --field <field>` again for the field you chose: a river splits the code into finer parts, a shape into at most 12 (a relief 14).
+5. Choose the look (see "Choose the look"): a drawn/traced shape or a generated/architectural field (`seismic`, `orbit`, `river`, `slabs`, etc.), the frame (`loose` or `signal`) and the theme. Choose the accent part: the part the story is about. Run `parts <facts> --field <field>` again for the field you chose: a river splits the code into finer parts, a shape into at most 12 (a relief 14).
 6. Write the scaffold:
    ```bash
    npx vyo compose <facts> --field shape --style relief --accent area:lib/plan --repo <repo> --out <repo>/vyo/<name>-poster.json
    ```
-   Add `--frame signal` for the high-contrast frame and `--theme dark` for a dark sheet. `--style` alone means `--field shape`. With neither `--field` nor `--style`, compose picks a generated field you have not used lately and prints the pick. `--accent` refuses an id that `parts` did not list. `--repo` gives the record line its commit. Compose refuses to overwrite an existing spec, which may hold your words, unless you pass `--force`. For a generated field compose puts the label, headline, legend, a paragraph and the parts list into the corners the field leaves empty and prints them; for a shape it writes the texts with no coordinates, and the engine places them around the shape.
+   Add `--frame signal` for the high-contrast grotesque frame and `--theme dark` for a dark sheet. `--style` alone means `--field shape`. With neither `--field` nor `--style`, compose picks a generated field you have not used lately and prints the pick. `--accent` refuses an id that `parts` did not list. `--repo` gives the record line its commit. Compose refuses to overwrite an existing spec, which may hold your words, unless you pass `--force`. For a generated field compose puts the label, headline, legend, a paragraph and the parts list into the corners the field leaves empty and prints them; for a shape it writes the texts with no coordinates, and the engine places them around the shape.
 7. Replace every `…` value: the product name, the field's `fits`, the headline, the legend, the paragraph, the names, for a wave the `sentence`, and for a shape the `shape` (see "Draw the shape"). Render rejects any placeholder left.
 8. Sketch: `npx vyo sketch <repo>/vyo/<name>-poster.json`. It prints the sheet, the text boxes and the corners, then runs every check that needs no browser, each line at the level render gives it. Act on every finding. If a corner is cramped, or two text boxes touch, move a block into a corner with room or delete the paragraph.
 9. Render: `npx vyo render <repo>/vyo/<name>-poster.json`. For a GIF, add `motion` to the spec and pass `--gif`.
@@ -69,17 +89,19 @@ A cover is the quickest strong poster: one ready object, turning slowly, the par
 
 A look is three choices: what draws the form, the frame around it, and the sheet.
 
-**Draw a shape or generate a field.** Draw a `shape` when one object a stranger would name in a second stands for the product (a jar for a pantry, a paper plane for a hand-off), or the owner asks for a picture. It is the strongest poster the tool makes. Draw it from `ops`, or trace it from a PNG with `"mask"` (see "Draw the shape"). Its `style` sets the look over the silhouette:
+**Draw a shape or generate a field.** Draw a `shape` when one object a stranger would name in a second stands for the product (a jar for a pantry, a paper plane for a hand-off, a prism for an engine), or the owner asks for a picture. Draw it from `ops`, pick one of the 22 ready silhouettes with `{ "like": "<name>" }`, or trace a PNG with `{ "mask": "<path>" }` (see "Draw the shape"). Its `style` sets the look over the silhouette:
 
 - `relief`: the default. A lit volume in fine 6px type, each part a layer of its own name, the accent glowing. The object is the poster's pull, with quiet space around it.
 - `symbols`: the silhouette in shaded clusters of `- : = + #`, like ASCII art, lit from the top left, the accent's rows in the accent colour. On charcoal in the signal frame with one orange accent it reads as fine grey marks with one hot band. The parts' names do not print, so add the parts list.
 - `rings`: the names along the outline, ring inside ring. Only for a fat, round object.
 
-Generate a field when no single object fits. Pick the one whose form is the story; the `fits` check wants a word that starts with one of its keywords. `npx vyo shapes` lists them with when each was last used; take one you have not used lately, and never default to wave.
+Generate a field when no single object fits, or when the codebase's own architecture is the story. Pick the one whose form is the story; the `fits` check wants a word that starts with one of its keywords. `npx vyo shapes` lists all 15 fields with when each was last used; take one you have not used lately, and never default to wave.
 
+- **seismic**: Joy Division–style stacked codebase ridgelines — each part's peak height encodes its lines, peak count its files, and peak sharpness its cross-area imports, with foreground ridges cleanly occluding background ridges. "pulse", "ridge", "wave", "signal", "peak".
+- **orbit**: architectural dependency constellation — discs sized by lines, ranked into core/inner/outer orbits by real import centrality, connected by dotted cross-area import chords. "orbit", "centre", "center", "core", "link", "tie".
 - **wave**: one band of rows bent down the page. Flow or a hand-off. "travel", "flow", "hand", "move".
 - **terrain**: a peak per part, as tall as its code and as wide as its files. What is big. "big", "weight", "matters", "most".
-- **river**: streams of digits merging into one channel. Many into one. "merge", "join", "many", "one".
+- **river**: streams of digits merging into one channel from real cross-area imports. Many into one. "merge", "join", "many", "one".
 - **radial**: a triangle of type from an apex. "spread", "out", "from", "centre", "center".
 - **sphere**: type-built globes that flatten down the page. "curve", "round", "fold", "flat".
 - **scatter**: separate clouds of type. "scatter", "speck", "cloud", "dust".
@@ -90,17 +112,23 @@ Generate a field when no single object fits. Pick the one whose form is the stor
 - **spiral**: a coil. "spin", "coil", "spiral", "turn".
 - **contour**: nested rings around a few hills. "contour", "level", "map", "ridge".
 
-Every field from scatter to contour takes `symbols: true`: the form drawn in sparse clusters of `- : = + #`, shaded by depth, like ASCII art. `seed` moves a generated field's composition; compose writes one, and `0` is the field's own form. A field preference in `project-context.md` wins.
+Every field from `scatter` to `contour`, plus `seismic` and `orbit`, takes `symbols: true`: the form drawn in sparse clusters of `- : = + #`, shaded by depth, like ASCII art. `seed` moves a generated field's composition; compose writes one, and `0` is the field's own form. A field preference in `project-context.md` wins.
 
-**The frame.** `loose` (the default) is serif words in the room the field leaves, and a record line. `signal` is the high-contrast frame: a charcoal or paper ground, one signal colour, a grotesque headline, an archival `meta` line and highlighter `mark`s (see "Signal frame"). `swiss` is a masthead over a footer of notes, for a repo with no git history. `cover` is a fixed template around a ready or drawn object that turns in a loop (see "Make a cover"). A shape draws in loose, signal or cover.
+**The frame.** `loose` (the default) is serif words in the room the field leaves, and a record line. `signal` is the high-contrast frame: a charcoal or paper ground, one signal colour, a bundled Inter Display Black (`900`) grotesque headline, wider halo knockout, an archival `meta` line and highlighter `mark`s (see "Signal frame"). `swiss` is a masthead over a footer of notes, for a repo with no git history. `cover` is the fixed poster/square/OG template around a turning or xeroxed 3D object (see "Make a cover"). A shape draws in `loose`, `signal` or `cover`.
 
 **The sheet.** `--theme light` (paper) or `dark` (navy, charcoal in the signal frame). One accent colour; a second colour has to justify itself.
 
 ## Draw the shape
 
+**Fast path — trace a custom PNG silhouette in 3 lines:**
+1. Find or export any high-contrast dark-on-white (or transparent) PNG logo, mascot, hardware outline, or icon (up to 4096px).
+2. Write `"shape": { "mask": "path/to/icon.png" }` (or bundled `"wings"` / `"trace"`).
+3. Run `vyo sketch` and `vyo render` — every look (`living`, `xerox`, `spin`, `relief`, `rings`, `symbols`) and solid (`dome`, `extrude`, `revolve`) works on traced masks identically to `ops`.
+
+Or pick/draw a silhouette:
 1. Pick one object a stranger would name in a second, tied to the story. Never a heart, a plain circle or a box. Simple reads: a 3-op flask was legible at once, an 11-op locomotive half legible.
-2. If an object in `npx vyo shapes` fits, write `"shape": { "like": "<name>" }` and skip to step 6. Otherwise name the one feature that makes it that object, like the jar's lid and shoulders. Draw it in 3 to 6 ops in a 100-unit box, y down, with that feature large, about as tall as it is wide or taller. Leave out small repeated details such as wheels or windows: they merge at thumbnail size. Keep a post or stem short: a long thin limb takes the object's height and reads as a pole with a small head. `compose --field shape` prints the format.
-3. To trace an image instead, write `"shape": { "mask": "wings" }` (a bundled mask, `wings` or `trace`) or a path to a PNG, absolute or relative to where you run vyo. Its pixels darker than mid grey are the silhouette, and every style and check works on it as on ops. A traced shape takes `fit` but no `ops` or `rotate`.
+2. If one of the 22 objects in `npx vyo shapes` fits (classic: `stopwatch`, `flask`, `plane`, `pear`, `key`, `bell`, `cup`, `bolt`, `lighthouse`, `kite`, `bulb`, `lantern`; industrial/graphic: `prism`, `plug`, `anvil`, `turbine`, `radar`, `disc`, `monolith`, `tuning-fork`, `fast-forward`, `compass`), write `"shape": { "like": "<name>" }` and skip to step 6. Otherwise name the one feature that makes it that object, like the jar's lid and shoulders. Draw it in 3 to 6 ops in a 100-unit box, y down, with that feature large, about as tall as it is wide or taller. Leave out small repeated details such as wheels or windows: they merge at thumbnail size. Keep a post or stem short: a long thin limb takes the object's height and reads as a pole with a small head. `compose --field shape` prints the format.
+3. A traced PNG shape takes `fit` (except on a cover) and no `ops` or `rotate`.
 4. Leave `fit` out: the engine fits the shape inside the sheet and centres it in the room the words leave. Set `fit` only to bleed it off an edge on purpose. Leave `x` and `y` out of the text blocks too: the engine places them in the room the shape leaves. Pin a block with `x` and `y` only for a reason, like a hole cut for the legend or a `mark` laid over it.
 5. If `shape-dominant` says to split a part, add the `"split"` it gives to the region and run `parts --field shape --split <its id>`. Its folders become parts, or its files when it has no folders; if it was the accent, put the accent on the one the story is about.
 6. Set the `style` (see "Choose the look"). Rings want a fat, round object with a hole cut where the legend should sit, and `"echo": 6` adds faded outlines; a thin or spiky shape starves them, so take relief, or fatten it until `shape-rings` is quiet.
@@ -117,7 +145,7 @@ A relief needs no hints: the default is a rounded volume lit from the top left. 
 ## The words
 
 - **Headline.** One plain sentence about the outcome for the user, at most 72 characters. It is the only large type.
-- **Legend.** Required. One or two sentences, at most 180 characters, that say what the picture encodes. Name the accent part by its plain name and the measure: "code" or "lines" for most fields, plus "files" or "wide" for a terrain, "merge", "join" or "flow" for a river, and "code" plus "type", "size" or "bigger" for a shape ("area" for rings; a relief or symbols: "as big as its code"). Example: "Every peak is a part of Pantry, as tall as its code and as wide as its files. The orange peak is the plan."
+- **Legend.** Required. One or two sentences, at most 180 characters, that say what the picture encodes. Name the accent part by its plain name and the measure: "code" or "lines" for most fields, plus "files" or "wide" for a terrain, "merge", "join" or "flow" for a river, "link", "orbit", "tie", "connect", "wire" or "import" for an orbit, and "code" plus "type", "size" or "bigger" for a shape ("area" for rings; a relief or symbols: "as big as its code"). Example: "Every peak is a part of Pantry, as tall as its code and as wide as its files. The orange peak is the plan."
 - **Fits.** On the field region, at most 160 characters, never drawn. Say why this field matches the product's story, with the field's keyword. Example: "Pantry merges many saved recipes into one week, so every part of its code joins one river."
 - **Paragraphs.** 0 to 2, each at most 2 sentences and 220 characters. Each does a job the picture cannot: how it works, what stays private, what runs on its own, or proof.
 - **Parts list.** `parts: true` prints the parts' plain names in tree order. Keep it when the field prints no names, as a river or a symbols fill does.
@@ -128,50 +156,57 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 
 ## Spec fields for a field poster
 
-`compose` fills `version`, `facts`, `product`, `frame` and `theme` (`light` or `dark`).
+`compose` fills `version`, `facts`, `product`, `frame` and `theme` (`light` or `dark`), or `ground` on a cover.
 
 | Field | What it is |
 |---|---|
 | `product.name` | The customer-facing name, capitalised as the product's docs write it. `product-name` warns while it is the folder name; keep it if the docs write it that way |
 | `product.commit` | The short hash. `compose --repo` fills it, and the record line needs it |
 | `headline` | At most 72 characters |
-| region `field` | `shape`, `wave`, `terrain`, `river`, `radial`, `sphere`, `scatter`, `shatter`, `glyph`, `bleed`, `slabs`, `spiral` or `contour`. One field per figure |
+| region `field` | `shape`, `seismic`, `orbit`, `wave`, `terrain`, `river`, `radial`, `sphere`, `scatter`, `shatter`, `glyph`, `bleed`, `slabs`, `spiral` or `contour`. One field per figure |
 | region `fits` | Why this field matches the story, with its keyword, at most 160 characters |
 | region `accent` | The accent part's id from `vyo parts` |
 | region `names` | Part id to plain name, at most 24 characters each |
 | region `sentence` | Wave only, at most 40 characters, set in every 5th row |
-| region `shape` | Shape only: `{ like }`, a ready silhouette from `vyo shapes`; `{ ops, rotate?, fit? }`, one you draw; or `{ mask, fit? }`, one traced from a PNG (see "Draw the shape") |
+| region `shape` | Shape only: `{ like }`, one of 22 ready silhouettes from `vyo shapes`; `{ ops, rotate?, fit? }`, one you draw; or `{ mask, fit? }`, one traced from a PNG (see "Draw the shape") |
 | region `style`, `echo` | Shape only: `relief` (default), `rings` or `symbols`; `echo` 0 to 12 faded outlines, rings only |
 | region `bevel`, `strata` | Relief only, optional: how rounded the form is, and which way its layers run. A cover's `strata` is `"outline"` (the default), `"down"` or `"diagonal"` |
-| `ground`, `series` | Cover only: `navy`, `forest`, `charcoal` or `paper`, never a hex colour; `series` like `"02/04"` prints top right before the mark, for one of a numbered set only |
+| `ground`, `look`, `format`, `crop`, `series` | Cover only: `ground` is one of `navy`, `charcoal`, `forest`, `paper`, `blood`, `acid`, `cobalt`, `xerox`, `riso`, `obsidian`; `look` is `living` (default), `xerox` or `spin`; `format` is `poster` (default, 840×1190), `square` (960×960) or `og` (1280×640); `crop` is `center` (default), `bleed-right` or `macro`; `series` like `"02/04"` prints top right for a numbered set |
+| region `solid`, `turn` | Cover only, optional: `solid` `{ kind?: "dome" \| "extrude" \| "revolve", bevel?, depth?, tilt?, groove? }`, `turn` `{ yaw?, pitch?, lean? }` |
 | region `split` | Shape only, optional: part ids whose folders, or files when they have no folders, become parts, for a part that is most of the code |
 | region `seed` | Generated fields: whole number 0 to 2147483647. 0 keeps the field's own form. Compose writes a non-zero seed |
 | region `letter` | Glyph only: one character, A–Z or 0–9. Compose uses the first character of the repo name |
-| region `symbols` | Scatter to contour: `true` draws the form in shaded `- : = + #` with gaps, instead of part names |
+| region `symbols` | `scatter` to `contour`, plus `seismic` and `orbit`: `true` draws the form in shaded `- : = + #` with gaps, instead of part names |
 | `figure.texts` | Exactly one `label` and one `headline` (they print the name and the headline), exactly one `legend`, 0 to 2 `paragraph`, 0 or 1 `list`, 0 or 1 `rule`; the signal frame adds `meta`, `display` and `mark`. Each has `x`, `y`, `w` and optional `size` and `align`; a shape poster leaves `x`, `y` and `w` out and the engine places it, except a `mark` |
-| `motion` | Optional, for `--gif`: `{ kind: "nodes" \| "resolve" \| "wipe", frames: 8 to 36, fps: 6 to 24 }`; a cover's is `{ kind: "turn" }` |
+| `motion` | Optional, for `--gif`: `{ kind: "nodes" \| "resolve" \| "wipe", frames: 8 to 36, fps: 6 to 24 }`; a cover's is `{ kind: "turn" }` (living/spin) or `{ kind: "copier" }` (xerox) |
 | `record` | Optional, `bottom` or `left`, to force the record line's side |
 
 A loose or signal spec has no `notes`, `notBuilt`, `hot` or `figure.fits`. [examples.md](examples.md) has specs in full. The package's `tools/README.md` lists every check.
 
 ## Signal frame
 
-Charcoal or cream, one signal colour (lime `#C8FF00` unless the spec's `accent` says otherwise), a grotesque headline, metadata as drawing material. `compose --frame signal`, with a drawn shape (`--style`) or a generated field. Two looks it was made for: charcoal with `"accent": "#FF5A1F"` and a `symbols` shape; and the brutalist sheet, paper with lime, a `slabs` field posed with a `seed`, a `meta` line, the stepped list and marks. Its `list` is a stepped list of bold capitals; set `size` up to 44 for the brutalist sheet. Extra roles: `meta` (one archival line, at most 80 characters, no sequential "01/02/03" markers), `display` (a huge word, at most 8 characters), and `mark` (a block of the signal colour laid over type like a highlighter: no text, needs `x`, `y`, `w` and `h`, at most 3). Around a shape the engine places the words, so sketch first, read where it put each block on the `texts:` line, and lay the marks over those boxes; a mark never moves a block. On cream the accent part's rows are highlighted the same way, so the legend says "highlighted". Keep a quiet zone: not every area should hold type.
+Charcoal or cream, one signal colour (lime `#C8FF00` unless the spec's `accent` says otherwise), a bundled Inter Display Black (`900`) grotesque headline with wide halo knockout, metadata as drawing material. `compose --frame signal`, with a drawn shape (`--style`) or a generated/architectural field (`seismic`, `orbit`, `slabs`, etc.). Two looks it was made for: charcoal with `"accent": "#FF5A1F"` and a `symbols` shape; and the brutalist sheet, paper with lime, a `slabs` or `seismic` field posed with a `seed`, a `meta` line, the stepped list and marks. Its `list` is a stepped list of bold capitals; set `size` up to 44 for the brutalist sheet. Extra roles: `meta` (one archival line, at most 80 characters, no sequential "01/02/03" markers), `display` (a huge word, at most 8 characters), and `mark` (a block of the signal colour laid over type like a highlighter: no text, needs `x`, `y`, `w` and `h`, at most 3). Around a shape the engine places the words, so sketch first, read where it put each block on the `texts:` line, and lay the marks over those boxes; a mark never moves a block. On cream the accent part's rows are highlighted the same way, so the legend says "highlighted". Keep a quiet zone: not every area should hold type.
 
-## Motion
+## Motion & series
 
-`motion` on the spec, then `npx vyo render <spec> --gif`, writes a 560px GIF and an 840px MP4 beside the PNG. `nodes` travels dots along hairline `routes` (a region of open SVG paths with optional nodes), `resolve` fades the rows in from the top, `wipe` grows the marks, and a cover's `turn` swings its object for 7 seconds, the still a pose from the middle of the swing. Motion reveals the structure; the still must work on its own, and the `still` check holds it to that.
+`motion` on the spec, then `npx vyo render <spec> --gif`, writes a GIF and an MP4 beside the PNG. `nodes` travels dots along hairline `routes` (a region of open SVG paths with optional nodes), `resolve` fades the rows in from the top, `wipe` grows the marks. On a cover, `turn` swings `living` for 7 seconds (168 frames @ 24fps -> 12fps GIF) or rotates `spin` a full 360° (96 frames @ 12fps), and `copier` pulses a `xerox` cover through photocopier generation grain and micro-jitter (32 frames @ 10fps). Motion reveals the structure; the still must work on its own, and the `still` check holds it to that.
+
+To build a side-by-side contact sheet of 2–4 covers (e.g., multiple repos, or four art directions of one repo):
+
+```bash
+npx vyo series cover1.json cover2.json cover3.json cover4.json --out vyo/series [--gif]
+```
 
 Worked posters and GIFs are in `examples/posters/` in the vyo repository, not in the npm package (listed at the end of [examples.md](examples.md)).
 
 ## Where output goes
 
-Render writes `<name>-poster.html`, `.png` and `.pdf` beside the spec or into `--out <dir>`. Keep every file in `<repo>/vyo/`, and suggest adding it to `.gitignore`. `recent-shapes.json` there is compose's log of the generated fields it picked, so the next pick differs.
+Render writes `<name>-poster.html`, `.png`, `-thumb.png` and `.pdf` beside the spec or into `--out <dir>`. Keep every file in `<repo>/vyo/`, and suggest adding it to `.gitignore`. `recent-shapes.json` there is compose's log of the generated fields it picked, so the next pick differs.
 
 ## Reply in chat
 
 1. One sentence on what the app does.
-2. The field (and style) and the accent part, quoting the `fits` sentence.
+2. The art direction / field (and style or cover look/ground) and the accent part, quoting the `fits` sentence (if present).
 3. The legend, quoted.
 4. The absolute paths of the PNG and the PDF (and the GIF).
 5. Gaps: what the code has but a user cannot use yet, any part name you could not make plain, and a request for the real name if no doc gave one.

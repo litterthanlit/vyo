@@ -3,7 +3,7 @@
 // "Living" prototype (explorations/2026-11-11-punk-covers/c-living). Pure: the page inlines it after geometry.mjs,
 // silhouettes.mjs, mask.mjs and shape-relief.mjs, and `vyo sketch` and the checks run it in Node, so both draw the
 // same cells. Its top-level names start with cover or COVER, because the page concatenates the modules.
-import { SHEET } from "./geometry.mjs";
+import { SHEET, sheetOf } from "./geometry.mjs";
 import { shapeMask, maskGrid, edt, opRings, opKind, paintRows } from "./mask.mjs";
 import { SILHOUETTES } from "./silhouettes.mjs";
 import { RELIEF, RELIEF_TONES } from "./fields/shape-relief.mjs";
@@ -19,23 +19,29 @@ export const COVER = {
   margin: 44, cell: 1.5, fps: 24, seconds: 7, gifFps: 12,
   small: 11.5, lead: 14.5, headlineX: 214, headlineW: 230, legendW: 330, name: 168, track: -0.045,
   fit: { w: 0.78, h: 0.5, cx: 0.5, cy: 0.5 },
-  solid: { bevel: 0.8, depth: 1 }, turn: { yaw: 34, pitch: 12, lean: 0 },
+  solid: { kind: "dome", bevel: 0.8, depth: 1 }, turn: { yaw: 34, pitch: 12, lean: 0 },
   glow: 0.7, look: 14, still: 0.55, big: 0.02, gap: 0.01, seam: 1.05,
 };
 export const COVER_FRAMES = COVER.fps * COVER.seconds;
+export const COVER_LOOKS = ["living", "xerox", "spin"];
+export const COVER_CROPS = ["center", "bleed-right", "macro"];
+export const COVER_SOLID_KINDS = ["dome", "extrude", "revolve"];
 
-// The grounds, each with its ink and the orange. Navy, paper and charcoal are the engine's own; forest is a deep
-// grey-green at the navy's depth, which answers a green cover without its saturation. floor: the least alpha a
-// letter keeps. glow: how much of the relief's glow the accent takes. hi: the light past which lit letters give
-// way to glint marks (1 never). fill: the alpha of a highlighter under the accent's cells, its letters then in
-// ink. Paper takes a higher floor and no glint, or its lit side washes out, and a highlighter instead of a glow,
-// since thin orange letters on cream average to salmon at thumbnail size.
-const COVER_HI = 0.86;
+// The curated grounds: four editorial grounds plus six high-impact print/punk grounds. Each pairs a ground, ink,
+// accent and plain colour name (for the legend). Light/vivid grounds fill the accent behind dark ink letters so
+// thin accent glyphs never wash out at thumbnail size.
+const COVER_HI = 0.88;
 export const COVER_GROUNDS = {
-  navy: { ground: "#0E1424", ink: "#ECEEF2", accent: "#FF5A1F", theme: "dark", floor: 0.3, glow: 1, hi: COVER_HI },
-  charcoal: { ground: "#121212", ink: "#F4F0E6", accent: "#FF5A1F", theme: "dark", floor: 0.3, glow: 1, hi: COVER_HI },
-  forest: { ground: "#14281F", ink: "#E8ECE4", accent: "#FF5A1F", theme: "dark", floor: 0.3, glow: 1, hi: COVER_HI },
-  paper: { ground: "#EAE8E2", ink: "#161616", accent: "#FF4F12", theme: "light", floor: 0.62, glow: 0, hi: 1, fill: 0.9 },
+  navy: { ground: "#0E1424", ink: "#ECEEF2", accent: "#FF5A1F", colorName: "orange", theme: "dark", floor: 0.3, glow: 1, hi: COVER_HI },
+  charcoal: { ground: "#121212", ink: "#F4F0E6", accent: "#FF5A1F", colorName: "orange", theme: "dark", floor: 0.3, glow: 1, hi: COVER_HI },
+  forest: { ground: "#14281F", ink: "#E8ECE4", accent: "#FF5A1F", colorName: "orange", theme: "dark", floor: 0.3, glow: 1, hi: COVER_HI },
+  paper: { ground: "#EAE8E2", ink: "#161616", accent: "#FF4F12", colorName: "orange", theme: "light", floor: 0.62, glow: 0, hi: 1, fill: 0.9 },
+  blood: { ground: "#D42117", ink: "#111111", accent: "#E8FF1A", colorName: "yellow", theme: "light", floor: 0.72, glow: 0, hi: 1, fill: 0.95 },
+  acid: { ground: "#E6F014", ink: "#111111", accent: "#FF1F8F", colorName: "pink", theme: "light", floor: 0.72, glow: 0, hi: 1, fill: 0.95 },
+  cobalt: { ground: "#1028A8", ink: "#F4F0E6", accent: "#FF5A1F", colorName: "orange", theme: "dark", floor: 0.36, glow: 0.9, hi: COVER_HI },
+  xerox: { ground: "#111111", ink: "#ECE8DC", accent: "#2B5BFF", colorName: "blue", theme: "dark", floor: 0.38, glow: 0.85, hi: COVER_HI },
+  riso: { ground: "#EFEAE0", ink: "#1B2A6B", accent: "#FF3B7F", colorName: "pink", theme: "light", floor: 0.66, glow: 0, hi: 1, fill: 0.92 },
+  obsidian: { ground: "#0B0C10", ink: "#ECEEF2", accent: "#00E5FF", colorName: "cyan", theme: "dark", floor: 0.32, glow: 0.95, hi: COVER_HI },
 };
 
 // How the strata run, by name. outline: shells from the outline in, the accent part the outer shell and the
@@ -47,23 +53,25 @@ export const COVER_STRATA = {
 };
 export const coverStrataOf = (region) => (typeof region.strata === "string" ? COVER_STRATA[region.strata] : region.strata ?? COVER_STRATA.outline);
 
-/** What the orange is on this cover, "ring" for an outline and "band" otherwise, and the object's name. */
-export const coverWords = (region) => ({
+/** What the accent is on this cover ("ring" for an outline, "band" otherwise), its colour word, and the object's name. */
+export const coverWords = (region, ground = "navy") => ({
   orange: coverStrataOf(region)?.outline ? "ring" : "band",
+  color: COVER_GROUNDS[ground]?.colorName ?? "orange",
   object: (typeof region.shape === "object" && SILHOUETTES[region.shape?.like]?.noun) || null,
 });
 
-/** The legend a cover's picture says: the object, how its parts are cut, and what the orange is. */
-export function coverLegend(region, product, accent) {
-  const { orange, object } = coverWords(region);
+/** The legend a cover's picture says: the object, how its parts are cut, and what the accent is. */
+export function coverLegend(region, product, accent, ground = "navy") {
+  const { orange, color, object } = coverWords(region, ground);
   const outline = orange === "ring";
-  return `This ${object ?? "shape"} is the code of ${product}, one ${outline ? "layer" : "band"} per part, each as big as its share. The orange ${outline ? "outer ring" : "band"} is ${accent}.`;
+  return `This ${object ?? "shape"} is the code of ${product}, one ${outline ? "layer" : "band"} per part, each as big as its share. The ${color} ${outline ? "outer ring" : "band"} is ${accent}.`;
 }
 
-// Inter Medium's and Inter Display SemiBold's advances from space to tilde, in thousandths of an em, from the
-// bundled fonts: the template's lines are wrapped by these in Node and in the page alike.
+// Inter Medium's, Inter Display SemiBold's and Inter Display Black's advances from space to tilde, in thousandths
+// of an em, from the bundled fonts: the template's lines are wrapped by these in Node and in the page alike.
 const COVER_SMALL_EM = [267, 304, 494, 639, 646, 993, 653, 313, 369, 369, 521, 667, 303, 462, 303, 370, 646, 415, 616, 627, 656, 618, 630, 571, 629, 630, 303, 315, 667, 667, 667, 527, 982, 709, 657, 733, 722, 603, 589, 748, 745, 272, 575, 688, 565, 913, 756, 767, 642, 769, 648, 646, 653, 740, 709, 1003, 701, 696, 641, 369, 370, 369, 477, 463, 337, 568, 618, 577, 618, 587, 379, 620, 602, 252, 252, 559, 252, 888, 602, 604, 618, 618, 387, 539, 340, 602, 575, 829, 557, 575, 559, 440, 346, 440, 667];
 const COVER_NAME_EM = [226, 238, 449, 617, 640, 906, 634, 266, 321, 321, 513, 646, 236, 439, 236, 351, 638, 380, 586, 613, 644, 591, 606, 539, 604, 606, 236, 239, 646, 646, 646, 553, 996, 693, 643, 725, 697, 599, 572, 734, 715, 250, 553, 668, 550, 882, 720, 748, 625, 748, 644, 640, 627, 704, 688, 981, 680, 674, 627, 321, 351, 321, 455, 468, 277, 541, 587, 544, 587, 553, 349, 587, 573, 232, 233, 536, 232, 869, 573, 570, 587, 587, 356, 505, 350, 573, 540, 796, 527, 540, 508, 421, 330, 421, 646];
+const COVER_BLACK_EM = [184, 270, 531, 646, 685, 1018, 680, 286, 359, 359, 593, 678, 266, 459, 266, 396, 682, 413, 630, 638, 690, 618, 646, 579, 642, 646, 266, 267, 678, 678, 678, 604, 1035, 764, 650, 729, 711, 632, 605, 740, 727, 281, 585, 729, 575, 925, 738, 746, 648, 746, 666, 685, 656, 705, 750, 1037, 741, 730, 652, 359, 396, 359, 484, 493, 341, 583, 625, 583, 625, 583, 426, 625, 618, 279, 280, 587, 279, 922, 618, 607, 625, 625, 416, 559, 418, 618, 590, 875, 562, 590, 561, 486, 390, 486, 678];
 const coverWidth = (table, text, size, track = 0) => [...text].reduce((w, ch) => w + (table[ch.charCodeAt(0) - 32] ?? table[78]) / 1000 + track, 0) * size;
 /** The px `text` takes in the template's small type. */
 export const coverSmallWidth = (text) => coverWidth(COVER_SMALL_EM, text, COVER.small);
@@ -94,21 +102,59 @@ export function coverRecord(product, parts) {
 
 /**
  * The template's blocks in sheet px, and the box the form fills: between the top columns and the legend, sized
- * to fit every pose of the loop. The name is one size on every cover, shrunk only when it would leave the sheet.
+ * to fit every pose of the loop. Supports poster (840x1190), square (960x960) and og (1280x640), plus the bold
+ * edge-bleeding Black wordmark for xerox and spin looks.
  */
-export function coverTemplate({ name, headline, legend }) {
-  const { margin: M, lead, legendW, headlineW } = COVER;
-  const W = SHEET.width;
-  const H = SHEET.height;
-  const room = W - 2 * M;
-  const nameSize = Math.min(COVER.name, Math.floor((COVER.name * room) / coverWidth(COVER_NAME_EM, name, COVER.name, COVER.track)));
+export function coverTemplate({ name, headline, legend, format = "poster", look = "living" }) {
+  const S = sheetOf(format);
+  const W = S.width;
+  const H = S.height;
+  const punk = look === "xerox" || look === "spin";
+  const M = punk ? 30 : COVER.margin;
+  const { lead, legendW, headlineW } = COVER;
+  if (format === "og") {
+    // Split landscape card: editorial column on left, sculpted 3D form filling the right half.
+    const leftW = Math.round(W * 0.46) - M;
+    const headlineLines = coverWrap(headline, Math.min(leftW, 380));
+    const legendLines = coverWrap(legend, Math.min(leftW, 380));
+    const em = punk ? COVER_BLACK_EM : COVER_NAME_EM;
+    const track = punk ? -0.052 : COVER.track;
+    const maxName = punk ? 168 : 136;
+    const nameSize = Math.min(maxName, Math.floor((maxName * leftW) / coverWidth(em, name, maxName, track)));
+    const base = punk ? (/[gjpqy]/.test(name) ? H - Math.round(nameSize * 0.14) : H + Math.round(nameSize * 0.04)) : H - M - Math.round(nameSize * 0.12);
+    const legendY = base - nameSize * 0.74 - 24 - legendLines.length * lead;
+    return {
+      width: W, height: H, margin: M, format, look,
+      headline: headlineLines, legend: legendLines, legendY, base, nameSize, track,
+      box: { left: Math.round(W * 0.48), right: W - 20, top: 24, bottom: H - 24 },
+    };
+  }
   const headlineLines = coverWrap(headline, headlineW);
   const legendLines = coverWrap(legend, legendW);
-  const base = H - M + 4;
-  const legendY = base - nameSize * 0.73 - 30 - legendLines.length * lead;
   const metaBottom = M + Math.max(3, headlineLines.length) * lead;
+  if (punk) {
+    const target = W - 2 * M - 4;
+    const track = look === "xerox" ? -0.055 : -0.045;
+    const capLimit = format === "square" ? 195 : 235;
+    const rawSize = (100 * target) / coverWidth(COVER_BLACK_EM, name, 100, track);
+    const nameSize = Math.min(Math.round(capLimit / 0.73), Math.floor(rawSize));
+    const hasDescender = /[gjpqy]/.test(name);
+    const base = hasDescender ? H - Math.round(nameSize * 0.14) : H + Math.round(nameSize * 0.045);
+    const legendY = base - nameSize * 0.73 - 30 - legendLines.length * lead;
+    return {
+      width: W, height: H, margin: M, format, look,
+      headline: headlineLines, legend: legendLines, legendY, base, nameSize, track,
+      box: { left: M, right: W - M, top: metaBottom + 26, bottom: legendY - 24 },
+    };
+  }
+  const room = W - 2 * M;
+  const maxName = format === "square" ? 148 : COVER.name;
+  const nameSize = Math.min(maxName, Math.floor((maxName * room) / coverWidth(COVER_NAME_EM, name, maxName, COVER.track)));
+  const base = H - M - Math.round(nameSize * 0.12);
+  const legendY = base - nameSize * 0.73 - 30 - legendLines.length * lead;
   return {
-    headline: headlineLines, legend: legendLines, legendY, base, nameSize,
+    width: W, height: H, margin: M, format, look,
+    headline: headlineLines, legend: legendLines, legendY, base, nameSize, track: COVER.track,
     box: { left: M / 2, right: W - M / 2, top: metaBottom + 34, bottom: legendY - 30 },
   };
 }
@@ -265,41 +311,113 @@ export function coverSolid(shapeSpec, mask, solid, strata) {
     const [x, y] = [(i % w) * CELL, Math.floor(i / w) * CELL];
     key[i] = strata?.by === "depth" ? dIn[i] + 0.001 * y : x * Math.cos(a) + y * Math.sin(a) + 1e-4 * (y * Math.cos(a) - x * Math.sin(a));
   }
-  return { w, h, cell: CELL, inside, half, mid, key, R };
+  return { w, h, cell: CELL, inside, half, mid, key, R, kind: solid.kind ?? "dome", depth: solid.depth ?? 1 };
 }
 
-// The glyph grid, as the relief sets it: 6px Commit Mono, 0.6em advances, on the whole sheet.
+// The glyph grid, as the relief sets it: 6px Commit Mono, 0.6em advances, sized for any sheet format.
 const COVER_CW = RELIEF.size * 0.6;
 const COVER_LH = RELIEF.size * RELIEF.leading;
-export const COVER_GRID = { cw: COVER_CW, lh: COVER_LH, cols: Math.floor((SHEET.width - 4) / COVER_CW), rows: Math.floor(SHEET.height / COVER_LH) };
-COVER_GRID.x0 = (SHEET.width - COVER_GRID.cols * COVER_CW) / 2;
+export function coverGridFor(format = "poster") {
+  const S = sheetOf(format);
+  const cols = Math.floor((S.width - 4) / COVER_CW);
+  const rows = Math.floor(S.height / COVER_LH);
+  return { cw: COVER_CW, lh: COVER_LH, cols, rows, x0: (S.width - cols * COVER_CW) / 2, width: S.width, height: S.height };
+}
+export const COVER_GRID = coverGridFor("poster");
 
 /**
- * The solid as surface samples: position and normal in px about the form's centre, the strata key, and a
- * material cell (mc, mr) about one glyph in size, so a dither decided by it rides the surface instead of flickering.
+ * The solid as surface samples: position and normal in px about the form's centre, the strata key, a `wall`
+ * flag (1 on extruded side walls, so walls print crisp marks instead of squeezed letters), and a material cell
+ * (mc, mr) about one glyph in size, so a dither decided by it rides the surface instead of flickering.
  */
 function coverSurface(solid) {
-  const { w, h, cell, inside, half, mid, key } = solid;
+  const { w, h, cell, inside, half, mid, key, kind = "dome", depth = 1 } = solid;
   let [sx, sy, count] = [0, 0, 0];
   for (let i = 0; i < inside.length; i++) if (inside[i]) [sx, sy, count] = [sx + (i % w), sy + Math.floor(i / w), count + 1];
   const [cx, cy] = [(sx / count) * cell, (sy / count) * cell];
   const front = (i) => mid[i] + half[i];
   const back = (i) => mid[i] - half[i];
-  // Two passes over the same samples: the first counts them, the second writes them, so ten million rim samples
-  // never pass through growing arrays.
+  const extHalf = Math.max(8, Math.min(w, h) * cell * 0.14 * depth);
   let out = null;
   let n = 0;
-  const push = (x, y, z, nx, ny, nz, k) => {
+  const push = (x, y, z, nx, ny, nz, k, wall = 0) => {
     if (out) {
       const l = Math.hypot(nx, ny, nz) || 1;
       out.x[n] = x - cx, out.y[n] = y - cy, out.z[n] = z;
-      out.nx[n] = nx / l, out.ny[n] = ny / l, out.nz[n] = nz / l, out.key[n] = k;
+      out.nx[n] = nx / l, out.ny[n] = ny / l, out.nz[n] = nz / l, out.key[n] = k, out.wall[n] = wall;
       out.mc[n] = Math.floor(x / COVER_CW), out.mr[n] = Math.floor(y / COVER_LH) * 2 + (nz < 0 ? 1 : 0);
     }
     n++;
   };
   const sample = () => {
     n = 0;
+    if (kind === "revolve") {
+      // Axisymmetric lathe: revolve each row's widest half-width about the vertical centerline cx.
+      const rads = new Float32Array(h);
+      const rowKey = new Float32Array(h);
+      for (let gy = 0; gy < h; gy++) {
+        let [m, ks, kc] = [0, 0, 0];
+        for (let gx = 0; gx < w; gx++) {
+          const i = gy * w + gx;
+          if (!inside[i]) continue;
+          m = Math.max(m, Math.abs((gx + 0.5) * cell - cx));
+          ks += key[i];
+          kc++;
+        }
+        rads[gy] = m;
+        rowKey[gy] = kc ? ks / kc : 0;
+      }
+      const ring = (rad, y, ny, slope, kVal) => {
+        const steps = Math.max(4, Math.round((2 * Math.PI * rad) / cell));
+        const inv = 1 / Math.hypot(1, slope);
+        for (let s = 0; s < steps; s++) {
+          const a = (2 * Math.PI * s) / steps;
+          const sa = Math.sin(a);
+          const ca = Math.cos(a);
+          push(cx + rad * sa, y, rad * ca, ny ? 0 : sa * inv, ny || -slope * inv, ny ? 0 : ca * inv, kVal, 0);
+        }
+      };
+      for (let gy = 1; gy < h - 1; gy++) {
+        const r = rads[gy];
+        if (r <= 0) continue;
+        const y = (gy + 0.5) * cell;
+        const slope = (rads[gy + 1] - rads[gy - 1]) / (2 * cell);
+        ring(r, y, 0, slope, rowKey[gy]);
+        const next = rads[gy + 1] ?? 0;
+        if (Math.abs(next - r) > 2 * cell) {
+          for (let rr = Math.min(next, r); rr < Math.max(next, r); rr += cell) ring(rr, y + cell / 2, next > r ? -1 : 1, 0, rowKey[gy]);
+        }
+        if (!rads[gy - 1]) for (let rr = cell; rr < r; rr += cell) ring(rr, y - cell / 2, -1, 0, rowKey[gy]);
+        if (!rads[gy + 1]) for (let rr = cell; rr < r; rr += cell) ring(rr, y + cell / 2, 1, 0, rowKey[gy]);
+      }
+      return;
+    }
+    if (kind === "extrude") {
+      // Flat architectural slab with crisp side walls marked `wall = 1`, plus subtle bevel lift near edges.
+      for (let gy = 1; gy < h - 1; gy++) {
+        for (let gx = 1; gx < w - 1; gx++) {
+          const i = gy * w + gx;
+          if (!inside[i]) continue;
+          const [x, y] = [(gx + 0.5) * cell, (gy + 0.5) * cell];
+          const lift = Math.min(extHalf, extHalf * 0.86 + Math.min(extHalf * 0.14, half[i] * 0.12));
+          const fx = (half[i + 1] - half[i - 1]) / (2 * cell) * 0.12;
+          const fy = (half[i + w] - half[i - w]) / (2 * cell) * 0.12;
+          push(x, y, lift, -fx, -fy, 1, key[i], 0);
+          push(x, y, -lift, fx, fy, -1, key[i], 0);
+          let [wx, wy] = [0, 0];
+          if (!inside[i + 1]) wx += 1;
+          if (!inside[i - 1]) wx -= 1;
+          if (!inside[i + w]) wy += 1;
+          if (!inside[i - w]) wy -= 1;
+          const wl = Math.hypot(wx, wy);
+          if (wl) {
+            [wx, wy] = [wx / wl, wy / wl];
+            for (let z = -lift + cell * 0.5; z < lift; z += cell) push(x + wx * cell * 0.4, y + wy * cell * 0.4, z, wx, wy, 0, key[i], 1);
+          }
+        }
+      }
+      return;
+    }
     for (let gy = 1; gy < h - 1; gy++) {
       for (let gx = 1; gx < w - 1; gx++) {
         const i = gy * w + gx;
@@ -309,8 +427,8 @@ function coverSurface(solid) {
         const fy = (front(i + w) - front(i - w)) / (2 * cell);
         const bx = (back(i + 1) - back(i - 1)) / (2 * cell);
         const by = (back(i + w) - back(i - w)) / (2 * cell);
-        push(x, y, front(i), -fx, -fy, 1, key[i]);
-        push(x, y, back(i), bx, by, -1, key[i]);
+        push(x, y, front(i), -fx, -fy, 1, key[i], 0);
+        push(x, y, back(i), bx, by, -1, key[i], 0);
         // The rim: where the surface is steep, fill between back and front, its normal rolling from out to up.
         const hx = (half[i + 1] - half[i - 1]) / (2 * cell);
         const hy = (half[i + w] - half[i - w]) / (2 * cell);
@@ -320,14 +438,14 @@ function coverSurface(solid) {
           for (let z = back(i) + cell; z < front(i) - cell * 0.5; z += cell) {
             const u = (z - mid[i]) / half[i];
             const c = Math.sqrt(Math.max(0, 1 - u * u));
-            push(x, y, z, ox * c, oy * c, u, key[i]);
+            push(x, y, z, ox * c, oy * c, u, key[i], 0);
           }
         }
       }
     }
   };
   sample();
-  out = { x: new Float32Array(n), y: new Float32Array(n), z: new Float32Array(n), nx: new Float32Array(n), ny: new Float32Array(n), nz: new Float32Array(n), key: new Float32Array(n), mc: new Float32Array(n), mr: new Float32Array(n) };
+  out = { x: new Float32Array(n), y: new Float32Array(n), z: new Float32Array(n), nx: new Float32Array(n), ny: new Float32Array(n), nz: new Float32Array(n), key: new Float32Array(n), wall: new Uint8Array(n), mc: new Float32Array(n), mr: new Float32Array(n) };
   sample();
   out.n = n;
   out.rad = 0;
@@ -337,17 +455,17 @@ function coverSurface(solid) {
     const gy = Math.round((y + cy) / cell - 0.5);
     const gx = Math.round(cx / cell - 0.5);
     const i = Math.min(h - 1, Math.max(0, gy)) * w + gx;
-    return inside[i] ? front(i) : 0;
+    return inside[i] ? (kind === "extrude" ? extHalf : front(i)) : 0;
   };
   return out;
 }
 
 const COVER_RAD = Math.PI / 180;
 
-/** The pose at loop time t (0 to 1): the yaw swings and the pitch swings a quarter turn behind, so the form circles. */
-export function coverPose(T, t) {
-  const yaw = T.yaw * Math.sin(2 * Math.PI * t) * COVER_RAD;
-  const pitch = T.pitch * Math.cos(2 * Math.PI * t) * COVER_RAD;
+/** The pose at loop time t (0 to 1): an ellipse swing for living/xerox, or a full 360-degree turn for spin. */
+export function coverPose(T, t, look = "living") {
+  const yaw = look === "spin" ? 2 * Math.PI * t : T.yaw * Math.sin(2 * Math.PI * t) * COVER_RAD;
+  const pitch = (look === "spin" ? (T.pitch ?? 14) : T.pitch * Math.cos(2 * Math.PI * t)) * COVER_RAD;
   const lean = T.lean * COVER_RAD;
   const [cy, sy, cp, sp, cl, sl] = [Math.cos(yaw), Math.sin(yaw), Math.cos(pitch), Math.sin(pitch), Math.cos(lean), Math.sin(lean)];
   return (x, y, z) => {
@@ -359,36 +477,42 @@ export function coverPose(T, t) {
   };
 }
 
-/** The scale and offset that fit every pose of the loop inside `box`. */
-function coverFit(S, T, focal, box) {
+/** The scale and offset that fit every pose of the loop inside `box`, with optional bold crop/bleed framing. */
+function coverFit(S, T, focal, box, look = "living", crop = "center") {
   let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
   for (let k = 0; k < 24; k++) {
-    const rot = coverPose(T, k / 24);
+    const rot = coverPose(T, k / 24, look);
     for (let j = 0; j < S.n; j += 5) {
       const [x, y, z] = rot(S.x[j], S.y[j], S.z[j]);
       const f = focal / (focal - z);
       [x0, y0, x1, y1] = [Math.min(x0, x * f), Math.min(y0, y * f), Math.max(x1, x * f), Math.max(y1, y * f)];
     }
   }
-  const s = Math.min((box.right - box.left) / (x1 - x0), (box.bottom - box.top) / (y1 - y0), 1.25);
-  return { s, ox: (box.left + box.right) / 2 - ((x0 + x1) / 2) * s, oy: (box.top + box.bottom) / 2 - ((y0 + y1) / 2) * s, short: Math.min(x1 - x0, y1 - y0) * s };
+  const baseScale = Math.min((box.right - box.left) / (x1 - x0), (box.bottom - box.top) / (y1 - y0), 1.25);
+  const mult = crop === "macro" ? 1.48 : crop === "bleed-right" ? 1.32 : 1;
+  const s = baseScale * mult;
+  const shiftX = crop === "bleed-right" ? (box.right - box.left) * 0.22 : 0;
+  return { s, ox: (box.left + box.right) / 2 - ((x0 + x1) / 2) * s + shiftX, oy: (box.top + box.bottom) / 2 - ((y0 + y1) / 2) * s, short: Math.min(x1 - x0, y1 - y0) * s };
 }
 
 /**
  * A cover's model: everything a frame is drawn from. `parts` are the region's parts in tree order with `hot` set;
  * `texts` are the name, headline and legend the template wraps.
  */
-export function coverModel(region, parts, { ground, texts }) {
+export function coverModel(region, parts, { ground, texts, look = "living", format = "poster", crop = "center" }) {
   const G = COVER_GROUNDS[ground];
   const like = SILHOUETTES[region.shape.like] ?? {};
   const strata = coverStrataOf(region);
   const shapeSpec = coverShape(region.shape);
   const mask = shapeMask(shapeSpec);
-  const solid = coverSolid(shapeSpec, mask, { ...COVER.solid, ...like.solid, ...region.solid }, strata);
+  const solidOpts = { ...COVER.solid, ...like.solid, ...region.solid };
+  if (look === "spin" && !region.solid?.kind && !like.solid?.kind) solidOpts.kind = "extrude";
+  const solid = coverSolid(shapeSpec, mask, solidOpts, strata);
   const S = coverSurface(solid);
-  const turn = { ...COVER.turn, ...like.turn, ...region.turn };
-  const template = coverTemplate(texts);
-  const focal = S.rad * 5;
+  const turn = { ...COVER.turn, ...(look === "spin" ? { pitch: 14, lean: -7 } : {}), ...like.turn, ...region.turn };
+  const template = coverTemplate({ ...texts, format, look });
+  const grid = coverGridFor(format);
+  const focal = S.rad * (look === "spin" ? 3.8 : 5);
   const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
   const list = parts.map((p) => ({ id: p.id, name: p.name.toLowerCase(), share: p.loc / total, hot: !!p.hot }));
   const hot = list.findIndex((p) => p.hot);
@@ -397,9 +521,10 @@ export function coverModel(region, parts, { ground, texts }) {
   if (strata.outline && hot >= 0) order.sort((a, b) => (b === hot) - (a === hot));
   const theme = G.theme;
   const dark = theme === "dark";
+  const frames = look === "xerox" ? 32 : look === "spin" ? 96 : COVER_FRAMES;
   return {
-    ground, colors: G, theme, dark, tones: RELIEF_TONES[theme], parts: list, hot, order, strata, solid, S, turn, focal, template,
-    fit: coverFit(S, turn, focal, template.box), frames: COVER_FRAMES, cache: new Map(),
+    ground, look, format, crop, grid, colors: G, theme, dark, tones: RELIEF_TONES[theme], parts: list, hot, order, strata, solid, S, turn, focal, template,
+    fit: coverFit(S, turn, focal, template.box, look, crop), frames, cache: new Map(),
   };
 }
 
@@ -428,24 +553,24 @@ const COVER_HALF = coverUnit([COVER_LAMP[0], COVER_LAMP[1], COVER_LAMP[2] + 1]);
 /**
  * One frame as glyph cells. Each visible cell has its nearest sample; the lamp sets its tone; the cells that print
  * are cut, in strata order, into the parts by their share of the lines; each row sets its names from an anchor
- * that turns with the form. Each cell is { i, j, b, v, kind, fade, d, own, part, q, ch, letter }.
+ * that turns with the form. Each cell is { i, j, b, v, z, wall, kind, fade, d, own, part, q, ch, letter }.
  */
 export function coverCells(m, f) {
   const N = m.frames;
   f = ((f % N) + N) % N;
   if (m.cache.has(f)) return m.cache.get(f);
-  const { S, fit: FIT, focal: FOCAL, parts: PARTS, dark: DARK } = m;
-  const { cols: COLS, rows: ROWS, cw: CW, lh: LH, x0: X0 } = COVER_GRID;
+  const { S, fit: FIT, focal: FOCAL, parts: PARTS, dark: DARK, look: LOOK } = m;
+  const { cols: COLS, rows: ROWS, cw: CW, lh: LH, x0: X0 } = m.grid ?? COVER_GRID;
   const STRETCH = DARK ? RELIEF.stretch : RELIEF.stretch * 1.35;
   const HI = m.colors.hi;
-  const rot = coverPose(m.turn, f / N);
+  const rot = coverPose(m.turn, f / N, LOOK);
   const n = COLS * ROWS;
   const zb = new Float32Array(n).fill(-Infinity);
   const who = new Int32Array(n).fill(-1);
   // coverPose inlined, operation for operation, so the hot loop allocates nothing and rounds as the pose does.
   const t = f / N;
-  const yaw = m.turn.yaw * Math.sin(2 * Math.PI * t) * COVER_RAD;
-  const pitch = m.turn.pitch * Math.cos(2 * Math.PI * t) * COVER_RAD;
+  const yaw = LOOK === "spin" ? 2 * Math.PI * t : m.turn.yaw * Math.sin(2 * Math.PI * t) * COVER_RAD;
+  const pitch = (LOOK === "spin" ? (m.turn.pitch ?? 14) : m.turn.pitch * Math.cos(2 * Math.PI * t)) * COVER_RAD;
   const lean = m.turn.lean * COVER_RAD;
   const [cy, sy, cp, sp, cl, sl] = [Math.cos(yaw), Math.sin(yaw), Math.cos(pitch), Math.sin(pitch), Math.cos(lean), Math.sin(lean)];
   const [SX, SY, SZ, SN] = [S.x, S.y, S.z, S.n];
@@ -471,6 +596,7 @@ export function coverCells(m, f) {
     }
   }
   const flat = COVER_LAMP[2];
+  const invRad = 1 / (S.rad || 1);
   const look = [];
   for (let i = 0; i < n; i++) {
     const j = who[i];
@@ -482,29 +608,18 @@ export function coverCells(m, f) {
     const b = Math.min(1, lam + 0.35 * spec);
     const ink = DARK ? b : 1 - b;
     const v = Math.min(1, Math.max(0, 0.5 + STRETCH * (ink - 0.5)));
-    // A face turning away from the viewer fades toward the ground, but holds enough ink to keep the silhouette:
-    // the turn never goes edge-on, so the far side proper never shows.
-    const fade = 0.45 + 0.55 * coverSmooth(-0.25, 0.25, nz);
+    const fade = LOOK === "spin" ? 1 : 0.45 + 0.55 * coverSmooth(-0.25, 0.25, nz);
     const d = coverHash(S.mc[j], S.mr[j]);
-    let kind = "letter";
-    if (b > HI) {
-      // Lit faces give their letters up to bold marks, and only the brightest cells thin out: a glint, which a
-      // wider thinning on a dark ground reads as a hole.
-      if (d > 1 - 0.9 * coverSmooth(HI, 0.97, b)) {
-        kind = "mark";
-        if (d > 1 - 0.3 * coverSmooth(0.95, 1, b)) continue;
-      }
+    const isWall = !!S.wall[j] || (LOOK === "spin" && Math.abs(nz) < 0.28);
+    let kind = isWall ? "wall" : "letter";
+    if (!isWall && LOOK === "living" && b > HI) {
+      // Specular peaks shift to crisp luminous highlight marks instead of punching dark holes in the surface.
+      if (d > 1 - 0.85 * coverSmooth(HI, 0.98, b)) kind = "mark";
     }
     const strength = coverInkAlpha(m, kind, v) * fade;
-    if (strength < 0.14 && d > strength / 0.14) continue;
-    look.push({ i, j, b, v, kind, fade, d });
+    if (LOOK === "living" && strength < 0.14 && d > strength / 0.14) continue;
+    look.push({ i, j, b, v, z: zb[i] * invRad, wall: isWall, kind, fade, d });
   }
-  // The strata: the printed cells in key order, cut into the parts. Each row is then set word by word: a word runs
-  // to its end across a seam and belongs to the part that owns most of its next cells. That choice is local, so a
-  // word keeps its part from frame to frame (error diffusion along the rows flipped about a tenth of the cells
-  // every frame: one changed cell changes every word after it). Whole words at the seams then trade parts until
-  // each part prints its share of the lines. The row's first word starts at its anchor, the screen column of the
-  // form's axis at the row's height, so the names ride the turn and never squeeze.
   const byKey = look.map((_, k) => k).sort((a, b) => S.key[look[a].j] - S.key[look[b].j] || look[a].i - look[b].i);
   const rows = [];
   for (let a = 0; a < look.length; ) {
@@ -519,8 +634,6 @@ export function coverCells(m, f) {
     a = e;
   }
   const P = PARTS.length;
-  // An outline: the accent takes the outer shell, and inside it the other parts stack in bands top to bottom.
-  // Shells all the way in made every small part a ring a glyph or two thick, too thin to print its share.
   if (m.strata.outline && m.hot >= 0 && P > 1) {
     const shell = Math.round(PARTS[m.hot].share * look.length);
     const inner = byKey.slice(shell).sort((a, b) => S.y[look[a].j] - S.y[look[b].j] || S.x[look[a].j] - S.x[look[b].j] || look[a].i - look[b].i);
@@ -555,8 +668,6 @@ export function coverCells(m, f) {
       counts[pi]++;
     });
   }
-  // A long name overruns its stratum, so whole words at the seams settle the shares: a word moves from a part over
-  // its share to one under it that owns some of its cells, the word most owned by the new part first, until neither gains.
   const want = PARTS.map((p) => p.share * look.length);
   for (let guard = 0; guard < 400; guard++) {
     let best = null;
@@ -568,7 +679,6 @@ export function coverCells(m, f) {
         if (p === from || !w.own[p]) continue;
         const under = want[p] - counts[p];
         const cn = w.cells.length;
-        // The move must shrink the larger of the two errors.
         if (Math.max(Math.abs(over - cn), Math.abs(under - cn)) >= Math.max(over, under)) continue;
         const score = w.own[p] / cn;
         if (!best || score > best.score) best = { w, p, score };
@@ -587,8 +697,11 @@ export function coverCells(m, f) {
   }
   for (const c of look) {
     const name = PARTS[c.part].name;
-    if (c.kind === "mark") c.ch = c.b > 0.96 ? (DARK ? "·" : ":") : c.b > 0.92 ? ":" : c.d < 0.5 ? "+" : "=";
-    else if (c.q >= name.length) c.ch = c.v < 0.5 ? "·" : ":";
+    if (c.kind === "wall") {
+      const near = (c.z + 1) / 2;
+      c.ch = near > 0.56 ? "#" : near > 0.42 ? "+" : ":";
+    } else if (c.kind === "mark") c.ch = c.b > 0.96 ? (DARK ? "+" : ":") : c.b > 0.92 ? ":" : c.d < 0.5 ? "+" : "=";
+    else if (c.q >= name.length) c.ch = LOOK === "spin" ? "/" : c.v < 0.5 ? "·" : ":";
     else c.ch = name[c.q];
     c.letter = c.kind === "letter" && c.q < name.length;
   }
@@ -603,7 +716,7 @@ export function coverCells(m, f) {
  */
 export function coverMeasure(m, f) {
   const list = coverCells(m, f);
-  const { cols: COLS } = COVER_GRID;
+  const { cols: COLS } = m.grid ?? COVER_GRID;
   const counts = m.parts.map(() => 0);
   const whole = m.parts.map(() => 0);
   let letters = 0;
@@ -628,8 +741,8 @@ export function coverMeasure(m, f) {
   const t = f / m.frames;
   return {
     frame: f,
-    yaw: m.turn.yaw * Math.sin(2 * Math.PI * t),
-    turned: Math.abs(Math.sin(2 * Math.PI * t)),
+    yaw: m.look === "spin" ? 360 * t : m.turn.yaw * Math.sin(2 * Math.PI * t),
+    turned: m.look === "spin" ? Math.abs(Math.sin(2 * Math.PI * t)) : Math.abs(Math.sin(2 * Math.PI * t)),
     shares,
     shareGap: Math.max(...shares.map((s, i) => Math.abs(s - m.parts[i].share))),
     accentCells: m.hot >= 0 ? counts[m.hot] : 0,
@@ -643,13 +756,20 @@ export const coverBig = (m) => m.parts.map((p, i) => (p.share >= COVER.big ? i :
 
 /**
  * The still: the frame where every big part prints its whole name, then the pose nearest COVER.still of the turn
- * (the far end shows the most volume but the least of the silhouette), then the most letters. Frames are measured
- * nearest pose first, and the search stops at the first pose band where every big name prints, which gives the
- * same frame as measuring them all.
+ * (for spin: a crisp 3/4 pose within 35 degrees of front-on), then the most letters.
  */
 export function coverStill(m) {
   const big = coverBig(m);
-  const band = (f) => Math.round(Math.abs(Math.abs(Math.sin(2 * Math.PI * (f / m.frames))) - COVER.still) * 10);
+  const target = m.look === "spin" ? 0.35 : COVER.still;
+  const band = (f) => {
+    if (m.look === "spin") {
+      const th = (2 * Math.PI * f) / m.frames;
+      const facing = Math.cos(th);
+      if (facing < 0.78) return 100 + Math.round((1 - facing) * 20);
+      return Math.round(Math.abs(Math.abs(Math.sin(th)) - target) * 10);
+    }
+    return Math.round(Math.abs(Math.abs(Math.sin(2 * Math.PI * (f / m.frames))) - target) * 10);
+  };
   const readable = (r) => big.filter((i) => r.whole[i] > 0).length;
   const frames = Array.from({ length: m.frames }, (_, f) => f);
   const better = (a, b) => readable(b) - readable(a) || band(a.frame) - band(b.frame) || b.letters - a.letters || a.frame - b.frame;
@@ -663,7 +783,7 @@ export function coverStill(m) {
 /** Glyphs that change from each frame to the next, the last to the first included, and the part flips among them. */
 export function coverSteps(m) {
   const N = m.frames;
-  const { cols, rows } = COVER_GRID;
+  const { cols, rows } = m.grid ?? COVER_GRID;
   const grid = (f) => {
     const g = new Uint16Array(cols * rows);
     for (const c of coverCells(m, f)) g[c.i] = c.ch.charCodeAt(0) + (m.parts[c.part].hot ? 1000 : 0);

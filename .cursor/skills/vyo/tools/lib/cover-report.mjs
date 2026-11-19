@@ -53,9 +53,11 @@ export function accentCandidates(cover, limit = 3, outline = cover.model.strata.
 const accentFix = (cover, thin = false) => {
   const on = (list) => `${list.length > 1 ? "one of " : ""}${list.join(", ")}`;
   const hot = cover.model.parts.find((p) => p.hot);
+  const color = cover.model.colors.colorName ?? "orange";
   if (thin && hot && hot.share >= COVER_LIMITS.least) {
-    const legend = coverLegend({ ...cover.region, strata: "down" }, cover.product, cover.region.names?.[hot.id] ?? hot.name);
-    return `keep the accent and set "strata": "down", which draws it as an orange band, and change the legend to "${legend}"`;
+    const legend = coverLegend({ ...cover.region, strata: "down" }, cover.product, cover.region.names?.[hot.id] ?? hot.name, cover.model.ground);
+    const art = /^[aeiou]/i.test(color) ? "an" : "a";
+    return `keep the accent and set "strata": "down", which draws it as ${art} ${color} band, and change the legend to "${legend}"`;
   }
   const c = accentCandidates(cover);
   if (c.length) return `put the accent on ${on(c)}`;
@@ -85,19 +87,21 @@ export function coverFindings(cover, { still = cover.still, loop = null, cells =
   const out = Object.fromEntries(COVER_CHECKS.map((id) => [id, []]));
   const { model, region, shell } = cover;
   const parts = model.parts;
+  const color = model.colors.colorName ?? "orange";
+  const cols = model.grid?.cols ?? COVER_GRID.cols;
   const hot = parts.filter((p) => p.hot);
   if (hot.length !== 1) {
     out["cover-accent"].push(
       hot.length
         ? `the accent ${region.accent} names ${hot.length} parts (${hot.map((p) => `"${p.name}"`).join(", ")}); set it to the id of one of them (vyo parts lists the ids)`
-        : `the accent ${region.accent ?? "is not set and"} names no part, so nothing prints in orange; ${accentFix(cover)}`,
+        : `the accent ${region.accent ?? "is not set and"} names no part, so nothing prints in ${color}; ${accentFix(cover)}`,
     );
   }
   if (hot.length === 1 && hot[0].share > COVER_LIMITS.share) {
     const n = facts ? splits(facts, region) : 0;
     const ids = [...(region.split ?? []), hot[0].id].map((s) => `"${s}"`).join(", ");
     out["cover-accent"].push(
-      `the accent "${hot[0].name}" is ${pct(hot[0].share)} of the code, so the orange would be most of the object (at most ${pct(COVER_LIMITS.share)}); ${
+      `the accent "${hot[0].name}" is ${pct(hot[0].share)} of the code, so the ${color} would be most of the object (at most ${pct(COVER_LIMITS.share)}); ${
         n ? `add "split": [${ids}] to the region to cut it into the ${n} parts inside it, then put the accent on the one the product is about (vyo parts <facts> --field shape ${[...(region.split ?? []), hot[0].id].map((s) => `--split ${s}`).join(" ")} lists them)` : "put the accent on a smaller part the product is about"
       }`,
     );
@@ -117,7 +121,7 @@ export function coverFindings(cover, { still = cover.still, loop = null, cells =
   }
   parts.forEach((p, i) => {
     if (p.share < COVER.big || still.whole[i] > 0) return;
-    const room = cells ? longestRun(cells(still.frame), i, COVER_GRID.cols) : 0;
+    const room = cells ? longestRun(cells(still.frame), i, cols) : 0;
     const fit = Math.max(3, Math.floor((room - 1) / 2), Math.floor(p.name.length * 0.6));
     out["cover-names"].push(`"${p.name}" (${pct(p.share)} of the code) never prints its whole name in the still, frame ${still.frame}; at ${p.name.length} characters it does not fit its stratum there, so shorten it to ${Math.min(fit, p.name.length - 1)} characters or fewer`);
   });
@@ -128,7 +132,7 @@ export function coverFindings(cover, { still = cover.still, loop = null, cells =
     if (seam > most * COVER.seam) out["cover-seam"].push(`the step from the last frame back to the first changes ${seam} glyphs where the largest step inside the loop changes ${most}, so the GIF jumps at its seam; this is an engine fault, so render without --gif and report it`);
   }
   if (shell && hot.length === 1 && hot[0].share <= COVER_LIMITS.share && Math.round(shell.px) < COVER_LIMITS.thin) {
-    out["cover-shell"].push(`the orange shell is ${Math.round(shell.px)}px thick (${pct(shell.share)} of the code); under ${COVER_LIMITS.thin}px it reads as a hairline, not a shell, at thumbnail size, so ${accentFix(cover, true)}`);
+    out["cover-shell"].push(`the ${color} shell is ${Math.round(shell.px)}px thick (${pct(shell.share)} of the code); under ${COVER_LIMITS.thin}px it reads as a hairline, not a shell, at thumbnail size, so ${accentFix(cover, true)}`);
   }
   return out;
 }
