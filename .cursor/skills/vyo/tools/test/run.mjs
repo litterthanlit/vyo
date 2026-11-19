@@ -300,7 +300,7 @@ for (const kind of ["resolve", "wipe"]) {
   result(same && page.cover.shown === node.frame && !runChecks("page", { spec, facts, presets: {}, page }).length, "the cover's page draws the still the sketch measures, cell for cell, and passes every page check", `page ${JSON.stringify(page.cover?.report)}\nnode ${JSON.stringify(node)}`);
 }
 const COVER_PLANTED = [
-  ["a free colour for the ground", (s) => (s.ground = "#14281F"), /^✗ spec: ground: "#14281F" is not a ground; a free colour is not offered; use "navy", "charcoal", "forest", "paper"$/m],
+  ["a free colour for the ground", (s) => (s.ground = "#14281F"), /^✗ spec: ground: "#14281F" is not a ground; a free colour is not offered; use "navy", "charcoal", "forest", "paper", "blood", "acid", "cobalt", "xerox", "riso", "obsidian"$/m],
   ["an accent that names no part", (s) => (s.figure.regions[0].accent = "area:nowhere"), /^✗ cover-accent: the accent area:nowhere names no part, so nothing prints in orange; put the accent on /m],
   ["a form as thin as a pole", (s) => (s.figure.regions[0].shape = { ops: [{ add: "rect", at: [0, 0], size: [6, 100] }] }), /^✗ cover-names: "[a-z ]+" \(\d+% of the code\) never prints its whole name in the still, frame \d+; at \d+ characters it does not fit its stratum there, so shorten it to \d+ characters or fewer$/m],
 ];

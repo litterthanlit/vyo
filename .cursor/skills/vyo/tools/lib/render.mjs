@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { hasWord } from "./spec.mjs";
 import { spawnSync } from "node:child_process";
 import os from "node:os";
-import { SHEET, fixedMeasure, corners, flattenPath } from "./geometry.mjs";
+import { SHEET, sheetOf, fixedMeasure, corners, flattenPath } from "./geometry.mjs";
 import { frameOf, hasRecord, textSize, lineHeight, ruleText, recordSpot, RECORD } from "./frame.mjs";
 import { bandCounts, bandLine, provenance } from "./band.mjs";
 import { regionParts, partTies } from "./parts.mjs";
@@ -22,6 +22,12 @@ const FONTS = [
   ["Commit Mono", 400, "commit-400.otf", "font/otf"],
   ["Commit Mono", 700, "commit-700.otf", "font/otf"],
   ["Newsreader", 400, "newsreader-400.ttf", "font/ttf"],
+];
+// Bundled grotesque faces embedded for swiss and signal frames so headless Linux/CI never degrades to system fallback.
+const GROT_FONTS = [
+  ["Inter", 500, "inter-500.woff2", "font/woff2"],
+  ["Inter Display", 600, "inter-display-600.woff2", "font/woff2"],
+  ["Inter Display", 900, "inter-display-900.woff2", "font/woff2"],
 ];
 export const FONT_FACES = FONTS.map(([family, weight]) => ({ family, weight }));
 /** The faces a poster in `frame` loads. */
@@ -105,10 +111,13 @@ ${notBuilt.length ? `<div data-block="notBuilt" data-owner="notBuilt" style="${m
 }
 
 // The halo: paper shadows at 6px and 3px all round, close enough together to read as one outline.
-const HALO = [6, 3]
-  .flatMap((r) => Array.from({ length: r * 4 }, (_, i) => [r * Math.cos((i * Math.PI) / (r * 2)), r * Math.sin((i * Math.PI) / (r * 2))]))
-  .map(([x, y]) => `${x.toFixed(2)}px ${y.toFixed(2)}px 0 var(--paper)`)
-  .join(",");
+const ringHalo = (radii) =>
+  radii
+    .flatMap((r) => Array.from({ length: r * 4 }, (_, i) => [r * Math.cos((i * Math.PI) / (r * 2)), r * Math.sin((i * Math.PI) / (r * 2))]))
+    .map(([x, y]) => `${x.toFixed(2)}px ${y.toFixed(2)}px 0 var(--paper)`)
+    .join(",");
+const HALO = ringHalo([6, 3]);
+const SIGNAL_HALO = ringHalo([9, 5, 2]);
 
 const SERIF = `font-family:${esc(`"Newsreader", serif`)}`;
 // Per frame, per role: the block's own CSS and what it prints. Sizes and line heights are in lib/frame.mjs.
@@ -116,7 +125,7 @@ const ROLE_PAGE = {
   swiss: {
     masthead: { style: `font-weight:700;letter-spacing:-.035em;white-space:nowrap;font-family:${esc(MAST_FONT)}`, body: (spec) => `${esc(spec.product.name)}${hotStop}` },
     headline: { style: `${SERIF};letter-spacing:-.005em`, body: (spec) => esc(spec.headline) },
-    display: { style: `font-weight:700;letter-spacing:-.025em;font-family:${esc(MAST_FONT)}`, body: (spec, t) => esc(t.text) },
+    display: { style: `font-weight:900;letter-spacing:-.025em;font-family:${esc(MAST_FONT)}`, body: (spec, t) => esc(t.text) },
     aside: { style: "", body: (spec, t) => line(t.text) },
     label: { style: "letter-spacing:.12em", body: (spec, t) => esc(t.text.toUpperCase()) },
   },
@@ -130,16 +139,16 @@ const ROLE_PAGE = {
   },
   signal: {
     label: { style: "letter-spacing:.22em;white-space:nowrap", body: (spec) => esc(spec.product.name.toUpperCase()) },
-    headline: { style: `font-weight:700;letter-spacing:-.04em;font-family:${esc(MAST_FONT)}`, body: (spec) => esc(spec.headline) },
+    headline: { style: `font-weight:900;letter-spacing:-.04em;font-family:${esc(MAST_FONT)}`, body: (spec) => esc(spec.headline) },
     paragraph: { style: `font-family:${esc(MAST_FONT)};letter-spacing:-.01em`, body: (spec, t) => line(t.text) },
     legend: { style: "letter-spacing:.04em", body: (spec, t) => line(t.text) },
     list: {
-      style: `white-space:pre;font-family:${esc(MAST_FONT)};font-weight:700;letter-spacing:-.02em;text-transform:uppercase`,
+      style: `white-space:pre;font-family:${esc(MAST_FONT)};font-weight:900;letter-spacing:-.02em;text-transform:uppercase`,
       body: (spec, t, facts) => listItems(spec, t, facts).map((s, i) => `${"\u00a0".repeat((i % 4) * 4)}\u2022\u2009${esc(s)}`).join("\n"),
     },
     rule: { style: "white-space:nowrap;overflow:hidden", body: (spec, t) => esc(ruleText(t)) },
     meta: { style: "letter-spacing:.16em;white-space:nowrap;text-transform:uppercase", body: (spec, t) => esc(t.text) },
-    display: { style: `font-weight:700;letter-spacing:-.05em;font-family:${esc(MAST_FONT)}`, body: (spec, t) => esc(t.text) },
+    display: { style: `font-weight:900;letter-spacing:-.05em;font-family:${esc(MAST_FONT)}`, body: (spec, t) => esc(t.text) },
     mark: { style: "background:var(--hot)", body: () => "" },
   },
 };
@@ -222,10 +231,11 @@ function record(spec, facts) {
 
 const CHROME = { swiss: footer, loose: record, signal: record };
 
-function fontFaces() {
-  const missing = FONTS.filter(([, , file]) => !fs.existsSync(path.join(FONT_DIR, file)));
+function fontFaces(frame) {
+  const list = frame === "swiss" || frame === "signal" ? [...FONTS, ...GROT_FONTS] : FONTS;
+  const missing = list.filter(([, , file]) => !fs.existsSync(path.join(FONT_DIR, file)));
   if (missing.length) throw new Error(`fonts missing in ${FONT_DIR} (${missing.map((f) => f[2]).join(", ")}): reinstall @litterthanlit/vyo`);
-  return FONTS.map(
+  return list.map(
     ([family, weight, file, type]) =>
       `@font-face{font-family:"${family}";font-weight:${weight};src:url(data:${type};base64,${fs.readFileSync(path.join(FONT_DIR, file)).toString("base64")})}`,
   ).join("\n");
@@ -287,11 +297,13 @@ function routeData(r) {
 
 /** The poster as one HTML string. Throws when the fonts are missing. */
 export function buildPage(given, facts) {
-  if (frameOf(given) === "cover") return coverPage(given, facts, PRELUDE);
+  const frame = frameOf(given);
+  if (frame === "cover") return coverPage(given, facts, PRELUDE);
   const spec = placeTexts(given, facts);
   const vars = Object.entries(Object.assign({}, ...Object.values(fieldTokensOf(spec)), tokensOf(spec))).map(([k, v]) => `--${k}:${v}`).join(";");
+  const halo = frame === "signal" ? SIGNAL_HALO : HALO;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(spec.product.name)} poster</title><style>
-${fontFaces()}
+${fontFaces(frame)}
 * { box-sizing: border-box; margin: 0; padding: 0 }
 :root { ${vars} }
 html, body { background: var(--paper) }
@@ -302,7 +314,7 @@ html, body { background: var(--paper) }
 /* A field runs on behind the figure's texts: each sits above the rows with a 6px paper halo. The halos are copies
    of the blocks one layer down, so no halo covers letters: a text-stroke on the block itself painted line by line
    and covered the descenders of the line above, and a block's halo covered the block above it. */
-[data-halo] { z-index: 1; color: transparent; text-shadow: ${HALO} }
+[data-halo] { z-index: 1; color: transparent; text-shadow: ${halo} }
 [data-halo] * { color: transparent !important }
 [data-role] { z-index: 2 }
 /* A mark blends over the letters under it, so they stay legible through the highlighter. */
@@ -311,29 +323,31 @@ html, body { background: var(--paper) }
 .node { position: absolute; border-radius: 50%; z-index: 0; pointer-events: none }
 </style><script>${PRELUDE}</script></head><body><div class="sheet">
 ${spec.figure.texts.map((t) => textBlock(spec, t, facts)).join("\n")}
-${CHROME[frameOf(spec)](spec, facts)}
+${CHROME[frame](spec, facts)}
 </div><script type="application/json" id="figure">${json(figureData(spec, facts))}</script><script type="module">${figureScript()}</script></body></html>`;
 }
 
 const PAPER = {
-  fit: () => ({ width: `${SHEET.width}px`, height: `${SHEET.height}px` }),
-  a4: () => paged("A4", 794, 1122),
-  letter: () => paged("Letter", 816, 1055),
+  fit: (sheet = SHEET) => ({ width: `${sheet.width}px`, height: `${sheet.height}px` }),
+  a4: (sheet = SHEET) => paged("A4", 794, 1122, sheet),
+  letter: (sheet = SHEET) => paged("Letter", 816, 1055, sheet),
 };
-function paged(format, w, h) {
-  const scale = Math.min(w / SHEET.width, h / SHEET.height);
-  const x = Math.floor((w - SHEET.width * scale) / 2);
-  const y = Math.floor((h - SHEET.height * scale) / 2);
+function paged(format, w, h, sheet = SHEET) {
+  const scale = Math.min(w / sheet.width, h / sheet.height);
+  const x = Math.floor((w - sheet.width * scale) / 2);
+  const y = Math.floor((h - sheet.height * scale) / 2);
   return { format, scale, margin: { left: `${x}px`, right: "0px", top: `${y}px`, bottom: "0px" } };
 }
 export const PAPERS = Object.keys(PAPER);
 
-/** The poster at 1/6 scale (140x198 CSS px, 2x): the size at which the accent part must still stand out. */
+/** The poster at 1/6 scale (140x198 CSS px at 2x for 840x1190, proportional for square/og). */
 export const THUMB = { width: 140, height: 198 };
-async function writeThumb(browser, shot, file) {
-  const page = await browser.newPage({ viewport: THUMB, deviceScaleFactor: 2 });
+async function writeThumb(browser, shot, file, sheet = SHEET) {
+  const tw = sheet.width === SHEET.width && sheet.height === SHEET.height ? THUMB.width : Math.round(sheet.width / 6);
+  const th = sheet.width === SHEET.width && sheet.height === SHEET.height ? THUMB.height : Math.round(sheet.height / 6);
+  const page = await browser.newPage({ viewport: { width: tw, height: th }, deviceScaleFactor: 2 });
   try {
-    await page.setContent(`<body style="margin:0"><img width="${THUMB.width}" height="${THUMB.height}" style="display:block" src="data:image/png;base64,${shot.toString("base64")}">`);
+    await page.setContent(`<body style="margin:0"><img width="${tw}" height="${th}" style="display:block" src="data:image/png;base64,${shot.toString("base64")}">`);
     await page.waitForFunction(() => document.images[0].complete);
     await page.screenshot({ path: file });
   } finally {
@@ -418,14 +432,15 @@ async function compareInk({ full, alone, name, clip }) {
 
 /**
  * Write <base>.html, then render it: PNG at 2x and PDF unless turned off. Returns the page measurements.
- * @param {{ html: string, base: string, png?: boolean, pdf?: boolean, paper?: string, gif?: boolean, motion?: { kind: string, frames: number, fps: number } }} o
+ * @param {{ html: string, base: string, png?: boolean, pdf?: boolean, paper?: string, gif?: boolean, motion?: { kind: string, frames?: number, fps?: number }, format?: string }} o
  */
-export async function renderPage({ html, base, png = true, pdf = true, paper = "fit", gif = false, motion = null }) {
+export async function renderPage({ html, base, png = true, pdf = true, paper = "fit", gif = false, motion = null, format = "poster" }) {
   fs.mkdirSync(path.dirname(base), { recursive: true });
   fs.writeFileSync(`${base}.html`, html);
+  const sheet = sheetOf(format);
   const browser = await launchChromium();
   try {
-    const page = await browser.newPage({ viewport: SHEET, deviceScaleFactor: 2 });
+    const page = await browser.newPage({ viewport: sheet, deviceScaleFactor: 2 });
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.setContent(html, { waitUntil: "load" });
@@ -435,13 +450,13 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
     report.covered = await coveredText(page);
     if (png) {
       const shot = await page.locator(".sheet").screenshot({ path: `${base}.png` });
-      await writeThumb(browser, shot, `${base}-thumb.png`);
+      await writeThumb(browser, shot, `${base}-thumb.png`, sheet);
     }
     if (pdf) {
       await page.emulateMedia({ media: "screen" });
-      await page.pdf({ path: `${base}.pdf`, printBackground: true, ...PAPER[paper]() });
+      await page.pdf({ path: `${base}.pdf`, printBackground: true, ...PAPER[paper](sheet) });
     }
-    if (gif && motion) report.loop = motion.kind === "turn" ? await writeTurn(page, base) : await writeGif(page, base, motion);
+    if (gif && motion) report.loop = motion.kind === "turn" || motion.kind === "copier" ? await writeTurn(page, base, sheet) : await writeGif(page, base, motion);
     return report;
   } finally {
     await browser.close();
@@ -449,15 +464,15 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
 }
 
 /**
- * A cover's loop: every frame drawn at 1x and measured, the glyph changes per step, then the GIF at every other
- * frame in 32 colours without dither (the crawling type dithers into noise and past 8 MB) and the MP4 at all of
- * them. The still is drawn back last, so the page ends as the PNG shows it.
+ * A cover's loop: every frame drawn at 1x and measured, the glyph changes per step, then the GIF and MP4.
+ * Supports living (168 frames @ 24fps -> 12fps GIF), spin (96 frames @ 12fps), and xerox (32 frames @ 10fps).
  * @returns {Promise<{ reports: object[], steps: number[] }>}
  */
-async function writeTurn(page, base) {
+async function writeTurn(page, base, sheet = SHEET) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-turn-"));
   try {
-    const n = await page.evaluate(() => window.cover.frames);
+    const info = await page.evaluate(() => ({ frames: window.cover.frames, look: window.cover.look ?? "living" }));
+    const n = info.frames;
     const reports = [];
     for (let f = 0; f < n; f++) {
       reports.push(await page.evaluate((k) => window.coverFrame(k, 1), f));
@@ -466,9 +481,14 @@ async function writeTurn(page, base) {
     const steps = await page.evaluate(() => window.coverSteps());
     await page.evaluate(() => window.coverFrame(window.cover.still, 2));
     const seq = path.join(dir, "frame-%03d.png");
-    const gif = `fps=${COVER.gifFps},scale=560:-1:flags=area,split[a][b];[a]palettegen=max_colors=32:stats_mode=full[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`;
-    ffmpeg(["-framerate", String(COVER.fps), "-i", seq, "-filter_complex", gif, "-loop", "0", `${base}.gif`], "GIF");
-    ffmpeg(["-framerate", String(COVER.fps), "-i", seq, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", "-vf", "scale=840:-2", `${base}.mp4`], "MP4");
+    const fps = info.look === "xerox" ? 10 : info.look === "spin" ? 12 : COVER.fps;
+    const gifFps = info.look === "xerox" ? 10 : info.look === "spin" ? 12 : COVER.gifFps;
+    const colors = info.look === "xerox" || info.look === "spin" ? 16 : 32;
+    const gifW = sheet.width > sheet.height ? 720 : 560;
+    const mp4W = sheet.width > sheet.height ? 1280 : 840;
+    const gif = `fps=${gifFps},scale=${gifW}:-1:flags=area,split[a][b];[a]palettegen=max_colors=${colors}:stats_mode=full[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`;
+    ffmpeg(["-framerate", String(fps), "-i", seq, "-filter_complex", gif, "-loop", "0", `${base}.gif`], "GIF");
+    ffmpeg(["-framerate", String(fps), "-i", seq, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", "-vf", `scale=${mp4W}:-2`, `${base}.mp4`], "MP4");
     return { reports, steps };
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });

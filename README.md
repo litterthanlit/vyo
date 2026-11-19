@@ -30,15 +30,15 @@ The same engine draws posters in other looks:
 
 ## The looks
 
-A shape poster has one `style`. You pick it, or your agent does. The shape is drawn from a few ops, or traced from a PNG.
+The **cover** frame turns one of 22 ready silhouettes (or any silhouette you draw or trace from a PNG) into a sculpted 3D object in three looks:
 
-- **relief**, the default, draws the outline as a lit, sculpted volume in dense small type. The object itself is the pull.
-- **rings** sets the names along the outline, ring inside ring. It suits a fat, round object.
-- **symbols** draws the outline in shaded clusters of `- : = + #`, like ASCII art.
+- **living** — slowly turning 3D volume under a fixed lamp with luminous specular sheen and rounded pill highlights (`dome`, `extrude`, or `revolve` solids).
+- **xerox** — raw zine / riso photocopy treatment with 2-plate thresholded toner, misregistration shadows, paper grain, rubber archive stamp, torn-edge spot highlighters, edge-bleeding Inter Display Black typography, and a copier-generation loop.
+- **spin** — full 360° kinetic turntable in flat 3-color depth-scaled type with `# + :` extruded side walls and tilted stamp chrome.
 
-The **cover** frame, at the top of this page, takes one of twelve ready objects (or one you draw), turns it in a seven-second loop, and puts the part the product is about on its outer shell in orange, on a navy, forest, charcoal or paper ground.
+Covers ship with 10 curated palettes (`navy`, `charcoal`, `forest`, `paper`, `obsidian`, `riso`, `xerox`, `blood`, `acid`, `cobalt`), three formats (`poster` 840×1190, `square` 960×960, `og` 1280×640), and `vyo series` to compose 2–4 covers into one gallery contact sheet or synchronized GIF.
 
-Any of them sits in the default frame shown here or in the high-contrast `signal` frame: a charcoal or paper ground, one signal colour, a grotesque headline, metadata and highlighter marks. vyo also generates fields when no one object fits the product, such as a wave, a terrain, a river, a coil or one giant letter, and `vyo render --gif` animates a poster.
+A **shape** poster draws a silhouette in one of three styles — **relief** (lit sculpted volume, default), **rings** (concentric outline rings), or **symbols** (shaded `- : = + #` ASCII art) — in either the serif `loose` frame or the brutalist high-contrast `signal` frame. When no single object fits, vyo generates architectural fields directly from the scan: **seismic** (Joy Division–style stacked codebase ridgelines from LOC, files & imports), **orbit** (centrality-ranked dependency constellation with dotted import chords), **river**, **terrain**, **slabs**, **spiral**, **contour**, and more. `vyo render --gif` animates any spec with `motion`.
 
 ## Install and make a poster
 

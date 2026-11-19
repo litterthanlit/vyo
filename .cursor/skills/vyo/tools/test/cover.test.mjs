@@ -36,28 +36,33 @@ const modelOf = (spec) => coverOf(spec, recipe).model;
 test("the cover preset and a ready silhouette validate; every cover rule is reported at once, in the house style", () => {
   assert.deepEqual(validateSpec(preset()), []);
   const f = "figure.regions[0]";
+  const grounds = Object.keys(COVER_GROUNDS).map((g) => `"${g}"`).join(", ");
   const errors = validateSpec({
-    ...cover({ shape: { like: "anchor" }, strata: "spiral", solid: { depth: 4, shine: 1 }, turn: { yaw: 80 }, style: "rings" }, { theme: "dark", accent: "#00FF00", ground: "#14281F" }),
+    ...cover({ shape: { like: "anchor" }, strata: "spiral", solid: { kind: "cube", depth: 4, shine: 1 }, turn: { yaw: 80 }, style: "rings" }, { theme: "dark", accent: "#00FF00", ground: "#14281F", look: "neon", crop: "top", format: "tall" }),
     motion: { kind: "turn", frames: 24 },
   });
   for (const want of [
     `${f}.shape.like: "anchor" is not a ready silhouette; use one of ${SILHOUETTE_NAMES.join(", ")} (vyo shapes describes them), or draw your own as { ops: [...] }`,
     `${f}.strata: "spiral" is not a strata; use "outline", "down", "diagonal"`,
+    `${f}.solid.kind: "cube" is not a solid kind; use "dome", "extrude", "revolve"`,
     `${f}.solid.depth: 0.2 to 1.5`,
-    `${f}.solid.shine: unknown field; solid takes bevel, depth, tilt, groove`,
+    `${f}.solid.shine: unknown field; solid takes kind, bevel, depth, tilt, groove`,
     `${f}.turn.yaw: 0 to 40`,
     `${f}.style: the cover draws its own living relief; remove style`,
-    'theme: the cover takes a ground instead; remove theme and set ground to "navy", "charcoal", "forest", "paper"',
-    "accent: the cover's accent is always its ground's orange; remove accent",
-    'ground: "#14281F" is not a ground; a free colour is not offered; use "navy", "charcoal", "forest", "paper"',
-    "motion.frames: a turn is a 7 second loop at 24 fps; remove frames",
+    `theme: the cover takes a ground instead; remove theme and set ground to ${grounds}`,
+    "accent: the cover's accent comes from its ground; remove accent",
+    `ground: "#14281F" is not a ground; a free colour is not offered; use ${grounds}`,
+    'look: "neon" is not a cover look; use "living", "xerox", "spin"',
+    'crop: "top" is not a cover crop; use "center", "bleed-right", "macro"',
+    'format: "tall" is not a format; use "poster", "square", "og"',
+    "motion.frames: a turn loop sets its own length and rate; remove frames",
   ]) assert.ok(errors.includes(want), `expected ${JSON.stringify(want)} in ${JSON.stringify(errors, null, 1)}`);
   const placed = cover();
   Object.assign(placed.figure.texts[0], { x: 40, y: 900 });
   placed.figure.regions[0].shape = { like: "pear", ops: [{ add: "circle", at: [0, 0], r: 1 }], fit: { h: 0.5 } };
   const more = validateSpec(placed);
   for (const want of ["figure.texts[0].x: the cover places every block itself; remove x", `${f}.shape: give like, ops or mask, not two of them; like is the whole silhouette`, `${f}.shape.fit: the cover sizes the form to its template; remove fit`]) assert.ok(more.includes(want), `expected ${want} in ${JSON.stringify(more, null, 1)}`);
-  assert.ok(validateSpec({ ...cover(), ground: undefined }).includes('ground: missing; use "navy", "charcoal", "forest", "paper"'));
+  assert.ok(validateSpec({ ...cover(), ground: undefined }).includes(`ground: missing; use ${grounds}`));
   assert.ok(validateSpec({ ...JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "wave.json"), "utf8")), ground: "navy" }).includes("ground: only the cover frame takes ground; set frame to cover or remove ground"));
 });
 
@@ -70,15 +75,14 @@ test("the cover's page script compiles: its modules declare no top-level name tw
   for (const f of COVER_PAGE_MODULES) assert.doesNotMatch(fs.readFileSync(path.join(lib, f), "utf8"), /^import .*node:/m, `${f} runs in the page, so it imports nothing from Node`);
 });
 
-test("the grounds are a closed set: each an ink and the orange, dark ones with the relief's glow, paper with a highlighter", () => {
-  assert.deepEqual(Object.keys(COVER_GROUNDS), ["navy", "charcoal", "forest", "paper"]);
+test("the grounds are a curated closed set: each has valid hexes, a colorName, and theme-matched glow or fill", () => {
+  assert.deepEqual(Object.keys(COVER_GROUNDS), ["navy", "charcoal", "forest", "paper", "blood", "acid", "cobalt", "xerox", "riso", "obsidian"]);
   for (const [name, g] of Object.entries(COVER_GROUNDS)) {
     for (const k of ["ground", "ink", "accent"]) assert.match(g[k], /^#[0-9A-F]{6}$/, `${name}.${k}`);
-    assert.match(g.accent, /^#FF[45]/, `${name}'s accent is the engine's orange`);
+    assert.ok(typeof g.colorName === "string" && g.colorName.length >= 3, `${name}.colorName`);
+    if (g.theme === "light") assert.ok(g.fill > 0 && !g.glow, `${name} highlights its accent`);
+    else assert.ok(g.glow > 0 && !g.fill, `${name} glows`);
   }
-  assert.equal(COVER_GROUNDS.paper.theme, "light");
-  assert.ok(COVER_GROUNDS.paper.fill > 0 && !COVER_GROUNDS.paper.glow, "paper highlights its accent instead of glowing it");
-  for (const g of ["navy", "charcoal", "forest"]) assert.ok(COVER_GROUNDS[g].glow && !COVER_GROUNDS[g].fill, `${g} glows`);
 });
 
 test("the solid: a dome over the outline, zero outside, a lit plate rising toward the lamp, a crease a groove", () => {
@@ -175,7 +179,7 @@ test("every ready silhouette validates, passes every shape check, and makes a vi
     const legend = coverLegend(cover({ shape }).figure.regions[0], "Supercalifragilistic", "x".repeat(24));
     assert.ok(legend.length <= 180, `${name}'s legend fits 180 characters at the longest names: ${legend.length}`);
   }
-  assert.equal(SILHOUETTE_NAMES.length, 12);
+  assert.equal(SILHOUETTE_NAMES.length, 22);
 });
 
 test("vyo shapes' op examples are each a valid op of their kind", () => {
@@ -335,3 +339,24 @@ test("a cover spec that lost its commit or date gets the exact values to restore
   const s = spawnSync(process.execPath, [VYO, "sketch", out], { encoding: "utf8" });
   assert.match(s.stdout, new RegExp(`^✗ record: product has no commit, which compose wrote; set "commit": "${hash}" and "date": "${date}" in product`, "m"), s.stdout);
 });
+
+test("extrude and revolve solids, xerox and spin looks, square and og formats, and crops all validate and hold honest shares", () => {
+  for (const [label, regOver, topOver] of [
+    ["extrude spin", { shape: { like: "plug" }, strata: "down", solid: { kind: "extrude", depth: 0.4 } }, { ground: "acid", look: "spin", motion: { kind: "turn" } }],
+    ["revolve living", { shape: { like: "flask" }, strata: "down", solid: { kind: "revolve" } }, { ground: "obsidian", look: "living", motion: { kind: "turn" } }],
+    ["xerox copier", { shape: { like: "fast-forward" }, strata: "down" }, { ground: "blood", look: "xerox", motion: { kind: "copier" } }],
+    ["square macro", { shape: { like: "prism" }, strata: "down" }, { ground: "riso", look: "living", format: "square", crop: "macro" }],
+    ["og banner", { shape: { like: "compass" }, strata: "down" }, { ground: "cobalt", look: "xerox", format: "og", motion: { kind: "copier" } }],
+  ]) {
+    const s = coverWith(regOver, topOver);
+    s.figure.texts[0].text = coverLegend(s.figure.regions[0], "Pantry", "screens", s.ground);
+    assert.deepEqual(validateSpec(s), [], `${label} validates`);
+    const c = coverOf(s, recipe);
+    assert.ok(c.still.shareGap <= COVER.gap, `${label} share gap ${c.still.shareGap} <= ${COVER.gap}`);
+    assert.ok(c.still.accentCells > 0, `${label} draws accent cells`);
+    if (topOver.format === "og") assert.equal(c.model.grid.width, 1280);
+    if (topOver.format === "square") assert.equal(c.model.grid.width, 960);
+    if (regOver.solid?.kind === "extrude") assert.ok(c.model.S.wall.some((w) => w === 1), `${label} has extruded walls`);
+  }
+});
+

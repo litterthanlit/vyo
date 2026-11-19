@@ -16,6 +16,8 @@ import { bleedRows } from "../lib/fields/bleed.mjs";
 import { slabsRows } from "../lib/fields/slabs.mjs";
 import { spiralRows } from "../lib/fields/spiral.mjs";
 import { contourRows } from "../lib/fields/contour.mjs";
+import { seismicRows } from "../lib/fields/seismic.mjs";
+import { orbitRows } from "../lib/fields/orbit.mjs";
 import { encodePng } from "../lib/png.mjs";
 import "../lib/png-mask.mjs";
 import { shapeMask } from "../lib/mask.mjs";
@@ -34,12 +36,12 @@ const frame = (over = {}) => ({ floor: 900, mirror: false, blocks: [masthead, as
 const touches = (it, b, pad) => it.x < b.right + pad && it.x + it.width > b.left - pad && it.y < b.bottom + pad && it.y + it.height > b.top - pad;
 
 test("the registry names each field once, with its layout and the options only it takes", () => {
-  assert.deepEqual(Object.keys(FIELDS), ["wave", "terrain", "river", "shape", "radial", "sphere", "scatter", "shatter", "glyph", "bleed", "slabs", "spiral", "contour"]);
+  assert.deepEqual(Object.keys(FIELDS), ["wave", "terrain", "river", "shape", "radial", "sphere", "scatter", "shatter", "glyph", "bleed", "slabs", "spiral", "contour", "seismic", "orbit"]);
   assert.deepEqual(FIELDS.river.options, ["seed"]);
   assert.deepEqual(FIELDS.wave.options, ["sentence", "every", "seed"]);
   assert.deepEqual(FIELDS.terrain.options, ["seed"]);
   assert.deepEqual(FIELDS.glyph.options, ["letter", "seed", "symbols"]);
-  for (const f of ["scatter", "shatter", "bleed", "slabs", "spiral", "contour"]) assert.deepEqual(FIELDS[f].options, ["seed", "symbols"], f);
+  for (const f of ["scatter", "shatter", "bleed", "slabs", "spiral", "contour", "seismic", "orbit"]) assert.deepEqual(FIELDS[f].options, ["seed", "symbols"], f);
 });
 
 test("every field module is inlined into the page, and the PNG codec stays in Node", () => {
@@ -450,3 +452,29 @@ test("symbols: a mask field drawn in shaded symbols with gaps, every part and th
   assert.ok(traced.length > 100 && traced.every((i) => /^[-:=+# ]+$/.test(i.text)), "the bundled wings mask fills with symbols in the symbols style");
   assert.ok(traced.some((i) => i.hot) && parts.every((p) => traced.some((i) => i.part === p.id)), "every part and the accent keep their rows");
 });
+
+test("seismic: stacked ridgelines with painter occlusion, every part drawn, accent hot, deterministic", () => {
+  const parts = recipeParts();
+  const ties = partTies(parts, recipe);
+  const items = seismicRows({ ties }, parts, open({ blocks: [] }));
+  onSheet(items, 1000);
+  for (const p of parts) assert.ok(items.some((i) => i.part === p.id), p.id);
+  assert.ok(items.some((i) => i.hot));
+  assert.deepEqual(items, seismicRows({ ties }, parts, open({ blocks: [] })), "deterministic");
+  const syms = seismicRows({ ties, symbols: true }, parts, open({ blocks: [] }));
+  assert.ok(syms.length > 50 && syms.every((i) => /^[-:=+# ]+$/.test(i.text)), "symbols mode uses topographic ramp");
+});
+
+test("orbit: architectural dependency constellation with LOC-sized discs and dotted wiring links", () => {
+  const parts = recipeParts();
+  const ties = partTies(parts, recipe);
+  const items = orbitRows({ ties }, parts, open({ blocks: [] }));
+  onSheet(items, 1000);
+  for (const p of parts) assert.ok(items.some((i) => i.part === p.id), p.id);
+  assert.ok(items.some((i) => i.hot));
+  assert.ok(items.some((i) => i.text === "·" || i.text === "+"), "draws dotted import chords between tied parts");
+  assert.deepEqual(items, orbitRows({ ties }, parts, open({ blocks: [] })), "deterministic");
+  const syms = orbitRows({ ties, symbols: true }, parts, open({ blocks: [] }));
+  assert.ok(syms.length > 40, "symbols mode draws constellation");
+});
+

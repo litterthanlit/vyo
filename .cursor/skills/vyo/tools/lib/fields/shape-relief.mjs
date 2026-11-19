@@ -4,7 +4,7 @@
 // the accent over a glow. Pure, like shape.mjs: the page inlines it and `vyo sketch` runs it in Node. Its top-level
 // names all start with relief or RELIEF, because the page concatenates the field modules into one scope.
 import { SHEET, ADVANCE } from "../geometry.mjs";
-import { maskGrid, opRings, opKind, paintRows, unionRuns } from "../mask.mjs";
+import { maskGrid, edt, opRings, opKind, paintRows, unionRuns } from "../mask.mjs";
 import { shapeOps } from "../silhouettes.mjs";
 
 // size, leading: the glyph grid. cell: the px of the height field. bevel: the default share of the shape's
@@ -34,37 +34,8 @@ export const RELIEF_TONES = {
 // Ink a glyph lays on its cell, as a share of the cell, for the thumbnail the sketch predicts.
 const RELIEF_COVER = { letter: [0.2, 0.3], dot: [0.035, 0.06], colon: [0.07, 0.11] };
 
-/** Squared Euclidean distance, in cells, from each cell to the nearest cell where `f` is 0 (Felzenszwalb). */
-function reliefEdt(f, w, h) {
-  const n = Math.max(w, h);
-  const [d, v, z, g] = [new Float64Array(n), new Int32Array(n), new Float64Array(n + 1), new Float64Array(n)];
-  const pass = (len, at, step) => {
-    for (let q = 0; q < len; q++) g[q] = f[at + q * step];
-    let k = 0;
-    [v[0], z[0], z[1]] = [0, -Infinity, Infinity];
-    for (let q = 1; q < len; q++) {
-      let s = (g[q] + q * q - (g[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
-      while (s <= z[k]) {
-        k--;
-        s = (g[q] + q * q - (g[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
-      }
-      k++;
-      [v[k], z[k], z[k + 1]] = [q, s, Infinity];
-    }
-    k = 0;
-    for (let q = 0; q < len; q++) {
-      while (z[k + 1] < q) k++;
-      d[q] = (q - v[k]) ** 2 + g[v[k]];
-    }
-    for (let q = 0; q < len; q++) f[at + q * step] = d[q];
-  };
-  for (let x = 0; x < w; x++) pass(h, x, w);
-  for (let y = 0; y < h; y++) pass(w, y * w, 1);
-  return f;
-}
-
 /** Px from every cell to the nearest cell where `on` is false. */
-const reliefDistance = (on, w, h, cell) => reliefEdt(Float64Array.from(on, (b) => (b ? 1e12 : 0)), w, h).map((d) => Math.sqrt(d) * cell);
+const reliefDistance = (on, w, h, cell) => edt(Float64Array.from(on, (b) => (b ? 1e12 : 0)), w, h).map((d) => Math.sqrt(d) * cell);
 
 /** An op painted alone onto the mask's sheet, as a grid of cells. */
 function reliefOpGrid(shape, op, mask) {
