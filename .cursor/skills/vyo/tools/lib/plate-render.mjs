@@ -7,7 +7,7 @@ import { sheetOf } from "./geometry.mjs";
 import { regionParts, partOptions, partTies, fileSlices } from "./parts.mjs";
 import { coverTemplate, coverRecord, COVER, COVER_GROUNDS } from "./cover.mjs";
 import { COVER_FONTS } from "./cover-render.mjs";
-import { buildLayoutChrome } from "./layout-chrome.mjs";
+import { buildLayoutChrome, chromeSmallType, typeCss } from "./layout-chrome.mjs";
 import { PLATES } from "./plates/index.mjs";
 import { seismicCurveAt } from "./plates/seismic.mjs";
 import { encodePng } from "./png.mjs";
@@ -70,7 +70,7 @@ export function platePage(spec, facts, prelude) {
   const S = sheetOf(format);
   const G = COVER_GROUNDS[ground];
   const chrome = buildLayoutChrome({ spec, parts, record, template, ground, look: "living", layout, format, series: spec.series ?? "", subtitle: "" });
-  const small = `font-family:"Inter",sans-serif;font-weight:500;font-size:${COVER.small}px;line-height:${COVER.lead}px;white-space:pre`;
+  const small = `${typeCss(chromeSmallType("living"))};white-space:pre`;
   const figure = {
     region,
     parts,

@@ -3,11 +3,44 @@
 // never rgba()) and keeps every [data-role] block a direct child of .sheet for clean `text-clear` measurement.
 import { COVER, coverTemplate, coverSmallWidth, coverBlackWidth } from "./cover.mjs";
 
-// Inter's ascent and descent in em, from its hhea table: a line box of height L at size s puts the baseline
-// (L - (asc + desc) s) / 2 + asc s below its top.
-const ASC = 1984 / 2048;
-const DESC = 494 / 2048;
-const baselineIn = (lineHeight, size) => (lineHeight - (ASC + DESC) * size) / 2 + ASC * size;
+// The faces chrome sets its small text in. Ascent and descent are in em, from each font's hhea table: a line box of
+// height L at size s puts the baseline (L - (asc + desc) s) / 2 + asc s below its top. Commit Mono advances every
+// glyph 0.6em, so its widths are exact; Inter Medium's come from the template's advance table, without kerning.
+const FACES = {
+  inter: { css: "'Inter',sans-serif", asc: 1984 / 2048, desc: 494 / 2048, width: (text, size) => (coverSmallWidth(text) * size) / COVER.small },
+  mono: { css: "'Commit Mono',monospace", asc: 0.9, desc: 0.2, width: (text, size) => text.length * (0.6 * size) },
+};
+const baselineIn = (lineHeight, size, face = FACES.inter) => (lineHeight - (face.asc + face.desc) * size) / 2 + face.asc * size;
+
+/** The type a `.t` block takes unless it sets its own: Commit Mono on xerox, Inter Medium otherwise. */
+export const chromeSmallType = (look) =>
+  look === "xerox" ? { face: "mono", weight: 400, size: 10, lineHeight: COVER.lead } : { face: "inter", weight: 500, size: COVER.small, lineHeight: COVER.lead };
+/** A type as CSS declarations. */
+export const typeCss = (t) => `font-family:${FACES[t.face].css};font-weight:${t.weight};font-size:${t.size}px;line-height:${t.lineHeight}px`;
+// The record's own type in the editorial and macro layouts, and in blueprint's title block.
+const RECORD_MONO = { face: "mono", weight: 400, size: 10, lineHeight: 14 };
+const RECORD_TITLE = { face: "mono", weight: 400, size: 9.5, lineHeight: 14 };
+
+/**
+ * Where each line of a block lands on the sheet, as the page sets it: `x` the left of its first glyph, `y` its
+ * baseline, `top` its line box's top, `width`, `align` and `lineHeight`. `x` given is the block's CSS `left`, or
+ * for `align: "right"` its right edge: a `white-space: pre` block shrinks to its widest line, so each line ends there.
+ */
+function setLines(lines, type, { align = "left", x, top }) {
+  const face = FACES[type.face];
+  return lines.map((text, i) => {
+    const width = face.width(text, type.size);
+    const lineTop = top + i * type.lineHeight;
+    return { text, x: align === "right" ? x - width : x, y: lineTop + baselineIn(type.lineHeight, type.size, face), top: lineTop, width, align, lineHeight: type.lineHeight, size: type.size, face: type.face };
+  });
+}
+
+/** The x and width of characters `from` to `to` of a set line. */
+export function spanOf(line, from, to) {
+  const face = FACES[line.face];
+  return { x: line.x + face.width(line.text.slice(0, from), line.size), w: face.width(line.text.slice(from, to), line.size) };
+}
+
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const joinLines = (list) => list.map(esc).join("\n");
 
@@ -30,7 +63,9 @@ function topParts(parts, limit = 5) {
 
 /**
  * Build layout chrome HTML, measured text block coordinates, and optional canvas drafting chrome for any cover
- * or plate in one of the four gallery layouts: `classic`, `editorial`, `blueprint`, or `macro`.
+ * or plate in one of the four gallery layouts: `classic`, `editorial`, `blueprint`, or `macro`. The `record`,
+ * `headline` and `legend` blocks carry `set`, each line where the page puts it (`setLines`): anything drawn over
+ * their words reads its place from there.
  */
 export function buildLayoutChrome({ spec, parts = [], record, template, ground, look = "living", layout = "classic", format = "poster", series = "", subtitle = "" }) {
   const legendText = spec.figure?.texts?.find((t) => t.role === "legend")?.text ?? "";
@@ -42,6 +77,8 @@ export function buildLayoutChrome({ spec, parts = [], record, template, ground, 
   const recordLines = Array.isArray(record) ? record : [String(record ?? "")];
   const seriesNum = series || spec.series || "";
   const top = (baseline) => baseline - baselineIn(lead, small);
+  const smallType = chromeSmallType(look);
+  const withSet = (block, type = smallType, align = "left") => ({ ...block, set: setLines(block.lines, type, { align, x: align === "right" ? block.right : block.left, top: block.top }) });
 
   // Layout 1: classic — exact v1 layout for living, xerox, spin, and classic plates.
   if (layout === "classic" || !layout) {
@@ -59,6 +96,7 @@ export function buildLayoutChrome({ spec, parts = [], record, template, ground, 
       legend: { left: M, top: top(T.legendY + 10), lines: T.legend },
       name: { left: M - name * 0.05, top: T.base - baselineIn(name, name), size: name, track: T.track },
     };
+    for (const k of ["record", "headline", "legend"]) blocks[k] = withSet(blocks[k]);
     const seriesHtml =
       look === "xerox" && format !== "og"
         ? ""
@@ -83,14 +121,13 @@ ${seriesHtml}
     const ruleW = isOg ? T.tableW : W - 2 * M;
     const tableLeft = isOg ? M : W - M - T.tableW;
     const tableTop = isOg ? T.tableTop : T.subTop;
-    const recMaxChars = Math.max(...recordLines.map((l) => l.length), 18);
-    const recW = Math.ceil(recMaxChars * 6);
+    const rec = withSet({ right: W - M, top: M + 18, lines: recordLines }, RECORD_MONO, "right");
     const blocks = {
       name: { left: M - nameSize * 0.04, top: M - Math.round(nameSize * 0.08), size: nameSize, track: T.track },
       series: { right: W - M, top: M + 2, number: seriesNum },
-      record: { left: W - M - recW, right: W - M, top: M + 18, lines: recordLines },
-      headline: { left: M, top: T.subTop, lines: T.headline },
-      legend: { left: M, top: T.legendY, lines: T.legend },
+      record: { left: Math.min(...rec.set.map((l) => l.x)), ...rec },
+      headline: withSet({ left: M, top: T.subTop, lines: T.headline }),
+      legend: withSet({ left: M, top: T.legendY, lines: T.legend }),
     };
     const breakdown = topParts(parts, 5);
     const rowsHtml = breakdown
@@ -109,7 +146,7 @@ ${seriesHtml}
       : "";
     const html = `<div class="t" data-block="name" data-owner="render" style="left:${blocks.name.left}px;top:${blocks.name.top}px;font-family:'Inter Display',sans-serif;font-weight:900;font-size:${nameSize}px;line-height:${nameSize}px;letter-spacing:${(T.track * nameSize).toFixed(2)}px">${esc(spec.product.name)}</div>
 <div class="t" data-block="series" data-owner="render" style="right:${M}px;top:${blocks.series.top}px;font-family:'Commit Mono',monospace;font-weight:700;font-size:10px;line-height:14px;letter-spacing:.08em;text-align:right">${esc(tagText)}</div>
-<div class="t" data-block="record" data-owner="render" style="right:${M}px;top:${blocks.record.top}px;font-family:'Commit Mono',monospace;font-weight:400;font-size:10px;line-height:14px;text-align:right">${joinLines(recordLines)}</div>
+<div class="t" data-block="record" data-owner="render" style="right:${W - blocks.record.right}px;top:${blocks.record.top}px;${typeCss(RECORD_MONO)};text-align:right">${joinLines(recordLines)}</div>
 <div data-owner="render" style="position:absolute;left:${M}px;top:${T.ruleY}px;width:${ruleW}px;height:1px;background:var(--ink);opacity:.22"></div>
 <div class="t" data-block="headline" data-role="headline" data-owner="figure" style="left:${blocks.headline.left}px;top:${blocks.headline.top}px">${joinLines(T.headline)}</div>
 ${rowsHtml}
@@ -128,10 +165,10 @@ ${subHtml}`;
     const nameSize = T.nameSize;
     const blocks = {
       name: { left: inner.x, top: inner.y - 2, size: nameSize, track: T.track },
-      headline: { left: T.headlineX, top: T.headlineTop, lines: T.headline },
+      headline: withSet({ left: T.headlineX, top: T.headlineTop, lines: T.headline }),
       series: { right: inner.x + inner.w, top: inner.y + 3, number: seriesNum },
-      legend: { left: inner.x, top: T.legendY, lines: T.legend },
-      record: { left: tb.x + 10, top: tb.y + 37, lines: recordLines },
+      legend: withSet({ left: inner.x, top: T.legendY, lines: T.legend }),
+      record: withSet({ left: tb.x + 10, top: tb.y + 37, lines: recordLines }, RECORD_TITLE),
     };
     const tagText = `VYO${seriesNum ? ` ${seriesNum}` : ""}`;
     const c1 = 116;
@@ -159,7 +196,7 @@ ${subHtml}
 <div data-owner="render" style="${cellStyle};left:${tb.x + c1 + 8}px;width:${c2 - c1 - 14}px"><div style="${lblStyle}">COMMIT</div><div style="${valStyle}">${esc(spec.product.commit ?? "none")}</div></div>
 <div data-owner="render" style="${cellStyle};left:${tb.x + c2 + 8}px;width:${c3 - c2 - 14}px"><div style="${lblStyle}">LINES</div><div style="${valStyle}">${esc(linesCount.toLocaleString("en-US"))}</div></div>
 <div data-owner="render" style="${cellStyle};left:${tb.x + c3 + 8}px;width:${tb.w - c3 - 14}px"><div style="${lblStyle}">FILES</div><div style="${valStyle}">${esc(String(filesCount))}</div></div>
-<div class="t" data-block="record" data-owner="render" style="left:${blocks.record.left}px;top:${blocks.record.top}px;font-family:'Commit Mono',monospace;font-weight:400;font-size:9.5px;line-height:14px">${joinLines(recordLines)}</div>`;
+<div class="t" data-block="record" data-owner="render" style="left:${blocks.record.left}px;top:${blocks.record.top}px;${typeCss(RECORD_TITLE)}">${joinLines(recordLines)}</div>`;
     const canvasChrome = {
       kind: "blueprint",
       frame,
@@ -186,7 +223,7 @@ ${subHtml}
   const tagText = `VYO${seriesNum ? ` ${seriesNum}` : ""}`;
   const recMaxChars = Math.max(...recordLines.map((l) => l.length), tagText.length);
   const trW = Math.max(180, Math.ceil(recMaxChars * 6) + padX * 2 + 8);
-  const trH = 18 + recordLines.length * 14 + padY * 2;
+  const trH = 18 + recordLines.length * RECORD_MONO.lineHeight + padY * 2;
   const tr = { x: W - M - trW, y: M, w: trW, h: trH };
 
   const lgW = Math.max(...T.legend.map(coverSmallWidth), 0);
@@ -194,12 +231,13 @@ ${subHtml}
   const blH = Math.ceil(T.legend.length * lead) + padY * 2;
   const bl = { x: M, y: H - M - blH, w: blW, h: blH };
 
+  const rec = withSet({ right: tr.x + tr.w - padX, top: tr.y + padY + 18, lines: recordLines }, RECORD_MONO, "right");
   const blocks = {
     name: { left: tl.x + padX, top: tl.y + padY - 2, size: nameSize, track: T.track },
-    headline: { left: tl.x + padX, top: tl.y + padY + Math.ceil(nameSize * 1.02) + 6, lines: T.headline },
+    headline: withSet({ left: tl.x + padX, top: tl.y + padY + Math.ceil(nameSize * 1.02) + 6, lines: T.headline }),
     series: { right: tr.x + tr.w - padX, top: tr.y + padY, number: seriesNum },
-    record: { left: tr.x + padX, right: tr.x + tr.w - padX, top: tr.y + padY + 18, lines: recordLines },
-    legend: { left: bl.x + padX, top: bl.y + padY, lines: T.legend },
+    record: { left: Math.min(...rec.set.map((l) => l.x)), ...rec },
+    legend: withSet({ left: bl.x + padX, top: bl.y + padY, lines: T.legend }),
     cards: { tl, tr, bl },
   };
   const plaque = (c) =>
@@ -211,7 +249,7 @@ ${plaque(bl)}
 <div class="t" data-block="name" data-owner="render" style="left:${blocks.name.left}px;top:${blocks.name.top}px;font-family:'Inter Display',sans-serif;font-weight:900;font-size:${nameSize}px;line-height:${nameSize}px;letter-spacing:${(T.track * nameSize).toFixed(2)}px">${esc(spec.product.name)}</div>
 <div class="t" data-block="headline" data-role="headline" data-owner="figure" style="left:${blocks.headline.left}px;top:${blocks.headline.top}px">${joinLines(T.headline)}</div>
 <div class="t" data-block="series" data-owner="render" style="right:${W - blocks.series.right}px;top:${blocks.series.top}px;font-family:'Commit Mono',monospace;font-weight:700;font-size:10px;line-height:14px;letter-spacing:.08em;text-align:right">${esc(tagText)}</div>
-<div class="t" data-block="record" data-owner="render" style="right:${W - blocks.record.right}px;top:${blocks.record.top}px;font-family:'Commit Mono',monospace;font-weight:400;font-size:10px;line-height:14px;text-align:right">${joinLines(recordLines)}</div>
+<div class="t" data-block="record" data-owner="render" style="right:${W - blocks.record.right}px;top:${blocks.record.top}px;${typeCss(RECORD_MONO)};text-align:right">${joinLines(recordLines)}</div>
 <div class="t" data-block="legend" data-role="legend" data-owner="figure" style="left:${blocks.legend.left}px;top:${blocks.legend.top}px">${joinLines(T.legend)}</div>`;
   return { html, blocks, canvasChrome: null };
 }

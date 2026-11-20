@@ -6,10 +6,11 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { buildPage, renderPage } from "../lib/render.mjs";
 import { fieldItems } from "../lib/sketch.mjs";
-import { BROWSER_NOTE } from "../lib/browser.mjs";
+import { BROWSER_NOTE, launchChromium } from "../lib/browser.mjs";
 import { runChecks } from "../lib/check.mjs";
 import { coverOf } from "../lib/cover-render.mjs";
-import { COVER_FRAMES, COVER_GROUNDS, coverLegend } from "../lib/cover.mjs";
+import { COVER_FRAMES, COVER_GROUNDS, COVER_LAYOUTS, coverLegend } from "../lib/cover.mjs";
+import { sheetOf } from "../lib/geometry.mjs";
 import { PLATES } from "../lib/plates/index.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -300,7 +301,43 @@ for (const kind of ["resolve", "wipe"]) {
   const same = ["frame", "shares", "whole", "letters", "accentCells"].every((k) => JSON.stringify(page.cover?.report?.[k]) === JSON.stringify(node[k]));
   result(same && page.cover.shown === node.frame && !runChecks("page", { spec, facts, presets: {}, page }).length, "the cover's page draws the still the sketch measures, cell for cell, and passes every page check", `page ${JSON.stringify(page.cover?.report)}\nnode ${JSON.stringify(node)}`);
 }
-const COVER_GROUNDS_LIST = Object.keys(COVER_GROUNDS).map((g) => `"${g}"`).join(", ");
+// The xerox look's highlighter marks sit on the words they mark, in every layout: the commit hash in the record and
+// the accent's name in the legend, one mark per line the name falls on. The page's own text ranges are the truth.
+// "Jar" makes the hash's line shorter than the record's widest, so a right-aligned record moves it.
+{
+  const browser = await launchChromium();
+  try {
+    for (const [layout, name] of COVER_LAYOUTS.flatMap((l) => [[l, "Pantry"], [l, "Jar"]])) {
+      const base = preset("cover");
+      const spec = { ...base, product: { ...base.product, name }, look: "xerox", layout, motion: { kind: "copier" } };
+      const { model } = coverOf(spec, facts);
+      const page = await browser.newPage({ viewport: sheetOf(spec.format ?? "poster") });
+      await page.setContent(buildPage(spec, facts), { waitUntil: "load" });
+      const { markers, words } = await page.evaluate(([commit, accent]) => {
+        const ranges = (block, needle) => {
+          const node = document.querySelector(`[data-block="${block}"]`).firstChild;
+          const at = node.textContent.replace(/\n/g, " ").toLowerCase().indexOf(needle.toLowerCase());
+          if (at < 0) return [];
+          const r = document.createRange();
+          r.setStart(node, at);
+          r.setEnd(node, at + needle.length);
+          return [...r.getClientRects()].filter((q) => q.width > 0).map((q) => ({ x: q.left, y: q.top, w: q.width, h: q.height }));
+        };
+        return { markers: JSON.parse(document.getElementById("figure").textContent).markers, words: [...ranges("record", commit), ...ranges("legend", accent)] };
+      }, [spec.product.commit, model.parts[model.hot].name]);
+      await page.close();
+      const off = words.filter((t, i) => {
+        const m = markers[i];
+        const over = m && Math.min(m.y + m.h, t.y + t.h) - Math.max(m.y, t.y);
+        return !m || m.x > t.x + 0.5 || m.x + m.w < t.x + t.w - 0.5 || over < 0.8 * t.h;
+      });
+      result(words.length >= 2 && markers.length === words.length && !off.length, `xerox ${layout} (${name}): each highlighter mark covers the commit hash or the accent's name on its line`, `words ${JSON.stringify(words)}\nmarkers ${JSON.stringify(markers)}`);
+    }
+  } finally {
+    await browser.close();
+  }
+}
+const COVER_GROUNDS_LIST =Object.keys(COVER_GROUNDS).map((g) => `"${g}"`).join(", ");
 const COVER_PLANTED = [
   ["a free colour for the ground", (s) => (s.ground = "#14281F"), new RegExp(`^✗ spec: ground: "#14281F" is not a ground; a free colour is not offered; use ${COVER_GROUNDS_LIST}$`, "m")],
   ["an accent that names no part", (s) => (s.figure.regions[0].accent = "area:nowhere"), /^✗ cover-accent: the accent area:nowhere names no part, so nothing prints in orange; put the accent on /m],
