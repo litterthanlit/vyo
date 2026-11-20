@@ -240,12 +240,13 @@ ${subHtml}
     legend: withSet({ left: bl.x + padX, top: bl.y + padY, lines: T.legend }),
     cards: { tl, tr, bl },
   };
-  const plaque = (c) =>
-    `<div data-owner="render" style="position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;background:var(--paper);opacity:.86"></div>
+  // data-card names the plaque so the checks can keep a plate's canvas labels from sliding under it.
+  const plaque = (c, name) =>
+    `<div data-owner="render" data-card="${name}" style="position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;background:var(--paper);opacity:.86"></div>
 <div data-owner="render" style="position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;border:1px solid var(--ink);opacity:.18;pointer-events:none"></div>`;
-  const html = `${plaque(tl)}
-${plaque(tr)}
-${plaque(bl)}
+  const html = `${plaque(tl, "title")}
+${plaque(tr, "record")}
+${plaque(bl, "legend")}
 <div class="t" data-block="name" data-owner="render" style="left:${blocks.name.left}px;top:${blocks.name.top}px;font-family:'Inter Display',sans-serif;font-weight:900;font-size:${nameSize}px;line-height:${nameSize}px;letter-spacing:${(T.track * nameSize).toFixed(2)}px">${esc(spec.product.name)}</div>
 <div class="t" data-block="headline" data-role="headline" data-owner="figure" style="left:${blocks.headline.left}px;top:${blocks.headline.top}px">${joinLines(T.headline)}</div>
 <div class="t" data-block="series" data-owner="render" style="right:${W - blocks.series.right}px;top:${blocks.series.top}px;font-family:'Commit Mono',monospace;font-weight:700;font-size:10px;line-height:14px;letter-spacing:.08em;text-align:right">${esc(tagText)}</div>

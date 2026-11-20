@@ -81,6 +81,9 @@ export function platePage(spec, facts, prelude) {
     motion: spec.motion ?? null,
     data,
     canvasChrome: chrome.canvasChrome,
+    // The sheet's safe margin and the chrome cards the page keeps the plate's labels clear of.
+    margin: template.margin,
+    cards: Object.values(chrome.blocks.cards ?? {}).map(({ x, y, w, h }) => ({ x, y, w, h })),
     frames: PLATE_FRAMES,
     seed,
   };

@@ -12,6 +12,7 @@ import { coverOf } from "../lib/cover-render.mjs";
 import { COVER_FRAMES, COVER_GROUNDS, COVER_LAYOUTS, coverLegend } from "../lib/cover.mjs";
 import { sheetOf } from "../lib/geometry.mjs";
 import { PLATES } from "../lib/plates/index.mjs";
+import { plateOf } from "../lib/plate-render.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TOOLS = path.join(HERE, "..");
@@ -379,8 +380,10 @@ for (const [plate, ground, layout] of [
   ["seismic", "obsidian", "editorial"],
   ["topo", "carbon", "blueprint"],
   ["blueprint", "abyss", "blueprint"],
+  // Macro's box runs past the sheet on every side: the labels must still land on it, clear of the corner cards.
+  ["seismic", "obsidian", "macro"],
 ]) {
-  const dir = path.join(OUT, `plate-${plate}`);
+  const dir = path.join(OUT, `plate-${plate}-${layout}`);
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, "recipe-poster.json");
   fs.writeFileSync(file, JSON.stringify(plateSpec(plate, ground, layout), null, 2));
@@ -388,7 +391,42 @@ for (const [plate, ground, layout] of [
   result(r.status === 0 && /^PASS$/m.test(r.stdout) && !/^✗/m.test(r.stderr), `plate ${plate} (${ground}/${layout}) renders and passes every check`, r.stdout + r.stderr);
   const thumb = path.join(dir, "recipe-poster-thumb.png");
   const wh = fs.existsSync(thumb) ? [fs.readFileSync(thumb).readUInt32BE(16), fs.readFileSync(thumb).readUInt32BE(20)] : [];
-  result(wh[0] === 280 && wh[1] === 396 && r.stdout.includes(thumb), `plate ${plate} writes a 280x396 thumb and prints it`, `${wh}\n${r.stdout}`);
+  result(wh[0] === 280 && wh[1] === 396 && r.stdout.includes(thumb), `plate ${plate} (${layout}) writes a 280x396 thumb and prints it`, `${wh}\n${r.stdout}`);
+}
+
+// A plate's page draws from the figure JSON Node embeds in it, and the checks judge what the page measures. A flaw
+// planted in that JSON shows a check catches what the canvas drew, not what Node meant it to draw.
+const plantFigure = (html, mutate) =>
+  html.replace(/(<script type="application\/json" id="figure">)([\s\S]*?)(<\/script>)/, (_, open, body, close) => {
+    const F = JSON.parse(body);
+    mutate(F);
+    return open + JSON.stringify(F).replace(/</g, "\\u003c") + close;
+  });
+const plateFindings = async (spec, html, name, ids) =>
+  runChecks("page", { spec, facts, presets: {}, page: await renderPage({ html, base: path.join(OUT, name), png: false, pdf: false }) }).filter((f) => ids.includes(f.id));
+const reEscape = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+{
+  const spec = plateSpec("seismic", "obsidian", "editorial");
+  const drop = plateOf(spec, facts).parts.find((p) => !p.hot);
+  const html = buildPage(spec, facts);
+  const planted = plantFigure(html, (F) => (F.data.traces = F.data.traces.filter((t) => t.partId !== drop.id)));
+  const [now, then] = [await plateFindings(spec, html, "plate-parts-honest", ["plate-parts"]), await plateFindings(spec, planted, "plate-parts-planted", ["plate-parts"])];
+  const want = new RegExp(`^region seismic: the plate represents \\d+ of \\d+ parts; "${reEscape(drop.name)}" \\(${reEscape(drop.id)}\\) draws nothing on the sheet`);
+  result(planted !== html && !now.length && then.length === 1 && want.test(then[0].message), `planted plate flaw (a part whose ridges are never drawn) fails plate-parts with ${want}`, `now ${JSON.stringify(now)}\nthen ${JSON.stringify(then)}`);
+}
+{
+  // The label column as it was before the fix: beside the ridges whatever the box, with no safe margin and no cards.
+  const spec = plateSpec("seismic", "obsidian", "macro");
+  const html = buildPage(spec, facts);
+  const planted = plantFigure(html, (F) => {
+    F.margin = -100;
+    F.cards = [];
+  });
+  const ids = ["blocks-inside", "blocks-apart"];
+  const [now, then] = [await plateFindings(spec, html, "plate-labels-honest", ids), await plateFindings(spec, planted, "plate-labels-planted", ids)];
+  const off = then.some((f) => f.id === "blocks-inside" && /^the plate label "[^"]+" runs off the sheet \(its right edge at \d+px, the sheet's at 840px\); the plate places its labels itself/.test(f.message));
+  const under = then.some((f) => f.id === "blocks-apart" && /^the plate label "[^"]+" sits under the record card or within 8px of it; the plate places its labels itself/.test(f.message));
+  result(planted !== html && !now.length && off && under, "planted plate flaw (labels pushed off the sheet and under the record card) fails blocks-inside and blocks-apart", `now ${JSON.stringify(now)}\nthen ${JSON.stringify(then)}`);
 }
 {
   const dir = path.join(OUT, "plate-seismic-gif");
