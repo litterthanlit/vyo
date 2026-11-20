@@ -1,6 +1,6 @@
-// The plate frame and file-slice foundation: fileSlices conservation/bounds/coupling, pure vector seismic
-// ridgelines, marching-squares topo contours, octilinear blueprint schematics, spec validation, scaffolds,
-// layouts, HTML chrome, and sketch output. Everything here runs in Node with zero browser dependency.
+// The plate frame and file-slice foundation: fileSlices conservation/bounds/coupling, marching-squares topo contours,
+// octilinear blueprint schematics, spec validation, scaffolds, layouts, HTML chrome, and sketch output. Everything here
+// runs in Node with zero browser dependency.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -9,7 +9,6 @@ import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 import { scanRepo } from "../lib/scan/index.mjs";
 import { fileSlices, partsFromFacts, regionParts, partTies } from "../lib/parts.mjs";
-import { buildSeismicPlate, seismicCurveAt } from "../lib/plates/seismic.mjs";
 import { buildTopoPlate } from "../lib/plates/topo.mjs";
 import { buildBlueprintPlate } from "../lib/plates/blueprint.mjs";
 import { PLATES, PLATE_NAMES } from "../lib/plates/index.mjs";
@@ -101,7 +100,7 @@ function syntheticMonorepoFacts() {
 }
 
 /** Fill a plateScaffold for recipe with valid plain copy so it validates cleanly. */
-function filledPlateSpec(plate = "seismic", { ground = "obsidian", layout = "editorial", format = "poster", seed } = {}) {
+function filledPlateSpec(plate = "topo", { ground = "obsidian", layout = "editorial", format = "poster", seed } = {}) {
   const parts = partsFromFacts(recipe);
   const spec = plateScaffold(recipe, {
     plate,
@@ -185,50 +184,6 @@ test("fileSlices: deterministic, conserves exact LOC, stays in [40, 72], represe
   // Empty scan returns [].
   assert.deepEqual(fileSlices(emptyScan), [], "empty fixture scan returns []");
   assert.deepEqual(fileSlices({ facts: [], files: {}, imports: [] }), [], "empty object scan returns []");
-});
-
-test("buildSeismicPlate & seismicCurveAt: deterministic traces inside box, all parts represented, and seamless pulse wrap", () => {
-  const opts = { accent: RECIPE_ACCENT, names: RECIPE_NAMES };
-  const parts = regionParts(opts, recipe);
-  const slices = fileSlices(recipe, opts);
-
-  const a = buildSeismicPlate({ slices, parts, box: STD_BOX, seed: 42 });
-  const b = buildSeismicPlate({ slices, parts, box: STD_BOX, seed: 42 });
-  assert.deepEqual(a, b, "buildSeismicPlate is deterministic");
-  assert.equal(a.kind, "seismic");
-  assert.ok(a.traces.length >= 40 && a.traces.length <= 72, `trace count ${a.traces.length} in [40, 72]`);
-  assert.equal(a.representedParts, parts.length, "all parts represented");
-  assert.ok(a.accentCount > 0, "accented traces present");
-
-  let movedAtQuarter = 0;
-  for (const tr of a.traces) {
-    const pts0 = seismicCurveAt(tr, 0);
-    const pts1 = seismicCurveAt(tr, 1);
-    const ptsQ = seismicCurveAt(tr, 0.25);
-    assert.equal(pts0.length, tr.baseOffsets.length);
-    assert.equal(pts1.length, pts0.length);
-    assert.equal(ptsQ.length, pts0.length);
-
-    for (let k = 0; k < pts0.length; k++) {
-      const p0 = pts0[k];
-      const p1 = pts1[k];
-      const pq = ptsQ[k];
-      assert.ok(Number.isFinite(p0.x) && Number.isFinite(p0.y), "t=0 coordinates finite");
-      assert.ok(Number.isFinite(pq.x) && Number.isFinite(pq.y), "t=0.25 coordinates finite");
-      assert.ok(p0.x >= STD_BOX.left && p0.x <= STD_BOX.right, `x=${p0.x} inside box`);
-      assert.ok(p0.y >= STD_BOX.top && p0.y <= STD_BOX.bottom + 4, `y=${p0.y} inside box headroom`);
-      // Seamless wrap: t=0 equals t=1 within 1e-6.
-      assert.ok(Math.abs(p0.x - p1.x) < 1e-6 && Math.abs(p0.y - p1.y) < 1e-6, `seamless pulse wrap at trace ${tr.index}, pt ${k}`);
-      if (Math.abs(pq.y - p0.y) > 0.05) movedAtQuarter++;
-    }
-  }
-  assert.ok(movedAtQuarter > 0, "seismicCurveAt(trace, 0.25) moves smoothly away from t=0");
-
-  // Empty slices returns safe empty plate.
-  const empty = buildSeismicPlate({ slices: [], parts: [], box: STD_BOX, seed: 1 });
-  assert.deepEqual(empty.traces, []);
-  assert.equal(empty.representedParts, 0);
-  assert.equal(empty.accentCount, 0);
 });
 
 test("buildTopoPlate: 18-24 elevation levels, Chaikin-smoothed major/minor/hot contours, summits for every part, all inside box", () => {
@@ -333,7 +288,7 @@ test("buildBlueprintPlate: non-overlapping proportional chambers with sub-cells,
 });
 
 test("plateScaffold, spec validation, layouts, platePage HTML chrome, script compilation, and sketch outputs", () => {
-  // 1. Scaffolds for all 3 plate kinds validate cleanly once placeholders are replaced.
+  // 1. Scaffolds for both plate kinds validate cleanly once placeholders are replaced.
   for (const plate of PLATE_NAMES) {
     const raw = plateScaffold(recipe, { plate, commit: "04186f4", date: "2026-11-07", parts: partsFromFacts(recipe) });
     assert.equal(raw.frame, "plate");
@@ -354,7 +309,7 @@ test("plateScaffold, spec validation, layouts, platePage HTML chrome, script com
   // 2. Invalid plate, ground, layout, motion, and stray theme/look/finish are each rejected with clear messages.
   const grounds = Object.keys(COVER_GROUNDS).map((g) => `"${g}"`).join(", ");
   const layouts = COVER_LAYOUTS.map((l) => `"${l}"`).join(", ");
-  const bad = filledPlateSpec("seismic");
+  const bad = filledPlateSpec("topo");
   bad.figure.regions[0].plate = "radar";
   bad.ground = "#102030";
   bad.layout = "grid";
@@ -364,7 +319,7 @@ test("plateScaffold, spec validation, layouts, platePage HTML chrome, script com
   bad.motion = { kind: "turn" };
   const errors = validateSpec(bad);
   for (const want of [
-    'figure.regions[0].plate: "radar" is not a plate; use "seismic", "topo", "blueprint"',
+    'figure.regions[0].plate: "radar" is not a plate; use "topo", "blueprint"',
     `ground: "#102030" is not a ground; a free colour is not offered; use ${grounds}`,
     `layout: "grid" is not a layout; use ${layouts}`,
     `theme: a plate takes a ground instead; remove theme and set ground to ${grounds}`,
@@ -375,23 +330,20 @@ test("plateScaffold, spec validation, layouts, platePage HTML chrome, script com
     assert.ok(errors.includes(want), `expected ${JSON.stringify(want)} in ${JSON.stringify(errors, null, 1)}`);
   }
 
-  const badTimed = filledPlateSpec("seismic");
+  const badTimed = filledPlateSpec("topo");
   badTimed.motion = { kind: "pulse", frames: 24, fps: 12 };
   const timedErrs = validateSpec(badTimed);
   assert.ok(timedErrs.includes("motion.frames: a pulse loop sets its own length and rate; remove frames"));
   assert.ok(timedErrs.includes("motion.fps: a pulse loop sets its own length and rate; remove fps"));
 
-  // 3. plate-page.js + plates/seismic.mjs compiles cleanly under vm.Script.
-  const scriptCode = [
-    fs.readFileSync(path.join(LIB, "plates", "seismic.mjs"), "utf8").replace(/^import .*\n/gm, "").replace(/^export /gm, ""),
-    fs.readFileSync(path.join(LIB, "plate-page.js"), "utf8"),
-  ].join("\n");
+  // 3. plate-page.js compiles cleanly under vm.Script.
+  const scriptCode = fs.readFileSync(path.join(LIB, "plate-page.js"), "utf8");
   assert.doesNotThrow(() => new vm.Script(`"use strict"; {\n${scriptCode}\n}`), "plate page script compiles cleanly");
 
   // 4. All 4 layouts produce valid platePage HTML (zero rgba in CSS/DOM, exact record, headline & legend roles),
   //    clean plateSketchLines, and valid PNG header from plateSketchImage.
   const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-  const plateForLayout = { classic: "seismic", editorial: "seismic", blueprint: "blueprint", macro: "topo" };
+  const plateForLayout = { classic: "topo", editorial: "topo", blueprint: "blueprint", macro: "blueprint" };
   for (const layout of COVER_LAYOUTS) {
     const plate = plateForLayout[layout];
     const spec = filledPlateSpec(plate, { ground: layout === "macro" ? "carbon" : "obsidian", layout });

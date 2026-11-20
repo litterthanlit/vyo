@@ -32,7 +32,6 @@ The same engine draws posters in other looks:
 
 **Vector Data-as-Art Plates** (`--frame plate`) turn the codebase's real file slices, line counts, and cross-area import graph directly into pure high-resolution vector prints:
 
-- **seismic** — file-level *Unknown Pleasures* stacked ridgelines, peaks scaled by lines and sharpened by import coupling, with clean painter occlusion and glowing accent traces (`pulse` loop).
 - **topo** — marching-squares topographic elevation map rising around each area's lines and import passes, with index/minor contours and summit markers (`pulse` loop).
 - **blueprint** — octilinear PCB / architectural circuit schematic with proportional part chambers subdivided into file cells and wired by chamfered import traces and vias (`signal` loop).
 

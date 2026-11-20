@@ -478,7 +478,7 @@ test("validateSpec accepts valid layout and finish on cover, rejects unknown val
   const looseWithFinish = { ...JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "wave.json"), "utf8")), finish: "studio" };
   assert.ok(validateSpec(looseWithFinish).includes("finish: only the cover or plate frame takes finish; remove finish"));
 
-  const plateWithFinish = { ...plateScaffold(recipe, { plate: "seismic", commit: "04186f4", date: "2026-11-07", accent: "area:app/(app)", parts: regionParts(region(), recipe) }), finish: "studio" };
+  const plateWithFinish = { ...plateScaffold(recipe, { plate: "topo", commit: "04186f4", date: "2026-11-07", accent: "area:app/(app)", parts: regionParts(region(), recipe) }), finish: "studio" };
   assert.ok(validateSpec(plateWithFinish).includes("finish: only the cover frame takes finish; remove finish"));
 });
 

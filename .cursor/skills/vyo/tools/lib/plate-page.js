@@ -1,6 +1,5 @@
-// Runs in a plate's page after plates/seismic.mjs (render concatenates them): draws gallery-grade 2x vector
-// plates for seismic (Unknown Pleasures ridgelines), topo (marching-squares elevation contours), and blueprint
-// (architectural PCB / circuit schematic) with subtle film grain, studio glow, and seamless loop animation.
+// Runs in a plate's page: draws gallery-grade 2x vector plates for topo (marching-squares elevation contours)
+// and blueprint (architectural PCB / circuit schematic) with subtle film grain, studio glow, and seamless loop animation.
 (async () => {
   const F = JSON.parse(document.getElementById("figure").textContent);
   await window.fontsReady;
@@ -47,8 +46,8 @@
     const plateKind = F.region.plate;
     // 1.8% monochrome grain on dark grounds (~±4.6 RGB), ultra-subtle 0.9% paper grain on light grounds (~±2.3 RGB).
     const grainAmp = dark ? 9.2 : 4.6;
-    const hasVig = dark && (plateKind === "topo" || plateKind === "seismic");
-    const vigStrength = plateKind === "topo" ? 0.024 : 0.014;
+    const hasVig = dark && plateKind === "topo";
+    const vigStrength = 0.024;
     const sInt = (seed * 31 + 17) | 0;
 
     for (let y = 0; y < H; y++) {
@@ -200,125 +199,7 @@
     ctx.restore();
   }
 
-  /** Renderer 1 — seismic: Unknown Pleasures stacked vector ridgelines with painter's horizon occlusion. */
-  function drawSeismic(t, scale, subPattern) {
-    const traces = F.data.traces || [];
-    const bands = F.data.partBands || [];
-    const n = traces.length;
-    if (!n) return;
-
-    const buildSmoothCurve = (pts) => {
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for (let k = 1; k < pts.length - 1; k++) {
-        const mx = (pts[k].x + pts[k + 1].x) * 0.5;
-        const my = (pts[k].y + pts[k + 1].y) * 0.5;
-        ctx.quadraticCurveTo(pts[k].x, pts[k].y, mx, my);
-      }
-      ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
-    };
-
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
-
-    for (let idx = 0; idx < n; idx++) {
-      const tr = traces[idx];
-      const pts = seismicCurveAt(tr, t);
-      if (pts.length < 2) continue;
-
-      // Painter's horizon fill: foreground ridges crisply slice across background peaks.
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, tr.baseY + 32);
-      ctx.lineTo(pts[0].x, pts[0].y);
-      for (let k = 1; k < pts.length - 1; k++) {
-        const mx = (pts[k].x + pts[k + 1].x) * 0.5;
-        const my = (pts[k].y + pts[k + 1].y) * 0.5;
-        ctx.quadraticCurveTo(pts[k].x, pts[k].y, mx, my);
-      }
-      ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
-      ctx.lineTo(pts[pts.length - 1].x, tr.baseY + 32);
-      ctx.closePath();
-      ctx.fillStyle = subPattern || G.ground;
-      ctx.fill();
-
-      // Vector stroke path.
-      ctx.beginPath();
-      buildSmoothCurve(pts);
-      const depthProgress = n > 1 ? idx / (n - 1) : 1;
-
-      if (tr.hot) {
-        if (dark) {
-          ctx.save();
-          ctx.strokeStyle = G.accent;
-          ctx.lineWidth = 2.4;
-          ctx.shadowColor = rgba(G.accent, 0.78);
-          ctx.shadowBlur = 7 * scale;
-          ctx.stroke();
-          ctx.restore();
-          ctx.strokeStyle = G.accent;
-          ctx.lineWidth = 1.65;
-          ctx.stroke();
-        } else {
-          ctx.strokeStyle = G.accent;
-          ctx.lineWidth = 1.85;
-          ctx.stroke();
-        }
-      } else {
-        ctx.strokeStyle = rgba(G.ink, 0.72 + 0.24 * depthProgress);
-        ctx.lineWidth = 1.35;
-        ctx.stroke();
-      }
-    }
-
-    // Dedicated right-margin area index ticks & crisp mono labels, completely clear of all waveforms.
-    if (bands.length) {
-      const box = F.data.box || { right: W };
-      const x1 = traces[0].x1;
-      const tickStart = x1 + 6;
-      const tickEnd = x1 + 12;
-      const labelX = x1 + 16;
-      const maxLabelW = Math.max(44, (box.right || W) - labelX - 2);
-      // Prioritize keeping hot band labels if two adjacent bands are closer than 12px.
-      const drawnY = [];
-      const ordered = [...bands].sort((a, b) => (b.hot ? 1 : 0) - (a.hot ? 1 : 0) || a.midY - b.midY);
-      const accepted = [];
-      for (const b of ordered) {
-        if (drawnY.some((y) => Math.abs(y - b.midY) < 12)) continue;
-        drawnY.push(b.midY);
-        accepted.push(b);
-      }
-      accepted.sort((a, b) => a.midY - b.midY);
-
-      ctx.save();
-      ctx.textBaseline = "middle";
-      ctx.textAlign = "left";
-      for (const b of accepted) {
-        const y = b.midY;
-        const pctStr = b.share < 0.005 ? "<1%" : `${Math.round(b.share * 100)}%`;
-        const font = `${b.hot ? 700 : 400} 7.5px ${MONO}`;
-        ctx.font = font;
-        let name = String(b.partName).toLowerCase();
-        let label = `${name} ${pctStr}`;
-        while (name.length > 3 && ctx.measureText(label).width > maxLabelW) {
-          name = name.slice(0, -1).trimEnd();
-          label = `${name}… ${pctStr}`;
-        }
-
-        // Crisp 6px horizontal index tick (x1 + 6 to x1 + 12), clear of the waveform tail.
-        ctx.strokeStyle = b.hot ? G.accent : rgba(G.ink, 0.44);
-        ctx.lineWidth = b.hot ? 1.15 : 0.8;
-        ctx.beginPath();
-        ctx.moveTo(tickStart, y);
-        ctx.lineTo(tickEnd, y);
-        ctx.stroke();
-
-        ctx.fillStyle = b.hot ? G.accent : rgba(G.ink, 0.54);
-        ctx.fillText(label, labelX, y);
-      }
-      ctx.restore();
-    }
-  }
-
-  /** Renderer 2 — topo: Marching-squares topographic elevation contours with summit crosshairs and pulse wave. */
+  /** Renderer 1 — topo: Marching-squares topographic elevation contours with summit crosshairs and pulse wave. */
   function drawTopo(t, scale, isStill) {
     const box = F.data.box;
     const contours = F.data.contours || [];
@@ -465,7 +346,7 @@
     return points[points.length - 1];
   }
 
-  /** Renderer 3 — blueprint: Proportional IC chambers, internal file cells, octilinear bus traces, vias & signals. */
+  /** Renderer 2 — blueprint: Proportional IC chambers, internal file cells, octilinear bus traces, vias & signals. */
   function drawBlueprint(t, scale) {
     const box = F.data.box;
     const chambers = F.data.chambers || [];
@@ -672,14 +553,13 @@
     cv.width = W * scale;
     cv.height = H * scale;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    const { canvas: subCanvas, pattern: subPattern } = getSubstrate();
+    const { canvas: subCanvas } = getSubstrate();
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(subCanvas, 0, 0, cv.width, cv.height);
 
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    if (F.region.plate === "seismic") drawSeismic(t, scale, subPattern);
-    else if (F.region.plate === "topo") drawTopo(t, scale, isStill);
+    if (F.region.plate === "topo") drawTopo(t, scale, isStill);
     else if (F.region.plate === "blueprint") drawBlueprint(t, scale);
 
     if (F.canvasChrome) drawCanvasChrome(scale);

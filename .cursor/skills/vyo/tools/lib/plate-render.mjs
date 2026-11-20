@@ -1,4 +1,4 @@
-// The plate frame in Node: deterministic vector plate geometry (seismic, topo, blueprint), computed once per spec,
+// The plate frame in Node: deterministic vector plate geometry (topo, blueprint), computed once per spec,
 // its self-contained HTML page for 2x canvas rendering and GIF/MP4 loops, plus sketch text and 1/3-scale PNG preview.
 import fs from "node:fs";
 import path from "node:path";
@@ -9,7 +9,6 @@ import { coverTemplate, coverRecord, COVER, COVER_GROUNDS } from "./cover.mjs";
 import { COVER_FONTS } from "./cover-render.mjs";
 import { buildLayoutChrome } from "./layout-chrome.mjs";
 import { PLATES } from "./plates/index.mjs";
-import { seismicCurveAt } from "./plates/seismic.mjs";
 import { encodePng } from "./png.mjs";
 
 const LIB = path.dirname(fileURLToPath(import.meta.url));
@@ -57,12 +56,7 @@ function fontFaces() {
 }
 
 const plateScript = () =>
-  [
-    fs.readFileSync(path.join(LIB, "plates", "seismic.mjs"), "utf8").replace(/^import .*\n/gm, "").replace(/^export /gm, ""),
-    fs.readFileSync(path.join(LIB, "plate-page.js"), "utf8"),
-  ]
-    .join("\n")
-    .replace(/<\/script/gi, "<\\/script");
+  fs.readFileSync(path.join(LIB, "plate-page.js"), "utf8").replace(/<\/script/gi, "<\\/script");
 
 /** A plate as one self-contained HTML page. `prelude` is render's page prelude (fonts ready, text fitting). */
 export function platePage(spec, facts, prelude) {
@@ -105,9 +99,7 @@ export function plateSketchLines(spec, facts) {
   const { region, parts, slices, ties, data, ground, layout, format, totalSliceLoc } = plateOf(spec, facts);
   const totalLoc = parts.reduce((s, p) => s + p.loc, 0) || 1;
   let geomSummary;
-  if (region.plate === "seismic") {
-    geomSummary = `${data.traces.length} traces across ${data.partBands.length} bands (${data.accentCount} accented)`;
-  } else if (region.plate === "topo") {
+  if (region.plate === "topo") {
     geomSummary = `${data.contours.length} contours across ${data.levels} levels, ${data.summits.length} summits (${data.accentCount} accented contours)`;
   } else {
     const cells = data.chambers.reduce((s, c) => s + c.cells.length, 0);
@@ -182,16 +174,7 @@ export function plateSketchImage(spec, facts) {
     lay(b.x + b.w - S, b.y, b.x + b.w, b.y + b.h, color, a);
   };
 
-  if (region.plate === "seismic") {
-    for (const tr of data.traces) {
-      const pts = seismicCurveAt(tr, 0);
-      const col = tr.hot ? cAccent : cInk;
-      const alpha = tr.hot ? 0.95 : 0.72;
-      for (let k = 1; k < pts.length; k++) {
-        drawSeg(pts[k - 1].x, pts[k - 1].y, pts[k].x, pts[k].y, col, alpha);
-      }
-    }
-  } else if (region.plate === "topo") {
+  if (region.plate === "topo") {
     for (const c of data.contours) {
       const pts = c.points;
       if (!pts || pts.length < 2) continue;

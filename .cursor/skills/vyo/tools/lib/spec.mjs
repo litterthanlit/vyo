@@ -23,7 +23,7 @@ import { PLATES, PLATE_NAMES } from "./plates/index.mjs";
  * @typedef {{ kind: "dots", id: string, lines: string[], x: number, y: number, cell: number, tones: (ToneName | "hot")[] }} DotsRegion
  * @typedef {{ kind: "field", id: string, field: keyof typeof FIELDS, fits: string, accent?: string, names?: Record<string, string>,
  *             sentence?: string, every?: number, seed?: number, letter?: string, symbols?: boolean, minShare?: number, maxParts?: number }} FieldRegion  drawn from facts.json at render
- * @typedef {{ kind: "plate", id: string, plate: "seismic" | "topo" | "blueprint", accent?: string, names?: Record<string, string>,
+ * @typedef {{ kind: "plate", id: string, plate: "topo" | "blueprint", accent?: string, names?: Record<string, string>,
  *             split?: string[], minShare?: number, maxParts?: number, seed?: number }} PlateRegion
  * @typedef {{ role: string, id: string, text?: string, x: number, y: number, w: number, size?: number,
  *             align?: "left" | "right" | "center", hot?: boolean, parts?: true, items?: string[] }} Text  roles per frame in lib/frame.mjs
@@ -525,7 +525,7 @@ function checkFigure(fig, err, copy, frame) {
     err('figure.regions: the cover draws exactly one region, { "kind": "field", "field": "shape", ... }; vyo compose --frame cover writes it');
   }
   if (frame === "plate" && Array.isArray(fig.regions) && !(fig.regions.length === 1 && isObj(fig.regions[0]) && fig.regions[0].kind === "plate")) {
-    err('figure.regions: a plate draws exactly one region, { "kind": "plate", "plate": "seismic" | "topo" | "blueprint", ... }; vyo compose --frame plate writes it');
+    err('figure.regions: a plate draws exactly one region, { "kind": "plate", "plate": "topo" | "blueprint", ... }; vyo compose --frame plate writes it');
   }
   if (frame === "signal" && Array.isArray(fig.regions) && !hasField(fig) && !fig.regions.some((r) => isObj(r) && r.kind === "fill")) {
     err("figure.regions: the signal frame draws a field or a fill; add one, or set frame to swiss");
@@ -856,13 +856,13 @@ export function coverScaffold(facts, { commit, date, accent, split, parts, strat
 }
 
 /**
- * The spec `compose --frame plate` writes: a pure vector plate (`seismic`, `topo`, or `blueprint`) in a curated
+ * The spec `compose --frame plate` writes: a pure vector plate (`topo` or `blueprint`) in a curated
  * gallery ground and layout, leaving only the product name, headline, part names, accent and legend to write.
  * @param {{ hash: string, repo: { name: string } }} facts
- * @param {{ plate?: "seismic" | "topo" | "blueprint", commit?: string, date: string, accent?: string, split?: string[], parts?: { id: string, name: string }[], ground?: string, layout?: string, format?: string, seed?: number }} o
+ * @param {{ plate?: "topo" | "blueprint", commit?: string, date: string, accent?: string, split?: string[], parts?: { id: string, name: string }[], ground?: string, layout?: string, format?: string, seed?: number }} o
  */
-export function plateScaffold(facts, { plate = "seismic", commit, date, accent, split, parts = [], ground = "obsidian", layout = "editorial", format = "poster", seed }) {
-  const P = PLATES[plate] ?? PLATES.seismic;
+export function plateScaffold(facts, { plate = "topo", commit, date, accent, split, parts = [], ground = "obsidian", layout = "editorial", format = "poster", seed }) {
+  const P = PLATES[plate] ?? PLATES.topo;
   const color = COVER_GROUNDS[ground]?.colorName ?? "cyan";
   return {
     version: 3,

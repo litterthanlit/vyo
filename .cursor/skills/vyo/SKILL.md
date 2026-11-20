@@ -34,7 +34,7 @@ Start from vyo v2's two flagship directions — pick the one that best fits the 
 
 | Art direction | Command | Best for |
 |---|---|---|
-| **Data-as-Art Vector Plate** *(flagship)* | `compose --frame plate --plate seismic\|topo\|blueprint --layout editorial\|blueprint\|macro\|classic --ground obsidian\|carbon\|abyss\|graphite\|bone` | Album-cover / gallery print driven straight from the codebase: file-level vector *Unknown Pleasures* ridgelines (`seismic`), marching-squares topographic elevation maps (`topo`), or octilinear PCB circuit schematics wired from real imports (`blueprint`), with `pulse`/`signal` looping GIFs |
+| **Data-as-Art Vector Plate** *(flagship)* | `compose --frame plate --plate topo\|blueprint --layout editorial\|blueprint\|macro\|classic --ground obsidian\|carbon\|abyss\|graphite\|bone` | Album-cover / gallery print driven straight from the codebase: marching-squares topographic elevation maps (`topo`) or octilinear PCB circuit schematics wired from real imports (`blueprint`), with `pulse`/`signal` looping GIFs |
 | **Studio-Lit 3D Cover** *(flagship)* | `compose --frame cover --finish studio\|halftone\|wireframe\|type --layout editorial\|classic\|blueprint\|macro --ground obsidian\|carbon\|abyss\|graphite\|bone` | Sculpted 3D product object cut by real line shares: continuous-tone studio lighting (`studio`: softbox key + Fresnel rim + distance-field AO + film grain), precision 22.5° `halftone` dot-matrix, smoked-glass `wireframe` contours, or classic 6px Commit Mono `type` relief across 22 ready silhouettes or traced PNG masks |
 | **Zine / Turntable Cover** *(opt-in looks)* | `compose --frame cover --look xerox\|spin --ground bone\|obsidian\|carbon\|<legacy>` | Expressive `xerox` 2-plate photocopy treatment (`copier` loop) or 360° kinetic `spin` turntable in `type` finish |
 | **Editorial Shape Poster** | `compose --field shape --style relief\|rings\|symbols [--frame signal]` | Custom drawn silhouette (`ops`), ready object (`like`), or traced PNG logo (`mask`) with serif (`loose`) or brutalist (`signal`) typography |
@@ -51,9 +51,8 @@ A plate turns the codebase's real file slices, line counts, and import graph int
 1. `npx vyo scan <repo> --out <facts>`
 2. Choose a plate kind and compose the scaffold:
    ```bash
-   npx vyo compose <facts> --frame plate --plate <seismic|topo|blueprint> --layout <editorial|blueprint|macro|classic> --ground <obsidian|carbon|abyss|graphite|bone> [--format poster|square|og] --repo <repo> --out <repo>/vyo/<name>-poster.json
+   npx vyo compose <facts> --frame plate --plate <topo|blueprint> --layout <editorial|blueprint|macro|classic> --ground <obsidian|carbon|abyss|graphite|bone> [--format poster|square|og] --repo <repo> --out <repo>/vyo/<name>-poster.json
    ```
-   - `seismic`: file-level vector *Unknown Pleasures* stacked ridgelines, peaks scaled by lines and sharpened by import coupling (`motion: { kind: "pulse" }`).
    - `topo`: marching-squares topographic elevation map rising around each area's lines and import passes (`motion: { kind: "pulse" }`).
    - `blueprint`: octilinear PCB / circuit schematic with proportional part chambers and chamfered import traces (`motion: { kind: "signal" }`). Pairs especially well with `--layout blueprint`.
    Compose auto-splits any part over 40% of the code, sets the matching `motion`, writes the legend pattern, and prints every part (`*` good accent candidate, `-` surrounding code).
@@ -143,7 +142,7 @@ Generate a field when no single object fits, or when the codebase's own architec
 
 Every field from `scatter` to `contour`, plus `seismic` and `orbit`, takes `symbols: true`: the form drawn in sparse clusters of `- : = + #`, shaded by depth, like ASCII art. `seed` moves a generated field's composition; compose writes one, and `0` is the field's own form. A field preference in `project-context.md` wins.
 
-**The frame.** `plate` renders pure high-resolution vector data art (`seismic`, `topo`, `blueprint`) on 4 gallery layouts (see "Make a plate"). `cover` builds a sculpted 3D object with selectable finishes (`studio`, `halftone`, `wireframe`, `type`) and 4 gallery layouts across `poster`/`square`/`og` (see "Make a cover"). `loose` (the default for fields) puts serif words in the room the field leaves, with a record line. `signal` is the high-contrast grotesque frame with archival `meta` and highlighter `mark`s (see "Signal frame"). `swiss` is a masthead over a footer of notes, for a repo with no git history. A shape draws in `loose`, `signal` or `cover`.
+**The frame.** `plate` renders pure high-resolution vector data art (`topo`, `blueprint`) on 4 gallery layouts (see "Make a plate"). `cover` builds a sculpted 3D object with selectable finishes (`studio`, `halftone`, `wireframe`, `type`) and 4 gallery layouts across `poster`/`square`/`og` (see "Make a cover"). `loose` (the default for fields) puts serif words in the room the field leaves, with a record line. `signal` is the high-contrast grotesque frame with archival `meta` and highlighter `mark`s (see "Signal frame"). `swiss` is a masthead over a footer of notes, for a repo with no git history. A shape draws in `loose`, `signal` or `cover`.
 
 **The sheet.** `--theme light` (paper) or `dark` (navy, charcoal in the signal frame) for poster frames; `--ground` (preferring `obsidian`, `carbon`, `abyss`, `graphite`, `bone`) for plates and covers. One accent colour; a second colour has to justify itself.
 
@@ -192,7 +191,7 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 | `product.name` | The customer-facing name, capitalised as the product's docs write it. `product-name` warns while it is the folder name; keep it if the docs write it that way |
 | `product.commit` | The short hash. `compose --repo` fills it, and the record line needs it |
 | `headline` | At most 72 characters |
-| region `plate` | Plate frame only (`kind: "plate"`): `seismic`, `topo`, or `blueprint`. Exactly one per figure; takes optional `accent`, `names`, `split`, `minShare`, `maxParts`, `seed` |
+| region `plate` | Plate frame only (`kind: "plate"`): `topo` or `blueprint`. Exactly one per figure; takes optional `accent`, `names`, `split`, `minShare`, `maxParts`, `seed` |
 | region `field` | `shape`, `seismic`, `orbit`, `wave`, `terrain`, `river`, `radial`, `sphere`, `scatter`, `shatter`, `glyph`, `bleed`, `slabs`, `spiral` or `contour`. One field per figure |
 | region `fits` | Field posters only: why this field matches the story, with its keyword, at most 160 characters (refused on plates) |
 | region `accent` | The accent part's id from `vyo parts` |
@@ -209,7 +208,7 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 | region `letter` | Glyph only: one character, A–Z or 0–9. Compose uses the first character of the repo name |
 | region `symbols` | `scatter` to `contour`, plus `seismic` and `orbit`: `true` draws the form in shaded `- : = + #` with gaps, instead of part names |
 | `figure.texts` | Loose/signal: exactly one `label` and `headline`, one `legend`, 0 to 2 `paragraph`, 0 or 1 `list`, 0 or 1 `rule` (signal adds `meta`, `display`, `mark`). Cover and plate: exactly one `legend` with no coordinates |
-| `motion` | Optional, for `--gif`: `{ kind: "nodes" \| "resolve" \| "wipe", frames: 8 to 36, fps: 6 to 24 }` on posters; `{ kind: "turn" }` (living/spin) or `{ kind: "copier" }` (xerox) on covers; `{ kind: "pulse" }` (seismic/topo) or `{ kind: "signal" }` (blueprint) on plates |
+| `motion` | Optional, for `--gif`: `{ kind: "nodes" \| "resolve" \| "wipe", frames: 8 to 36, fps: 6 to 24 }` on posters; `{ kind: "turn" }` (living/spin) or `{ kind: "copier" }` (xerox) on covers; `{ kind: "pulse" }` (topo) or `{ kind: "signal" }` (blueprint) on plates |
 | `record` | Loose/signal only, optional: `bottom` or `left`, to force the record line's side |
 
 A loose, signal, cover, or plate spec has no `notes`, `notBuilt`, `hot` or `figure.fits`. [examples.md](examples.md) has specs in full. The package's `tools/README.md` lists every check.
@@ -221,7 +220,7 @@ Charcoal or cream, one signal colour (lime `#C8FF00` unless the spec's `accent` 
 ## Motion & series
 
 `motion` on the spec, then `npx vyo render <spec> --gif`, writes a GIF and an MP4 beside the PNG.
-- **Plates:** `pulse` (breathing wave on `seismic`/`topo`) and `signal` (travelling signal pulses along import traces on `blueprint`) run 48-frame loops at 24 fps.
+- **Plates:** `pulse` (breathing wave on `topo`) and `signal` (travelling signal pulses along import traces on `blueprint`) run 48-frame loops at 24 fps.
 - **Covers:** `turn` swings `living` for 7 seconds (168 frames @ 24fps -> 12fps GIF) or rotates `spin` a full 360° (96 frames @ 12fps); `copier` pulses a `xerox` cover through photocopier generation grain and micro-jitter (32 frames @ 10fps).
 - **Posters:** `nodes` travels dots along hairline `routes`, `resolve` fades rows in from the top, `wipe` grows `mark`s.
 

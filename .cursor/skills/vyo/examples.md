@@ -179,7 +179,7 @@ A dark sculptural `studio` cover in the `editorial` gallery layout on `obsidian`
 }
 ```
 
-A pure vector `seismic` data-as-art plate (`frame: "plate"`) on `obsidian` in the `editorial` layout with a `pulse` loop:
+A pure vector `topo` topographic elevation plate (`frame: "plate"`) on `obsidian` in the `editorial` layout with a `pulse` loop:
 
 ```json
 {
@@ -194,8 +194,8 @@ A pure vector `seismic` data-as-art plate (`frame: "plate"`) on `obsidian` in th
     "regions": [
       {
         "kind": "plate",
-        "id": "seismic",
-        "plate": "seismic",
+        "id": "topo",
+        "plate": "topo",
         "accent": "area:lib/plan",
         "names": {
           "area:.": "saved recipes",
@@ -214,7 +214,7 @@ A pure vector `seismic` data-as-art plate (`frame: "plate"`) on `obsidian` in th
       }
     ],
     "texts": [
-      { "role": "legend", "id": "legend", "text": "Each ridge is a slice of Pantry's code, peaks sized by lines and sharpened by imports. The cyan ridges are the plan." }
+      { "role": "legend", "id": "legend", "text": "Elevation maps the lines of Pantry's code, contours rising around each area's peaks and import passes. The cyan contours are the plan." }
     ]
   },
   "motion": { "kind": "pulse" }

@@ -315,7 +315,7 @@ for (const [name, mutate, expect] of COVER_PLANTED) {
   result(r.status === 1 && expect.test(r.stderr), `planted cover flaw (${name}) fails with ${expect}`, `exit ${r.status}\n${r.stderr}`);
 }
 
-// Gallery plates (seismic, topo, blueprint) and v2 studio + editorial cover end-to-end in Chromium.
+// Gallery plates (topo, blueprint) and v2 studio + editorial cover end-to-end in Chromium.
 const coverBase = preset("cover");
 const plateSpec = (plate, ground, layout) => ({
   version: 3,
@@ -339,7 +339,6 @@ const plateSpec = (plate, ground, layout) => ({
 });
 
 for (const [plate, ground, layout] of [
-  ["seismic", "obsidian", "editorial"],
   ["topo", "carbon", "blueprint"],
   ["blueprint", "abyss", "blueprint"],
 ]) {
@@ -354,16 +353,16 @@ for (const [plate, ground, layout] of [
   result(wh[0] === 280 && wh[1] === 396 && r.stdout.includes(thumb), `plate ${plate} writes a 280x396 thumb and prints it`, `${wh}\n${r.stdout}`);
 }
 {
-  const dir = path.join(OUT, "plate-seismic-gif");
+  const dir = path.join(OUT, "plate-topo-gif");
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, "recipe-poster.json");
-  fs.writeFileSync(file, JSON.stringify(plateSpec("seismic", "obsidian", "editorial"), null, 2));
+  fs.writeFileSync(file, JSON.stringify(plateSpec("topo", "carbon", "blueprint"), null, 2));
   const r = vyo("render", file, "--facts", factsFile, "--gif", "--no-pdf");
   const gif = path.join(dir, "recipe-poster.gif");
   const mp4 = path.join(dir, "recipe-poster.mp4");
   const gifSize = fs.existsSync(gif) ? fs.statSync(gif).size : 0;
   const mp4Size = fs.existsSync(mp4) ? fs.statSync(mp4).size : 0;
-  result(r.status === 0 && /^PASS$/m.test(r.stdout) && !/^✗/m.test(r.stderr) && gifSize > 0 && mp4Size > 0, "plate seismic renders with --gif --no-pdf: passes and writes GIF and MP4", `exit ${r.status}, gif=${gifSize}B, mp4=${mp4Size}B\n${r.stdout}${r.stderr}`);
+  result(r.status === 0 && /^PASS$/m.test(r.stdout) && !/^✗/m.test(r.stderr) && gifSize > 0 && mp4Size > 0, "plate topo renders with --gif --no-pdf: passes and writes GIF and MP4", `exit ${r.status}, gif=${gifSize}B, mp4=${mp4Size}B\n${r.stdout}${r.stderr}`);
 }
 {
   const dir = path.join(OUT, "cover-studio-editorial");

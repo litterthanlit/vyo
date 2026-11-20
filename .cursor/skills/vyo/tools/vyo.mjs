@@ -415,14 +415,14 @@ function composeCover(factsFile, opt) {
 }
 
 /**
- * compose --frame plate: a pure vector data-art plate (`seismic`, `topo`, or `blueprint`) in a curated gallery
+ * compose --frame plate: a pure vector data-art plate (`topo` or `blueprint`) in a curated gallery
  * ground and layout, auto-splitting any dominant part over 40% so the composition has rich architectural grain.
  */
 function composePlate(factsFile, opt, seed) {
   for (const k of ["from", "style", "theme", "field", "look", "crop", "finish"]) {
     if (opt[k] !== undefined) throw new Usage(`--${k} has no place on a plate; leave out --${k}`);
   }
-  const plate = opt.plate ?? "seismic";
+  const plate = opt.plate ?? "topo";
   if (!PLATE_NAMES.includes(plate)) throw new Usage(`--plate ${plate} is not a plate; use ${PLATE_NAMES.join(", ")}`);
   const ground = opt.ground ?? "obsidian";
   if (!COVER_GROUNDS[ground]) throw new Usage(`--ground ${ground} is not a ground; use ${Object.keys(COVER_GROUNDS).join(", ")}`);
