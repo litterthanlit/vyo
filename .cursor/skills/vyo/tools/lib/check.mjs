@@ -369,6 +369,21 @@ export const CHECKS = [
     },
   },
   {
+    // Not the sheet: a cover's name is set to bleed its line box past the bottom edge on purpose.
+    id: "cards-hold", level: "fail", stage: "page", frames: COVER_ONLY, about: "every text block a chrome card (a macro plaque) sits on fits inside the card",
+    run: ({ page }) => {
+      const out = [];
+      const inside = (r, c) => r.left >= c.left - 0.5 && r.top >= c.top - 0.5 && r.right <= c.right + 0.5 && r.bottom <= c.bottom + 0.5;
+      for (const b of page.blocks) {
+        if (b.role === "mark") continue;
+        for (const c of page.cards ?? []) {
+          if (overlap(b.rect, c.rect) && !inside(b.rect, c.rect)) out.push(`the ${b.name}'s letters run past the ${c.name} card (text ${round(b.rect.left)},${round(b.rect.top)} to ${round(b.rect.right)},${round(b.rect.bottom)}, card ${round(c.rect.left)},${round(c.rect.top)} to ${round(c.rect.right)},${round(c.rect.bottom)}); the layout sizes its cards itself, so this is an engine fault: try another layout and report it`);
+        }
+      }
+      return out;
+    },
+  },
+  {
     id: "blocks-inside", level: "fail", stage: "page", frames: SHEET_FRAMES, about: "every text block, and every label a plate draws, is inside the sheet",
     run: ({ page }) => [
       ...page.blocks.filter((b) => !inside(b.rect, page.sheet)).map((b) => `${b.name} runs off the sheet (${offEdge(b.rect, page.sheet)})`),

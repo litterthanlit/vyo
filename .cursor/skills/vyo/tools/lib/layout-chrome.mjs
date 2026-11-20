@@ -217,18 +217,22 @@ ${subHtml}
   const padY = 12;
   const nameSize = T.nameSize;
   const nameW = coverBlackWidth(spec.product.name, nameSize, T.track);
-  const hlW = Math.max(...T.headline.map(coverSmallWidth), 0);
+  // Each plaque is sized from the widths its words are set at, in the type this look sets them in (`setLines`):
+  // xerox sets the headline and legend in Commit Mono, wider than the Inter the template wrapped them by.
+  const setWidth = (lines, type = smallType) => Math.max(0, ...setLines(lines, type, { x: 0, top: 0 }).map((l) => l.width));
+  const hlW = setWidth(T.headline);
   const tlW = Math.ceil(Math.max(nameW, hlW)) + padX * 2 + 8;
   const tlH = Math.ceil(nameSize * 1.02) + 8 + Math.ceil(T.headline.length * lead) + padY * 2;
   const tl = { x: M, y: M, w: tlW, h: tlH };
 
   const tagText = `VYO${seriesNum ? ` ${seriesNum}` : ""}`;
-  const recMaxChars = Math.max(...recordLines.map((l) => l.length), tagText.length);
-  const trW = Math.max(180, Math.ceil(recMaxChars * 6) + padX * 2 + 8);
+  // The tag: Commit Mono 700 at 10px, tracked .08em.
+  const tagW = tagText.length * (0.6 + 0.08) * 10;
+  const trW = Math.max(180, Math.ceil(Math.max(setWidth(recordLines, RECORD_MONO), tagW)) + padX * 2 + 8);
   const trH = 18 + recordLines.length * RECORD_MONO.lineHeight + padY * 2;
   const tr = { x: W - M - trW, y: M, w: trW, h: trH };
 
-  const lgW = Math.max(...T.legend.map(coverSmallWidth), 0);
+  const lgW = setWidth(T.legend);
   const blW = Math.ceil(lgW) + padX * 2 + 8;
   const blH = Math.ceil(T.legend.length * lead) + padY * 2;
   const bl = { x: M, y: H - M - blH, w: blW, h: blH };

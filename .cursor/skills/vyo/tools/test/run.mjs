@@ -371,6 +371,14 @@ for (const layout of COVER_LAYOUTS) {
     `accent share under each mark ${marks.map((s) => s.toFixed(2))}, in the stamp's box ${stamp.toFixed(3)}\n${fails.map((f) => `${f.id}: ${f.message}`).join("\n")}`,
   );
 }
+// Every macro plaque holds the words set on it, in each look's own type: xerox and spin set the headline and legend
+// in other faces than living, so a plaque sized from one face's measure lets another's letters run past it.
+for (const look of ["living", "xerox", "spin"]) {
+  const spec = { ...preset("cover"), look, layout: "macro", ...(look === "xerox" ? { motion: { kind: "copier" } } : {}) };
+  const page = await renderPage({ html: buildPage(spec, facts), base: path.join(OUT, "macro-cards", look), png: false, pdf: false });
+  const found = runChecks("page", { spec, facts, presets: {}, page }).filter((f) => f.id === "cards-hold");
+  result(page.cards.length === 3 && !found.length, `${look} macro: every plaque holds the text set on it`, found.map((f) => f.message).join("\n"));
+}
 const COVER_GROUNDS_LIST =Object.keys(COVER_GROUNDS).map((g) => `"${g}"`).join(", ");
 const COVER_PLANTED = [
   ["a free colour for the ground", (s) => (s.ground = "#14281F"), new RegExp(`^✗ spec: ground: "#14281F" is not a ground; a free colour is not offered; use ${COVER_GROUNDS_LIST}$`, "m")],
