@@ -76,8 +76,17 @@
     ctx.fillStyle = G.ground;
     ctx.fillRect(r.left - 2, r.top - 2, r.right - r.left + 4, r.bottom - r.top + 4);
   };
-  const record = (text, r) => {
-    if (r.right - r.left > 0.5 && r.bottom - r.top > 0.5) labels.push({ text, rect: r });
+  /**
+   * Record a label as drawn: `ink` is the rect its whole text covers, `space` the clip it was drawn in (none: the
+   * whole ink shows). The page keeps what shows, the width the text needs and the width it was given, so a check
+   * can tell a name printed whole from one the canvas cut.
+   */
+  const record = (text, ink, space = null) => {
+    const r = space ? cut(ink, space) : ink;
+    const w2 = (v) => Math.round(v * 100) / 100;
+    if (r.right - r.left > 0.5 && r.bottom - r.top > 0.5) {
+      labels.push({ text, rect: r, need: w2(ink.right - ink.left), room: w2(space ? space.right - space.left : ink.right - ink.left), shown: w2(r.right - r.left) });
+    }
   };
 
   const hexRgb = (hex) => [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16));
@@ -658,13 +667,13 @@
         };
         ctx.font = nameFont;
         ctx.textAlign = "left";
-        const nameInk = cut(inkRect(name, c.x + 6, hy), header);
+        const nameInk = inkRect(name, c.x + 6, hy);
         ctx.font = pctFont;
         ctx.textAlign = "right";
-        const pctInk = pctStr ? cut(inkRect(pctStr, c.x + c.w - 6, hy), header) : null;
+        const pctInk = pctStr ? inkRect(pctStr, c.x + c.w - 6, hy) : null;
 
         ctx.save();
-        if (stays(nameInk) && (!pctInk || stays(pctInk))) {
+        if (stays(cut(nameInk, header)) && (!pctInk || stays(cut(pctInk, header)))) {
           ctx.beginPath();
           ctx.rect(header.left, header.top, Math.max(0, header.right - header.left), header.bottom - header.top);
           ctx.clip();
@@ -672,13 +681,13 @@
           ctx.textAlign = "left";
           ctx.fillStyle = nameFill;
           ctx.fillText(name, c.x + 6, hy);
-          record(name, nameInk);
+          record(name, nameInk, header);
           if (pctStr) {
             ctx.font = pctFont;
             ctx.textAlign = "right";
             ctx.fillStyle = pctFill;
             ctx.fillText(pctStr, c.x + c.w - 6, hy);
-            record(pctStr, pctInk);
+            record(pctStr, pctInk, header);
           }
         } else if (room) {
           ctx.textAlign = "left";
@@ -692,7 +701,8 @@
           }
           const move = placeLabel(r, { within });
           if (move) {
-            const at = cut(shift(r, move.dx, move.dy), within);
+            const whole = shift(r, move.dx, move.dy);
+            const at = cut(whole, within);
             ctx.beginPath();
             ctx.rect(within.left, within.top, within.right - within.left, within.bottom - within.top);
             ctx.clip();
@@ -705,7 +715,7 @@
               ctx.fillStyle = pctFill;
               ctx.fillText(pctStr, c.x + 6 + nameW + 6 + move.dx, hy + move.dy);
             }
-            record(pctStr ? `${name} ${pctStr}` : name, at);
+            record(pctStr ? `${name} ${pctStr}` : name, whole, within);
           }
         }
         ctx.restore();

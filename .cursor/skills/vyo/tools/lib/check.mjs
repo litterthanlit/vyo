@@ -376,6 +376,13 @@ export const CHECKS = [
     ],
   },
   {
+    id: "labels-whole", level: "fail", stage: "page", frames: ["plate"], about: "every label a plate draws prints whole: its text is no wider than the space the canvas gave it, and none of it is cut off",
+    run: ({ page }) =>
+      (page.plate?.labels ?? [])
+        .filter((l) => l.need > l.room + 0.5 || l.shown < l.need - 0.5)
+        .map((l) => `the plate label "${l.text}" needs ${round(l.need)}px but has ${round(l.room)}px, so the canvas cuts it to ${round(l.shown)}px; every name prints whole, and ${PLATE_LABEL_FAULT}`),
+  },
+  {
     id: "silhouette", level: "fail", stage: "page", about: "the figure covers 15% of the sheet above the footer and spans 55% of its height and 60% of its width (a drawn shape is judged by shape-cover instead)",
     run: ({ spec, page }) => {
       // A shape's rows are type inside a silhouette the mask already measures; a plate draws a full-stage vector canvas.
