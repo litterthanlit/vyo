@@ -480,6 +480,21 @@ const reEscape = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   result(planted !== html && !now.length && then.some((f) => want.test(f.message)), `planted plate flaw (a long chamber name drawn where it does not fit) fails labels-whole with ${want}`, `now ${JSON.stringify(now)}\nthen ${JSON.stringify(then)}`);
 }
 {
+  // A chamber no placement fits: shrunk to a speck and walled in by a card, so its name has nowhere to go. The page
+  // must say it drew the part unnamed, and labels-whole must fail it rather than pass a part no one can identify.
+  const spec = { ...plateSpec("blueprint", "abyss", "editorial"), format: "og" };
+  let drop = null;
+  const planted = plantFigure(buildPage(spec, facts), (F) => {
+    const c = F.data.chambers.reduce((a, b) => (b.w < a.w ? b : a));
+    Object.assign(c, { w: 4, h: 4, cells: [] });
+    F.cards = [...(F.cards ?? []), { x: c.x - 80, y: c.y - 40, w: 164, h: 84 }];
+    drop = c;
+  });
+  const then = await plateFindings(spec, planted, "plate-unnamed-planted", ["labels-whole"]);
+  const want = new RegExp(`^the plate draws "${reEscape(String(drop.partName).toLowerCase())}" \\(${reEscape(drop.partId)}\\) with no name: no placement fits it`);
+  result(then.some((f) => want.test(f.message)), `planted plate flaw (a chamber no placement fits) fails labels-whole with ${want}`, `then ${JSON.stringify(then)}`);
+}
+{
   const dir = path.join(OUT, "plate-seismic-gif");
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, "recipe-poster.json");

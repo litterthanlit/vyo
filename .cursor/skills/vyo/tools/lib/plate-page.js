@@ -29,6 +29,8 @@
   // the sheet (a full-bleed layout such as macro), and 8px clear of the layout's chrome cards. Every label drawn is
   // recorded as the rect its ink covers, so blocks-inside and blocks-apart judge what the canvas shows.
   let labels = [];
+  // The parts whose name no placement fitted, so the plate drew them unnamed; labels-whole fails them.
+  let unnamed = [];
   const plateBox = F.data.box || { left: 0, right: W, top: 0, bottom: H };
   const margin = Number(F.margin) || 0;
   const SAFE = {
@@ -572,7 +574,7 @@
   // part of the safe area: a row in the header at 8.5px, shrinking to 7px (the share drops before the name shrinks);
   // the row moved, with a backing, where the header is off the safe area or under a card; the name wrapped to two
   // lines; turned upright along a tall, thin chamber; a callout in the gutter above or below the chamber, with a
-  // leader. A chamber none of them fits gets no name.
+  // leader. A chamber none of them fits gets no name, and the page reports it in `unnamed`.
   const HEAD_SIZES = [8.5, 8, 7.5, 7];
   const CALLOUT_SIZE = 7.5;
   const span = (a, b) => ({ left: Math.min(a.left, b.left), right: Math.max(a.right, b.right), top: Math.min(a.top, b.top), bottom: Math.max(a.bottom, b.bottom) });
@@ -713,7 +715,10 @@
     const taken = [];
     for (const c of chambers) {
       const plan = chamberLabelPlan(c, taken);
-      if (!plan) continue;
+      if (!plan) {
+        unnamed.push({ id: c.partId, name: String(c.partName).toLowerCase() });
+        continue;
+      }
       ctx.save();
       ctx.beginPath();
       ctx.rect(plan.space.left, plan.space.top, plan.space.right - plan.space.left, plan.space.bottom - plan.space.top);
@@ -949,6 +954,7 @@
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     tally = { parts: new Set(), accent: 0 };
     labels = [];
+    unnamed = [];
     if (F.region.plate === "seismic") drawSeismic(t, scale, subPattern);
     else if (F.region.plate === "topo") drawTopo(t, scale, isStill);
     else if (F.region.plate === "blueprint") drawBlueprint(t, scale);
@@ -961,6 +967,7 @@
       plate: F.region.plate,
       parts: [...tally.parts],
       labels,
+      unnamed,
       representedParts: tally.parts.size,
       accentCount: tally.accent,
       slices: F.data.traces?.length ?? F.parts.length,
