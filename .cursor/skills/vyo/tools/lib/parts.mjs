@@ -161,6 +161,11 @@ function partOfArea(ids, area) {
   }
 }
 
+/** The part that holds `file`: its own part when the file was split out, else the part of its area. */
+function partOfFile(ids, file, area) {
+  return ids.has(`area:${file}`) ? `area:${file}` : partOfArea(ids, area);
+}
+
 /**
  * How many imports join each pair of parts, as [i, j, count] with i < j, indexes into `parts`.
  * @param {{ id: string }[]} parts
@@ -169,7 +174,7 @@ function partOfArea(ids, area) {
 export function partTies(parts, facts) {
   const ids = new Set(parts.map((p) => p.id));
   const index = new Map(parts.map((p, i) => [p.id, i]));
-  const of = (file) => (facts.files[file] && !facts.files[file].gen ? index.get(partOfArea(ids, facts.files[file].area)) : undefined);
+  const of = (file) => (facts.files[file] && !facts.files[file].gen ? index.get(partOfFile(ids, file, facts.files[file].area)) : undefined);
   const ties = new Map();
   for (const [a, b] of facts.imports ?? []) {
     const [i, j] = [of(a), of(b)].sort((x, y) => x - y);
@@ -378,9 +383,7 @@ export function fileSlices(facts, partOpts = {}) {
   const fallbackPartId = partIds.has(ROOT) ? ROOT : parts[0].id;
 
   const ownerOfFile = (filePath, fileInfo) => {
-    const filePartId = `area:${filePath}`;
-    if (partIds.has(filePartId)) return partIndexById.get(filePartId);
-    const areaPartId = fileInfo.area ? partOfArea(partIds, fileInfo.area) : null;
+    const areaPartId = partOfFile(partIds, filePath, fileInfo.area ?? "");
     if (areaPartId && partIndexById.has(areaPartId)) return partIndexById.get(areaPartId);
     return partIndexById.get(fallbackPartId);
   };
