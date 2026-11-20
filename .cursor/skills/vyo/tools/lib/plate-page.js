@@ -78,15 +78,15 @@
   };
   /**
    * Record a label as drawn: `ink` is the rect its whole text covers, `space` the clip it was drawn in (none: the
-   * whole ink shows). The page keeps what shows, the width the text needs and the width it was given, so a check
+   * whole ink shows), and `axis` the way its text runs ("y" for a label turned upright). The page keeps what shows, the width the text needs and the width it was given, so a check
    * can tell a name printed whole from one the canvas cut.
    */
-  const record = (text, ink, space = null) => {
+  const record = (text, ink, space = null, axis = "x") => {
     const r = space ? cut(ink, space) : ink;
     const w2 = (v) => Math.round(v * 100) / 100;
-    if (r.right - r.left > 0.5 && r.bottom - r.top > 0.5) {
-      labels.push({ text, rect: r, need: w2(ink.right - ink.left), room: w2(space ? space.right - space.left : ink.right - ink.left), shown: w2(r.right - r.left) });
-    }
+    const [lo, hi] = axis === "y" ? ["top", "bottom"] : ["left", "right"];
+    const along = (q) => w2(q[hi] - q[lo]);
+    if (r.right - r.left > 0.5 && r.bottom - r.top > 0.5) labels.push({ text, rect: r, need: along(ink), room: along(space ?? ink), shown: along(r) });
   };
 
   const hexRgb = (hex) => [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16));
@@ -568,6 +568,186 @@
     return points[points.length - 1];
   }
 
+  // A chamber's name prints whole or not at all: never cut. The forms, tried in order until one fits the chamber's
+  // part of the safe area: a row in the header at 8.5px, shrinking to 7px (the share drops before the name shrinks);
+  // the row moved, with a backing, where the header is off the safe area or under a card; the name wrapped to two
+  // lines; turned upright along a tall, thin chamber; a callout in the gutter above or below the chamber, with a
+  // leader. A chamber none of them fits gets no name.
+  const HEAD_SIZES = [8.5, 8, 7.5, 7];
+  const CALLOUT_SIZE = 7.5;
+  const span = (a, b) => ({ left: Math.min(a.left, b.left), right: Math.max(a.right, b.right), top: Math.min(a.top, b.top), bottom: Math.max(a.bottom, b.bottom) });
+  const fits = (r, space) => r.left >= space.left && r.right <= space.right && r.top >= space.top && r.bottom <= space.bottom;
+  const hasArea = (r) => r.right - r.left > 1 && r.bottom - r.top > 1;
+  /** One run of text set left at (x, y) on a middle baseline, its advance and the rect its ink covers. */
+  const run = (text, font, fill, x, y) => {
+    ctx.font = font;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    return { text, font, fill, x, y, ink: inkRect(text, x, y), w: ctx.measureText(text).width };
+  };
+  const moveRun = (r, dx, dy) => ({ ...r, x: r.x + dx, y: r.y + dy, ink: shift(r.ink, dx, dy) });
+  /** A name split at the space that best balances its two lines; null for a single word. */
+  const halves = (name) => {
+    let best = null;
+    for (let i = name.indexOf(" "); i > 0; i = name.indexOf(" ", i + 1)) {
+      const pair = [name.slice(0, i), name.slice(i + 1)];
+      if (!best || Math.max(pair[0].length, pair[1].length) < Math.max(best[0].length, best[1].length)) best = pair;
+    }
+    return best;
+  };
+
+  /** The form a chamber's name takes: the runs to draw, the space they are clipped to, and the labels to record. */
+  function chamberLabelPlan(c, taken) {
+    const name = String(c.partName).toLowerCase();
+    const pct = c.share < 0.005 ? "<1%" : `${Math.round(c.share * 100)}%`;
+    const nameFont = (s) => `${c.hot ? 700 : 400} ${s}px ${MONO}`;
+    const pctFont = (s) => `400 ${s - 0.5}px ${MONO}`;
+    const nameFill = c.hot ? G.accent : rgba(G.ink, 0.86);
+    const pctFill = c.hot ? rgba(G.accent, 0.82) : rgba(G.ink, 0.54);
+    const hasHeader = c.h >= c.headerH + 4 && c.w >= 26;
+    const header = { left: c.x + 4, right: c.x + c.w - 4, top: c.y + 1, bottom: c.y + c.headerH - 1 };
+    const within = cut({ left: c.x + 4, right: c.x + c.w - 4, top: c.y + 1, bottom: c.y + c.h - 1 }, SAFE);
+    const room = hasArea(within);
+    const hy = c.y + c.headerH * 0.5 + 0.5;
+    const whole = (runs) => runs.map((r) => r.ink).reduce(span);
+    /** Runs that fit where they are: inside `space`, and left in place by the safe area and the cards. */
+    const stays = (runs, space) => {
+      const r = whole(runs);
+      if (!fits(r, space)) return false;
+      const m = room ? placeLabel(r, { within }) : null;
+      return !!m && !m.dx && !m.dy;
+    };
+    /** Runs moved into the chamber's part of the safe area, or null when they cannot all fit there. */
+    const moved = (runs) => {
+      if (!room) return null;
+      const m = placeLabel(whole(runs), { within });
+      if (!m) return null;
+      const out = runs.map((r) => moveRun(r, m.dx, m.dy));
+      return fits(whole(out), within) ? out : null;
+    };
+    const one = (runs, text) => [{ text: text ?? runs.map((r) => r.text).join(" "), ink: whole(runs) }];
+
+    // 1. A row in the header: the name left and the share right, then the name alone, from 8.5px down to 7px.
+    if (hasHeader) {
+      for (const s of HEAD_SIZES) {
+        const n = run(name, nameFont(s), nameFill, c.x + 6, hy);
+        const pw = run(pct, pctFont(s), pctFill, 0, hy).w;
+        // The share sits at the header's right end, or at the safe area's where the chamber runs past it.
+        const p = run(pct, pctFont(s), pctFill, Math.min(c.x + c.w - 6, room ? within.right - 2 : Infinity) - pw, hy);
+        if (p.ink.left - n.ink.right >= 6 && stays([n, p], header)) return { runs: [n, p], space: header, records: [{ text: name, ink: n.ink }, { text: pct, ink: p.ink }] };
+        if (stays([n], header)) return { runs: [n], space: header, records: one([n]) };
+      }
+    }
+    // 2. The same row moved, as one label, into the chamber's part of the safe area.
+    for (const s of HEAD_SIZES) {
+      const n = run(name, nameFont(s), nameFill, c.x + 6, hy);
+      const p = run(pct, pctFont(s), pctFill, n.x + n.w + 6, hy);
+      const withPct = moved([n, p]);
+      if (withPct) return { runs: withPct, space: within, backing: true, records: one(withPct) };
+      const alone = moved([n]);
+      if (alone) return { runs: alone, space: within, backing: true, records: one(alone) };
+    }
+    // 3. The name wrapped to two lines at the top of the chamber, the share after the second line when it fits.
+    const pair = halves(name);
+    if (pair) {
+      for (const s of HEAD_SIZES) {
+        const lh = s + 2;
+        const y1 = c.y + 3 + lh * 0.5;
+        const a = run(pair[0], nameFont(s), nameFill, c.x + 6, y1);
+        const b = run(pair[1], nameFont(s), nameFill, c.x + 6, y1 + lh);
+        const p = run(pct, pctFont(s), pctFill, b.x + b.w + 6, y1 + lh);
+        for (const runs of [[a, b, p], [a, b]]) {
+          const text = runs.length === 3 ? `${name} ${pct}` : name;
+          if (hasHeader && stays(runs, header)) return { runs, space: header, records: one(runs, text) };
+          const m = moved(runs);
+          if (m) return { runs: m, space: within, backing: true, records: one(m, text) };
+        }
+      }
+    }
+    // 4. Turned upright, reading up the chamber's left side, where the chamber is taller than it is wide.
+    if (room && within.bottom - within.top > within.right - within.left) {
+      for (const s of HEAD_SIZES) {
+        for (const text of [`${name} ${pct}`, name]) {
+          ctx.font = nameFont(s);
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          const m = ctx.measureText(text);
+          // Turned a quarter left about (px, py): the text runs up from py, its ascent to the left of px.
+          const px = within.left + 2 + m.actualBoundingBoxAscent;
+          const py = within.top + 2 + m.actualBoundingBoxRight;
+          const ink = { left: px - m.actualBoundingBoxAscent, right: px + m.actualBoundingBoxDescent, top: py - m.actualBoundingBoxRight, bottom: py + m.actualBoundingBoxLeft };
+          const mv = placeLabel(ink, { within });
+          if (!mv || !fits(shift(ink, mv.dx, mv.dy), within)) continue;
+          const r = { text, font: nameFont(s), fill: nameFill, x: px + mv.dx, y: py + mv.dy, ink: shift(ink, mv.dx, mv.dy), turned: true };
+          return { runs: [r], space: within, backing: true, records: [{ text, ink: r.ink, axis: "y" }] };
+        }
+      }
+    }
+    // 5. A callout in the gutter above or below the chamber, clear of every chamber and label, with a short leader.
+    const chamberRects = (F.data.chambers || []).map((o) => ({ left: o.x - 1, right: o.x + o.w + 1, top: o.y - 1, bottom: o.y + o.h + 1 }));
+    const grow2 = (r) => ({ left: r.left - 2, right: r.right + 2, top: r.top - 2, bottom: r.bottom + 2 });
+    for (const text of [`${name} ${pct}`, name]) {
+      const probe = run(text, nameFont(CALLOUT_SIZE), nameFill, 0, 0);
+      const asc = -probe.ink.top;
+      const desc = probe.ink.bottom;
+      const spots = [
+        [c.x + 2, c.y - 4 - desc, c.y],
+        [c.x + c.w - 2 - probe.w, c.y - 4 - desc, c.y],
+        [c.x + 2, c.y + c.h + 4 + asc, c.y + c.h],
+        [c.x + c.w - 2 - probe.w, c.y + c.h + 4 + asc, c.y + c.h],
+      ];
+      for (const [x, y, edge] of spots) {
+        const r = run(text, nameFont(CALLOUT_SIZE), nameFill, x, y);
+        if (!fits(r.ink, SAFE) || CARDS.some((k) => meets(r.ink, k))) continue;
+        if (chamberRects.some((k) => meets(r.ink, k)) || taken.some((l) => meets(grow2(r.ink), l))) continue;
+        const lx = Math.max(c.x + 3, Math.min(c.x + c.w - 3, r.ink.left + 3));
+        const leader = { x: lx, y1: edge, y2: edge < r.y ? r.ink.top : r.ink.bottom };
+        return { runs: [r], space: SAFE, backing: true, leader, records: one([r], text) };
+      }
+    }
+    return null;
+  }
+
+  /** Draw every chamber's name in the form its plan picked, clipped to the plan's space, and record it. */
+  function drawChamberLabels(chambers) {
+    const taken = [];
+    for (const c of chambers) {
+      const plan = chamberLabelPlan(c, taken);
+      if (!plan) continue;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(plan.space.left, plan.space.top, plan.space.right - plan.space.left, plan.space.bottom - plan.space.top);
+      ctx.clip();
+      if (plan.backing) for (const r of plan.runs) backing(cut(r.ink, plan.space));
+      if (plan.leader) {
+        ctx.strokeStyle = c.hot ? G.accent : rgba(G.ink, 0.5);
+        ctx.lineWidth = 0.75;
+        ctx.beginPath();
+        ctx.moveTo(plan.leader.x, plan.leader.y1);
+        ctx.lineTo(plan.leader.x, plan.leader.y2);
+        ctx.stroke();
+      }
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      for (const r of plan.runs) {
+        ctx.font = r.font;
+        ctx.fillStyle = r.fill;
+        if (r.turned) {
+          ctx.save();
+          ctx.translate(r.x, r.y);
+          ctx.rotate(-Math.PI / 2);
+          ctx.fillText(r.text, 0, 0);
+          ctx.restore();
+        } else ctx.fillText(r.text, r.x, r.y);
+      }
+      ctx.restore();
+      for (const l of plan.records) {
+        record(l.text, l.ink, plan.space, l.axis);
+        taken.push(l.ink);
+      }
+    }
+  }
+
   /** Renderer 3 — blueprint: Proportional IC chambers, internal file cells, octilinear bus traces, vias & signals. */
   function drawBlueprint(t, scale) {
     const box = F.data.box;
@@ -639,7 +819,7 @@
       ctx.moveTo(c.x + c.w - br, c.y + c.h); ctx.lineTo(c.x + c.w, c.y + c.h); ctx.lineTo(c.x + c.w, c.y + c.h - br);
       ctx.stroke();
 
-      // Chamber header divider + clipped module label & share %.
+      // Chamber header divider; the header labels are drawn last, over the traces, by drawChamberLabels.
       if (c.h >= c.headerH + 4 && c.w >= 26) {
         ctx.strokeStyle = c.hot ? rgba(G.accent, 0.42) : rgba(G.ink, 0.26);
         ctx.lineWidth = 0.75;
@@ -647,78 +827,6 @@
         ctx.moveTo(c.x, c.y + c.headerH);
         ctx.lineTo(c.x + c.w, c.y + c.headerH);
         ctx.stroke();
-
-        // The name and share sit in the header, clipped to the chamber. Where the header is off the sheet's safe area
-        // or under a chrome card, they move together, as one label, into the chamber's part of the safe area.
-        ctx.textBaseline = "middle";
-        const hy = c.y + c.headerH * 0.5 + 0.5;
-        const header = { left: c.x + 4, right: c.x + c.w - 4, top: c.y + 1, bottom: c.y + c.headerH - 1 };
-        const within = cut({ left: c.x + 4, right: c.x + c.w - 4, top: c.y + 1, bottom: c.y + c.h - 1 }, SAFE);
-        const room = within.right > within.left && within.bottom > within.top;
-        const name = String(c.partName).toLowerCase();
-        const nameFont = `${c.hot ? 700 : 400} 8.5px ${MONO}`;
-        const nameFill = c.hot ? G.accent : rgba(G.ink, 0.86);
-        const pctStr = c.w >= 110 ? (c.share < 0.005 ? "<1%" : `${Math.round(c.share * 100)}%`) : null;
-        const pctFont = `400 8px ${MONO}`;
-        const pctFill = c.hot ? rgba(G.accent, 0.82) : rgba(G.ink, 0.54);
-        const stays = (r) => {
-          const m = room ? placeLabel(r, { within }) : null;
-          return !!m && !m.dx && !m.dy;
-        };
-        ctx.font = nameFont;
-        ctx.textAlign = "left";
-        const nameInk = inkRect(name, c.x + 6, hy);
-        ctx.font = pctFont;
-        ctx.textAlign = "right";
-        const pctInk = pctStr ? inkRect(pctStr, c.x + c.w - 6, hy) : null;
-
-        ctx.save();
-        if (stays(cut(nameInk, header)) && (!pctInk || stays(cut(pctInk, header)))) {
-          ctx.beginPath();
-          ctx.rect(header.left, header.top, Math.max(0, header.right - header.left), header.bottom - header.top);
-          ctx.clip();
-          ctx.font = nameFont;
-          ctx.textAlign = "left";
-          ctx.fillStyle = nameFill;
-          ctx.fillText(name, c.x + 6, hy);
-          record(name, nameInk, header);
-          if (pctStr) {
-            ctx.font = pctFont;
-            ctx.textAlign = "right";
-            ctx.fillStyle = pctFill;
-            ctx.fillText(pctStr, c.x + c.w - 6, hy);
-            record(pctStr, pctInk, header);
-          }
-        } else if (room) {
-          ctx.textAlign = "left";
-          ctx.font = nameFont;
-          const nameW = ctx.measureText(name).width;
-          let r = inkRect(name, c.x + 6, hy);
-          if (pctStr) {
-            ctx.font = pctFont;
-            const p = inkRect(pctStr, c.x + 6 + nameW + 6, hy);
-            r = { left: r.left, right: p.right, top: Math.min(r.top, p.top), bottom: Math.max(r.bottom, p.bottom) };
-          }
-          const move = placeLabel(r, { within });
-          if (move) {
-            const whole = shift(r, move.dx, move.dy);
-            const at = cut(whole, within);
-            ctx.beginPath();
-            ctx.rect(within.left, within.top, within.right - within.left, within.bottom - within.top);
-            ctx.clip();
-            backing(at);
-            ctx.font = nameFont;
-            ctx.fillStyle = nameFill;
-            ctx.fillText(name, c.x + 6 + move.dx, hy + move.dy);
-            if (pctStr) {
-              ctx.font = pctFont;
-              ctx.fillStyle = pctFill;
-              ctx.fillText(pctStr, c.x + 6 + nameW + 6 + move.dx, hy + move.dy);
-            }
-            record(pctStr ? `${name} ${pctStr}` : name, whole, within);
-          }
-        }
-        ctx.restore();
       }
       ctx.restore();
     }
@@ -775,7 +883,10 @@
       ctx.fill();
     }
 
-    // 4. Seamless traveling signal light packets along traces (consistent across t=0 and loop seam).
+    // 4. Every chamber's name, whole, over the traces and vias.
+    drawChamberLabels(chambers);
+
+    // 5. Seamless traveling signal light packets along traces (consistent across t=0 and loop seam).
     for (let i = 0; i < traces.length; i++) {
       const tr = traces[i];
       if (!tr.points || tr.points.length < 2 || !(tr.length > 8)) continue;

@@ -462,6 +462,24 @@ const reEscape = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   result(planted !== html && !now.length && off && under, "planted plate flaw (labels pushed off the sheet and under the record card) fails blocks-inside and blocks-apart", `now ${JSON.stringify(now)}\nthen ${JSON.stringify(then)}`);
 }
 {
+  // A blueprint chamber's header as it was before the fix: drawn in the header whether or not it fits, and cut there.
+  // The figure gives the narrowest chamber a long name; the page's script is planted with a fitter that never
+  // measures, so the name is drawn where it does not fit and the canvas clips it.
+  const spec = { ...plateSpec("blueprint", "abyss", "editorial"), format: "og" };
+  const longName = (F) => {
+    const c = F.data.chambers.reduce((a, b) => (b.w < a.w ? b : a));
+    c.partName = `${c.partName} and every screen`;
+    return c.partName;
+  };
+  let name = "";
+  const html = plantFigure(buildPage(spec, facts), (F) => (name = longName(F)));
+  const planted = html.replace("const fits = (r, space) => r.left", "const fits = () => true;\n  const measured = (r, space) => r.left");
+  const ids = ["labels-whole"];
+  const [now, then] = [await plateFindings(spec, html, "plate-header-honest", ids), await plateFindings(spec, planted, "plate-header-planted", ids)];
+  const want = new RegExp(`^the plate label "${reEscape(name.toLowerCase())}[^"]*" needs \\d+px but has \\d+px, so the canvas cuts it to \\d+px; every name prints whole`);
+  result(planted !== html && !now.length && then.some((f) => want.test(f.message)), `planted plate flaw (a long chamber name drawn where it does not fit) fails labels-whole with ${want}`, `now ${JSON.stringify(now)}\nthen ${JSON.stringify(then)}`);
+}
+{
   const dir = path.join(OUT, "plate-seismic-gif");
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, "recipe-poster.json");
