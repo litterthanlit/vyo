@@ -228,7 +228,7 @@ type Spec = {
   crop?: "center" | "bleed-right" | "macro";                    // cover only (default center)
   accent?: string;               // "#rrggbb". Replaces the theme's hot colour (the ribbon preset uses #9284FF on dark). Refused on cover and plate
   headline: string;              // one serif sentence about the outcome, ≤ 72 chars
-  hot?: string;                  // one word or two-word phrase, set in the accent. Required unless the figure has a field or plate. See "hot" below
+  hot?: string;                  // one word or two-word phrase, set in the accent. Required unless the figure has a field or plate; refused on a plate. See "hot" below
   figure: Figure;
   record?: "bottom" | "left";    // loose and signal: where the record line goes; unset, render picks (§3b)
   notes?: { title: string; text: string }[];   // swiss only, and required there: 2 or 3. title ≤ 24 chars, text ≤ 220. Loose, signal, cover and plate reject notes and notBuilt
@@ -461,7 +461,7 @@ The checks: `cover-shell` (spec stage) on Node's still; `cover-names`, `cover-sh
 
 `frame: "plate"` (`lib/plates/index.mjs`, `lib/plates/seismic.mjs`, `lib/plates/topo.mjs`, `lib/plates/blueprint.mjs`, `lib/plate-render.mjs`, `lib/plate-page.js`, `lib/layout-chrome.mjs`) renders pure high-resolution vector data-as-art plates directly from file slices, part line totals, and real cross-area imports. The spec:
 
-- `ground`: required, one of `COVER_GROUNDS` (5 primary refined gallery palettes `obsidian`, `carbon`, `abyss`, `graphite`, `bone` plus 9 legacy grounds). `theme`, `accent`, `look`, `crop` and `finish` are refused.
+- `ground`: required, one of `COVER_GROUNDS` (5 primary refined gallery palettes `obsidian`, `carbon`, `abyss`, `graphite`, `bone` plus 9 legacy grounds). `theme`, `accent`, `hot`, `look`, `crop` and `finish` are refused (`hot: a plate sets its accent part in the ground's colour and draws no hot word; remove hot`).
 - `layout`: optional, one of `COVER_LAYOUTS`: `"classic"`, `"editorial"`, `"blueprint"`, or `"macro"` (default `"classic"` in `plateOf`; `compose --frame plate` writes `"editorial"` by default).
 - `format`: optional, one of `FORMAT_NAMES`: `"poster"` (default, 840×1190), `"square"` (960×960), or `"og"` (1280×640).
 - `series`: optional, `\d{1,2}/\d{1,2}`, printed in the layout header tag.

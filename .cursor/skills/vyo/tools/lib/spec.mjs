@@ -35,7 +35,7 @@ import { PLATES, PLATE_NAMES } from "./plates/index.mjs";
  *   theme: "light" | "dark",
  *   accent?: string,
  *   headline: string,
- *   hot?: string,  required unless the figure has a field or plate
+ *   hot?: string,  required unless the figure has a field or plate; refused on a plate
  *   figure: { fits?: string, regions: (FillRegion | DotsRegion | FieldRegion | PlateRegion)[], texts: Text[] },  fits on the field region when there is one
  *   record?: "bottom" | "left",  loose only: where the record line goes; the engine picks when absent
  *   notes?: { title: string, text: string }[],  swiss only
@@ -607,6 +607,7 @@ export function validateSpec(spec) {
   } else if (frame === "plate") {
     if (spec.theme !== undefined) err(`theme: a plate takes a ground instead; remove theme and set ground to ${GROUND_LIST}`);
     if (spec.accent !== undefined) err("accent: a plate's accent comes from its ground; remove accent");
+    if (spec.hot !== undefined) err("hot: a plate sets its accent part in the ground's colour and draws no hot word; remove hot");
     for (const k of ["look", "crop", "finish"]) if (spec[k] !== undefined) err(`${k}: only the cover frame takes ${k}; remove ${k}`);
     if (!isStr(spec.ground) || !COVER_GROUNDS[spec.ground]) {
       const free = isStr(spec.ground) && /^#|rgb|hsl/i.test(spec.ground);
@@ -633,9 +634,9 @@ export function validateSpec(spec) {
   checkFigure(spec.figure, err, copy, frame);
   const figureOk = errors.length === before;
 
-  // A field's or plate's part names come from facts.json, so its hot word, if any, is checked on the page.
+  // A field's part names come from facts.json, so its hot word, if any, is checked on the page. A plate takes none.
   const withField = hasField(spec.figure) || frame === "plate";
-  if (spec.hot !== undefined || !withField) {
+  if (frame !== "plate" && (spec.hot !== undefined || !withField)) {
     if (!isStr(spec.hot) || !spec.hot.trim()) err("hot: missing");
     else if (isPlaceholder(spec.hot)) err("hot: still the placeholder; write it");
     else if (spec.hot.length > LIMITS.hot || spec.hot.trim().split(/\s+/).length > 2) err(`hot: one word or a two-word phrase, at most ${LIMITS.hot} characters`);
