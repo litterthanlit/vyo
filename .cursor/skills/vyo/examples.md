@@ -132,6 +132,137 @@ A scatter with a seed, the short form. `seed` 0 would leave the clouds where the
 }
 ```
 
+### v2 flagship examples: studio covers and vector plates
+
+A dark sculptural `studio` cover in the `editorial` gallery layout on `obsidian` (`#09090B` + cyan):
+
+```json
+{
+  "version": 3,
+  "frame": "cover",
+  "finish": "studio",
+  "layout": "editorial",
+  "ground": "obsidian",
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "commit": "04186f4", "date": "2026-11-07" },
+  "headline": "A week of dinners, planned in one go from the recipes you already cook.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "field",
+        "id": "cover",
+        "field": "shape",
+        "shape": { "like": "pear" },
+        "strata": "outline",
+        "accent": "area:app/(app)",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      { "role": "legend", "id": "legend", "text": "This pear is the code of Pantry, one layer per part, each as big as its share. The cyan outer ring is screens." }
+    ]
+  },
+  "motion": { "kind": "turn" }
+}
+```
+
+A pure vector `seismic` data-as-art plate (`frame: "plate"`) on `obsidian` in the `editorial` layout with a `pulse` loop:
+
+```json
+{
+  "version": 3,
+  "frame": "plate",
+  "layout": "editorial",
+  "ground": "obsidian",
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "commit": "04186f4", "date": "2026-11-07" },
+  "headline": "A week of dinners, planned in one go from the recipes you already cook.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "plate",
+        "id": "seismic",
+        "plate": "seismic",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      { "role": "legend", "id": "legend", "text": "Each ridge is a slice of Pantry's code, peaks sized by lines and sharpened by imports. The cyan ridges are the plan." }
+    ]
+  },
+  "motion": { "kind": "pulse" }
+}
+```
+
+An architectural `blueprint` circuit-schematic plate on `abyss` (`#070D1A` + blue) in the `blueprint` drafting layout with a `signal` loop:
+
+```json
+{
+  "version": 3,
+  "frame": "plate",
+  "layout": "blueprint",
+  "ground": "abyss",
+  "facts": "000000000000",
+  "product": { "name": "Pantry", "repo": "recipe", "commit": "04186f4", "date": "2026-11-07" },
+  "headline": "A week of dinners, planned in one go from the recipes you already cook.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "plate",
+        "id": "blueprint",
+        "plate": "blueprint",
+        "accent": "area:lib/plan",
+        "names": {
+          "area:.": "saved recipes",
+          "area:app": "page frame",
+          "area:app/(app)": "screens",
+          "area:app/api": "requests",
+          "area:components": "screen pieces",
+          "area:components/plan": "week view",
+          "area:components/recipes": "recipe cards",
+          "area:components/ui": "buttons",
+          "area:lib": "accounts and email",
+          "area:lib/ai": "suggestions",
+          "area:lib/plan": "the plan",
+          "area:lib/recipes": "recipe book"
+        }
+      }
+    ],
+    "texts": [
+      { "role": "legend", "id": "legend", "text": "Each chamber is a part of Pantry's code sized by lines, linked by traces along real imports. The blue circuits are the plan." }
+    ]
+  },
+  "motion": { "kind": "signal" }
+}
+```
+
 ### Cover looks: xerox, spin, and OG landscape
 
 A punk `xerox` cover on `blood` red with the `fast-forward` silhouette and `copier` loop:

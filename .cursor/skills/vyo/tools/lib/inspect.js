@@ -70,6 +70,8 @@
 
   // A cover's canvas: the still it should show, the frame it shows, and the still's measurements.
   const cover = window.cover ? { still: window.cover.still, shown: window.coverShown, report: window.cover.report } : null;
+  // A plate's canvas: the still it should show, the frame it shows, and its honest-encoding report.
+  const plate = window.plate ? { still: window.plate.still, shown: window.plateShown, report: window.plate.report } : null;
 
-  return { sheet: sr, footerTop, texts, boxes, rows, dots, blocks, regions, figureHot, faces, inter: probe('"Inter Display"') || probe("Inter"), drawn: window.drawn === true, cover, coverError: window.coverError ?? null };
+  return { sheet: sr, footerTop, texts, boxes, rows, dots, blocks, regions, figureHot, faces, inter: probe('"Inter Display"') || probe("Inter"), drawn: window.drawn === true, cover, coverError: window.coverError ?? null, plate, plateError: window.plateError ?? null };
 }

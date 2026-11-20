@@ -30,15 +30,22 @@ The same engine draws posters in other looks:
 
 ## The looks
 
-The **cover** frame turns one of 22 ready silhouettes (or any silhouette you draw or trace from a PNG) into a sculpted 3D object in three looks:
+**Vector Data-as-Art Plates** (`--frame plate`) turn the codebase's real file slices, line counts, and cross-area import graph directly into pure high-resolution vector prints:
 
-- **living** — slowly turning 3D volume under a fixed lamp with luminous specular sheen and rounded pill highlights (`dome`, `extrude`, or `revolve` solids).
-- **xerox** — raw zine / riso photocopy treatment with 2-plate thresholded toner, misregistration shadows, paper grain, rubber archive stamp, torn-edge spot highlighters, edge-bleeding Inter Display Black typography, and a copier-generation loop.
-- **spin** — full 360° kinetic turntable in flat 3-color depth-scaled type with `# + :` extruded side walls and tilted stamp chrome.
+- **seismic** — file-level *Unknown Pleasures* stacked ridgelines, peaks scaled by lines and sharpened by import coupling, with clean painter occlusion and glowing accent traces (`pulse` loop).
+- **topo** — marching-squares topographic elevation map rising around each area's lines and import passes, with index/minor contours and summit markers (`pulse` loop).
+- **blueprint** — octilinear PCB / architectural circuit schematic with proportional part chambers subdivided into file cells and wired by chamfered import traces and vias (`signal` loop).
 
-Covers ship with 10 curated palettes (`navy`, `charcoal`, `forest`, `paper`, `obsidian`, `riso`, `xerox`, `blood`, `acid`, `cobalt`), three formats (`poster` 840×1190, `square` 960×960, `og` 1280×640), and `vyo series` to compose 2–4 covers into one gallery contact sheet or synchronized GIF.
+**Sculptural 3D Covers** (`--frame cover`) turn one of 22 ready silhouettes (or any silhouette you draw or trace from a PNG) into a 3D object (`dome`, `extrude`, or `revolve` solids) cut honestly into layers by each part's share of the code, with four selectable high-res **finishes**:
 
-A **shape** poster draws a silhouette in one of three styles — **relief** (lit sculpted volume, default), **rings** (concentric outline rings), or **symbols** (shaded `- : = + #` ASCII art) — in either the serif `loose` frame or the brutalist high-contrast `signal` frame. When no single object fits, vyo generates architectural fields directly from the scan: **seismic** (Joy Division–style stacked codebase ridgelines from LOC, files & imports), **orbit** (centrality-ranked dependency constellation with dotted import chords), **river**, **terrain**, **slabs**, **spiral**, **contour**, and more. `vyo render --gif` animates any spec with `motion`.
+- **studio** — continuous-tone studio-lit matte obsidian/metallic/ceramic 3D surface with softbox key, Fresnel rim, distance-field ambient occlusion, accent bloom, film grain, and subtle 5px micro-type shimmer.
+- **halftone** — precision 22.5° rotated dot-matrix sampled from the studio lighting buffer with accent bloom.
+- **wireframe** — smoked-glass Fresnel body with depth-tested 3D latitude, longitude, and elevation contour hairlines.
+- **type** — sculpted 6px Commit Mono typographic relief across three visual looks: **living** (slowly turning volume under a fixed lamp), **xerox** (2-plate thresholded toner photocopy with paper grain, archive stamp & copier loop), and **spin** (full 360° kinetic turntable).
+
+Both plates and covers share **4 gallery layouts** (`classic`, `editorial`, `blueprint`, `macro`), **3 formats** (`poster` 840×1190, `square` 960×960, `og` 1280×640), **5 refined studio & archival palettes** (`obsidian`, `carbon`, `abyss`, `graphite`, `bone`) — plus 9 legacy grounds (`navy`, `charcoal`, `forest`, `paper`, `cobalt`, `xerox`, `riso`, `blood`, `acid`) kept for backward compatibility — and `vyo series` to compose 2–4 covers or plates into one gallery contact sheet or synchronized GIF.
+
+A **shape** poster draws a silhouette in one of three styles — **relief** (lit sculpted volume, default), **rings** (concentric outline rings), or **symbols** (shaded `- : = + #` ASCII art) — in either the serif `loose` frame or the brutalist high-contrast `signal` frame. When no single object fits, vyo also generates typographic fields directly from the scan: **seismic**, **orbit**, **river**, **terrain**, **slabs**, **spiral**, **contour**, and more. `vyo render --gif` animates any spec with `motion`.
 
 ## Install and make a poster
 

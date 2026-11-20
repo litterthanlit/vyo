@@ -9,7 +9,8 @@ import { fieldItems } from "../lib/sketch.mjs";
 import { BROWSER_NOTE } from "../lib/browser.mjs";
 import { runChecks } from "../lib/check.mjs";
 import { coverOf } from "../lib/cover-render.mjs";
-import { COVER_FRAMES } from "../lib/cover.mjs";
+import { COVER_FRAMES, COVER_GROUNDS, coverLegend } from "../lib/cover.mjs";
+import { PLATES } from "../lib/plates/index.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TOOLS = path.join(HERE, "..");
@@ -17,7 +18,7 @@ const OUT = path.join(HERE, ".out");
 const VYO = path.join(TOOLS, "vyo.mjs");
 const PRESETS = fs.readdirSync(path.join(TOOLS, "presets")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
 
-const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "shape", "place", "rings", "shape-relief", "docs", "init", "recent", "png", "cover"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
+const pure = spawnSync(process.execPath, ["--test", ...["scan", "spec", "geometry", "parts", "fields", "band", "check", "sketch", "shape", "place", "rings", "shape-relief", "docs", "init", "recent", "png", "cover", "plate"].map((t) => path.join(HERE, `${t}.test.mjs`))], { stdio: "inherit" });
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
@@ -299,8 +300,9 @@ for (const kind of ["resolve", "wipe"]) {
   const same = ["frame", "shares", "whole", "letters", "accentCells"].every((k) => JSON.stringify(page.cover?.report?.[k]) === JSON.stringify(node[k]));
   result(same && page.cover.shown === node.frame && !runChecks("page", { spec, facts, presets: {}, page }).length, "the cover's page draws the still the sketch measures, cell for cell, and passes every page check", `page ${JSON.stringify(page.cover?.report)}\nnode ${JSON.stringify(node)}`);
 }
+const COVER_GROUNDS_LIST = Object.keys(COVER_GROUNDS).map((g) => `"${g}"`).join(", ");
 const COVER_PLANTED = [
-  ["a free colour for the ground", (s) => (s.ground = "#14281F"), /^✗ spec: ground: "#14281F" is not a ground; a free colour is not offered; use "navy", "charcoal", "forest", "paper", "blood", "acid", "cobalt", "xerox", "riso", "obsidian"$/m],
+  ["a free colour for the ground", (s) => (s.ground = "#14281F"), new RegExp(`^✗ spec: ground: "#14281F" is not a ground; a free colour is not offered; use ${COVER_GROUNDS_LIST}$`, "m")],
   ["an accent that names no part", (s) => (s.figure.regions[0].accent = "area:nowhere"), /^✗ cover-accent: the accent area:nowhere names no part, so nothing prints in orange; put the accent on /m],
   ["a form as thin as a pole", (s) => (s.figure.regions[0].shape = { ops: [{ add: "rect", at: [0, 0], size: [6, 100] }] }), /^✗ cover-names: "[a-z ]+" \(\d+% of the code\) never prints its whole name in the still, frame \d+; at \d+ characters it does not fit its stratum there, so shorten it to \d+ characters or fewer$/m],
 ];
@@ -311,6 +313,67 @@ for (const [name, mutate, expect] of COVER_PLANTED) {
   fs.writeFileSync(file, JSON.stringify(spec, null, 2));
   const r = vyo("check", file, "--facts", factsFile);
   result(r.status === 1 && expect.test(r.stderr), `planted cover flaw (${name}) fails with ${expect}`, `exit ${r.status}\n${r.stderr}`);
+}
+
+// Gallery plates (seismic, topo, blueprint) and v2 studio + editorial cover end-to-end in Chromium.
+const coverBase = preset("cover");
+const plateSpec = (plate, ground, layout) => ({
+  version: 3,
+  frame: "plate",
+  facts: hash,
+  product: { ...coverBase.product },
+  ground,
+  layout,
+  headline: coverBase.headline,
+  figure: {
+    regions: [{
+      kind: "plate",
+      id: plate,
+      plate,
+      accent: coverBase.figure.regions[0].accent,
+      names: { ...coverBase.figure.regions[0].names },
+    }],
+    texts: [{ role: "legend", id: "legend", text: PLATES[plate].legend(coverBase.product.name, "screens", COVER_GROUNDS[ground].colorName) }],
+  },
+  motion: { kind: PLATES[plate].motion },
+});
+
+for (const [plate, ground, layout] of [
+  ["seismic", "obsidian", "editorial"],
+  ["topo", "carbon", "blueprint"],
+  ["blueprint", "abyss", "blueprint"],
+]) {
+  const dir = path.join(OUT, `plate-${plate}`);
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, "recipe-poster.json");
+  fs.writeFileSync(file, JSON.stringify(plateSpec(plate, ground, layout), null, 2));
+  const r = vyo("render", file, "--facts", factsFile);
+  result(r.status === 0 && /^PASS$/m.test(r.stdout) && !/^✗/m.test(r.stderr), `plate ${plate} (${ground}/${layout}) renders and passes every check`, r.stdout + r.stderr);
+  const thumb = path.join(dir, "recipe-poster-thumb.png");
+  const wh = fs.existsSync(thumb) ? [fs.readFileSync(thumb).readUInt32BE(16), fs.readFileSync(thumb).readUInt32BE(20)] : [];
+  result(wh[0] === 280 && wh[1] === 396 && r.stdout.includes(thumb), `plate ${plate} writes a 280x396 thumb and prints it`, `${wh}\n${r.stdout}`);
+}
+{
+  const dir = path.join(OUT, "plate-seismic-gif");
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, "recipe-poster.json");
+  fs.writeFileSync(file, JSON.stringify(plateSpec("seismic", "obsidian", "editorial"), null, 2));
+  const r = vyo("render", file, "--facts", factsFile, "--gif", "--no-pdf");
+  const gif = path.join(dir, "recipe-poster.gif");
+  const mp4 = path.join(dir, "recipe-poster.mp4");
+  const gifSize = fs.existsSync(gif) ? fs.statSync(gif).size : 0;
+  const mp4Size = fs.existsSync(mp4) ? fs.statSync(mp4).size : 0;
+  result(r.status === 0 && /^PASS$/m.test(r.stdout) && !/^✗/m.test(r.stderr) && gifSize > 0 && mp4Size > 0, "plate seismic renders with --gif --no-pdf: passes and writes GIF and MP4", `exit ${r.status}, gif=${gifSize}B, mp4=${mp4Size}B\n${r.stdout}${r.stderr}`);
+}
+{
+  const dir = path.join(OUT, "cover-studio-editorial");
+  fs.mkdirSync(dir, { recursive: true });
+  const spec = { ...preset("cover"), ground: "obsidian", layout: "editorial", finish: "studio" };
+  spec.figure.texts[0].text = coverLegend(spec.figure.regions[0], spec.product.name, "screens", spec.ground);
+  const file = path.join(dir, "recipe-poster.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("render", file, "--facts", factsFile);
+  result(r.status === 0 && /^PASS$/m.test(r.stdout) && !/^✗/m.test(r.stderr), "cover studio + editorial on obsidian renders and passes every check", r.stdout + r.stderr);
 }
 
 console.log(failed ? `✗ ${failed} browser test(s) failed` : `browser: ${PRESETS.length} preset posters in ${OUT}, ${PLANTED.length + SHAPE_WARNINGS.length + RINGS_WARNINGS.length + RELIEF_WARNINGS.length + COVER_PLANTED.length} planted bugs caught`);

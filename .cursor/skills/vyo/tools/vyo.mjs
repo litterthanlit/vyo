@@ -9,13 +9,15 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 import { stableStringify, factsHash } from "./lib/hash.mjs";
 import { scanRepoDetailed } from "./lib/scan/index.mjs";
 import { showFacts, hiddenCodeHint } from "./lib/scan/show.mjs";
-import { scaffoldSpec, coverScaffold, validateSpec, THEMES, PLACEHOLDER } from "./lib/spec.mjs";
+import { scaffoldSpec, coverScaffold, plateScaffold, validateSpec, THEMES, PLACEHOLDER } from "./lib/spec.mjs";
 import { SHAPE_STYLES, DEFAULT_STYLE } from "./lib/fields/shape.mjs";
 import { sketch, sketchImage } from "./lib/sketch.mjs";
 import { coverSketchLines, coverSketchFindings, coverSketchImage } from "./lib/cover-sketch.mjs";
 import { COVER_LIMITS, coverWindow } from "./lib/cover-report.mjs";
 import { coverOf } from "./lib/cover-render.mjs";
-import { COVER_GROUNDS, COVER_LOOKS, COVER_CROPS, coverLegend } from "./lib/cover.mjs";
+import { plateSketchLines, plateSketchImage } from "./lib/plate-render.mjs";
+import { COVER_GROUNDS, COVER_LOOKS, COVER_CROPS, COVER_LAYOUTS, COVER_FINISHES, coverLegend } from "./lib/cover.mjs";
+import { PLATES, PLATE_NAMES } from "./lib/plates/index.mjs";
 import { SILHOUETTES, SILHOUETTE_NAMES } from "./lib/silhouettes.mjs";
 import { SHAPE_KEYS, GRID, ADVANCE, SHEET, FORMAT_NAMES } from "./lib/geometry.mjs";
 import { SHAPE_KINDS, SHAPE_ROOM } from "./lib/mask.mjs";
@@ -37,7 +39,7 @@ const USAGE = `Usage:
   vyo presets [<id>]
   vyo parts   <facts.json> [--field ${Object.keys(FIELDS).join("|")}] [--split <part id>]...
   vyo shapes  [--log <file>]
-  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--style ${Object.keys(SHAPE_STYLES).join("|")}] [--look ${COVER_LOOKS.join("|")}] [--ground ${Object.keys(COVER_GROUNDS).join("|")}] [--format ${FORMAT_NAMES.join("|")}] [--crop ${COVER_CROPS.join("|")}] [--split <part id>]... [--seed <n>] [--accent <part id>] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--shapes-log <file>] [--force]
+  vyo compose <facts.json> [--frame ${FRAMES.join("|")}] [--plate ${PLATE_NAMES.join("|")}] [--field ${Object.keys(FIELDS).join("|")}] [--style ${Object.keys(SHAPE_STYLES).join("|")}] [--look ${COVER_LOOKS.join("|")}] [--finish ${COVER_FINISHES.join("|")}] [--layout ${COVER_LAYOUTS.join("|")}] [--ground ${Object.keys(COVER_GROUNDS).join("|")}] [--format ${FORMAT_NAMES.join("|")}] [--crop ${COVER_CROPS.join("|")}] [--split <part id>]... [--seed <n>] [--accent <part id>] [--from <preset>] [--theme light|dark] [--repo <repo-dir>] [--out <spec.json>] [--shapes-log <file>] [--force]
   vyo sketch  <spec.json> [--facts <facts.json>]
   vyo render  <spec.json> [--facts <facts.json>] [--out <dir>] [--no-png] [--no-pdf] [--gif] [--paper ${PAPERS.join("|")}]
   vyo series  <spec1.json> <spec2.json> [...] --out <base> [--gif]
@@ -331,7 +333,7 @@ function cmdShapes(argv) {
  * parts printed with the ones that make a good outline accent marked.
  */
 function composeCover(factsFile, opt) {
-  for (const k of ["from", "style", "theme", "seed"]) if (opt[k] !== undefined) throw new Usage(`--${k} has no place on a cover; ${k === "theme" ? `set ground in the spec (${Object.keys(COVER_GROUNDS).join(", ")})` : `leave out --${k}`}`);
+  for (const k of ["from", "style", "theme", "seed", "plate"]) if (opt[k] !== undefined) throw new Usage(`--${k} has no place on a cover; ${k === "theme" ? `set ground in the spec (${Object.keys(COVER_GROUNDS).join(", ")})` : `leave out --${k}`}`);
   if (opt.field !== undefined && opt.field !== "shape") throw new Usage("a cover draws a shape; leave out --field");
   const look = opt.look ?? "living";
   if (!COVER_LOOKS.includes(look)) throw new Usage(`--look ${look} is not a cover look; use ${COVER_LOOKS.join(", ")}`);
@@ -341,6 +343,10 @@ function composeCover(factsFile, opt) {
   if (!FORMAT_NAMES.includes(format)) throw new Usage(`--format ${format} is not a format; use ${FORMAT_NAMES.join(", ")}`);
   const crop = opt.crop ?? "center";
   if (!COVER_CROPS.includes(crop)) throw new Usage(`--crop ${crop} is not a crop; use ${COVER_CROPS.join(", ")}`);
+  const layout = opt.layout ?? "classic";
+  if (!COVER_LAYOUTS.includes(layout)) throw new Usage(`--layout ${layout} is not a layout; use ${COVER_LAYOUTS.join(", ")}`);
+  const finish = opt.finish ?? "type";
+  if (!COVER_FINISHES.includes(finish)) throw new Usage(`--finish ${finish} is not a cover finish; use ${COVER_FINISHES.join(", ")}`);
   const facts = readFacts(factsFile);
   const commit = opt.repo ? git(opt.repo, "%h") : undefined;
   const date = (opt.repo && git(opt.repo, "%cs")) ?? new Date().toISOString().slice(0, 10);
@@ -380,14 +386,14 @@ function composeCover(factsFile, opt) {
   if (pick.matched) recordShape(logFile, like);
   const share = (p) => p.loc / linesIn(parts);
   const around = (p) => aroundProduct(p.id);
-  const probe = coverScaffold(facts, { commit, date, split: split.length ? split : undefined, parts, strata: "outline", like, ground, look, format, crop, accent: parts[parts.length - 1].id });
+  const probe = coverScaffold(facts, { commit, date, split: split.length ? split : undefined, parts, strata: "outline", like, ground, look, format, crop, layout, finish, accent: parts[parts.length - 1].id });
   Object.assign(probe, { product: { ...probe.product, name: facts.repo.name }, headline: "One plain sentence about what the product does for a person." });
   probe.figure.texts[0].text = coverLegend(probe.figure.regions[0], facts.repo.name, "a plain name", ground);
   const win = coverWindow(coverOf(probe, facts));
   const fits = (p, [lo, hi]) => share(p) >= lo && share(p) <= hi;
   const outline = look === "living" && !!win.ring && parts.some((p) => !around(p) && fits(p, win.ring));
   const window = outline ? win.ring : win.band;
-  const scaffold = coverScaffold(facts, { commit, date, accent: opt.accent, split: split.length ? split : undefined, parts, strata: outline ? "outline" : "down", like, ground, look, format, crop });
+  const scaffold = coverScaffold(facts, { commit, date, accent: opt.accent, split: split.length ? split : undefined, parts, strata: outline ? "outline" : "down", like, ground, look, format, crop, layout, finish });
   fs.writeFileSync(out, JSON.stringify(scaffold, null, 2) + "\n");
   const S = SILHOUETTES[like];
   const width = Math.max(...parts.map((p) => p.id.length));
@@ -401,7 +407,81 @@ function composeCover(factsFile, opt) {
     `accent: the id of the part the product is about. If it has no *, write it anyway: the sketch says how to make it show.`,
     `shape: compose picked the ${S.noun} ("like": "${like}"), for ${S.suits}${pick.matched?.length ? `; the README says ${pick.matched.map((w) => `"${w}…"`).join(", ")}` : ""}. If another object in vyo shapes suits the product better, write its name and put its name in the legend for "${S.noun}".`,
     `legend: the pattern is written; replace <product> and <the accent's plain name>, and delete the leading "…".`,
-    `ground: ${Object.keys(COVER_GROUNDS).join(", ")}. look: ${COVER_LOOKS.join(", ")}. format: ${FORMAT_NAMES.join(", ")}. Names: every part, lowercase, at most 24 characters, saying what it does for a person.`,
+    `ground: ${Object.keys(COVER_GROUNDS).join(", ")}. look: ${COVER_LOOKS.join(", ")}. finish: ${COVER_FINISHES.join(", ")}. layout: ${COVER_LAYOUTS.join(", ")}. format: ${FORMAT_NAMES.join(", ")}. Names: every part, lowercase, at most 24 characters, saying what it does for a person.`,
+    `Then: vyo sketch ${out}, open the sketch PNG, act on every finding, then vyo render ${out} --gif.`,
+  ];
+  process.stdout.write(lines.join("\n") + "\n");
+  return 0;
+}
+
+/**
+ * compose --frame plate: a pure vector data-art plate (`seismic`, `topo`, or `blueprint`) in a curated gallery
+ * ground and layout, auto-splitting any dominant part over 40% so the composition has rich architectural grain.
+ */
+function composePlate(factsFile, opt, seed) {
+  for (const k of ["from", "style", "theme", "field", "look", "crop", "finish"]) {
+    if (opt[k] !== undefined) throw new Usage(`--${k} has no place on a plate; leave out --${k}`);
+  }
+  const plate = opt.plate ?? "seismic";
+  if (!PLATE_NAMES.includes(plate)) throw new Usage(`--plate ${plate} is not a plate; use ${PLATE_NAMES.join(", ")}`);
+  const ground = opt.ground ?? "obsidian";
+  if (!COVER_GROUNDS[ground]) throw new Usage(`--ground ${ground} is not a ground; use ${Object.keys(COVER_GROUNDS).join(", ")}`);
+  const layout = opt.layout ?? "editorial";
+  if (!COVER_LAYOUTS.includes(layout)) throw new Usage(`--layout ${layout} is not a layout; use ${COVER_LAYOUTS.join(", ")}`);
+  const format = opt.format ?? "poster";
+  if (!FORMAT_NAMES.includes(format)) throw new Usage(`--format ${format} is not a format; use ${FORMAT_NAMES.join(", ")}`);
+
+  const facts = readFacts(factsFile);
+  const commit = opt.repo ? git(opt.repo, "%h") : undefined;
+  const date = (opt.repo && git(opt.repo, "%cs")) ?? new Date().toISOString().slice(0, 10);
+  if (!opt.repo) warn("no --repo, so no commit: the plate's record needs one; compose again with --repo <repo>");
+  else if (!commit) warn(`${opt.repo} has no git history; the plate's record needs a commit, so use the swiss frame instead`);
+
+  const split = [...(opt.split ?? [])];
+  const cut = [];
+  const partsOf = (s) => partsFromFacts(facts, partOptions({ ...(s.length ? { split: s } : {}) }));
+  let parts = partsOf(split);
+  if (!parts.length) throw new Failure(`no parts to draw; the scan found no code, so a plate has nothing to show. Compose a fill poster instead: vyo compose ${factsFile} --from <preset>`);
+  const linesIn = (list) => list.reduce((s, p) => s + p.loc, 0) || 1;
+  for (let big; split.length < 4 && (big = parts.find((p) => p.loc / linesIn(parts) > 0.4 && !split.includes(p.id))); ) {
+    const finer = partsOf([...split, big.id]);
+    if (finer.length <= parts.length) break;
+    cut.push(`${big.id} (${pct(big.loc / linesIn(parts))}) into ${finer.length - parts.length + 1} parts`);
+    split.push(big.id);
+    parts = finer;
+  }
+  if (opt.accent !== undefined && !accentIds(parts, opt.accent).size) {
+    throw new Usage(`--accent ${opt.accent} names no part; vyo parts ${factsFile} lists the part ids`);
+  }
+  const out = opt.out ?? path.join(path.dirname(factsFile), `${facts.repo.name}-poster.json`);
+  if (fs.existsSync(out) && !opt.force) throw new Failure(`${out} exists; it may hold your words. Pass --force to replace it with a fresh scaffold`);
+  fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
+
+  const scaffold = plateScaffold(facts, {
+    plate,
+    commit,
+    date,
+    accent: opt.accent,
+    split: split.length ? split : undefined,
+    parts,
+    ground,
+    layout,
+    format,
+    seed,
+  });
+  fs.writeFileSync(out, JSON.stringify(scaffold, null, 2) + "\n");
+
+  const share = (p) => p.loc / linesIn(parts);
+  const around = (p) => aroundProduct(p.id);
+  const width = Math.max(...parts.map((p) => p.id.length));
+  const lines = [
+    `Wrote ${out} (${plate} plate on ${ground} ground, ${layout} layout). Edit that file: replace each value that starts with "…" and change nothing else.`,
+    ...(cut.length ? [`Split ${cut.join(", and ")}, so no single part dominates the plate.`] : []),
+    `parts (id, share of the code, scanned name). * marks a good accent candidate; - marks code around the product, never the accent.`,
+    ...parts.map((p) => `  ${around(p) ? "-" : share(p) >= 0.05 && share(p) <= 0.45 ? "*" : " "} ${p.id.padEnd(width)} ${pct(share(p)).padStart(4)}  ${p.name}${around(p) ? `  ${around(p)}, never the accent` : ""}${unplainName(p.name) ? "  ! needs a plain name" : ""}`),
+    `plate: ${plate} — ${PLATES[plate].about}.`,
+    `legend: the pattern is written; replace <product> and <the accent's plain name>, and delete the leading "…".`,
+    `plate kinds: ${PLATE_NAMES.join(", ")}. ground: ${Object.keys(COVER_GROUNDS).join(", ")}. layout: ${COVER_LAYOUTS.join(", ")}. format: ${FORMAT_NAMES.join(", ")}.`,
     `Then: vyo sketch ${out}, open the sketch PNG, act on every finding, then vyo render ${out} --gif.`,
   ];
   process.stdout.write(lines.join("\n") + "\n");
@@ -413,9 +493,12 @@ function cmdCompose(argv) {
     argv,
     {
       frame: { type: "string" },
+      plate: { type: "string" },
       field: { type: "string" },
       style: { type: "string" },
       look: { type: "string" },
+      finish: { type: "string" },
+      layout: { type: "string" },
       ground: { type: "string" },
       format: { type: "string" },
       crop: { type: "string" },
@@ -446,12 +529,13 @@ function cmdCompose(argv) {
   if (opt.style !== undefined && !SHAPE_STYLES[opt.style]) throw new Usage(`--style ${opt.style} is not a style; use ${Object.keys(SHAPE_STYLES).join(", ")}`);
   // A style is a shape's look, so --style alone asks for a shape.
   if (opt.style !== undefined && opt.field === undefined && !preset) opt.field = "shape";
-  if (opt.split && opt.field !== "shape") throw new Usage("--split cuts a part of a shape field; pass --field shape");
-  if (opt.style !== undefined && opt.field !== "shape") throw new Usage("--style picks a shape field's look; pass --field shape");
-  const frame = opt.frame ?? preset?.frame ?? "loose";
+  const frame = opt.frame ?? (opt.plate !== undefined ? "plate" : preset?.frame ?? "loose");
   if (!FRAMES.includes(frame)) throw new Usage(`--frame ${frame} is not a frame; use ${FRAMES.join(" or ")}`);
   if (frame === "cover") return composeCover(pos[0], opt);
-  for (const k of ["look", "ground", "format", "crop"]) if (opt[k] !== undefined) throw new Usage(`--${k} is for --frame cover; pass --frame cover or leave out --${k}`);
+  if (frame === "plate") return composePlate(pos[0], opt, seed);
+  if (opt.split && opt.field !== "shape") throw new Usage("--split cuts a part of a shape field; pass --field shape");
+  if (opt.style !== undefined && opt.field !== "shape") throw new Usage("--style picks a shape field's look; pass --field shape");
+  for (const k of ["look", "ground", "format", "crop", "layout", "finish", "plate"]) if (opt[k] !== undefined) throw new Usage(`--${k} is for --frame cover or --frame plate; pass --frame cover, --frame plate, or leave out --${k}`);
   if (opt.field && FIELDS[opt.field].frames && !FIELDS[opt.field].frames.includes(frame)) throw new Usage(`--field ${opt.field} draws only in the ${FIELDS[opt.field].frames.join(" or ")} frame; leave out --frame`);
   if (preset && frame !== preset.frame) throw new Usage(`--from ${opt.from} is a ${preset.frame} preset; the loose frame draws a field, so use --field`);
   const theme = opt.theme ?? preset?.theme ?? "light";
@@ -565,10 +649,51 @@ function coverSketch(file, spec, opt) {
   return 0;
 }
 
+/**
+ * A plate's sketch: every spec error at once, then, when the plate kind and ground can be drawn, its geometry
+ * summary, spec-stage checks, and a 1/3-scale PNG preview. Placeholder names sketch as their scanned names.
+ */
+function plateSketch(file, spec, opt) {
+  const errors = validateSpec(spec);
+  const p = spec?.product;
+  if (p && typeof p === "object" && (p.commit === undefined || p.date === undefined)) {
+    const repo = path.dirname(path.dirname(path.resolve(file)));
+    const [commit, date] = path.basename(repo) === p.repo ? [git(repo, "%h"), git(repo, "%cs")] : [];
+    process.stdout.write(
+      commit
+        ? `✗ record: product has no ${p.commit === undefined ? "commit" : "date"}, which compose wrote; set "commit": "${commit}" and "date": "${date}" in product, and edit the spec compose writes in place next time\n`
+        : `✗ record: product has no ${p.commit === undefined ? "commit" : "date"}, which compose wrote; run git -C <repo> log -1 --format=%h and --format=%cs and set them as "commit" and "date" in product\n`,
+    );
+  }
+  const drawable = !errors.some(
+    (e) => /^(version|frame|product|ground|layout|format|figure\.regions(\[0\])?(:|\.(kind|plate|split|accent|seed|minShare|maxParts))|figure\.texts(:|\[\d+\]\.role))/.test(e) && !/\.names\[/.test(e),
+  );
+  for (const e of errors) process.stdout.write(`✗ spec: ${e}\n`);
+  if (!drawable) {
+    process.stdout.write("Fix the ✗ spec lines above, then sketch again: the plate cannot be drawn until its kind, ground and parts are valid.\n");
+    return 1;
+  }
+  const facts = factsFor(file, spec, opt);
+  const region = spec.figure.regions[0];
+  const names = Object.fromEntries(Object.entries(region.names ?? {}).filter(([, n]) => typeof n === "string" && !n.trim().startsWith(PLACEHOLDER)));
+  const legend = spec.figure.texts.find((t) => t.role === "legend");
+  const drawn = { ...spec, figure: { ...spec.figure, regions: [{ ...region, names }], texts: [{ ...legend, text: typeof legend?.text === "string" ? legend.text : "" }] } };
+  process.stdout.write(plateSketchLines(drawn, facts).join("\n") + "\n");
+  const presets = loadPresets();
+  for (const c of CHECKS.filter((x) => x.stage === "spec" && x.id !== "spec" && (!x.frames || x.frames.includes("plate")))) {
+    for (const m of c.run({ spec, facts, presets })) process.stdout.write(`${c.level === "fail" ? "✗" : "!"} ${c.id}: ${m}\n`);
+  }
+  const png = path.join(path.dirname(file), `${spec.product.repo}-sketch.png`);
+  fs.writeFileSync(png, plateSketchImage(drawn, facts));
+  process.stdout.write(`sketch PNG: ${path.resolve(png)}, the ${region.plate} plate at a third of its size; open it and check the composition\n`);
+  return 0;
+}
+
 function cmdSketch(argv) {
   const { pos, opt } = args(argv, { facts: { type: "string" } }, 1);
   const spec = readJson(pos[0], "poster spec");
   if (spec?.frame === "cover") return coverSketch(pos[0], spec, opt);
+  if (spec?.frame === "plate") return plateSketch(pos[0], spec, opt);
   // Placeholder words and copy rules wait for render; the sketch needs the geometry, the texts and the notes count.
   // A drawn shape is geometry too, so its placeholder blocks the sketch.
   const blocking = validateSpec(spec).filter((e) => /^(figure\.(regions|texts)|figure:|notes:|version|product)/.test(e) && (/\.shape/.test(e) || !/still the placeholder|: (jargon|a file path|a "01|a middle dot)/.test(e)));
@@ -641,7 +766,7 @@ async function cmdRender(argv) {
   return code;
 }
 
-/** Render 2+ poster/cover specs and tile them horizontally on paper into <out>.png (and <out>.gif/.mp4 with --gif). */
+/** Render 2+ poster/cover/plate specs and tile them horizontally on paper into <out>.png (and <out>.gif/.mp4 with --gif). */
 async function cmdSeries(argv) {
   let parsed;
   try {
@@ -663,7 +788,7 @@ async function cmdSeries(argv) {
       const specFile = files[i];
       const spec = readJson(specFile, "poster spec");
       const facts = factsFor(specFile, spec, {});
-      if (spec.frame === "cover" && !spec.series) spec.series = `${String(i + 1).padStart(2, "0")}/${pad}`;
+      if ((spec.frame === "cover" || spec.frame === "plate") && !spec.series) spec.series = `${String(i + 1).padStart(2, "0")}/${pad}`;
       const subDir = path.join(tmp, `s${i}`);
       fs.mkdirSync(subDir, { recursive: true });
       const tmpSpec = path.join(subDir, path.basename(specFile));

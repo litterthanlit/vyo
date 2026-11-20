@@ -10,7 +10,8 @@ import { SHAPE_KINDS, opKind, shapeMask } from "./mask.mjs";
 import "./png-mask.mjs";
 import { ROLES as FRAME_ROLES, FRAMES, RECORD_FRAMES, frameOf, sizeRange, LIST } from "./frame.mjs";
 import { SILHOUETTES, SILHOUETTE_NAMES } from "./silhouettes.mjs";
-import { COVER_GROUNDS, COVER_STRATA, COVER_LOOKS, COVER_CROPS, COVER_SOLID_KINDS, coverLegend } from "./cover.mjs";
+import { COVER_GROUNDS, COVER_STRATA, COVER_LOOKS, COVER_CROPS, COVER_SOLID_KINDS, COVER_LAYOUTS, COVER_FINISHES, coverLegend } from "./cover.mjs";
+import { PLATES, PLATE_NAMES } from "./plates/index.mjs";
 
 /**
  * @typedef {"soft" | "mid" | "ink" | "cold" | "cool"} ToneName
@@ -22,18 +23,20 @@ import { COVER_GROUNDS, COVER_STRATA, COVER_LOOKS, COVER_CROPS, COVER_SOLID_KIND
  * @typedef {{ kind: "dots", id: string, lines: string[], x: number, y: number, cell: number, tones: (ToneName | "hot")[] }} DotsRegion
  * @typedef {{ kind: "field", id: string, field: keyof typeof FIELDS, fits: string, accent?: string, names?: Record<string, string>,
  *             sentence?: string, every?: number, seed?: number, letter?: string, symbols?: boolean, minShare?: number, maxParts?: number }} FieldRegion  drawn from facts.json at render
+ * @typedef {{ kind: "plate", id: string, plate: "seismic" | "topo" | "blueprint", accent?: string, names?: Record<string, string>,
+ *             split?: string[], minShare?: number, maxParts?: number, seed?: number }} PlateRegion
  * @typedef {{ role: string, id: string, text?: string, x: number, y: number, w: number, size?: number,
  *             align?: "left" | "right" | "center", hot?: boolean, parts?: true, items?: string[] }} Text  roles per frame in lib/frame.mjs
  * @typedef {{
  *   version: 3,
- *   frame?: "loose" | "swiss" | "signal" | "cover",  loose unless it says swiss, signal or cover
+ *   frame?: "loose" | "swiss" | "signal" | "cover" | "plate",  loose unless it says swiss, signal, cover or plate
  *   facts: string,
  *   product: { name: string, repo: string, commit?: string, date: string },
  *   theme: "light" | "dark",
  *   accent?: string,
  *   headline: string,
- *   hot?: string,  required unless the figure has a field
- *   figure: { fits?: string, regions: (FillRegion | DotsRegion | FieldRegion)[], texts: Text[] },  fits on the field region when there is one
+ *   hot?: string,  required unless the figure has a field or plate
+ *   figure: { fits?: string, regions: (FillRegion | DotsRegion | FieldRegion | PlateRegion)[], texts: Text[] },  fits on the field region when there is one
  *   record?: "bottom" | "left",  loose only: where the record line goes; the engine picks when absent
  *   notes?: { title: string, text: string }[],  swiss only
  *   notBuilt?: string[],  swiss only
@@ -56,13 +59,14 @@ const RESERVED = ["note", "counts", "notBuilt", "provenance", "credit", "record"
 // Keys that only some kinds of field take, like the wave's sentence.
 const FIELD_OPTIONS = [...new Set(Object.values(FIELDS).flatMap((f) => f.options))];
 const KEYS = {
-  spec: ["version", "frame", "facts", "product", "theme", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience", "motion", "ground", "series", "look", "crop", "format"],
+  spec: ["version", "frame", "facts", "product", "theme", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience", "motion", "ground", "series", "look", "crop", "format", "layout", "finish"],
   product: ["name", "repo", "commit", "date"],
   note: ["title", "text"],
   figure: ["fits", "regions", "texts"],
   fill: ["kind", "id", ...SHAPE_KEYS, "holes", "words", "tone", "caps", "band", "size", "hot"],
   dots: ["kind", "id", "lines", "x", "y", "cell", "tones"],
   field: ["kind", "id", "field", "fits", "accent", "names", "minShare", "maxParts", ...FIELD_OPTIONS],
+  plate: ["kind", "id", "plate", "accent", "names", "split", "minShare", "maxParts", "seed"],
   routes: ["kind", "id", "paths", "nodes"],
   routePath: ["d", "tone"],
   routeNode: ["path", "t", "tone"],
@@ -72,14 +76,16 @@ const KEYS = {
     loose: ["role", "id", "text", "x", "y", "w", "size", "align", "parts", "items"],
     signal: ["role", "id", "text", "x", "y", "w", "h", "size", "align", "parts", "items"],
     cover: ["role", "id", "text"],
+    plate: ["role", "id", "text"],
   },
   ellipse: ["cx", "cy", "rx", "ry"],
   shape: ["ops", "like", "mask", "rotate", "fit"],
   fit: ["w", "h", "cx", "cy"],
 };
 export const ROUTE_TONES = [...TONES, "hot"];
-// turn and copier are the cover's loops, so they take no frames or fps; the others take both.
-export const MOTION = { kinds: ["nodes", "resolve", "wipe", "turn", "copier"], frames: [8, 36], fps: [6, 24] };
+// turn, copier, pulse and signal are self-timed loops, so they take no frames or fps; the others take both.
+export const MOTION = { kinds: ["nodes", "resolve", "wipe", "turn", "copier", "pulse", "signal"], frames: [8, 36], fps: [6, 24] };
+const SELF_TIMED_MOTION = ["turn", "copier", "pulse", "signal"];
 // The cover's solid and turn, each key's range. The yaw stays under 40 degrees so a living/xerox form never goes edge-on.
 export const COVER_RANGES = {
   solid: { bevel: [0, 1], depth: [0.2, 1.5], tilt: [0, 1], groove: [2, 30] },
@@ -91,6 +97,9 @@ const LOOK_LIST = COVER_LOOKS.map((g) => `"${g}"`).join(", ");
 const CROP_LIST = COVER_CROPS.map((g) => `"${g}"`).join(", ");
 const FORMAT_LIST = FORMAT_NAMES.map((g) => `"${g}"`).join(", ");
 const SOLID_KIND_LIST = COVER_SOLID_KINDS.map((g) => `"${g}"`).join(", ");
+const LAYOUT_LIST = COVER_LAYOUTS.map((g) => `"${g}"`).join(", ");
+const FINISH_LIST = COVER_FINISHES.map((g) => `"${g}"`).join(", ");
+const PLATE_LIST = PLATE_NAMES.map((g) => `"${g}"`).join(", ");
 
 const isStr = (v) => typeof v === "string";
 const isNum = (v) => typeof v === "number" && Number.isFinite(v);
@@ -398,6 +407,33 @@ function checkField(f, r, err, copy, frame) {
   if (r.minShare !== undefined && !inRange(r.minShare, ...LIMITS.minShare)) err(`${f}.minShare: ${LIMITS.minShare[0]} to ${LIMITS.minShare[1]}, a share of the lines`);
 }
 
+function checkPlate(f, r, err, copy) {
+  if (!isStr(r.plate) || !PLATE_NAMES.includes(r.plate)) err(`${f}.plate: "${r.plate}" is not a plate; use ${PLATE_LIST}`);
+  if (isPlaceholder(r.accent)) err(`${f}.accent: still the placeholder; write the id of the part the product is about (compose and vyo parts list the ids)`);
+  else if (r.accent !== undefined && !(isStr(r.accent) && /^area:\S+$/.test(r.accent))) err(`${f}.accent: an area id like "area:lib/plan", or a glob of them; vyo parts lists the ids`);
+  const plain = (where, v, max, what) => {
+    if (!isStr(v) || !v.trim()) return err(`${where}: missing`);
+    if (isPlaceholder(v)) return err(`${where}: still the placeholder; write ${what}`);
+    if (v.length > max) err(`${where}: ${v.length} characters; at most ${max}`);
+    copy.push([where, v]);
+  };
+  if (r.names !== undefined) {
+    if (!isObj(r.names)) err(`${f}.names: a map from part id to plain name`);
+    else
+      for (const [id, name] of Object.entries(r.names)) {
+        if (!/^area:\S+$/.test(id)) err(`${f}.names: "${id}" is not a part id like "area:lib/plan"`);
+        plain(`${f}.names["${id}"]`, name, LIMITS.partName, "a plain name for the part");
+      }
+  }
+  if (r.split !== undefined && !(Array.isArray(r.split) && r.split.length >= 1 && r.split.length <= 4 && r.split.every((id) => isStr(id) && /^area:\S+$/.test(id)))) {
+    err(`${f}.split: a list of 1 to 4 part ids, like ["area:source"], each cut into the folders inside it, or its files when it has none`);
+  }
+  if (r.seed !== undefined && !(Number.isInteger(r.seed) && inRange(r.seed, 0, 2147483647))) err(`${f}.seed: a whole number, 0 to 2147483647`);
+  const [lo, hi] = LIMITS.maxParts;
+  if (r.maxParts !== undefined && !(Number.isInteger(r.maxParts) && inRange(r.maxParts, lo, hi))) err(`${f}.maxParts: a whole number, ${lo} to ${hi}`);
+  if (r.minShare !== undefined && !inRange(r.minShare, ...LIMITS.minShare)) err(`${f}.minShare: ${LIMITS.minShare[0]} to ${LIMITS.minShare[1]}, a share of the lines`);
+}
+
 const sentences = (text) => text.split(/[.!?]+(?:\s+|$)/).filter((x) => x.trim()).length;
 
 function checkText(f, t, err, copy, frame, placed) {
@@ -434,7 +470,7 @@ function checkText(f, t, err, copy, frame, placed) {
       copy.push([`${f}.text`, t.text.replace(/\*\*/g, "")]);
     }
   }
-  if (frame === "cover") return;
+  if (frame === "cover" || frame === "plate") return;
   if (t.hot !== undefined && (t.role !== "label" || typeof t.hot !== "boolean")) err(`${f}.hot: only a label can be hot`);
   // Around a drawn shape the engine places a block that leaves out x and y; w, if given, is the widest it may be.
   const auto = placed && t.x === undefined && t.y === undefined;
@@ -449,7 +485,9 @@ function checkText(f, t, err, copy, frame, placed) {
 function checkFigure(fig, err, copy, frame) {
   if (!isObj(fig)) return err("figure: must be { fits, regions, texts }");
   unknownKeys(fig, KEYS.figure, "figure.", err);
-  if (hasField(fig)) {
+  if (frame === "plate") {
+    if (fig.fits !== undefined) err("figure.fits: a plate has no fits; remove it");
+  } else if (hasField(fig)) {
     if (fig.fits !== undefined) err("figure.fits: a field poster says why it fits on its field region; move it to the field's fits");
   } else if (!isStr(fig.fits) || !fig.fits.trim()) err("figure.fits: missing");
   else if (isPlaceholder(fig.fits)) err("figure.fits: still the placeholder; say what the picture is and why it acts out the main moment");
@@ -468,13 +506,16 @@ function checkFigure(fig, err, copy, frame) {
     fig.regions.forEach((r, i) => {
       const f = `figure.regions[${i}]`;
       if (!isObj(r)) return err(`${f}: must be a region`);
-      if (!["fill", "dots", "field", "routes"].includes(r.kind)) return err(`${f}.kind: "${r.kind}" is not a region kind; use field, fill, dots or routes`);
+      if (!["fill", "dots", "field", "routes", "plate"].includes(r.kind)) return err(`${f}.kind: "${r.kind}" is not a region kind; use field, fill, dots, routes or plate`);
       unknownKeys(r, KEYS[r.kind], `${f}.`, err);
       idOk(f, r.id);
       if (r.kind === "fill") checkFill(f, r, err);
       else if (r.kind === "dots") checkDots(f, r, err);
       else if (r.kind === "routes") checkRoutes(f, r, err);
-      else checkField(f, r, err, copy, frame);
+      else if (r.kind === "plate") {
+        if (frame !== "plate") err(`${f}.kind: a plate region draws only in the plate frame; set frame to plate`);
+        checkPlate(f, r, err, copy);
+      } else checkField(f, r, err, copy, frame);
       for (const [k, list] of [["words", r.words], ["lines", r.lines]]) if (Array.isArray(list) && !list.some(isPlaceholder)) list.forEach((w, j) => isStr(w) && copy.push([`${f}.${k}[${j}]`, w]));
     });
 
@@ -482,6 +523,9 @@ function checkFigure(fig, err, copy, frame) {
   if (frame === "loose" && Array.isArray(fig.regions) && !hasField(fig)) err("figure.regions: the loose frame draws a field; add a field region, or set frame to swiss for fill and dots figures");
   if (frame === "cover" && Array.isArray(fig.regions) && !(fig.regions.length === 1 && isObj(fig.regions[0]) && fig.regions[0].kind === "field" && fig.regions[0].field === "shape")) {
     err('figure.regions: the cover draws exactly one region, { "kind": "field", "field": "shape", ... }; vyo compose --frame cover writes it');
+  }
+  if (frame === "plate" && Array.isArray(fig.regions) && !(fig.regions.length === 1 && isObj(fig.regions[0]) && fig.regions[0].kind === "plate")) {
+    err('figure.regions: a plate draws exactly one region, { "kind": "plate", "plate": "seismic" | "topo" | "blueprint", ... }; vyo compose --frame plate writes it');
   }
   if (frame === "signal" && Array.isArray(fig.regions) && !hasField(fig) && !fig.regions.some((r) => isObj(r) && r.kind === "fill")) {
     err("figure.regions: the signal frame draws a field or a fill; add one, or set frame to swiss");
@@ -492,8 +536,8 @@ function checkFigure(fig, err, copy, frame) {
   fig.texts.forEach((t, i) => {
     const f = `figure.texts[${i}]`;
     if (!isObj(t)) return err(`${f}: must be a text`);
-    if (frame === "cover") {
-      for (const k of Object.keys(t)) if (!KEYS.text.cover.includes(k)) err(`${f}.${k}: the cover places every block itself; remove ${k}`);
+    if (frame === "cover" || frame === "plate") {
+      for (const k of Object.keys(t)) if (!KEYS.text[frame].includes(k)) err(`${f}.${k}: the ${frame} places every block itself; remove ${k}`);
     } else unknownKeys(t, KEYS.text[frame], `${f}.`, err);
     idOk(f, t.id);
     // A highlighter mark lies over type at a spot the agent picks, so it always has x and y.
@@ -558,11 +602,24 @@ export function validateSpec(spec) {
     if (spec.look !== undefined && !COVER_LOOKS.includes(spec.look)) err(`look: "${spec.look}" is not a cover look; use ${LOOK_LIST}`);
     if (spec.crop !== undefined && !COVER_CROPS.includes(spec.crop)) err(`crop: "${spec.crop}" is not a cover crop; use ${CROP_LIST}`);
     if (spec.format !== undefined && !FORMAT_NAMES.includes(spec.format)) err(`format: "${spec.format}" is not a format; use ${FORMAT_LIST}`);
+    if (spec.layout !== undefined && !COVER_LAYOUTS.includes(spec.layout)) err(`layout: "${spec.layout}" is not a layout; use ${LAYOUT_LIST}`);
+    if (spec.finish !== undefined && !COVER_FINISHES.includes(spec.finish)) err(`finish: "${spec.finish}" is not a cover finish; use ${FINISH_LIST}`);
+  } else if (frame === "plate") {
+    if (spec.theme !== undefined) err(`theme: a plate takes a ground instead; remove theme and set ground to ${GROUND_LIST}`);
+    if (spec.accent !== undefined) err("accent: a plate's accent comes from its ground; remove accent");
+    for (const k of ["look", "crop", "finish"]) if (spec[k] !== undefined) err(`${k}: only the cover frame takes ${k}; remove ${k}`);
+    if (!isStr(spec.ground) || !COVER_GROUNDS[spec.ground]) {
+      const free = isStr(spec.ground) && /^#|rgb|hsl/i.test(spec.ground);
+      err(`ground: ${spec.ground === undefined ? "missing" : `"${spec.ground}" is not a ground${free ? "; a free colour is not offered" : ""}`}; use ${GROUND_LIST}`);
+    }
+    if (spec.series !== undefined && !(isStr(spec.series) && /^\d{1,2}\/\d{1,2}$/.test(spec.series))) err('series: the plate\'s place in a series, like "02/04", or leave it out');
+    if (spec.layout !== undefined && !COVER_LAYOUTS.includes(spec.layout)) err(`layout: "${spec.layout}" is not a layout; use ${LAYOUT_LIST}`);
+    if (spec.format !== undefined && !FORMAT_NAMES.includes(spec.format)) err(`format: "${spec.format}" is not a format; use ${FORMAT_LIST}`);
   } else {
-    for (const k of ["ground", "series", "look", "crop", "format"]) if (spec[k] !== undefined) err(`${k}: only the cover frame takes ${k}; set frame to cover or remove ${k}`);
+    for (const k of ["ground", "series", "look", "crop", "format", "layout", "finish"]) if (spec[k] !== undefined) err(`${k}: only the cover or plate frame takes ${k}; remove ${k}`);
     if (!THEMES.includes(spec.theme)) err(`theme: "${spec.theme}" is not a theme; use light or dark`);
   }
-  if (frame !== "cover" && spec.accent !== undefined && !(isStr(spec.accent) && /^#[0-9a-f]{6}$/i.test(spec.accent))) err("accent: a hex colour like #9284FF");
+  if (frame !== "cover" && frame !== "plate" && spec.accent !== undefined && !(isStr(spec.accent) && /^#[0-9a-f]{6}$/i.test(spec.accent))) err("accent: a hex colour like #9284FF");
 
   const copy = [];
   const field = (name, v, max) => {
@@ -576,8 +633,8 @@ export function validateSpec(spec) {
   checkFigure(spec.figure, err, copy, frame);
   const figureOk = errors.length === before;
 
-  // A field's part names come from facts.json, so its hot word, if any, is checked on the page.
-  const withField = hasField(spec.figure);
+  // A field's or plate's part names come from facts.json, so its hot word, if any, is checked on the page.
+  const withField = hasField(spec.figure) || frame === "plate";
   if (spec.hot !== undefined || !withField) {
     if (!isStr(spec.hot) || !spec.hot.trim()) err("hot: missing");
     else if (isPlaceholder(spec.hot)) err("hot: still the placeholder; write it");
@@ -588,8 +645,8 @@ export function validateSpec(spec) {
     }
   }
 
-  if (frame === "cover") {
-    for (const k of ["notes", "notBuilt", "record"]) if (spec[k] !== undefined) err(`${k}: the cover's template has no ${k}; remove it`);
+  if (frame === "cover" || frame === "plate") {
+    for (const k of ["notes", "notBuilt", "record"]) if (spec[k] !== undefined) err(`${k}: the ${frame}'s template has no ${k}; remove it`);
   } else if (RECORD_FRAMES.includes(frame)) {
     for (const k of ["notes", "notBuilt"]) if (spec[k] !== undefined) err(`${k}: the ${frame} frame has no footer; write paragraphs in figure.texts, or set frame to swiss`);
     if (spec.record !== undefined && !["bottom", "left"].includes(spec.record)) err('record: "bottom" or "left", or leave it out and the engine picks');
@@ -617,11 +674,11 @@ export function validateSpec(spec) {
     if (!isObj(spec.motion)) err("motion: must be { kind, frames, fps }");
     else {
       unknownKeys(spec.motion, KEYS.motion, "motion.", err);
-      const kinds = frame === "cover" ? ["turn", "copier"] : MOTION.kinds.filter((k) => k !== "turn" && k !== "copier");
+      const kinds = frame === "cover" ? ["turn", "copier"] : frame === "plate" ? ["pulse", "signal"] : MOTION.kinds.filter((k) => !SELF_TIMED_MOTION.includes(k));
       if (!kinds.includes(spec.motion.kind)) err(`motion.kind: "${spec.motion.kind}" is not a motion; use ${kinds.join(" or ")}`);
     }
   }
-  if (isObj(spec.motion) && (spec.motion.kind === "turn" || spec.motion.kind === "copier")) {
+  if (isObj(spec.motion) && SELF_TIMED_MOTION.includes(spec.motion.kind)) {
     for (const k of ["frames", "fps"]) if (spec.motion[k] !== undefined) err(`motion.${k}: a ${spec.motion.kind} loop sets its own length and rate; remove ${k}`);
   } else if (spec.motion !== undefined) {
     if (isObj(spec.motion)) {
@@ -765,7 +822,7 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
  * @param {{ hash: string, repo: { name: string } }} facts
  * @param {{ commit?: string, date: string, accent?: string, split?: string[], parts: { id: string, name: string }[] }} o
  */
-export function coverScaffold(facts, { commit, date, accent, split, parts, strata = "outline", like, ground = "navy", look, format, crop }) {
+export function coverScaffold(facts, { commit, date, accent, split, parts, strata = "outline", like, ground = "navy", look, format, crop, layout, finish }) {
   const region = { shape: like ? { like } : undefined, strata };
   return {
     version: 3,
@@ -776,6 +833,8 @@ export function coverScaffold(facts, { commit, date, accent, split, parts, strat
     ...(look && look !== "living" ? { look } : {}),
     ...(format && format !== "poster" ? { format } : {}),
     ...(crop && crop !== "center" ? { crop } : {}),
+    ...(layout && layout !== "classic" ? { layout } : {}),
+    ...(finish && finish !== "type" ? { finish } : {}),
     headline: hold(`one plain sentence about what the product does for a person, at most ${LIMITS.headline} characters`),
     figure: {
       regions: [
@@ -793,5 +852,41 @@ export function coverScaffold(facts, { commit, date, accent, split, parts, strat
       texts: [{ role: "legend", id: "legend", text: hold(coverLegend(region, "<product>", "<the accent's plain name>", ground)) }],
     },
     motion: { kind: look === "xerox" ? "copier" : "turn" },
+  };
+}
+
+/**
+ * The spec `compose --frame plate` writes: a pure vector plate (`seismic`, `topo`, or `blueprint`) in a curated
+ * gallery ground and layout, leaving only the product name, headline, part names, accent and legend to write.
+ * @param {{ hash: string, repo: { name: string } }} facts
+ * @param {{ plate?: "seismic" | "topo" | "blueprint", commit?: string, date: string, accent?: string, split?: string[], parts?: { id: string, name: string }[], ground?: string, layout?: string, format?: string, seed?: number }} o
+ */
+export function plateScaffold(facts, { plate = "seismic", commit, date, accent, split, parts = [], ground = "obsidian", layout = "editorial", format = "poster", seed }) {
+  const P = PLATES[plate] ?? PLATES.seismic;
+  const color = COVER_GROUNDS[ground]?.colorName ?? "cyan";
+  return {
+    version: 3,
+    frame: "plate",
+    facts: facts.hash,
+    product: { name: hold("the name customers see, as the product's docs write it"), repo: facts.repo.name, ...(commit ? { commit } : {}), date },
+    ground,
+    ...(layout && layout !== "classic" ? { layout } : {}),
+    ...(format && format !== "poster" ? { format } : {}),
+    headline: hold(`one plain sentence about what the product does for a person, at most ${LIMITS.headline} characters`),
+    figure: {
+      regions: [
+        {
+          kind: "plate",
+          id: plate,
+          plate,
+          accent: accent ?? hold("the id of the part the product is about, from the list compose printed"),
+          ...(split ? { split } : {}),
+          ...(seed !== undefined ? { seed } : {}),
+          names: Object.fromEntries(parts.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])),
+        },
+      ],
+      texts: [{ role: "legend", id: "legend", text: hold(P.legend("<product>", "<the accent's plain name>", color)) }],
+    },
+    motion: { kind: P.motion },
   };
 }

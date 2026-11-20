@@ -7,13 +7,13 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { validateSpec } from "../lib/spec.mjs";
+import { validateSpec, plateScaffold } from "../lib/spec.mjs";
 import { shapeMask } from "../lib/mask.mjs";
 import { regionParts, aroundProduct } from "../lib/parts.mjs";
 import { runChecks, CHECKS } from "../lib/check.mjs";
 import { SILHOUETTES, SILHOUETTE_NAMES } from "../lib/silhouettes.mjs";
-import { COVER, COVER_FRAMES, COVER_GROUNDS, COVER_STRATA, coverLegend, coverSolid, coverShape, coverPose, coverModel, coverCells, coverMeasure, coverStill, coverSteps, coverTemplate } from "../lib/cover.mjs";
-import { coverOf } from "../lib/cover-render.mjs";
+import { COVER, COVER_FRAMES, COVER_GROUNDS, COVER_PRIMARY_GROUNDS, COVER_LAYOUTS, COVER_FINISHES, COVER_STRATA, coverLegend, coverSolid, coverShape, coverPose, coverModel, coverCells, coverMeasure, coverStill, coverSteps, coverTemplate, coverStudioShade } from "../lib/cover.mjs";
+import { coverOf, coverPage } from "../lib/cover-render.mjs";
 import { coverFindings, accentCandidates, coverWindow, COVER_LIMITS } from "../lib/cover-report.mjs";
 import { OP_EXAMPLES } from "../vyo.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
@@ -63,7 +63,7 @@ test("the cover preset and a ready silhouette validate; every cover rule is repo
   const more = validateSpec(placed);
   for (const want of ["figure.texts[0].x: the cover places every block itself; remove x", `${f}.shape: give like, ops or mask, not two of them; like is the whole silhouette`, `${f}.shape.fit: the cover sizes the form to its template; remove fit`]) assert.ok(more.includes(want), `expected ${want} in ${JSON.stringify(more, null, 1)}`);
   assert.ok(validateSpec({ ...cover(), ground: undefined }).includes(`ground: missing; use ${grounds}`));
-  assert.ok(validateSpec({ ...JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "wave.json"), "utf8")), ground: "navy" }).includes("ground: only the cover frame takes ground; set frame to cover or remove ground"));
+  assert.ok(validateSpec({ ...JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "wave.json"), "utf8")), ground: "navy" }).includes("ground: only the cover or plate frame takes ground; remove ground"));
 });
 
 test("the cover's page script compiles: its modules declare no top-level name twice", async () => {
@@ -75,8 +75,15 @@ test("the cover's page script compiles: its modules declare no top-level name tw
   for (const f of COVER_PAGE_MODULES) assert.doesNotMatch(fs.readFileSync(path.join(lib, f), "utf8"), /^import .*node:/m, `${f} runs in the page, so it imports nothing from Node`);
 });
 
-test("the grounds are a curated closed set: each has valid hexes, a colorName, and theme-matched glow or fill", () => {
-  assert.deepEqual(Object.keys(COVER_GROUNDS), ["navy", "charcoal", "forest", "paper", "blood", "acid", "cobalt", "xerox", "riso", "obsidian"]);
+test("the grounds are a curated closed set of 14: 5 primary gallery palettes and 9 legacy grounds, plus closed layouts and finishes", () => {
+  assert.deepEqual(Object.keys(COVER_GROUNDS), [
+    "navy", "charcoal", "forest", "paper", "blood", "acid", "cobalt", "xerox", "riso",
+    "obsidian", "carbon", "abyss", "graphite", "bone",
+  ]);
+  assert.deepEqual(COVER_PRIMARY_GROUNDS, ["obsidian", "carbon", "abyss", "graphite", "bone"]);
+  for (const name of COVER_PRIMARY_GROUNDS) assert.ok(COVER_GROUNDS[name], `primary ground ${name} is in COVER_GROUNDS`);
+  assert.deepEqual(COVER_LAYOUTS, ["classic", "editorial", "blueprint", "macro"]);
+  assert.deepEqual(COVER_FINISHES, ["type", "studio", "halftone", "wireframe"]);
   for (const [name, g] of Object.entries(COVER_GROUNDS)) {
     for (const k of ["ground", "ink", "accent"]) assert.match(g[k], /^#[0-9A-F]{6}$/, `${name}.${k}`);
     assert.ok(typeof g.colorName === "string" && g.colorName.length >= 3, `${name}.colorName`);
@@ -359,4 +366,148 @@ test("extrude and revolve solids, xerox and spin looks, square and og formats, a
     if (regOver.solid?.kind === "extrude") assert.ok(c.model.S.wall.some((w) => w === 1), `${label} has extruded walls`);
   }
 });
+
+test("coverTemplate: all 4 layouts across all 3 formats produce valid non-empty boxes, classic stays unchanged, macro spans full bleed", () => {
+  const sample = { name: "Pantry", headline: "A week of dinners, planned in one go from the recipes you already cook.", legend: "This pear is the code of Pantry, one layer per part, each as big as its share. The cyan outer ring is screens." };
+  for (const format of ["poster", "square", "og"]) {
+    const defClassic = coverTemplate({ ...sample, format });
+    const expClassic = coverTemplate({ ...sample, format, layout: "classic" });
+    assert.deepEqual(defClassic, expClassic, `${format}: default layout equals classic`);
+    if (format === "poster") {
+      assert.equal(defClassic.box.left, COVER.margin / 2);
+      assert.equal(defClassic.box.right, defClassic.width - COVER.margin / 2);
+      assert.equal(defClassic.nameSize, COVER.name);
+    }
+
+    for (const layout of COVER_LAYOUTS) {
+      const T = coverTemplate({ ...sample, format, layout });
+      assert.equal(T.layout, layout);
+      assert.equal(T.format, format);
+      assert.ok(T.nameSize > 0, `${layout}/${format}: positive nameSize`);
+      assert.ok(T.headline.length >= 1 && T.legend.length >= 1, `${layout}/${format}: wrapped copy`);
+      assert.ok(T.box.right > T.box.left && T.box.bottom > T.box.top, `${layout}/${format}: non-empty figure box`);
+      if (layout === "macro") {
+        assert.ok(T.box.left < 0 && T.box.right > T.width && T.box.top < 0 && T.box.bottom > T.height, `${format}: macro spans full bleed`);
+        assert.ok(T.cards?.tl && T.cards?.tr && T.cards?.bl, `${format}: macro defines corner cards`);
+      } else if (layout === "editorial") {
+        assert.ok(T.ruleY < T.bottomRuleY && T.tableW > 0, `${format}: editorial defines rules and table`);
+      } else if (layout === "blueprint") {
+        assert.ok(T.frame && T.inner && T.titleBlock, `${format}: blueprint defines frame and title block`);
+      }
+    }
+  }
+});
+
+test("coverStudioShade: Fresnel rim peaks at grazing angles, AO attenuates diffuse/fill, and lum stays in [0, 1]", () => {
+  for (const dark of [true, false]) {
+    const front = coverStudioShade(0, 0, 1, 1, dark);
+    const mid = coverStudioShade(Math.SQRT1_2, 0, Math.SQRT1_2, 1, dark);
+    const grazing = coverStudioShade(1, 0, 0, 1, dark);
+    assert.ok(grazing.rim > mid.rim && mid.rim > front.rim, `dark=${dark}: Fresnel rim peaks as nz -> 0`);
+    assert.equal(front.rim, 0, `dark=${dark}: zero Fresnel rim straight at viewer`);
+
+    // AO attenuates diffuse/fill luminance while keeping Fresnel rim crisp.
+    const litFull = coverStudioShade(-0.4, -0.5, 0.768, 1.0, dark);
+    const litOccluded = coverStudioShade(-0.4, -0.5, 0.768, 0.5, dark);
+    assert.ok(litOccluded.lum < litFull.lum, `dark=${dark}: AO=0.5 attenuates lum below AO=1.0`);
+    assert.equal(litOccluded.rim, litFull.rim, `dark=${dark}: Fresnel rim is independent of AO`);
+  }
+
+  // Sweep normals and AO values across the unit hemisphere: lum always in [0, 1].
+  for (const dark of [true, false]) {
+    for (const ao of [0.42, 0.7, 1.0]) {
+      for (const [nx, ny, nz] of [[0, 0, 1], [1, 0, 0], [-1, 0, 0], [0, -1, 0], [0, 1, 0], [-0.46, -0.56, 0.69], [0.66, 0.34, 0.67], [0, 0, -1]]) {
+        const len = Math.hypot(nx, ny, nz) || 1;
+        const r = coverStudioShade(nx / len, ny / len, nz / len, ao, dark);
+        assert.ok(Number.isFinite(r.lum) && r.lum >= 0 && r.lum <= 1, `lum=${r.lum} in [0, 1]`);
+      }
+    }
+  }
+});
+
+test("coverSolid and coverSurface compute valid AO in [0.4, 1.0] with inner-aperture and crease attenuation on disc and turbine", () => {
+  for (const name of ["disc", "turbine"]) {
+    const spec = coverWith({ shape: { like: name }, strata: "outline" }, { ground: "obsidian", finish: "studio" });
+    spec.figure.texts[0].text = coverLegend(spec.figure.regions[0], "Pantry", "screens", spec.ground);
+    const m = modelOf(spec);
+    const { solid, S } = m;
+
+    let minSolidAo = 1;
+    let maxSolidAo = 0;
+    for (let i = 0; i < solid.ao.length; i++) {
+      assert.ok(solid.ao[i] >= 0.4 && solid.ao[i] <= 1.0, `${name} solid.ao[${i}]=${solid.ao[i]} in [0.4, 1.0]`);
+      if (solid.inside[i]) {
+        if (solid.ao[i] < minSolidAo) minSolidAo = solid.ao[i];
+        if (solid.ao[i] > maxSolidAo) maxSolidAo = solid.ao[i];
+      }
+    }
+    assert.ok(minSolidAo < 0.85 && maxSolidAo - minSolidAo > 0.1, `${name}: solid AO attenuates inner aperture/creases (min=${minSolidAo.toFixed(3)}, max=${maxSolidAo.toFixed(3)})`);
+
+    let minSurfAo = 1;
+    let maxSurfAo = 0;
+    for (let j = 0; j < S.n; j++) {
+      assert.ok(S.ao[j] >= 0.4 && S.ao[j] <= 1.0, `${name} surface ao[${j}]=${S.ao[j]} in [0.4, 1.0]`);
+      if (S.ao[j] < minSurfAo) minSurfAo = S.ao[j];
+      if (S.ao[j] > maxSurfAo) maxSurfAo = S.ao[j];
+    }
+    assert.ok(minSurfAo < 0.85 && maxSurfAo - minSurfAo > 0.1, `${name}: surface AO carries cavity attenuation into samples`);
+  }
+
+  // Extrude and revolve solids also produce valid AO in [0.4, 1.0] across every surface sample.
+  for (const [like, kind] of [["plug", "extrude"], ["flask", "revolve"]]) {
+    const m = modelOf(coverWith({ shape: { like }, strata: "down", solid: { kind } }, { ground: "carbon", finish: "studio" }));
+    for (let j = 0; j < m.S.n; j++) {
+      assert.ok(m.S.ao[j] >= 0.4 && m.S.ao[j] <= 1.0, `${kind} surface ao in [0.4, 1.0]`);
+    }
+  }
+});
+
+test("validateSpec accepts valid layout and finish on cover, rejects unknown values, and rejects finish on non-cover frames", () => {
+  for (const layout of COVER_LAYOUTS) {
+    for (const finish of COVER_FINISHES) {
+      const s = coverWith({}, { ground: "obsidian", layout, finish });
+      s.figure.texts[0].text = coverLegend(s.figure.regions[0], "Pantry", "screens", "obsidian");
+      assert.deepEqual(validateSpec(s), [], `cover ${layout}/${finish} validates`);
+    }
+  }
+  const bad = coverWith({}, { layout: "masonry", finish: "chrome" });
+  const errs = validateSpec(bad);
+  assert.ok(errs.includes('layout: "masonry" is not a layout; use "classic", "editorial", "blueprint", "macro"'), `got ${JSON.stringify(errs)}`);
+  assert.ok(errs.includes('finish: "chrome" is not a cover finish; use "type", "studio", "halftone", "wireframe"'), `got ${JSON.stringify(errs)}`);
+
+  const looseWithFinish = { ...JSON.parse(fs.readFileSync(path.join(HERE, "..", "presets", "wave.json"), "utf8")), finish: "studio" };
+  assert.ok(validateSpec(looseWithFinish).includes("finish: only the cover or plate frame takes finish; remove finish"));
+
+  const plateWithFinish = { ...plateScaffold(recipe, { plate: "seismic", commit: "04186f4", date: "2026-11-07", accent: "area:app/(app)", parts: regionParts(region(), recipe) }), finish: "studio" };
+  assert.ok(validateSpec(plateWithFinish).includes("finish: only the cover frame takes finish; remove finish"));
+});
+
+test("coverPage emits valid palette-safe chrome and embedded figure config for all 4 layouts and 4 finishes", () => {
+  const pairs = [
+    ["classic", "type"],
+    ["editorial", "studio"],
+    ["blueprint", "halftone"],
+    ["macro", "wireframe"],
+  ];
+  assert.deepEqual(pairs.map(([l]) => l), COVER_LAYOUTS);
+  assert.deepEqual(pairs.map(([, f]) => f), COVER_FINISHES);
+  for (const [layout, finish] of pairs) {
+    const s = coverWith({}, { ground: "obsidian", layout, finish });
+    s.figure.texts[0].text = coverLegend(s.figure.regions[0], "Pantry", "screens", "obsidian");
+    const html = coverPage(s, recipe, "");
+    const domAndCss = html.replace(/<script[\s\S]*?<\/script>/gi, "");
+    assert.ok(!domAndCss.includes("rgba("), `${layout}/${finish}: zero rgba( in CSS/DOM`);
+    assert.ok(html.includes('<canvas id="cover"'), `${layout}/${finish}: contains cover canvas`);
+    assert.ok(domAndCss.includes('data-block="record"'), `${layout}/${finish}: contains record block`);
+    assert.ok(domAndCss.includes('data-role="headline"'), `${layout}/${finish}: contains headline role`);
+    assert.ok(domAndCss.includes('data-role="legend"'), `${layout}/${finish}: contains legend role`);
+    const m = html.match(/<script type="application\/json" id="figure">([\s\S]*?)<\/script>/);
+    assert.ok(m, `${layout}/${finish}: embeds #figure JSON`);
+    const fig = JSON.parse(m[1]);
+    assert.equal(fig.layout, layout);
+    assert.equal(fig.finish, finish);
+    assert.equal(fig.ground, "obsidian");
+  }
+});
+
 

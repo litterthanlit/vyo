@@ -7,9 +7,11 @@ import { frameOf, ROLES, RECORD_FRAMES } from "./frame.mjs";
 import { partsFromFacts, partOptions, regionParts, unplainName, sameNames, dominance } from "./parts.mjs";
 import { shapeMask } from "./mask.mjs";
 import { coverOf } from "./cover-render.mjs";
+import { plateOf } from "./plate-render.mjs";
 import { coverFindings, COVER_LIMITS } from "./cover-report.mjs";
 import { COVER, coverLegend, coverWords } from "./cover.mjs";
 import { FIELDS } from "./fields/index.mjs";
+import { PLATES } from "./plates/index.mjs";
 import { shapeReport, shapeFindings, SHAPE_LIMITS, SHAPE_LIMB } from "./shape-report.mjs";
 import { RINGS } from "./fields/shape-rings.mjs";
 import { RELIEF } from "./fields/shape-relief.mjs";
@@ -27,6 +29,8 @@ const round = (n) => Math.round(n);
 const pct = (n) => `${Math.round(n * 100)}%`;
 const fillIds = (spec) => spec.figure.regions.filter((r) => r.kind === "fill").map((r) => r.id);
 const fieldsOf = (spec) => spec.figure.regions.filter((r) => r.kind === "field");
+const platesOf = (spec) => spec.figure.regions.filter((r) => r.kind === "plate");
+const dataRegionsOf = (spec) => spec.figure.regions.filter((r) => r.kind === "field" || r.kind === "plate");
 // Fields lay their own rows out from the scan, so the rules for hand-drawn shapes judge fill rows only.
 const fillRowsOf = (page) => {
   const fills = new Set(page.regions.filter((r) => r.kind === "fill").map((r) => r.id));
@@ -147,19 +151,19 @@ export const CHECKS = [
   {
     id: "preset-copy", level: "warn", stage: "spec", about: "the figure's geometry is not a preset's, unchanged",
     run: ({ spec, presets }) => {
-      const mine = spec.figure.regions.filter((r) => r.kind !== "field").map(geometryKey);
+      const mine = spec.figure.regions.filter((r) => r.kind !== "field" && r.kind !== "plate").map(geometryKey);
       if (!mine.length) return [];
       const same = Object.entries(presets).find(([, p]) => {
-        const theirs = new Set(p.figure.regions.filter((r) => r.kind !== "field").map(geometryKey));
+        const theirs = new Set(p.figure.regions.filter((r) => r.kind !== "field" && r.kind !== "plate").map(geometryKey));
         return mine.every((k) => theirs.has(k));
       });
       return same ? [`the figure's geometry is the ${same[0]} preset's, unchanged; shape it for this product`] : [];
     },
   },
   {
-    id: "part-name", level: "warn", stage: "spec", about: "every part a field draws has a plain name of its own, and every name in names belongs to a part",
+    id: "part-name", level: "warn", stage: "spec", about: "every part a field or plate draws has a plain name of its own, and every name in names belongs to a part",
     run: ({ spec, facts }) =>
-      fieldsOf(spec).flatMap((r) => {
+      dataRegionsOf(spec).flatMap((r) => {
         const parts = partsFromFacts(facts, partOptions(r));
         return [
           ...parts.filter((p) => !unplainName(p.name) && hasProduct(p.name, spec)).map((p) => `part "${p.name}" (${p.id}) is or contains the product name; give it a plain name in names`),
@@ -170,24 +174,24 @@ export const CHECKS = [
       }),
   },
   {
-    id: "part-unplain", level: "fail", stage: "spec", about: "no part a field draws still carries a name that looks like a vendor or code name",
+    id: "part-unplain", level: "fail", stage: "spec", about: "no part a field or plate draws still carries a name that looks like a vendor or code name",
     run: ({ spec, facts }) =>
-      fieldsOf(spec).flatMap((r) =>
+      dataRegionsOf(spec).flatMap((r) =>
         partsFromFacts(facts, partOptions(r)).filter((p) => unplainName(p.name)).map((p) => `part "${p.name}" (${p.id}) looks like a vendor or code name; add a plain name in names`),
       ),
   },
   {
-    id: "accent-part", level: "warn", stage: "spec", about: "every field sets an accent part",
-    run: ({ spec }) => fieldsOf(spec).filter((r) => r.accent === undefined).map((r) => `no accent part in region ${r.id}; set accent to the id of the part the poster is about (vyo parts lists them)`),
+    id: "accent-part", level: "warn", stage: "spec", about: "every field or plate sets an accent part",
+    run: ({ spec }) => dataRegionsOf(spec).filter((r) => r.accent === undefined).map((r) => `no accent part in region ${r.id}; set accent to the id of the part the poster is about (vyo parts lists them)`),
   },
   {
-    id: "legend", level: "fail", stage: "spec", frames: ["loose", "signal", "cover"], about: "the legend names the accent part and the field's measure, so the picture reads as this project",
+    id: "legend", level: "fail", stage: "spec", frames: ["loose", "signal", "cover", "plate"], about: "the legend names the accent part and the field's or plate's measure, so the picture reads as this project",
     run: ({ spec, facts }) =>
-      fieldsOf(spec).flatMap((r) => {
+      dataRegionsOf(spec).flatMap((r) => {
         const legend = spec.figure.texts.find((t) => t.role === "legend")?.text ?? "";
         const names = regionParts(r, facts).filter((p) => p.hot).map((p) => p.name);
-        const { measure } = FIELDS[r.field];
-        // An accent that names no part is field-parts' to report; the legend still owes the measure.
+        const { measure } = r.kind === "plate" ? PLATES[r.plate] : FIELDS[r.field];
+        // An accent that names no part is field-parts' / plate-parts' to report; the legend still owes the measure.
         const named = !names.length || names.some((n) => legend.toLowerCase().includes(n.toLowerCase()));
         const measured = measure.every((group) => group.some((w) => startsWord(legend, w)));
         if (frameOf(spec) === "cover") {
@@ -351,8 +355,8 @@ export const CHECKS = [
   {
     id: "silhouette", level: "fail", stage: "page", about: "the figure covers 15% of the sheet above the footer and spans 55% of its height and 60% of its width (a drawn shape is judged by shape-cover instead)",
     run: ({ spec, page }) => {
-      // A shape's rows are type inside a silhouette the mask already measures; their extent is not the figure's.
-      if (fieldsOf(spec).some((r) => r.field === "shape")) return [];
+      // A shape's rows are type inside a silhouette the mask already measures; a plate draws a full-stage vector canvas.
+      if (frameOf(spec) === "plate" || fieldsOf(spec).some((r) => r.field === "shape")) return [];
       const s = figureStats(page.rows.map((r) => r.rect), page.dots.map((d) => d.rect), page.footerTop);
       const out = [];
       if (s.coverage < SILHOUETTE.coverage) out.push(`the figure covers ${pct(s.coverage)} of the sheet above the footer; it needs ${pct(SILHOUETTE.coverage)}, so enlarge the shapes`);
@@ -377,6 +381,23 @@ export const CHECKS = [
       }),
   },
   {
+    id: "plate-parts", level: "fail", stage: "page", frames: ["plate"], about: "a plate encodes every line of the scan, represents every part, and distinguishes its accent part",
+    run: ({ spec, facts, page }) => {
+      const p = plateOf(spec, facts);
+      const { region, parts, totalSliceLoc } = p;
+      const total = linesOf(facts);
+      const report = page.plate?.report;
+      const out = [];
+      if (totalSliceLoc !== total) out.push(`region ${region.id}: the plate's slices hold ${totalSliceLoc} lines but facts.json has ${total}`);
+      if (report && report.representedParts !== parts.length) out.push(`region ${region.id}: the plate represents ${report.representedParts} of ${parts.length} parts`);
+      if (region.accent !== undefined) {
+        if (!parts.some((pt) => pt.hot)) out.push(`region ${region.id}: accent ${region.accent} names no part; vyo parts lists the part ids`);
+        else if (report && !(report.accentCount > 0)) out.push(`region ${region.id}: the accent part produced no accented geometry on the plate`);
+      }
+      return out;
+    },
+  },
+  {
     id: "row-variety", level: "fail", stage: "page", about: `every fill region changes width: its lines' spread over their mean is at least ${REGION.variety}`,
     run: ({ page }) => pageRegionStats(page).filter((s) => s.variety < REGION.variety).map(boxMessage),
   },
@@ -398,7 +419,7 @@ export const CHECKS = [
       const allowed = new Set(Object.values(tokensOf(spec)).map(rgb));
       const own = Object.fromEntries(Object.entries(fieldTokensOf(spec)).map(([id, tokens]) => [`region ${id}`, new Set(Object.values(tokens).map(rgb))]));
       const bad = [...page.texts, ...page.boxes].filter((t) => !allowed.has(t.color) && !own[t.where]?.has(t.color));
-      return [...new Set(bad.map((t) => `${t.where} uses ${t.color}, not a ${spec.theme} token`))];
+      return [...new Set(bad.map((t) => `${t.where} uses ${t.color}, not a ${spec.theme ?? spec.ground} token`))];
     },
   },
   {
@@ -447,6 +468,7 @@ export const CHECKS = [
     id: "still", level: "fail", stage: "page", about: "the PNG and PDF show the finished poster: no row hidden and every mark at its full width, whatever motion the spec has",
     run: ({ spec, page }) => {
       if (page.cover) return page.cover.shown === page.cover.still ? [] : [`the cover's canvas shows frame ${page.cover.shown}, not its still, frame ${page.cover.still}; the PNG and PDF must show the still, so render again without changing the page`];
+      if (page.plate) return page.plate.shown === page.plate.still ? [] : [`the plate's canvas shows frame ${page.plate.shown}, not its still, frame ${page.plate.still}; the PNG and PDF must show the still, so render again without changing the page`];
       const hidden = page.rows.filter((r) => r.opacity === 0).length;
       const marks = spec.figure.texts.filter((t) => t.role === "mark");
       const short = marks.filter((t) => (page.blocks.find((b) => b.name === t.id)?.rect.right ?? 0) - t.x < t.w - 1).map((t) => t.id);
@@ -457,13 +479,14 @@ export const CHECKS = [
     },
   },
   {
-    id: "record", level: "fail", stage: "page", frames: ["loose", "signal", "cover"], about: "the record line is drawn once, with the commit and the date (a cover's record: its day, commit and counts)",
+    id: "record", level: "fail", stage: "page", frames: ["loose", "signal", "cover", "plate"], about: "the record line is drawn once, with the commit and the date (a cover's or plate's record: its day, commit and counts)",
     run: ({ spec, facts, page }) => {
       const lines = page.blocks.filter((b) => b.name === "record");
-      if (frameOf(spec) === "cover") {
+      const frame = frameOf(spec);
+      if (frame === "cover" || frame === "plate") {
         if (!spec.product.commit) return ["the record has no commit, which compose wrote; vyo sketch prints the exact value, or run git -C <repo> log -1 --format=%h and set it as \"commit\" in product"];
-        const want = coverOf(spec, facts).record.join(" ");
-        return lines.length === 1 && lines[0].text === want ? [] : [`the cover's record reads "${lines.map((l) => l.text).join(" | ")}"; it should read "${want}"`];
+        const want = (frame === "plate" ? plateOf(spec, facts) : coverOf(spec, facts)).record.join(" ");
+        return lines.length === 1 && lines[0].text === want ? [] : [`the ${frame}'s record reads "${lines.map((l) => l.text).join(" | ")}"; it should read "${want}"`];
       }
       if (lines.length !== 1) return [`the poster shows ${lines.length} record lines; it needs exactly one`];
       if (!spec.product.commit) return ["the record line has no commit; set product.commit to the short hash (vyo compose --repo fills it)"];

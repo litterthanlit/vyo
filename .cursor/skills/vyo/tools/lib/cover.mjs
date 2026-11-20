@@ -26,10 +26,13 @@ export const COVER_FRAMES = COVER.fps * COVER.seconds;
 export const COVER_LOOKS = ["living", "xerox", "spin"];
 export const COVER_CROPS = ["center", "bleed-right", "macro"];
 export const COVER_SOLID_KINDS = ["dome", "extrude", "revolve"];
+export const COVER_PRIMARY_GROUNDS = ["obsidian", "carbon", "abyss", "graphite", "bone"];
+export const COVER_LAYOUTS = ["classic", "editorial", "blueprint", "macro"];
+export const COVER_FINISHES = ["type", "studio", "halftone", "wireframe"];
 
-// The curated grounds: four editorial grounds plus six high-impact print/punk grounds. Each pairs a ground, ink,
-// accent and plain colour name (for the legend). Light/vivid grounds fill the accent behind dark ink letters so
-// thin accent glyphs never wash out at thumbnail size.
+// The curated grounds: four editorial grounds, six print/punk grounds, plus four refined studio gallery palettes.
+// Each pairs a ground, ink, accent and plain colour name (for the legend). Light/vivid grounds fill the accent
+// behind dark ink letters so thin accent glyphs never wash out at thumbnail size.
 const COVER_HI = 0.88;
 export const COVER_GROUNDS = {
   navy: { ground: "#0E1424", ink: "#ECEEF2", accent: "#FF5A1F", colorName: "orange", theme: "dark", floor: 0.3, glow: 1, hi: COVER_HI },
@@ -41,7 +44,11 @@ export const COVER_GROUNDS = {
   cobalt: { ground: "#1028A8", ink: "#F4F0E6", accent: "#FF5A1F", colorName: "orange", theme: "dark", floor: 0.36, glow: 0.9, hi: COVER_HI },
   xerox: { ground: "#111111", ink: "#ECE8DC", accent: "#2B5BFF", colorName: "blue", theme: "dark", floor: 0.38, glow: 0.85, hi: COVER_HI },
   riso: { ground: "#EFEAE0", ink: "#1B2A6B", accent: "#FF3B7F", colorName: "pink", theme: "light", floor: 0.66, glow: 0, hi: 1, fill: 0.92 },
-  obsidian: { ground: "#0B0C10", ink: "#ECEEF2", accent: "#00E5FF", colorName: "cyan", theme: "dark", floor: 0.32, glow: 0.95, hi: COVER_HI },
+  obsidian: { ground: "#09090B", ink: "#F4F4F5", accent: "#00E5FF", colorName: "cyan", theme: "dark", floor: 0.32, glow: 0.95, hi: COVER_HI },
+  carbon: { ground: "#111113", ink: "#ECE9E2", accent: "#E86A33", colorName: "copper", theme: "dark", floor: 0.32, glow: 0.92, hi: COVER_HI },
+  abyss: { ground: "#070D1A", ink: "#DCE4F2", accent: "#38BDF8", colorName: "blue", theme: "dark", floor: 0.32, glow: 0.92, hi: COVER_HI },
+  graphite: { ground: "#14171C", ink: "#E7ECF2", accent: "#A78BFA", colorName: "violet", theme: "dark", floor: 0.32, glow: 0.92, hi: COVER_HI },
+  bone: { ground: "#EFECE6", ink: "#141414", accent: "#1D4ED8", colorName: "ultramarine", theme: "light", floor: 0.64, glow: 0, hi: 1, fill: 0.92 },
 };
 
 // How the strata run, by name. outline: shells from the outline in, the accent part the outer shell and the
@@ -75,6 +82,8 @@ const COVER_BLACK_EM = [184, 270, 531, 646, 685, 1018, 680, 286, 359, 359, 593, 
 const coverWidth = (table, text, size, track = 0) => [...text].reduce((w, ch) => w + (table[ch.charCodeAt(0) - 32] ?? table[78]) / 1000 + track, 0) * size;
 /** The px `text` takes in the template's small type. */
 export const coverSmallWidth = (text) => coverWidth(COVER_SMALL_EM, text, COVER.small);
+/** The px `text` takes in Inter Display Black at `size` with optional `track` em tracking. */
+export const coverBlackWidth = (text, size, track = -0.04) => coverWidth(COVER_BLACK_EM, text, size, track);
 
 /** `text` broken into lines no wider than `width` px in the template's small type. */
 export function coverWrap(text, width) {
@@ -102,16 +111,121 @@ export function coverRecord(product, parts) {
 
 /**
  * The template's blocks in sheet px, and the box the form fills: between the top columns and the legend, sized
- * to fit every pose of the loop. Supports poster (840x1190), square (960x960) and og (1280x640), plus the bold
- * edge-bleeding Black wordmark for xerox and spin looks.
+ * to fit every pose of the loop. Supports poster (840x1190), square (960x960) and og (1280x640), four poster
+ * layouts (classic, editorial, blueprint, macro), plus the bold edge-bleeding Black wordmark for xerox and spin.
  */
-export function coverTemplate({ name, headline, legend, format = "poster", look = "living" }) {
+export function coverTemplate({ name, headline, legend, format = "poster", look = "living", layout = "classic" }) {
   const S = sheetOf(format);
   const W = S.width;
   const H = S.height;
+  const { lead, legendW, headlineW } = COVER;
+
+  if (layout === "editorial") {
+    const M = 36;
+    const track = -0.04;
+    if (format === "og") {
+      const leftW = Math.round(W * 0.42) - M;
+      const maxName = 56;
+      const nameSize = Math.min(maxName, Math.max(28, Math.floor((maxName * leftW) / coverWidth(COVER_BLACK_EM, name, maxName, track))));
+      const ruleY = M + Math.ceil(nameSize * 1.04) + 14;
+      const subTop = ruleY + 14;
+      const headlineLines = coverWrap(headline, leftW);
+      const tableTop = subTop + headlineLines.length * lead + 18;
+      const legendLines = coverWrap(legend, leftW);
+      const legendY = H - M - legendLines.length * lead;
+      const bottomRuleY = legendY - 14;
+      return {
+        width: W, height: H, margin: M, format, look, layout,
+        headline: headlineLines, legend: legendLines, legendY, base: M + nameSize, nameSize, track,
+        ruleY, subTop, subBottom: tableTop + 82, tableTop, tableW: leftW, bottomRuleY, headlineW: leftW, legendW: leftW,
+        box: { left: Math.round(W * 0.45), right: W - M, top: M + 68, bottom: H - M },
+      };
+    }
+    const maxName = format === "square" ? 62 : 74;
+    const nameMaxW = Math.round((W - 2 * M) * 0.6);
+    const nameSize = Math.min(maxName, Math.max(28, Math.floor((maxName * nameMaxW) / coverWidth(COVER_BLACK_EM, name, maxName, track))));
+    const headerH = Math.max(Math.ceil(nameSize * 0.98), Math.ceil(4 * lead + 8));
+    const ruleY = M + headerH + 16;
+    const subTop = ruleY + 14;
+    const edHeadlineW = 290;
+    const tableW = 280;
+    const headlineLines = coverWrap(headline, edHeadlineW);
+    const subBottom = subTop + Math.max(headlineLines.length * lead, 80);
+    const edLegendW = Math.min(460, W - 2 * M - 120);
+    const legendLines = coverWrap(legend, edLegendW);
+    const legendY = H - M - legendLines.length * lead;
+    const bottomRuleY = legendY - 14;
+    return {
+      width: W, height: H, margin: M, format, look, layout,
+      headline: headlineLines, legend: legendLines, legendY, base: M + nameSize, nameSize, track,
+      ruleY, subTop, subBottom, tableTop: subTop, tableW, bottomRuleY, headlineW: edHeadlineW, legendW: edLegendW,
+      box: { left: Math.round(W * 0.12), right: W - M, top: subBottom + 24, bottom: bottomRuleY - 24 },
+    };
+  }
+
+  if (layout === "blueprint") {
+    const frameM = 32;
+    const innerM = 50;
+    const track = -0.035;
+    const frame = { x: frameM, y: frameM, w: W - 2 * frameM, h: H - 2 * frameM };
+    const inner = { x: innerM, y: innerM, w: W - 2 * innerM, h: H - 2 * innerM };
+    const maxName = format === "og" ? 28 : 34;
+    const nameMaxW = Math.round(inner.w * 0.42);
+    const nameSize = Math.min(maxName, Math.max(22, Math.floor((maxName * nameMaxW) / coverWidth(COVER_BLACK_EM, name, maxName, track))));
+    const nameW = Math.ceil(coverWidth(COVER_BLACK_EM, name, nameSize, track));
+    const besideX = innerM + Math.max(136, nameW + 24);
+    const besideAvail = inner.x + inner.w - 110 - besideX;
+    const bpHeadlineX = besideAvail >= 190 ? besideX : innerM;
+    const bpHeadlineTop = besideAvail >= 190 ? innerM + 2 : innerM + Math.ceil(nameSize * 1.1) + 6;
+    const bpHeadlineW = besideAvail >= 190 ? Math.min(340, besideAvail) : Math.min(380, inner.w - 120);
+    const headlineLines = coverWrap(headline, bpHeadlineW);
+    const headerBottom = Math.max(innerM + Math.ceil(nameSize * 1.05), bpHeadlineTop + Math.ceil(headlineLines.length * lead)) + 14;
+    const tbW = 320;
+    const tbH = 88;
+    const titleBlock = { x: W - frameM - tbW, y: H - frameM - tbH, w: tbW, h: tbH };
+    const bpLegendW = Math.min(460, Math.max(200, titleBlock.x - innerM - 24));
+    const legendLines = coverWrap(legend, bpLegendW);
+    const legendY = H - innerM - legendLines.length * lead;
+    return {
+      width: W, height: H, margin: innerM, format, look, layout,
+      headline: headlineLines, legend: legendLines, legendY, base: innerM + nameSize, nameSize, track,
+      frame, inner, headerBottom, titleBlock,
+      headlineX: bpHeadlineX, headlineTop: bpHeadlineTop, headlineW: bpHeadlineW, legendW: bpLegendW,
+      box: { left: innerM + 6, right: W - innerM - 6, top: headerBottom + 20, bottom: Math.min(titleBlock.y, legendY) - 20 },
+    };
+  }
+
+  if (layout === "macro") {
+    const M = 36;
+    const track = -0.04;
+    const maxName = format === "og" ? 38 : 44;
+    const nameMaxW = 290;
+    const nameSize = Math.min(maxName, Math.max(24, Math.floor((maxName * nameMaxW) / coverWidth(COVER_BLACK_EM, name, maxName, track))));
+    const mcHeadlineW = 276;
+    const headlineLines = coverWrap(headline, mcHeadlineW);
+    const mcLegendW = format === "og" ? 380 : 340;
+    const legendLines = coverWrap(legend, mcLegendW);
+    const tlPadX = 14;
+    const tlPadY = 11;
+    const tlW = Math.ceil(Math.max(coverWidth(COVER_BLACK_EM, name, nameSize, track), ...headlineLines.map(coverSmallWidth))) + tlPadX * 2;
+    const tlH = Math.ceil(nameSize * 1.02) + 8 + Math.ceil(headlineLines.length * lead) + tlPadY * 2;
+    const blW = Math.ceil(Math.max(...legendLines.map(coverSmallWidth))) + tlPadX * 2;
+    const blH = Math.ceil(legendLines.length * lead) + tlPadY * 2;
+    const legendY = H - M - blH + tlPadY;
+    return {
+      width: W, height: H, margin: M, format, look, layout,
+      headline: headlineLines, legend: legendLines, legendY, base: M + tlPadY + nameSize, nameSize, track,
+      cards: {
+        tl: { x: M, y: M, w: tlW, h: tlH, padX: tlPadX, padY: tlPadY },
+        tr: { x: W - M - 232, y: M, w: 232, h: 78, padX: tlPadX, padY: tlPadY },
+        bl: { x: M, y: H - M - blH, w: blW, h: blH, padX: tlPadX, padY: tlPadY },
+      },
+      box: { left: -Math.round(W * 0.05), right: Math.round(W * 1.05), top: -Math.round(H * 0.04), bottom: Math.round(H * 1.04) },
+    };
+  }
+
   const punk = look === "xerox" || look === "spin";
   const M = punk ? 30 : COVER.margin;
-  const { lead, legendW, headlineW } = COVER;
   if (format === "og") {
     // Split landscape card: editorial column on left, sculpted 3D form filling the right half.
     const leftW = Math.round(W * 0.46) - M;
@@ -124,7 +238,7 @@ export function coverTemplate({ name, headline, legend, format = "poster", look 
     const base = punk ? (/[gjpqy]/.test(name) ? H - Math.round(nameSize * 0.14) : H + Math.round(nameSize * 0.04)) : H - M - Math.round(nameSize * 0.12);
     const legendY = base - nameSize * 0.74 - 24 - legendLines.length * lead;
     return {
-      width: W, height: H, margin: M, format, look,
+      width: W, height: H, margin: M, format, look, layout: "classic",
       headline: headlineLines, legend: legendLines, legendY, base, nameSize, track,
       box: { left: Math.round(W * 0.48), right: W - 20, top: 24, bottom: H - 24 },
     };
@@ -142,7 +256,7 @@ export function coverTemplate({ name, headline, legend, format = "poster", look 
     const base = hasDescender ? H - Math.round(nameSize * 0.14) : H + Math.round(nameSize * 0.045);
     const legendY = base - nameSize * 0.73 - 30 - legendLines.length * lead;
     return {
-      width: W, height: H, margin: M, format, look,
+      width: W, height: H, margin: M, format, look, layout: "classic",
       headline: headlineLines, legend: legendLines, legendY, base, nameSize, track,
       box: { left: M, right: W - M, top: metaBottom + 26, bottom: legendY - 24 },
     };
@@ -153,7 +267,7 @@ export function coverTemplate({ name, headline, legend, format = "poster", look 
   const base = H - M - Math.round(nameSize * 0.12);
   const legendY = base - nameSize * 0.73 - 30 - legendLines.length * lead;
   return {
-    width: W, height: H, margin: M, format, look,
+    width: W, height: H, margin: M, format, look, layout: "classic",
     headline: headlineLines, legend: legendLines, legendY, base, nameSize, track: COVER.track,
     box: { left: M / 2, right: W - M / 2, top: metaBottom + 34, bottom: legendY - 30 },
   };
@@ -297,21 +411,55 @@ export function coverSolid(shapeSpec, mask, solid, strata) {
     }
     coverBlur(mid, w, h, 2);
   }
+  let dC = null;
+  let midBlur = null;
+  if (face.some((f) => f)) {
+    midBlur = new Float32Array(mid);
+    coverBlur(midBlur, w, h, Math.max(2, Math.round((R * 0.28) / CELL)));
+  }
   if (crease.some((b) => b)) {
-    const dC = coverDistance(crease.map((b) => 1 - b), w, h);
+    dC = coverDistance(crease.map((b) => 1 - b), w, h);
     const fold = solid.groove ?? RELIEF.fold;
     for (let i = 0; i < half.length; i++) {
       const t = Math.max(0, 1 - dC[i] / fold);
       if (inside[i]) half[i] = Math.max(half[i] * 0.4, half[i] - fold * 0.8 * t * t);
     }
   }
+  // Per-cell distance-field ambient occlusion in [0.42, 1.0]: darkens inner apertures, concave notches, face folds, and creases.
+  const ao = new Float32Array(w * h).fill(1);
+  const aoRad = Math.max(3, Math.round((R * 0.35) / CELL));
+  const halfBlur = new Float32Array(half);
+  coverBlur(halfBlur, w, h, aoRad);
+  const inBlur = new Float32Array(w * h);
+  for (let i = 0; i < inside.length; i++) inBlur[i] = inside[i] ? 1 : 0;
+  coverBlur(inBlur, w, h, Math.max(4, Math.round((R * 0.45) / CELL)));
+  const creaseFold = solid.groove ?? RELIEF.fold;
+  for (let i = 0; i < ao.length; i++) {
+    if (!inside[i]) continue;
+    const cavity = Math.max(0, (halfBlur[i] - half[i]) / Math.max(8, R * 0.45));
+    const edgeNear = Math.max(0, 1 - dIn[i] / Math.max(6, R * 0.55));
+    const aperture = Math.max(0, (inBlur[i] - 0.52) / 0.42) * edgeNear;
+    let val = 1 - Math.min(0.46, cavity * 0.62 + aperture * 0.44);
+    if (dC) {
+      const tc = Math.max(0, 1 - dC[i] / (creaseFold * 1.4));
+      val *= 1 - 0.36 * tc * tc;
+    }
+    if (midBlur) {
+      const fCav = Math.max(0, (midBlur[i] - mid[i]) / Math.max(6, R * 0.35));
+      val *= 1 - Math.min(0.22, fCav * 0.3);
+    }
+    ao[i] = Math.min(1, Math.max(0.42, val));
+  }
+  coverBlur(ao, w, h, 1);
+  for (let i = 0; i < ao.length; i++) ao[i] = inside[i] ? Math.min(1, Math.max(0.42, ao[i])) : 1;
+
   const a = ((strata?.angle ?? 90) * Math.PI) / 180;
   const key = new Float32Array(w * h);
   for (let i = 0; i < key.length; i++) {
     const [x, y] = [(i % w) * CELL, Math.floor(i / w) * CELL];
     key[i] = strata?.by === "depth" ? dIn[i] + 0.001 * y : x * Math.cos(a) + y * Math.sin(a) + 1e-4 * (y * Math.cos(a) - x * Math.sin(a));
   }
-  return { w, h, cell: CELL, inside, half, mid, key, R, kind: solid.kind ?? "dome", depth: solid.depth ?? 1 };
+  return { w, h, cell: CELL, inside, half, mid, key, ao, R, kind: solid.kind ?? "dome", depth: solid.depth ?? 1 };
 }
 
 // The glyph grid, as the relief sets it: 6px Commit Mono, 0.6em advances, sized for any sheet format.
@@ -327,11 +475,11 @@ export const COVER_GRID = coverGridFor("poster");
 
 /**
  * The solid as surface samples: position and normal in px about the form's centre, the strata key, a `wall`
- * flag (1 on extruded side walls, so walls print crisp marks instead of squeezed letters), and a material cell
- * (mc, mr) about one glyph in size, so a dither decided by it rides the surface instead of flickering.
+ * flag (1 on extruded side walls, so walls print crisp marks instead of squeezed letters), ambient occlusion `ao`,
+ * and a material cell (mc, mr) about one glyph in size, so a dither decided by it rides the surface instead of flickering.
  */
 function coverSurface(solid) {
-  const { w, h, cell, inside, half, mid, key, kind = "dome", depth = 1 } = solid;
+  const { w, h, cell, inside, half, mid, key, ao: solidAo, kind = "dome", depth = 1 } = solid;
   let [sx, sy, count] = [0, 0, 0];
   for (let i = 0; i < inside.length; i++) if (inside[i]) [sx, sy, count] = [sx + (i % w), sy + Math.floor(i / w), count + 1];
   const [cx, cy] = [(sx / count) * cell, (sy / count) * cell];
@@ -340,11 +488,11 @@ function coverSurface(solid) {
   const extHalf = Math.max(8, Math.min(w, h) * cell * 0.14 * depth);
   let out = null;
   let n = 0;
-  const push = (x, y, z, nx, ny, nz, k, wall = 0) => {
+  const push = (x, y, z, nx, ny, nz, k, wall = 0, ao = 1) => {
     if (out) {
       const l = Math.hypot(nx, ny, nz) || 1;
       out.x[n] = x - cx, out.y[n] = y - cy, out.z[n] = z;
-      out.nx[n] = nx / l, out.ny[n] = ny / l, out.nz[n] = nz / l, out.key[n] = k, out.wall[n] = wall;
+      out.nx[n] = nx / l, out.ny[n] = ny / l, out.nz[n] = nz / l, out.key[n] = k, out.wall[n] = wall, out.ao[n] = ao;
       out.mc[n] = Math.floor(x / COVER_CW), out.mr[n] = Math.floor(y / COVER_LH) * 2 + (nz < 0 ? 1 : 0);
     }
     n++;
@@ -367,14 +515,16 @@ function coverSurface(solid) {
         rads[gy] = m;
         rowKey[gy] = kc ? ks / kc : 0;
       }
-      const ring = (rad, y, ny, slope, kVal) => {
+      const radBlur = new Float32Array(rads);
+      for (let gy = 2; gy < h - 2; gy++) radBlur[gy] = (rads[gy - 2] + rads[gy - 1] + rads[gy] + rads[gy + 1] + rads[gy + 2]) / 5;
+      const ring = (rad, y, ny, slope, kVal, aoVal = 1) => {
         const steps = Math.max(4, Math.round((2 * Math.PI * rad) / cell));
         const inv = 1 / Math.hypot(1, slope);
         for (let s = 0; s < steps; s++) {
           const a = (2 * Math.PI * s) / steps;
           const sa = Math.sin(a);
           const ca = Math.cos(a);
-          push(cx + rad * sa, y, rad * ca, ny ? 0 : sa * inv, ny || -slope * inv, ny ? 0 : ca * inv, kVal, 0);
+          push(cx + rad * sa, y, rad * ca, ny ? 0 : sa * inv, ny || -slope * inv, ny ? 0 : ca * inv, kVal, 0, aoVal);
         }
       };
       for (let gy = 1; gy < h - 1; gy++) {
@@ -382,13 +532,15 @@ function coverSurface(solid) {
         if (r <= 0) continue;
         const y = (gy + 0.5) * cell;
         const slope = (rads[gy + 1] - rads[gy - 1]) / (2 * cell);
-        ring(r, y, 0, slope, rowKey[gy]);
+        const dip = Math.max(0, (radBlur[gy] - r) / Math.max(6, cell * 6));
+        const aoVal = Math.min(1, Math.max(0.48, 1 - dip * 0.45));
+        ring(r, y, 0, slope, rowKey[gy], aoVal);
         const next = rads[gy + 1] ?? 0;
         if (Math.abs(next - r) > 2 * cell) {
-          for (let rr = Math.min(next, r); rr < Math.max(next, r); rr += cell) ring(rr, y + cell / 2, next > r ? -1 : 1, 0, rowKey[gy]);
+          for (let rr = Math.min(next, r); rr < Math.max(next, r); rr += cell) ring(rr, y + cell / 2, next > r ? -1 : 1, 0, rowKey[gy], 0.72);
         }
-        if (!rads[gy - 1]) for (let rr = cell; rr < r; rr += cell) ring(rr, y - cell / 2, -1, 0, rowKey[gy]);
-        if (!rads[gy + 1]) for (let rr = cell; rr < r; rr += cell) ring(rr, y + cell / 2, 1, 0, rowKey[gy]);
+        if (!rads[gy - 1]) for (let rr = cell; rr < r; rr += cell) ring(rr, y - cell / 2, -1, 0, rowKey[gy], 0.92);
+        if (!rads[gy + 1]) for (let rr = cell; rr < r; rr += cell) ring(rr, y + cell / 2, 1, 0, rowKey[gy], 0.84);
       }
       return;
     }
@@ -402,8 +554,9 @@ function coverSurface(solid) {
           const lift = Math.min(extHalf, extHalf * 0.86 + Math.min(extHalf * 0.14, half[i] * 0.12));
           const fx = (half[i + 1] - half[i - 1]) / (2 * cell) * 0.12;
           const fy = (half[i + w] - half[i - w]) / (2 * cell) * 0.12;
-          push(x, y, lift, -fx, -fy, 1, key[i], 0);
-          push(x, y, -lift, fx, fy, -1, key[i], 0);
+          const aoVal = solidAo ? solidAo[i] : 1;
+          push(x, y, lift, -fx, -fy, 1, key[i], 0, aoVal);
+          push(x, y, -lift, fx, fy, -1, key[i], 0, aoVal);
           let [wx, wy] = [0, 0];
           if (!inside[i + 1]) wx += 1;
           if (!inside[i - 1]) wx -= 1;
@@ -412,7 +565,7 @@ function coverSurface(solid) {
           const wl = Math.hypot(wx, wy);
           if (wl) {
             [wx, wy] = [wx / wl, wy / wl];
-            for (let z = -lift + cell * 0.5; z < lift; z += cell) push(x + wx * cell * 0.4, y + wy * cell * 0.4, z, wx, wy, 0, key[i], 1);
+            for (let z = -lift + cell * 0.5; z < lift; z += cell) push(x + wx * cell * 0.4, y + wy * cell * 0.4, z, wx, wy, 0, key[i], 1, Math.min(1, aoVal * 0.9));
           }
         }
       }
@@ -427,8 +580,9 @@ function coverSurface(solid) {
         const fy = (front(i + w) - front(i - w)) / (2 * cell);
         const bx = (back(i + 1) - back(i - 1)) / (2 * cell);
         const by = (back(i + w) - back(i - w)) / (2 * cell);
-        push(x, y, front(i), -fx, -fy, 1, key[i], 0);
-        push(x, y, back(i), bx, by, -1, key[i], 0);
+        const aoVal = solidAo ? solidAo[i] : 1;
+        push(x, y, front(i), -fx, -fy, 1, key[i], 0, aoVal);
+        push(x, y, back(i), bx, by, -1, key[i], 0, aoVal);
         // The rim: where the surface is steep, fill between back and front, its normal rolling from out to up.
         const hx = (half[i + 1] - half[i - 1]) / (2 * cell);
         const hy = (half[i + w] - half[i - w]) / (2 * cell);
@@ -438,16 +592,19 @@ function coverSurface(solid) {
           for (let z = back(i) + cell; z < front(i) - cell * 0.5; z += cell) {
             const u = (z - mid[i]) / half[i];
             const c = Math.sqrt(Math.max(0, 1 - u * u));
-            push(x, y, z, ox * c, oy * c, u, key[i], 0);
+            push(x, y, z, ox * c, oy * c, u, key[i], 0, aoVal);
           }
         }
       }
     }
   };
   sample();
-  out = { x: new Float32Array(n), y: new Float32Array(n), z: new Float32Array(n), nx: new Float32Array(n), ny: new Float32Array(n), nz: new Float32Array(n), key: new Float32Array(n), wall: new Uint8Array(n), mc: new Float32Array(n), mr: new Float32Array(n) };
+  out = { x: new Float32Array(n), y: new Float32Array(n), z: new Float32Array(n), nx: new Float32Array(n), ny: new Float32Array(n), nz: new Float32Array(n), key: new Float32Array(n), wall: new Uint8Array(n), ao: new Float32Array(n), mc: new Float32Array(n), mr: new Float32Array(n) };
   sample();
   out.n = n;
+  out.cx = cx;
+  out.cy = cy;
+  out.extHalf = extHalf;
   out.rad = 0;
   for (let j = 0; j < out.n; j++) out.rad = Math.max(out.rad, Math.hypot(out.x[j], out.y[j], out.z[j]));
   // A row's names start at the axis: the front surface along x = 0, by y, for the anchor.
@@ -478,7 +635,7 @@ export function coverPose(T, t, look = "living") {
 }
 
 /** The scale and offset that fit every pose of the loop inside `box`, with optional bold crop/bleed framing. */
-function coverFit(S, T, focal, box, look = "living", crop = "center") {
+function coverFit(S, T, focal, box, look = "living", crop = "center", layout = "classic") {
   let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
   for (let k = 0; k < 24; k++) {
     const rot = coverPose(T, k / 24, look);
@@ -488,8 +645,9 @@ function coverFit(S, T, focal, box, look = "living", crop = "center") {
       [x0, y0, x1, y1] = [Math.min(x0, x * f), Math.min(y0, y * f), Math.max(x1, x * f), Math.max(y1, y * f)];
     }
   }
-  const baseScale = Math.min((box.right - box.left) / (x1 - x0), (box.bottom - box.top) / (y1 - y0), 1.25);
-  const mult = crop === "macro" ? 1.48 : crop === "bleed-right" ? 1.32 : 1;
+  const maxBase = layout === "macro" ? 1.85 : 1.25;
+  const baseScale = Math.min((box.right - box.left) / (x1 - x0), (box.bottom - box.top) / (y1 - y0), maxBase);
+  const mult = crop === "macro" ? 1.48 : crop === "bleed-right" ? 1.32 : layout === "macro" ? 1.22 : 1;
   const s = baseScale * mult;
   const shiftX = crop === "bleed-right" ? (box.right - box.left) * 0.22 : 0;
   return { s, ox: (box.left + box.right) / 2 - ((x0 + x1) / 2) * s + shiftX, oy: (box.top + box.bottom) / 2 - ((y0 + y1) / 2) * s, short: Math.min(x1 - x0, y1 - y0) * s };
@@ -499,7 +657,7 @@ function coverFit(S, T, focal, box, look = "living", crop = "center") {
  * A cover's model: everything a frame is drawn from. `parts` are the region's parts in tree order with `hot` set;
  * `texts` are the name, headline and legend the template wraps.
  */
-export function coverModel(region, parts, { ground, texts, look = "living", format = "poster", crop = "center" }) {
+export function coverModel(region, parts, { ground, texts, look = "living", format = "poster", crop = "center", layout = "classic", finish = "type" }) {
   const G = COVER_GROUNDS[ground];
   const like = SILHOUETTES[region.shape.like] ?? {};
   const strata = coverStrataOf(region);
@@ -510,7 +668,7 @@ export function coverModel(region, parts, { ground, texts, look = "living", form
   const solid = coverSolid(shapeSpec, mask, solidOpts, strata);
   const S = coverSurface(solid);
   const turn = { ...COVER.turn, ...(look === "spin" ? { pitch: 14, lean: -7 } : {}), ...like.turn, ...region.turn };
-  const template = coverTemplate({ ...texts, format, look });
+  const template = coverTemplate({ ...texts, format, look, layout });
   const grid = coverGridFor(format);
   const focal = S.rad * (look === "spin" ? 3.8 : 5);
   const total = parts.reduce((s, p) => s + p.loc, 0) || 1;
@@ -523,8 +681,8 @@ export function coverModel(region, parts, { ground, texts, look = "living", form
   const dark = theme === "dark";
   const frames = look === "xerox" ? 32 : look === "spin" ? 96 : COVER_FRAMES;
   return {
-    ground, look, format, crop, grid, colors: G, theme, dark, tones: RELIEF_TONES[theme], parts: list, hot, order, strata, solid, S, turn, focal, template,
-    fit: coverFit(S, turn, focal, template.box, look, crop), frames, cache: new Map(),
+    ground, look, format, crop, layout, finish, grid, colors: G, theme, dark, tones: RELIEF_TONES[theme], parts: list, hot, order, strata, solid, S, turn, focal, template,
+    fit: coverFit(S, turn, focal, template.box, look, crop, layout), frames, cache: new Map(),
   };
 }
 
@@ -549,6 +707,31 @@ const coverUnit = (v) => {
 };
 const COVER_LAMP = coverUnit(RELIEF.light);
 const COVER_HALF = coverUnit([COVER_LAMP[0], COVER_LAMP[1], COVER_LAMP[2] + 1]);
+const COVER_STUDIO_KEY = coverUnit([-0.46, -0.56, 0.69]);
+const COVER_STUDIO_HALF = coverUnit([COVER_STUDIO_KEY[0], COVER_STUDIO_KEY[1], COVER_STUDIO_KEY[2] + 1]);
+const COVER_STUDIO_FILL = coverUnit([0.66, 0.34, 0.67]);
+
+/**
+ * Pure studio lighting model: softbox key light with wrapped diffuse + Blinn-Phong specular, subtle cool fill,
+ * directional Fresnel rim light, and ambient occlusion applied to diffuse + fill while keeping Fresnel crisp.
+ */
+export function coverStudioShade(nx, ny, nz, ao = 1, dark = true) {
+  const ndotl = nx * COVER_STUDIO_KEY[0] + ny * COVER_STUDIO_KEY[1] + nz * COVER_STUDIO_KEY[2];
+  const rawDiff = Math.max(0, (ndotl + 0.24) / 1.24);
+  const diffuse = Math.pow(rawDiff, 1.12);
+  const ndoth = Math.max(0, nx * COVER_STUDIO_HALF[0] + ny * COVER_STUDIO_HALF[1] + nz * COVER_STUDIO_HALF[2]);
+  const spec = Math.pow(ndoth, 42);
+  const ndotf = Math.max(0, (nx * COVER_STUDIO_FILL[0] + ny * COVER_STUDIO_FILL[1] + nz * COVER_STUDIO_FILL[2] + 0.16) / 1.16);
+  const fill = 0.24 * ndotf;
+  const rimBase = Math.pow(Math.max(0, 1 - Math.abs(nz)), 2.4);
+  const rimDir = 0.55 + 0.45 * Math.max(0, -ny * 0.65 + nx * 0.55 + 0.35);
+  const rim = rimBase * Math.min(1.15, rimDir);
+  const lit = dark
+    ? (0.06 + 0.68 * diffuse + fill) * ao + 0.56 * spec + 0.62 * rim
+    : (0.28 + 0.58 * diffuse + 0.85 * fill) * ao + 0.32 * spec + 0.22 * rim;
+  const lum = Math.min(1, Math.max(0, lit));
+  return { diffuse, fill, spec, rim, lum, ao };
+}
 
 /**
  * One frame as glyph cells. Each visible cell has its nearest sample; the lamp sets its tone; the cells that print
