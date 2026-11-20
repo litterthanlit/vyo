@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { sheetOf } from "./geometry.mjs";
 import { regionParts } from "./parts.mjs";
 import { loadMaskImage } from "./png-mask.mjs";
-import { coverModel, coverStill, coverShell, coverRecord, COVER_GROUNDS } from "./cover.mjs";
+import { coverModel, coverStill, coverShell, coverRecord, coverStampBox, coverBlackWidth, COVER_GROUNDS } from "./cover.mjs";
 import { buildLayoutChrome, chromeSmallType, spanOf, typeCss } from "./layout-chrome.mjs";
 
 const LIB = path.dirname(fileURLToPath(import.meta.url));
@@ -82,6 +82,48 @@ function xeroxMarkers(spec, facts, B) {
   return out;
 }
 
+/** Every box the layout's chrome sets on the sheet, in sheet px: its text blocks' lines, the name, the series tag, a table, a title block, a plaque. */
+function chromeBoxes(spec, B, layout) {
+  const out = [];
+  for (const k of ["record", "headline", "legend"]) for (const l of B[k]?.set ?? []) out.push({ left: l.x, top: l.top, right: l.x + l.width, bottom: l.top + l.lineHeight });
+  if (B.name) out.push({ left: B.name.left, top: B.name.top, right: B.name.left + coverBlackWidth(spec.product.name, B.name.size, B.name.track), bottom: B.name.top + B.name.size });
+  // The classic xerox cover leaves the series mark to the stamp; the other layouts print a tag, mono 10px at .08em.
+  if (B.series && layout !== "classic") {
+    const tag = `VYO${B.series.number ? ` ${B.series.number}` : ""}`;
+    out.push({ left: B.series.right - tag.length * 6.8, top: B.series.top, right: B.series.right, bottom: B.series.top + 14 });
+  }
+  for (const k of ["table", "titleBlock"]) if (B[k]) out.push(B[k]);
+  for (const c of Object.values(B.cards ?? {})) out.push({ left: c.x, top: c.y, right: c.x + c.w, bottom: c.y + c.h });
+  return out;
+}
+
+/**
+ * Where the xerox look's rubber archive stamp sits: top right, slightly crooked, or, when the layout sets something
+ * there, the nearest place whose box keeps 8px clear of every box the chrome sets, so the stamp never prints over
+ * the record or any other words. Null on an og card, which has no room for it.
+ */
+function xeroxStamp(spec, facts, B, S, layout) {
+  if ((spec.format ?? "poster") === "og") return null;
+  const M = coverOf(spec, facts).model.template.margin;
+  const want = { cx: S.width - M - 76, cy: M + 28 };
+  const keep = chromeBoxes(spec, B, layout).map((r) => ({ left: r.left - 8, top: r.top - 8, right: r.right + 8, bottom: r.bottom + 8 }));
+  const clear = (cx, cy) => {
+    const s = coverStampBox(cx, cy);
+    if (s.left < 16 || s.top < 16 || s.right > S.width - 16 || s.bottom > S.height - 16) return false;
+    return keep.every((r) => s.right <= r.left || r.right <= s.left || s.bottom <= r.top || r.bottom <= s.top);
+  };
+  if (clear(want.cx, want.cy)) return want;
+  let best = null;
+  for (let cy = 0; cy <= S.height; cy += 2) {
+    for (let cx = 0; cx <= S.width; cx += 2) {
+      const d = (cx - want.cx) ** 2 + (cy - want.cy) ** 2;
+      if ((!best || d < best.d) && clear(cx, cy)) best = { cx, cy, d };
+    }
+  }
+  if (!best) throw new Error(`the ${layout} layout leaves no room for the xerox archive stamp`);
+  return { cx: best.cx, cy: best.cy };
+}
+
 function fontFaces() {
   return COVER_FONTS.map(([family, weight, file, type]) => {
     const where = path.join(FONT_DIR, file);
@@ -103,9 +145,10 @@ export function coverPage(spec, facts, prelude) {
   const chrome = buildLayoutChrome({ spec, parts, record, template: model.template, ground: spec.ground, look, layout, format, series: spec.series ?? "" });
   const small = `${typeCss(chromeSmallType(look))};white-space:pre`;
   const markers = look === "xerox" ? xeroxMarkers(spec, facts, chrome.blocks) : [];
+  const stamp = look === "xerox" ? xeroxStamp(spec, facts, chrome.blocks, S, layout) : null;
   const figure = {
     region, parts, ground: spec.ground, look, format, crop, layout, finish, still: still.frame,
-    series: spec.series ?? "", commit: spec.product.commit ?? "", markers, canvasChrome: chrome.canvasChrome,
+    series: spec.series ?? "", commit: spec.product.commit ?? "", markers, stamp, washes: look === "xerox" ? (chrome.blocks.washes ?? []) : [], canvasChrome: chrome.canvasChrome,
     texts: { name: spec.product.name, headline: spec.headline, legend: spec.figure.texts.find((t) => t.role === "legend").text },
     images: region.shape.mask !== undefined ? { [region.shape.mask]: loadMaskImage(region.shape.mask) } : {},
   };

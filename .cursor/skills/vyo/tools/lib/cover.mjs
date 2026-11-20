@@ -995,3 +995,17 @@ export function coverShell(m, still) {
   const at = (share) => keys[Math.min(keys.length - 1, Math.max(0, Math.round(share * keys.length) - 1))] * m.fit.s;
   return { px: at(m.parts[m.hot].share), share: m.parts[m.hot].share, at };
 }
+
+/**
+ * The xerox look's rubber archive stamp: a 144 by 54 frame, 2.6px stroke, turned -3.8°, centred on `cx, cy`. Its
+ * box on the sheet holds the turned frame and its stroke, grown by the spot plate's misregistration (it prints up
+ * to 3px right and 2px down of where it is drawn), so whatever stays outside the box stays clear of its ink.
+ */
+export const COVER_STAMP = { w: 144, h: 54, stroke: 2.6, angle: -3.8, shift: [3, 2] };
+export function coverStampBox(cx, cy) {
+  const { w, h, stroke, angle, shift } = COVER_STAMP;
+  const a = (Math.abs(angle) * Math.PI) / 180;
+  const hw = (w / 2) * Math.cos(a) + (h / 2) * Math.sin(a) + stroke / 2;
+  const hh = (h / 2) * Math.cos(a) + (w / 2) * Math.sin(a) + stroke / 2;
+  return { left: cx - hw, top: cy - hh, right: cx + hw + shift[0], bottom: cy + hh + shift[1] };
+}

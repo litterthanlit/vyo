@@ -11,6 +11,7 @@ import { runChecks } from "../lib/check.mjs";
 import { coverOf } from "../lib/cover-render.mjs";
 import { COVER_FRAMES, COVER_GROUNDS, COVER_LAYOUTS, coverLegend } from "../lib/cover.mjs";
 import { sheetOf } from "../lib/geometry.mjs";
+import { decodePng } from "../lib/png.mjs";
 import { PLATES } from "../lib/plates/index.mjs";
 import { plateOf } from "../lib/plate-render.mjs";
 
@@ -337,6 +338,38 @@ for (const kind of ["resolve", "wipe"]) {
   } finally {
     await browser.close();
   }
+}
+// The xerox look's spot plate shows in the finished PNG, in every layout: each highlighter mark and the archive
+// stamp read in the accent, nothing the layout lays over the canvas (a macro plaque) hides them, and the stamp
+// passes the page checks, so it prints over no text block. Judged on luminance: on navy the accent sits apart from
+// both the paper and the ink.
+for (const layout of COVER_LAYOUTS) {
+  const spec = { ...preset("cover"), look: "xerox", layout, series: "3/12", motion: { kind: "copier" } };
+  const base = path.join(OUT, "xerox-spot", layout);
+  const html = buildPage(spec, facts);
+  const page = await renderPage({ html, base, pdf: false });
+  const { markers } = JSON.parse(html.match(/<script type="application\/json" id="figure">(.*?)<\/script>/s)[1]);
+  const png = decodePng(fs.readFileSync(`${base}.png`));
+  const G = COVER_GROUNDS[spec.ground];
+  const lum = (hex) => { const [r, g, b] = [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)); return 0.299 * r + 0.587 * g + 0.114 * b; };
+  const hot = lum(G.accent);
+  // The share of a sheet-px rect's pixels (at 2x) that print in the accent.
+  const accentShare = (r) => {
+    let n = 0;
+    let on = 0;
+    for (let y = Math.max(0, Math.round(r.top * 2)); y < Math.min(png.height, Math.round(r.bottom * 2)); y++)
+      for (let x = Math.max(0, Math.round(r.left * 2)); x < Math.min(png.width, Math.round(r.right * 2)); x++, n++) if (Math.abs(png.gray[y * png.width + x] - hot) < 22) on++;
+    return n ? on / n : 0;
+  };
+  const marks = markers.map((m) => accentShare({ left: m.x, top: m.y, right: m.x + m.w, bottom: m.y + m.h }));
+  const stamp = page.cover?.stamp ? accentShare(page.cover.stamp) : 0;
+  const apart = Math.abs(hot - lum(G.ground)) > 50 && Math.abs(hot - lum(G.ink)) > 50;
+  const fails = runChecks("page", { spec, facts, presets: {}, page }).filter((f) => f.level === "fail");
+  result(
+    apart && marks.length >= 2 && marks.every((s) => s > 0.3) && stamp > 0.1 && !fails.length,
+    `xerox ${layout}: every highlighter mark and the archive stamp print in the accent on the finished cover, and the stamp keeps clear of the text`,
+    `accent share under each mark ${marks.map((s) => s.toFixed(2))}, in the stamp's box ${stamp.toFixed(3)}\n${fails.map((f) => `${f.id}: ${f.message}`).join("\n")}`,
+  );
 }
 const COVER_GROUNDS_LIST =Object.keys(COVER_GROUNDS).map((g) => `"${g}"`).join(", ");
 const COVER_PLANTED = [

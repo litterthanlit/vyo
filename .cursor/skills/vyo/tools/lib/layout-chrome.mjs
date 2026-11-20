@@ -130,6 +130,7 @@ ${seriesHtml}
       legend: withSet({ left: M, top: T.legendY, lines: T.legend }),
     };
     const breakdown = topParts(parts, 5);
+    blocks.table = { left: tableLeft, top: tableTop, right: tableLeft + T.tableW, bottom: tableTop + breakdown.length * 15 };
     const rowsHtml = breakdown
       .map((p, idx) => {
         const pct = p.share < 0.005 ? "<1%" : `${Math.round(p.share * 100)}%`;
@@ -169,6 +170,7 @@ ${subHtml}`;
       series: { right: inner.x + inner.w, top: inner.y + 3, number: seriesNum },
       legend: withSet({ left: inner.x, top: T.legendY, lines: T.legend }),
       record: withSet({ left: tb.x + 10, top: tb.y + 37, lines: recordLines }, RECORD_TITLE),
+      titleBlock: { left: tb.x, top: tb.y, right: tb.x + tb.w, bottom: tb.y + tb.h },
     };
     const tagText = `VYO${seriesNum ? ` ${seriesNum}` : ""}`;
     const c1 = 116;
@@ -239,10 +241,16 @@ ${subHtml}
     record: { left: Math.min(...rec.set.map((l) => l.x)), ...rec },
     legend: withSet({ left: bl.x + padX, top: bl.y + padY, lines: T.legend }),
     cards: { tl, tr, bl },
+    // The paper wash each plaque lays over the figure, at the opacity the DOM card would use.
+    washes: [tl, tr, bl].map((c) => ({ ...c, opacity: 0.86 })),
   };
-  // data-card names the plaque so the checks can keep a plate's canvas labels from sliding under it.
+  // data-card names the plaque so the checks can keep a plate's canvas labels from sliding under it. The plaque's
+  // paper wash sits above the figure and below the words. On xerox the spot plate's overprint (the highlighter
+  // marks, the archive stamp) must sit above the wash too, and the canvas is one layer under all the chrome, so
+  // there the canvas paints the wash itself, between the print and the overprint, and the card is only its box.
+  const wash = look === "xerox" ? "" : ";background:var(--paper);opacity:.86";
   const plaque = (c, name) =>
-    `<div data-owner="render" data-card="${name}" style="position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;background:var(--paper);opacity:.86"></div>
+    `<div data-owner="render" data-card="${name}" style="position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px${wash}"></div>
 <div data-owner="render" style="position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;border:1px solid var(--ink);opacity:.18;pointer-events:none"></div>`;
   const html = `${plaque(tl, "title")}
 ${plaque(tr, "record")}

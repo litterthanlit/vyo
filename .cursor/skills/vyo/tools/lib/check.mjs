@@ -359,6 +359,16 @@ export const CHECKS = [
         .map((c) => `${c.covered} px of the ${c.block}'s letters are painted over near ${c.x},${c.y}; something is drawn on top of the text, so move the block clear of it`),
   },
   {
+    id: "stamp-clear", level: "fail", stage: "page", frames: COVER_ONLY, about: "the xerox look's archive stamp, as the page drew it, keeps clear of every text block's letters",
+    run: ({ page }) => {
+      const s = page.cover?.stamp;
+      if (!s) return [];
+      return page.blocks
+        .filter((b) => b.role !== "mark" && overlap(s, b.rect))
+        .map((b) => `the archive stamp (${round(s.left)},${round(s.top)} to ${round(s.right)},${round(s.bottom)}) prints over the ${b.name}'s letters; the cover places its stamp itself, so this is an engine fault: try another layout and report it`);
+    },
+  },
+  {
     id: "blocks-inside", level: "fail", stage: "page", frames: SHEET_FRAMES, about: "every text block, and every label a plate draws, is inside the sheet",
     run: ({ page }) => [
       ...page.blocks.filter((b) => !inside(b.rect, page.sheet)).map((b) => `${b.name} runs off the sheet (${offEdge(b.rect, page.sheet)})`),

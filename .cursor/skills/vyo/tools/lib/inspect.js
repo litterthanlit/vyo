@@ -69,7 +69,7 @@
   const regions = (window.figure && window.figure.regions) || [];
 
   // A cover's canvas: the still it should show, the frame it shows, and the still's measurements.
-  const cover = window.cover ? { still: window.cover.still, shown: window.coverShown, report: window.cover.report } : null;
+  const cover = window.cover ? { still: window.cover.still, shown: window.coverShown, report: window.cover.report, stamp: window.cover.stamp ?? null } : null;
   // A plate's canvas: the still it should show, the frame it shows, its honest-encoding report, and the labels it
   // drew on the canvas, in sheet px like every other rect here.
   const at = (r) => box({ left: r.left + sr.left, top: r.top + sr.top, right: r.right + sr.left, bottom: r.bottom + sr.top, width: r.right - r.left, height: r.bottom - r.top });
