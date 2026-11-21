@@ -45,6 +45,11 @@ export const ROLES = {
   cover: {
     legend: { size: [11.5, 11.5, 11.5], lh: () => 14.5, count: [1, 1], max: 180, sentences: 2, em: 0.55 },
   },
+  // A plate uses the same fixed gallery layouts as a cover: the engine prints the record, the headline, the series
+  // mark and the name, and places every block. The agent writes the legend's words only.
+  plate: {
+    legend: { size: [11.5, 11.5, 11.5], lh: () => 14.5, count: [1, 1], max: 180, sentences: 2, em: 0.55 },
+  },
 };
 export const FRAMES = Object.keys(ROLES);
 /** Frames that draw a record line instead of the swiss footer. */

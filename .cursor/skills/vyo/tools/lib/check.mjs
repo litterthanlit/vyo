@@ -7,9 +7,11 @@ import { frameOf, ROLES, RECORD_FRAMES } from "./frame.mjs";
 import { partsFromFacts, partOptions, regionParts, unplainName, sameNames, dominance } from "./parts.mjs";
 import { shapeMask } from "./mask.mjs";
 import { coverOf } from "./cover-render.mjs";
+import { plateOf } from "./plate-render.mjs";
 import { coverFindings, COVER_LIMITS } from "./cover-report.mjs";
 import { COVER, coverLegend, coverWords } from "./cover.mjs";
 import { FIELDS } from "./fields/index.mjs";
+import { PLATES } from "./plates/index.mjs";
 import { shapeReport, shapeFindings, SHAPE_LIMITS, SHAPE_LIMB } from "./shape-report.mjs";
 import { RINGS } from "./fields/shape-rings.mjs";
 import { RELIEF } from "./fields/shape-relief.mjs";
@@ -27,6 +29,8 @@ const round = (n) => Math.round(n);
 const pct = (n) => `${Math.round(n * 100)}%`;
 const fillIds = (spec) => spec.figure.regions.filter((r) => r.kind === "fill").map((r) => r.id);
 const fieldsOf = (spec) => spec.figure.regions.filter((r) => r.kind === "field");
+const platesOf = (spec) => spec.figure.regions.filter((r) => r.kind === "plate");
+const dataRegionsOf = (spec) => spec.figure.regions.filter((r) => r.kind === "field" || r.kind === "plate");
 // Fields lay their own rows out from the scan, so the rules for hand-drawn shapes judge fill rows only.
 const fillRowsOf = (page) => {
   const fills = new Set(page.regions.filter((r) => r.kind === "fill").map((r) => r.id));
@@ -114,6 +118,16 @@ const coverCheck = (id, about) => ({
   run: ({ spec, facts, page }) => (page.cover ? coverFindings(coverOf(spec, facts), { still: page.cover.report, loop: page.loop ?? null, facts })[id] : []),
 });
 const POSTERS = ["swiss", "loose", "signal"];
+// Every frame whose text blocks must stay on the sheet and apart. On a plate the template places the blocks (the
+// classic name's line box overlaps the legend by design), so there the checks judge the labels its canvas draws.
+const SHEET_FRAMES = [...POSTERS, "plate"];
+// A plate places its canvas labels itself, so one off the sheet or under its chrome is the engine's fault.
+const PLATE_LABEL_FAULT = "the plate places its labels itself, so this is an engine fault: try another layout and report it";
+/** Which edge of the sheet `r` runs off, and where. */
+const offEdge = (r, sheet) => {
+  const edge = ["right", "bottom", "left", "top"].find((k) => (k === "right" || k === "bottom" ? r[k] > sheet[k] : r[k] < sheet[k])) ?? "bottom";
+  return `its ${edge} edge at ${round(r[edge])}px, the sheet's at ${round(sheet[edge])}px`;
+};
 // The spec as render and sketch draw it, with the texts placed and the shape moved for them; once per spec.
 const placed = new WeakMap();
 const placedSpec = ({ spec, facts }) => {
@@ -147,19 +161,19 @@ export const CHECKS = [
   {
     id: "preset-copy", level: "warn", stage: "spec", about: "the figure's geometry is not a preset's, unchanged",
     run: ({ spec, presets }) => {
-      const mine = spec.figure.regions.filter((r) => r.kind !== "field").map(geometryKey);
+      const mine = spec.figure.regions.filter((r) => r.kind !== "field" && r.kind !== "plate").map(geometryKey);
       if (!mine.length) return [];
       const same = Object.entries(presets).find(([, p]) => {
-        const theirs = new Set(p.figure.regions.filter((r) => r.kind !== "field").map(geometryKey));
+        const theirs = new Set(p.figure.regions.filter((r) => r.kind !== "field" && r.kind !== "plate").map(geometryKey));
         return mine.every((k) => theirs.has(k));
       });
       return same ? [`the figure's geometry is the ${same[0]} preset's, unchanged; shape it for this product`] : [];
     },
   },
   {
-    id: "part-name", level: "warn", stage: "spec", about: "every part a field draws has a plain name of its own, and every name in names belongs to a part",
+    id: "part-name", level: "warn", stage: "spec", about: "every part a field or plate draws has a plain name of its own, and every name in names belongs to a part",
     run: ({ spec, facts }) =>
-      fieldsOf(spec).flatMap((r) => {
+      dataRegionsOf(spec).flatMap((r) => {
         const parts = partsFromFacts(facts, partOptions(r));
         return [
           ...parts.filter((p) => !unplainName(p.name) && hasProduct(p.name, spec)).map((p) => `part "${p.name}" (${p.id}) is or contains the product name; give it a plain name in names`),
@@ -170,24 +184,24 @@ export const CHECKS = [
       }),
   },
   {
-    id: "part-unplain", level: "fail", stage: "spec", about: "no part a field draws still carries a name that looks like a vendor or code name",
+    id: "part-unplain", level: "fail", stage: "spec", about: "no part a field or plate draws still carries a name that looks like a vendor or code name",
     run: ({ spec, facts }) =>
-      fieldsOf(spec).flatMap((r) =>
+      dataRegionsOf(spec).flatMap((r) =>
         partsFromFacts(facts, partOptions(r)).filter((p) => unplainName(p.name)).map((p) => `part "${p.name}" (${p.id}) looks like a vendor or code name; add a plain name in names`),
       ),
   },
   {
-    id: "accent-part", level: "warn", stage: "spec", about: "every field sets an accent part",
-    run: ({ spec }) => fieldsOf(spec).filter((r) => r.accent === undefined).map((r) => `no accent part in region ${r.id}; set accent to the id of the part the poster is about (vyo parts lists them)`),
+    id: "accent-part", level: "warn", stage: "spec", about: "every field or plate sets an accent part",
+    run: ({ spec }) => dataRegionsOf(spec).filter((r) => r.accent === undefined).map((r) => `no accent part in region ${r.id}; set accent to the id of the part the poster is about (vyo parts lists them)`),
   },
   {
-    id: "legend", level: "fail", stage: "spec", frames: ["loose", "signal", "cover"], about: "the legend names the accent part and the field's measure, so the picture reads as this project",
+    id: "legend", level: "fail", stage: "spec", frames: ["loose", "signal", "cover", "plate"], about: "the legend names the accent part and the field's or plate's measure, so the picture reads as this project",
     run: ({ spec, facts }) =>
-      fieldsOf(spec).flatMap((r) => {
+      dataRegionsOf(spec).flatMap((r) => {
         const legend = spec.figure.texts.find((t) => t.role === "legend")?.text ?? "";
         const names = regionParts(r, facts).filter((p) => p.hot).map((p) => p.name);
-        const { measure } = FIELDS[r.field];
-        // An accent that names no part is field-parts' to report; the legend still owes the measure.
+        const { measure } = r.kind === "plate" ? PLATES[r.plate] : FIELDS[r.field];
+        // An accent that names no part is field-parts' / plate-parts' to report; the legend still owes the measure.
         const named = !names.length || names.some((n) => legend.toLowerCase().includes(n.toLowerCase()));
         const measured = measure.every((group) => group.some((w) => startsWord(legend, w)));
         if (frameOf(spec) === "cover") {
@@ -308,7 +322,7 @@ export const CHECKS = [
     },
   },
   {
-    id: "blocks-apart", level: "fail", stage: "page", frames: POSTERS, about: "no two text blocks overlap, rows and dots keep clear of them (in the swiss frame a wave's rows may pass behind the figure's texts), and blocks side by side keep 8px apart",
+    id: "blocks-apart", level: "fail", stage: "page", frames: SHEET_FRAMES, about: "no two text blocks overlap, rows and dots keep clear of them (in the swiss frame a wave's rows may pass behind the figure's texts), blocks side by side keep 8px apart, and a plate's labels keep 8px clear of its text blocks and chrome cards",
     run: ({ spec, page }) => {
       const blocks = page.blocks.map((b) => ({ ...b, kind: "block" }));
       // Swiss and signal let a field's rows pass behind type; a mark may sit under type.
@@ -316,9 +330,10 @@ export const CHECKS = [
       const marks = [...page.rows.map((r) => ({ ...r, name: `the row "${r.word}"` })), ...page.dots.map((d) => ({ ...d, name: `the dots line "${d.word}"` }))];
       const out = [];
       const say = (a, b) => out.push(`${a.name} overlaps ${b.name} or sits within 8px of it; shorten one of them`);
+      const placed = frameOf(spec) === "plate";
       blocks.forEach((a, i) =>
         blocks.slice(i + 1).forEach((b) => {
-          if (a.role === "mark" || b.role === "mark") return;
+          if (placed || a.role === "mark" || b.role === "mark") return;
           if (crowd(a.rect, b.rect)) say(a, b);
         }),
       );
@@ -328,6 +343,11 @@ export const CHECKS = [
       }
       const fills = fillRowsOf(page);
       fills.forEach((a, i) => fills.slice(i + 1).forEach((b) => a.region === b.region && crowd(a.rect, b.rect) && say({ name: `the row "${a.word}"` }, { name: `the row "${b.word}"` })));
+      // A plate's labels are drawn on the canvas, under the page's text blocks and chrome cards.
+      const chrome = [...(page.cards ?? []).map((c) => ({ name: `the ${c.name} card`, rect: c.rect })), ...blocks.filter((b) => b.role !== "mark").map((b) => ({ name: `the ${b.name}`, rect: b.rect }))];
+      for (const l of page.plate?.labels ?? []) {
+        for (const c of chrome) if (crowd(l.rect, c.rect)) out.push(`the plate label "${l.text}" sits under ${c.name} or within 8px of it; ${PLATE_LABEL_FAULT}`);
+      }
       return [...new Set(out)];
     },
   },
@@ -339,20 +359,51 @@ export const CHECKS = [
         .map((c) => `${c.covered} px of the ${c.block}'s letters are painted over near ${c.x},${c.y}; something is drawn on top of the text, so move the block clear of it`),
   },
   {
-    id: "blocks-inside", level: "fail", stage: "page", frames: POSTERS, about: "every text block is inside the sheet",
-    run: ({ page }) =>
-      page.blocks
-        .filter((b) => !inside(b.rect, page.sheet))
-        .map((b) => {
-          const edge = ["right", "bottom", "left", "top"].find((k) => (k === "right" || k === "bottom" ? b.rect[k] > page.sheet[k] : b.rect[k] < page.sheet[k])) ?? "bottom";
-          return `${b.name} runs off the sheet (its ${edge} edge at ${round(b.rect[edge])}px, the sheet's at ${round(page.sheet[edge])}px)`;
-        }),
+    id: "stamp-clear", level: "fail", stage: "page", frames: COVER_ONLY, about: "the xerox look's archive stamp, as the page drew it, keeps clear of every text block's letters",
+    run: ({ page }) => {
+      const s = page.cover?.stamp;
+      if (!s) return [];
+      return page.blocks
+        .filter((b) => b.role !== "mark" && overlap(s, b.rect))
+        .map((b) => `the archive stamp (${round(s.left)},${round(s.top)} to ${round(s.right)},${round(s.bottom)}) prints over the ${b.name}'s letters; the cover places its stamp itself, so this is an engine fault: try another layout and report it`);
+    },
+  },
+  {
+    // Not the sheet: a cover's name is set to bleed its line box past the bottom edge on purpose.
+    id: "cards-hold", level: "fail", stage: "page", frames: COVER_ONLY, about: "every text block a chrome card (a macro plaque) sits on fits inside the card",
+    run: ({ page }) => {
+      const out = [];
+      const inside = (r, c) => r.left >= c.left - 0.5 && r.top >= c.top - 0.5 && r.right <= c.right + 0.5 && r.bottom <= c.bottom + 0.5;
+      for (const b of page.blocks) {
+        if (b.role === "mark") continue;
+        for (const c of page.cards ?? []) {
+          if (overlap(b.rect, c.rect) && !inside(b.rect, c.rect)) out.push(`the ${b.name}'s letters run past the ${c.name} card (text ${round(b.rect.left)},${round(b.rect.top)} to ${round(b.rect.right)},${round(b.rect.bottom)}, card ${round(c.rect.left)},${round(c.rect.top)} to ${round(c.rect.right)},${round(c.rect.bottom)}); the layout sizes its cards itself, so this is an engine fault: try another layout and report it`);
+        }
+      }
+      return out;
+    },
+  },
+  {
+    id: "blocks-inside", level: "fail", stage: "page", frames: SHEET_FRAMES, about: "every text block, and every label a plate draws, is inside the sheet",
+    run: ({ page }) => [
+      ...page.blocks.filter((b) => !inside(b.rect, page.sheet)).map((b) => `${b.name} runs off the sheet (${offEdge(b.rect, page.sheet)})`),
+      ...(page.plate?.labels ?? []).filter((l) => !inside(l.rect, page.sheet)).map((l) => `the plate label "${l.text}" runs off the sheet (${offEdge(l.rect, page.sheet)}); ${PLATE_LABEL_FAULT}`),
+    ],
+  },
+  {
+    id: "labels-whole", level: "fail", stage: "page", frames: ["plate"], about: "every label a plate draws prints whole: its text is no wider than the space the canvas gave it, and none of it is cut off; and every part the plate names gets its name",
+    run: ({ page }) => [
+      ...(page.plate?.labels ?? [])
+        .filter((l) => l.need > l.room + 0.5 || l.shown < l.need - 0.5)
+        .map((l) => `the plate label "${l.text}" needs ${round(l.need)}px but has ${round(l.room)}px, so the canvas cuts it to ${round(l.shown)}px; every name prints whole, and ${PLATE_LABEL_FAULT}`),
+      ...(page.plate?.report?.unnamed ?? []).map((u) => `the plate draws "${u.name}" (${u.id}) with no name: no placement fits it, so the part cannot be told apart; try another layout or format, and if every one drops it, report it, since the plate places its labels itself and this is an engine fault`),
+    ],
   },
   {
     id: "silhouette", level: "fail", stage: "page", about: "the figure covers 15% of the sheet above the footer and spans 55% of its height and 60% of its width (a drawn shape is judged by shape-cover instead)",
     run: ({ spec, page }) => {
-      // A shape's rows are type inside a silhouette the mask already measures; their extent is not the figure's.
-      if (fieldsOf(spec).some((r) => r.field === "shape")) return [];
+      // A shape's rows are type inside a silhouette the mask already measures; a plate draws a full-stage vector canvas.
+      if (frameOf(spec) === "plate" || fieldsOf(spec).some((r) => r.field === "shape")) return [];
       const s = figureStats(page.rows.map((r) => r.rect), page.dots.map((d) => d.rect), page.footerTop);
       const out = [];
       if (s.coverage < SILHOUETTE.coverage) out.push(`the figure covers ${pct(s.coverage)} of the sheet above the footer; it needs ${pct(SILHOUETTE.coverage)}, so enlarge the shapes`);
@@ -377,6 +428,28 @@ export const CHECKS = [
       }),
   },
   {
+    id: "plate-parts", level: "fail", stage: "page", frames: ["plate"], about: "a plate encodes every line of the scan, represents every part, and distinguishes its accent part",
+    run: ({ spec, facts, page }) => {
+      const p = plateOf(spec, facts);
+      const { region, parts, totalSliceLoc } = p;
+      const total = linesOf(facts);
+      const report = page.plate?.report;
+      const out = [];
+      if (totalSliceLoc !== total) out.push(`region ${region.id}: the plate's slices hold ${totalSliceLoc} lines but facts.json has ${total}`);
+      // The page tallies the parts whose geometry it drew on the sheet; Node's own counts would always agree with themselves.
+      if (report) {
+        const drawn = new Set(report.parts ?? []);
+        const missing = parts.filter((pt) => !drawn.has(pt.id));
+        if (missing.length) out.push(`region ${region.id}: the plate represents ${parts.length - missing.length} of ${parts.length} parts; ${missing.map((pt) => `"${pt.name}" (${pt.id})`).join(", ")} ${missing.length > 1 ? "draw" : "draws"} nothing on the sheet; try another layout, and if every layout drops it, report it as an engine fault`);
+      }
+      if (region.accent !== undefined) {
+        if (!parts.some((pt) => pt.hot)) out.push(`region ${region.id}: accent ${region.accent} names no part; vyo parts lists the part ids`);
+        else if (report && !(report.accentCount > 0)) out.push(`region ${region.id}: the accent part produced no accented geometry on the plate`);
+      }
+      return out;
+    },
+  },
+  {
     id: "row-variety", level: "fail", stage: "page", about: `every fill region changes width: its lines' spread over their mean is at least ${REGION.variety}`,
     run: ({ page }) => pageRegionStats(page).filter((s) => s.variety < REGION.variety).map(boxMessage),
   },
@@ -398,7 +471,7 @@ export const CHECKS = [
       const allowed = new Set(Object.values(tokensOf(spec)).map(rgb));
       const own = Object.fromEntries(Object.entries(fieldTokensOf(spec)).map(([id, tokens]) => [`region ${id}`, new Set(Object.values(tokens).map(rgb))]));
       const bad = [...page.texts, ...page.boxes].filter((t) => !allowed.has(t.color) && !own[t.where]?.has(t.color));
-      return [...new Set(bad.map((t) => `${t.where} uses ${t.color}, not a ${spec.theme} token`))];
+      return [...new Set(bad.map((t) => `${t.where} uses ${t.color}, not a ${spec.theme ?? spec.ground} token`))];
     },
   },
   {
@@ -447,6 +520,7 @@ export const CHECKS = [
     id: "still", level: "fail", stage: "page", about: "the PNG and PDF show the finished poster: no row hidden and every mark at its full width, whatever motion the spec has",
     run: ({ spec, page }) => {
       if (page.cover) return page.cover.shown === page.cover.still ? [] : [`the cover's canvas shows frame ${page.cover.shown}, not its still, frame ${page.cover.still}; the PNG and PDF must show the still, so render again without changing the page`];
+      if (page.plate) return page.plate.shown === page.plate.still ? [] : [`the plate's canvas shows frame ${page.plate.shown}, not its still, frame ${page.plate.still}; the PNG and PDF must show the still, so render again without changing the page`];
       const hidden = page.rows.filter((r) => r.opacity === 0).length;
       const marks = spec.figure.texts.filter((t) => t.role === "mark");
       const short = marks.filter((t) => (page.blocks.find((b) => b.name === t.id)?.rect.right ?? 0) - t.x < t.w - 1).map((t) => t.id);
@@ -457,13 +531,14 @@ export const CHECKS = [
     },
   },
   {
-    id: "record", level: "fail", stage: "page", frames: ["loose", "signal", "cover"], about: "the record line is drawn once, with the commit and the date (a cover's record: its day, commit and counts)",
+    id: "record", level: "fail", stage: "page", frames: ["loose", "signal", "cover", "plate"], about: "the record line is drawn once, with the commit and the date (a cover's or plate's record: its day, commit and counts)",
     run: ({ spec, facts, page }) => {
       const lines = page.blocks.filter((b) => b.name === "record");
-      if (frameOf(spec) === "cover") {
+      const frame = frameOf(spec);
+      if (frame === "cover" || frame === "plate") {
         if (!spec.product.commit) return ["the record has no commit, which compose wrote; vyo sketch prints the exact value, or run git -C <repo> log -1 --format=%h and set it as \"commit\" in product"];
-        const want = coverOf(spec, facts).record.join(" ");
-        return lines.length === 1 && lines[0].text === want ? [] : [`the cover's record reads "${lines.map((l) => l.text).join(" | ")}"; it should read "${want}"`];
+        const want = (frame === "plate" ? plateOf(spec, facts) : coverOf(spec, facts)).record.join(" ");
+        return lines.length === 1 && lines[0].text === want ? [] : [`the ${frame}'s record reads "${lines.map((l) => l.text).join(" | ")}"; it should read "${want}"`];
       }
       if (lines.length !== 1) return [`the poster shows ${lines.length} record lines; it needs exactly one`];
       if (!spec.product.commit) return ["the record line has no commit; set product.commit to the short hash (vyo compose --repo fills it)"];
