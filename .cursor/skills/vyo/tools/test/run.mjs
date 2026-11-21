@@ -6,11 +6,14 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { buildPage, renderPage } from "../lib/render.mjs";
 import { fieldItems } from "../lib/sketch.mjs";
-import { BROWSER_NOTE } from "../lib/browser.mjs";
+import { BROWSER_NOTE, launchChromium } from "../lib/browser.mjs";
 import { runChecks } from "../lib/check.mjs";
 import { coverOf } from "../lib/cover-render.mjs";
-import { COVER_FRAMES, COVER_GROUNDS, coverLegend } from "../lib/cover.mjs";
+import { COVER_FRAMES, COVER_GROUNDS, COVER_LAYOUTS, coverLegend } from "../lib/cover.mjs";
+import { sheetOf } from "../lib/geometry.mjs";
+import { decodePng } from "../lib/png.mjs";
 import { PLATES } from "../lib/plates/index.mjs";
+import { plateOf } from "../lib/plate-render.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TOOLS = path.join(HERE, "..");
@@ -300,7 +303,83 @@ for (const kind of ["resolve", "wipe"]) {
   const same = ["frame", "shares", "whole", "letters", "accentCells"].every((k) => JSON.stringify(page.cover?.report?.[k]) === JSON.stringify(node[k]));
   result(same && page.cover.shown === node.frame && !runChecks("page", { spec, facts, presets: {}, page }).length, "the cover's page draws the still the sketch measures, cell for cell, and passes every page check", `page ${JSON.stringify(page.cover?.report)}\nnode ${JSON.stringify(node)}`);
 }
-const COVER_GROUNDS_LIST = Object.keys(COVER_GROUNDS).map((g) => `"${g}"`).join(", ");
+// The xerox look's highlighter marks sit on the words they mark, in every layout: the commit hash in the record and
+// the accent's name in the legend, one mark per line the name falls on. The page's own text ranges are the truth.
+// "Jar" makes the hash's line shorter than the record's widest, so a right-aligned record moves it.
+{
+  const browser = await launchChromium();
+  try {
+    for (const [layout, name] of COVER_LAYOUTS.flatMap((l) => [[l, "Pantry"], [l, "Jar"]])) {
+      const base = preset("cover");
+      const spec = { ...base, product: { ...base.product, name }, look: "xerox", layout, motion: { kind: "copier" } };
+      const { model } = coverOf(spec, facts);
+      const page = await browser.newPage({ viewport: sheetOf(spec.format ?? "poster") });
+      await page.setContent(buildPage(spec, facts), { waitUntil: "load" });
+      const { markers, words } = await page.evaluate(([commit, accent]) => {
+        const ranges = (block, needle) => {
+          const node = document.querySelector(`[data-block="${block}"]`).firstChild;
+          const at = node.textContent.replace(/\n/g, " ").toLowerCase().indexOf(needle.toLowerCase());
+          if (at < 0) return [];
+          const r = document.createRange();
+          r.setStart(node, at);
+          r.setEnd(node, at + needle.length);
+          return [...r.getClientRects()].filter((q) => q.width > 0).map((q) => ({ x: q.left, y: q.top, w: q.width, h: q.height }));
+        };
+        return { markers: JSON.parse(document.getElementById("figure").textContent).markers, words: [...ranges("record", commit), ...ranges("legend", accent)] };
+      }, [spec.product.commit, model.parts[model.hot].name]);
+      await page.close();
+      const off = words.filter((t, i) => {
+        const m = markers[i];
+        const over = m && Math.min(m.y + m.h, t.y + t.h) - Math.max(m.y, t.y);
+        return !m || m.x > t.x + 0.5 || m.x + m.w < t.x + t.w - 0.5 || over < 0.8 * t.h;
+      });
+      result(words.length >= 2 && markers.length === words.length && !off.length, `xerox ${layout} (${name}): each highlighter mark covers the commit hash or the accent's name on its line`, `words ${JSON.stringify(words)}\nmarkers ${JSON.stringify(markers)}`);
+    }
+  } finally {
+    await browser.close();
+  }
+}
+// The xerox look's spot plate shows in the finished PNG, in every layout: each highlighter mark and the archive
+// stamp read in the accent, nothing the layout lays over the canvas (a macro plaque) hides them, and the stamp
+// passes the page checks, so it prints over no text block. Judged on luminance: on navy the accent sits apart from
+// both the paper and the ink.
+for (const layout of COVER_LAYOUTS) {
+  const spec = { ...preset("cover"), look: "xerox", layout, series: "3/12", motion: { kind: "copier" } };
+  const base = path.join(OUT, "xerox-spot", layout);
+  const html = buildPage(spec, facts);
+  const page = await renderPage({ html, base, pdf: false });
+  const { markers } = JSON.parse(html.match(/<script type="application\/json" id="figure">(.*?)<\/script>/s)[1]);
+  const png = decodePng(fs.readFileSync(`${base}.png`));
+  const G = COVER_GROUNDS[spec.ground];
+  const lum = (hex) => { const [r, g, b] = [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)); return 0.299 * r + 0.587 * g + 0.114 * b; };
+  const hot = lum(G.accent);
+  // The share of a sheet-px rect's pixels (at 2x) that print in the accent.
+  const accentShare = (r) => {
+    let n = 0;
+    let on = 0;
+    for (let y = Math.max(0, Math.round(r.top * 2)); y < Math.min(png.height, Math.round(r.bottom * 2)); y++)
+      for (let x = Math.max(0, Math.round(r.left * 2)); x < Math.min(png.width, Math.round(r.right * 2)); x++, n++) if (Math.abs(png.gray[y * png.width + x] - hot) < 22) on++;
+    return n ? on / n : 0;
+  };
+  const marks = markers.map((m) => accentShare({ left: m.x, top: m.y, right: m.x + m.w, bottom: m.y + m.h }));
+  const stamp = page.cover?.stamp ? accentShare(page.cover.stamp) : 0;
+  const apart = Math.abs(hot - lum(G.ground)) > 50 && Math.abs(hot - lum(G.ink)) > 50;
+  const fails = runChecks("page", { spec, facts, presets: {}, page }).filter((f) => f.level === "fail");
+  result(
+    apart && marks.length >= 2 && marks.every((s) => s > 0.3) && stamp > 0.1 && !fails.length,
+    `xerox ${layout}: every highlighter mark and the archive stamp print in the accent on the finished cover, and the stamp keeps clear of the text`,
+    `accent share under each mark ${marks.map((s) => s.toFixed(2))}, in the stamp's box ${stamp.toFixed(3)}\n${fails.map((f) => `${f.id}: ${f.message}`).join("\n")}`,
+  );
+}
+// Every macro plaque holds the words set on it, in each look's own type: xerox and spin set the headline and legend
+// in other faces than living, so a plaque sized from one face's measure lets another's letters run past it.
+for (const look of ["living", "xerox", "spin"]) {
+  const spec = { ...preset("cover"), look, layout: "macro", ...(look === "xerox" ? { motion: { kind: "copier" } } : {}) };
+  const page = await renderPage({ html: buildPage(spec, facts), base: path.join(OUT, "macro-cards", look), png: false, pdf: false });
+  const found = runChecks("page", { spec, facts, presets: {}, page }).filter((f) => f.id === "cards-hold");
+  result(page.cards.length === 3 && !found.length, `${look} macro: every plaque holds the text set on it`, found.map((f) => f.message).join("\n"));
+}
+const COVER_GROUNDS_LIST =Object.keys(COVER_GROUNDS).map((g) => `"${g}"`).join(", ");
 const COVER_PLANTED = [
   ["a free colour for the ground", (s) => (s.ground = "#14281F"), new RegExp(`^✗ spec: ground: "#14281F" is not a ground; a free colour is not offered; use ${COVER_GROUNDS_LIST}$`, "m")],
   ["an accent that names no part", (s) => (s.figure.regions[0].accent = "area:nowhere"), /^✗ cover-accent: the accent area:nowhere names no part, so nothing prints in orange; put the accent on /m],
@@ -341,8 +420,10 @@ const plateSpec = (plate, ground, layout) => ({
 for (const [plate, ground, layout] of [
   ["topo", "carbon", "blueprint"],
   ["blueprint", "abyss", "blueprint"],
+  // Macro's box runs past the sheet on every side: the labels must still land on it, clear of the corner cards.
+  ["topo", "carbon", "macro"],
 ]) {
-  const dir = path.join(OUT, `plate-${plate}`);
+  const dir = path.join(OUT, `plate-${plate}-${layout}`);
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, "recipe-poster.json");
   fs.writeFileSync(file, JSON.stringify(plateSpec(plate, ground, layout), null, 2));
@@ -350,7 +431,84 @@ for (const [plate, ground, layout] of [
   result(r.status === 0 && /^PASS$/m.test(r.stdout) && !/^✗/m.test(r.stderr), `plate ${plate} (${ground}/${layout}) renders and passes every check`, r.stdout + r.stderr);
   const thumb = path.join(dir, "recipe-poster-thumb.png");
   const wh = fs.existsSync(thumb) ? [fs.readFileSync(thumb).readUInt32BE(16), fs.readFileSync(thumb).readUInt32BE(20)] : [];
-  result(wh[0] === 280 && wh[1] === 396 && r.stdout.includes(thumb), `plate ${plate} writes a 280x396 thumb and prints it`, `${wh}\n${r.stdout}`);
+  result(wh[0] === 280 && wh[1] === 396 && r.stdout.includes(thumb), `plate ${plate} (${layout}) writes a 280x396 thumb and prints it`, `${wh}\n${r.stdout}`);
+}
+
+// A plate's page draws from the figure JSON Node embeds in it, and the checks judge what the page measures. A flaw
+// planted in that JSON shows a check catches what the canvas drew, not what Node meant it to draw.
+const plantFigure = (html, mutate) =>
+  html.replace(/(<script type="application\/json" id="figure">)([\s\S]*?)(<\/script>)/, (_, open, body, close) => {
+    const F = JSON.parse(body);
+    mutate(F);
+    return open + JSON.stringify(F).replace(/</g, "\\u003c") + close;
+  });
+const plateFindings = async (spec, html, name, ids) =>
+  runChecks("page", { spec, facts, presets: {}, page: await renderPage({ html, base: path.join(OUT, name), png: false, pdf: false }) }).filter((f) => ids.includes(f.id));
+const reEscape = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+{
+  const spec = plateSpec("topo", "carbon", "blueprint");
+  const drop = plateOf(spec, facts).parts.find((p) => !p.hot);
+  const html = buildPage(spec, facts);
+  const planted = plantFigure(html, (F) => {
+    F.data.contours = F.data.contours.filter((c) => c.partId !== drop.id);
+    F.data.summits = F.data.summits.filter((s) => s.partId !== drop.id);
+  });
+  const [now, then] = [await plateFindings(spec, html, "plate-parts-honest", ["plate-parts"]), await plateFindings(spec, planted, "plate-parts-planted", ["plate-parts"])];
+  const want = new RegExp(`^region topo: the plate represents \\d+ of \\d+ parts; "${reEscape(drop.name)}" \\(${reEscape(drop.id)}\\) draws nothing on the sheet`);
+  result(planted !== html && !now.length && then.length === 1 && want.test(then[0].message), `planted plate flaw (a part whose contours are never drawn) fails plate-parts with ${want}`, `now ${JSON.stringify(now)}\nthen ${JSON.stringify(then)}`);
+}
+{
+  // Summit labels near the right edge and inside the record card: honest placeLabel rescues both, while removing the
+  // safe margin and card boxes lets one run off the sheet and the other sit under the record card.
+  const spec = plateSpec("topo", "carbon", "macro");
+  const nudge = (F) => {
+    const rec = F.cards[1];
+    F.data.summits[0] = { ...F.data.summits[0], x: 830, y: 500 };
+    F.data.summits[1] = { ...F.data.summits[1], x: rec.x + 12, y: rec.y + rec.h * 0.5 };
+  };
+  const html = plantFigure(buildPage(spec, facts), nudge);
+  const planted = plantFigure(html, (F) => {
+    F.margin = -100;
+    F.cards = [];
+  });
+  const ids = ["blocks-inside", "blocks-apart"];
+  const [now, then] = [await plateFindings(spec, html, "plate-labels-honest", ids), await plateFindings(spec, planted, "plate-labels-planted", ids)];
+  const off = then.some((f) => f.id === "blocks-inside" && /^the plate label "[^"]+" runs off the sheet \(its right edge at \d+px, the sheet's at 840px\); the plate places its labels itself/.test(f.message));
+  const under = then.some((f) => f.id === "blocks-apart" && /^the plate label "[^"]+" sits under the record card or within 8px of it; the plate places its labels itself/.test(f.message));
+  result(planted !== html && !now.length && off && under, "planted plate flaw (labels pushed off the sheet and under the record card) fails blocks-inside and blocks-apart", `now ${JSON.stringify(now)}\nthen ${JSON.stringify(then)}`);
+}
+{
+  // A blueprint chamber's header as it was before the fix: drawn in the header whether or not it fits, and cut there.
+  // The figure gives the narrowest chamber a long name; the page's script is planted with a fitter that never
+  // measures, so the name is drawn where it does not fit and the canvas clips it.
+  const spec = { ...plateSpec("blueprint", "abyss", "editorial"), format: "og" };
+  const longName = (F) => {
+    const c = F.data.chambers.reduce((a, b) => (b.w < a.w ? b : a));
+    c.partName = `${c.partName} and every screen`;
+    return c.partName;
+  };
+  let name = "";
+  const html = plantFigure(buildPage(spec, facts), (F) => (name = longName(F)));
+  const planted = html.replace("const fits = (r, space) => r.left", "const fits = () => true;\n  const measured = (r, space) => r.left");
+  const ids = ["labels-whole"];
+  const [now, then] = [await plateFindings(spec, html, "plate-header-honest", ids), await plateFindings(spec, planted, "plate-header-planted", ids)];
+  const want = new RegExp(`^the plate label "${reEscape(name.toLowerCase())}[^"]*" needs \\d+px but has \\d+px, so the canvas cuts it to \\d+px; every name prints whole`);
+  result(planted !== html && !now.length && then.some((f) => want.test(f.message)), `planted plate flaw (a long chamber name drawn where it does not fit) fails labels-whole with ${want}`, `now ${JSON.stringify(now)}\nthen ${JSON.stringify(then)}`);
+}
+{
+  // A chamber no placement fits: shrunk to a speck and walled in by a card, so its name has nowhere to go. The page
+  // must say it drew the part unnamed, and labels-whole must fail it rather than pass a part no one can identify.
+  const spec = { ...plateSpec("blueprint", "abyss", "editorial"), format: "og" };
+  let drop = null;
+  const planted = plantFigure(buildPage(spec, facts), (F) => {
+    const c = F.data.chambers.reduce((a, b) => (b.w < a.w ? b : a));
+    Object.assign(c, { w: 4, h: 4, cells: [] });
+    F.cards = [...(F.cards ?? []), { x: c.x - 80, y: c.y - 40, w: 164, h: 84 }];
+    drop = c;
+  });
+  const then = await plateFindings(spec, planted, "plate-unnamed-planted", ["labels-whole"]);
+  const want = new RegExp(`^the plate draws "${reEscape(String(drop.partName).toLowerCase())}" \\(${reEscape(drop.partId)}\\) with no name: no placement fits it`);
+  result(then.some((f) => want.test(f.message)), `planted plate flaw (a chamber no placement fits) fails labels-whole with ${want}`, `then ${JSON.stringify(then)}`);
 }
 {
   const dir = path.join(OUT, "plate-topo-gif");

@@ -1300,6 +1300,8 @@
     };
     const [inkC, ictx] = makePlate();
     const [spotC, sctx] = makePlate();
+    // The overprint: the stamp and highlighter marks, inked on the spot plate after the layout's paper washes.
+    const [overC, octx] = makePlate();
     const hot = m.hot;
     const syms = [":", "-", "+", ":", "="];
     ictx.textBaseline = "alphabetic";
@@ -1323,30 +1325,30 @@
         ictx.fillText(c.ch, x, y + LH * 0.8);
       }
     }
-    // Rubber archive stamp on the spot plate (top right, slightly crooked).
-    if (F.format !== "og") {
+    // Rubber archive stamp on the overprint, slightly crooked, where Node placed it clear of the text blocks.
+    if (F.stamp) {
       const num = String((seed % 89) + 10).padStart(3, "0");
-      sctx.save();
-      sctx.translate(W - m.template.margin - 76, m.template.margin + 28);
-      sctx.rotate((-3.8 * Math.PI) / 180);
-      sctx.lineWidth = 2.6;
-      sctx.strokeRect(-72, -26, 144, 54);
-      sctx.font = `700 8.5px ${MONO}`;
-      sctx.fillText("VYO ARCHIVE", -64, -13);
+      octx.save();
+      octx.translate(F.stamp.cx, F.stamp.cy);
+      octx.rotate((COVER_STAMP.angle * Math.PI) / 180);
+      octx.lineWidth = COVER_STAMP.stroke;
+      octx.strokeRect(-COVER_STAMP.w / 2, -COVER_STAMP.h / 2, COVER_STAMP.w, COVER_STAMP.h);
+      octx.font = `700 8.5px ${MONO}`;
+      octx.fillText("VYO ARCHIVE", -64, -13);
       if (F.series) {
-        sctx.textAlign = "right";
-        sctx.fillText(F.series, 64, -13);
-        sctx.textAlign = "left";
+        octx.textAlign = "right";
+        octx.fillText(F.series, 64, -13);
+        octx.textAlign = "left";
       }
-      sctx.font = `900 31px ${GROT}`;
-      sctx.fillText(`N°${num}`, -65, 20);
-      sctx.restore();
+      octx.font = `900 31px ${GROT}`;
+      octx.fillText(`N°${num}`, -65, 20);
+      octx.restore();
     }
-    // Highlighter markers on spot plate behind commit hash and accent name in legend.
+    // Highlighter markers on the overprint behind the commit hash and the accent's name in the legend.
     if (F.markers) {
       for (let i = 0; i < F.markers.length; i++) {
         const mk = F.markers[i];
-        paintMarker(sctx, mk.x, mk.y, mk.w, mk.h, seed + 11 + i);
+        paintMarker(octx, mk.x, mk.y, mk.w, mk.h, seed + 11 + i);
       }
     }
     // Copier glass dust specks on ink plate.
@@ -1381,6 +1383,16 @@
     const spotFin = applyGen(spotC);
     const inkData = inkFin.getContext("2d").getImageData(0, 0, Wp, Hp).data;
     const spotData = spotFin.getContext("2d").getImageData(0, 0, Wp, Hp).data;
+    const overData = applyGen(overC).getContext("2d").getImageData(0, 0, Wp, Hp).data;
+    // The layout's paper washes (a macro plaque), in device px: each lays the paper over the print at its opacity,
+    // under the overprint. 0 where no wash falls.
+    const washed = new Float32Array(Wp * Hp);
+    for (const w of F.washes ?? []) {
+      const x0 = Math.max(0, Math.round(w.x * scale));
+      const x1 = Math.min(Wp, Math.round((w.x + w.w) * scale));
+      for (let y = Math.max(0, Math.round(w.y * scale)); y < Math.min(Hp, Math.round((w.y + w.h) * scale)); y++)
+        for (let x = x0; x < x1; x++) washed[y * Wp + x] = 1 - (1 - washed[y * Wp + x]) * (1 - w.opacity);
+    }
     const cg = hexRgb(m.colors.ground);
     const ci = hexRgb(m.colors.ink);
     const cs = hexRgb(m.colors.accent);
@@ -1409,14 +1421,20 @@
         const sx = x - ox;
         const sy = y - oy;
         let son = false;
+        let over = false;
         if (sx >= 0 && sx < Wp && sy >= 0 && sy < Hp) {
-          const a = spotData[(sy * Wp + sx) * 4 + 3];
-          son = a + (pxHash(sx >> 1, sy >> 1, fs + 3) - 0.5) * a0 > l0 && pxHash(sx >> 2, sy >> 2, fs + 4) > d0 * 0.6;
+          const k = (sy * Wp + sx) * 4 + 3;
+          const inked = (a) => a + (pxHash(sx >> 1, sy >> 1, fs + 3) - 0.5) * a0 > l0 && pxHash(sx >> 2, sy >> 2, fs + 4) > d0 * 0.6;
+          over = inked(overData[k]);
+          son = over || inked(spotData[k]);
         }
-        const c = on ? ci : son ? cs : cg;
-        px[i] = c[0];
-        px[i + 1] = c[1];
-        px[i + 2] = c[2];
+        // Under a wash the print fades to paper and the overprint lies on top of it; elsewhere ink prints over spot.
+        const w0 = washed[y * Wp + x];
+        const c = w0 && over ? cs : on ? ci : son ? cs : cg;
+        const wa = over ? 0 : w0;
+        px[i] = wa ? Math.round(c[0] + (cg[0] - c[0]) * wa) : c[0];
+        px[i + 1] = wa ? Math.round(c[1] + (cg[1] - c[1]) * wa) : c[1];
+        px[i + 2] = wa ? Math.round(c[2] + (cg[2] - c[2]) * wa) : c[2];
         px[i + 3] = 255;
       }
     }
@@ -1498,7 +1516,9 @@
   };
   /** Glyph changes per step over the whole loop, once every frame has been drawn. */
   window.coverSteps = () => coverSteps(m);
-  window.cover = { frames: m.frames, still: F.still, look: m.look, layout: m.layout, finish: m.finish, report: window.coverFrame(F.still, 2) };
+  // The xerox stamp's box, from where the page drew it, so the checks can keep it off the text blocks.
+  const stamp = m.look === "xerox" && F.stamp ? coverStampBox(F.stamp.cx, F.stamp.cy) : null;
+  window.cover = { frames: m.frames, still: F.still, look: m.look, layout: m.layout, finish: m.finish, stamp, report: window.coverFrame(F.still, 2) };
   window.drawn = true;
 })().catch((e) => {
   window.coverError = String(e && e.stack ? e.stack : e);

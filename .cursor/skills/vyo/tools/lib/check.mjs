@@ -118,6 +118,16 @@ const coverCheck = (id, about) => ({
   run: ({ spec, facts, page }) => (page.cover ? coverFindings(coverOf(spec, facts), { still: page.cover.report, loop: page.loop ?? null, facts })[id] : []),
 });
 const POSTERS = ["swiss", "loose", "signal"];
+// Every frame whose text blocks must stay on the sheet and apart. On a plate the template places the blocks (the
+// classic name's line box overlaps the legend by design), so there the checks judge the labels its canvas draws.
+const SHEET_FRAMES = [...POSTERS, "plate"];
+// A plate places its canvas labels itself, so one off the sheet or under its chrome is the engine's fault.
+const PLATE_LABEL_FAULT = "the plate places its labels itself, so this is an engine fault: try another layout and report it";
+/** Which edge of the sheet `r` runs off, and where. */
+const offEdge = (r, sheet) => {
+  const edge = ["right", "bottom", "left", "top"].find((k) => (k === "right" || k === "bottom" ? r[k] > sheet[k] : r[k] < sheet[k])) ?? "bottom";
+  return `its ${edge} edge at ${round(r[edge])}px, the sheet's at ${round(sheet[edge])}px`;
+};
 // The spec as render and sketch draw it, with the texts placed and the shape moved for them; once per spec.
 const placed = new WeakMap();
 const placedSpec = ({ spec, facts }) => {
@@ -312,7 +322,7 @@ export const CHECKS = [
     },
   },
   {
-    id: "blocks-apart", level: "fail", stage: "page", frames: POSTERS, about: "no two text blocks overlap, rows and dots keep clear of them (in the swiss frame a wave's rows may pass behind the figure's texts), and blocks side by side keep 8px apart",
+    id: "blocks-apart", level: "fail", stage: "page", frames: SHEET_FRAMES, about: "no two text blocks overlap, rows and dots keep clear of them (in the swiss frame a wave's rows may pass behind the figure's texts), blocks side by side keep 8px apart, and a plate's labels keep 8px clear of its text blocks and chrome cards",
     run: ({ spec, page }) => {
       const blocks = page.blocks.map((b) => ({ ...b, kind: "block" }));
       // Swiss and signal let a field's rows pass behind type; a mark may sit under type.
@@ -320,9 +330,10 @@ export const CHECKS = [
       const marks = [...page.rows.map((r) => ({ ...r, name: `the row "${r.word}"` })), ...page.dots.map((d) => ({ ...d, name: `the dots line "${d.word}"` }))];
       const out = [];
       const say = (a, b) => out.push(`${a.name} overlaps ${b.name} or sits within 8px of it; shorten one of them`);
+      const placed = frameOf(spec) === "plate";
       blocks.forEach((a, i) =>
         blocks.slice(i + 1).forEach((b) => {
-          if (a.role === "mark" || b.role === "mark") return;
+          if (placed || a.role === "mark" || b.role === "mark") return;
           if (crowd(a.rect, b.rect)) say(a, b);
         }),
       );
@@ -332,6 +343,11 @@ export const CHECKS = [
       }
       const fills = fillRowsOf(page);
       fills.forEach((a, i) => fills.slice(i + 1).forEach((b) => a.region === b.region && crowd(a.rect, b.rect) && say({ name: `the row "${a.word}"` }, { name: `the row "${b.word}"` })));
+      // A plate's labels are drawn on the canvas, under the page's text blocks and chrome cards.
+      const chrome = [...(page.cards ?? []).map((c) => ({ name: `the ${c.name} card`, rect: c.rect })), ...blocks.filter((b) => b.role !== "mark").map((b) => ({ name: `the ${b.name}`, rect: b.rect }))];
+      for (const l of page.plate?.labels ?? []) {
+        for (const c of chrome) if (crowd(l.rect, c.rect)) out.push(`the plate label "${l.text}" sits under ${c.name} or within 8px of it; ${PLATE_LABEL_FAULT}`);
+      }
       return [...new Set(out)];
     },
   },
@@ -343,14 +359,45 @@ export const CHECKS = [
         .map((c) => `${c.covered} px of the ${c.block}'s letters are painted over near ${c.x},${c.y}; something is drawn on top of the text, so move the block clear of it`),
   },
   {
-    id: "blocks-inside", level: "fail", stage: "page", frames: POSTERS, about: "every text block is inside the sheet",
-    run: ({ page }) =>
-      page.blocks
-        .filter((b) => !inside(b.rect, page.sheet))
-        .map((b) => {
-          const edge = ["right", "bottom", "left", "top"].find((k) => (k === "right" || k === "bottom" ? b.rect[k] > page.sheet[k] : b.rect[k] < page.sheet[k])) ?? "bottom";
-          return `${b.name} runs off the sheet (its ${edge} edge at ${round(b.rect[edge])}px, the sheet's at ${round(page.sheet[edge])}px)`;
-        }),
+    id: "stamp-clear", level: "fail", stage: "page", frames: COVER_ONLY, about: "the xerox look's archive stamp, as the page drew it, keeps clear of every text block's letters",
+    run: ({ page }) => {
+      const s = page.cover?.stamp;
+      if (!s) return [];
+      return page.blocks
+        .filter((b) => b.role !== "mark" && overlap(s, b.rect))
+        .map((b) => `the archive stamp (${round(s.left)},${round(s.top)} to ${round(s.right)},${round(s.bottom)}) prints over the ${b.name}'s letters; the cover places its stamp itself, so this is an engine fault: try another layout and report it`);
+    },
+  },
+  {
+    // Not the sheet: a cover's name is set to bleed its line box past the bottom edge on purpose.
+    id: "cards-hold", level: "fail", stage: "page", frames: COVER_ONLY, about: "every text block a chrome card (a macro plaque) sits on fits inside the card",
+    run: ({ page }) => {
+      const out = [];
+      const inside = (r, c) => r.left >= c.left - 0.5 && r.top >= c.top - 0.5 && r.right <= c.right + 0.5 && r.bottom <= c.bottom + 0.5;
+      for (const b of page.blocks) {
+        if (b.role === "mark") continue;
+        for (const c of page.cards ?? []) {
+          if (overlap(b.rect, c.rect) && !inside(b.rect, c.rect)) out.push(`the ${b.name}'s letters run past the ${c.name} card (text ${round(b.rect.left)},${round(b.rect.top)} to ${round(b.rect.right)},${round(b.rect.bottom)}, card ${round(c.rect.left)},${round(c.rect.top)} to ${round(c.rect.right)},${round(c.rect.bottom)}); the layout sizes its cards itself, so this is an engine fault: try another layout and report it`);
+        }
+      }
+      return out;
+    },
+  },
+  {
+    id: "blocks-inside", level: "fail", stage: "page", frames: SHEET_FRAMES, about: "every text block, and every label a plate draws, is inside the sheet",
+    run: ({ page }) => [
+      ...page.blocks.filter((b) => !inside(b.rect, page.sheet)).map((b) => `${b.name} runs off the sheet (${offEdge(b.rect, page.sheet)})`),
+      ...(page.plate?.labels ?? []).filter((l) => !inside(l.rect, page.sheet)).map((l) => `the plate label "${l.text}" runs off the sheet (${offEdge(l.rect, page.sheet)}); ${PLATE_LABEL_FAULT}`),
+    ],
+  },
+  {
+    id: "labels-whole", level: "fail", stage: "page", frames: ["plate"], about: "every label a plate draws prints whole: its text is no wider than the space the canvas gave it, and none of it is cut off; and every part the plate names gets its name",
+    run: ({ page }) => [
+      ...(page.plate?.labels ?? [])
+        .filter((l) => l.need > l.room + 0.5 || l.shown < l.need - 0.5)
+        .map((l) => `the plate label "${l.text}" needs ${round(l.need)}px but has ${round(l.room)}px, so the canvas cuts it to ${round(l.shown)}px; every name prints whole, and ${PLATE_LABEL_FAULT}`),
+      ...(page.plate?.report?.unnamed ?? []).map((u) => `the plate draws "${u.name}" (${u.id}) with no name: no placement fits it, so the part cannot be told apart; try another layout or format, and if every one drops it, report it, since the plate places its labels itself and this is an engine fault`),
+    ],
   },
   {
     id: "silhouette", level: "fail", stage: "page", about: "the figure covers 15% of the sheet above the footer and spans 55% of its height and 60% of its width (a drawn shape is judged by shape-cover instead)",
@@ -389,7 +436,12 @@ export const CHECKS = [
       const report = page.plate?.report;
       const out = [];
       if (totalSliceLoc !== total) out.push(`region ${region.id}: the plate's slices hold ${totalSliceLoc} lines but facts.json has ${total}`);
-      if (report && report.representedParts !== parts.length) out.push(`region ${region.id}: the plate represents ${report.representedParts} of ${parts.length} parts`);
+      // The page tallies the parts whose geometry it drew on the sheet; Node's own counts would always agree with themselves.
+      if (report) {
+        const drawn = new Set(report.parts ?? []);
+        const missing = parts.filter((pt) => !drawn.has(pt.id));
+        if (missing.length) out.push(`region ${region.id}: the plate represents ${parts.length - missing.length} of ${parts.length} parts; ${missing.map((pt) => `"${pt.name}" (${pt.id})`).join(", ")} ${missing.length > 1 ? "draw" : "draws"} nothing on the sheet; try another layout, and if every layout drops it, report it as an engine fault`);
+      }
       if (region.accent !== undefined) {
         if (!parts.some((pt) => pt.hot)) out.push(`region ${region.id}: accent ${region.accent} names no part; vyo parts lists the part ids`);
         else if (report && !(report.accentCount > 0)) out.push(`region ${region.id}: the accent part produced no accented geometry on the plate`);

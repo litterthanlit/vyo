@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { partsFromFacts, unplainName, accentIds, segmentsOf, dominance } from "../lib/parts.mjs";
+import { partTies, partsFromFacts, unplainName, accentIds, segmentsOf, dominance } from "../lib/parts.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -113,4 +113,15 @@ test("dominance names the part that is most of the code and what splitting it gi
   const lone = { facts: [{ id: "area:app", kind: "area", name: "App", meta: { leaf: true } }, { id: "area:docs", kind: "area", name: "Docs", meta: { leaf: true } }], files: { "app/a.js": { area: "area:app", loc: 900 }, "docs/b.js": { area: "area:docs", loc: 100 } } };
   assert.deepEqual(dominance(lone), { part: partsFromFacts(lone)[0], share: 0.9, count: 2, split: null }, "a part with no folders inside has nothing to split");
   assert.equal(dominance(recipe), null, "the recipe fixture's parts are fine");
+});
+
+test("ties follow imports into the per-file parts a folder with no subfolders splits into", () => {
+  const facts = {
+    facts: [{ id: "area:.", kind: "area", name: "Root", meta: { leaf: false } }, { id: "area:src/net", kind: "area", name: "Net", meta: { leaf: true } }],
+    files: { "setup.py": { area: "area:.", loc: 20 }, "src/net/sessions.py": { area: "area:src/net", loc: 500 }, "src/net/models.py": { area: "area:src/net", loc: 480 } },
+    imports: [["setup.py", "src/net/sessions.py"], ["setup.py", "src/net/models.py"], ["src/net/sessions.py", "src/net/models.py"], ["src/net/models.py", "src/net/sessions.py"], ["setup.py", "src/net/sessions.py"]],
+  };
+  const parts = partsFromFacts(facts, { split: ["area:src/net"] });
+  assert.deepEqual(parts.map((p) => p.id), ["area:.", "area:src/net/models.py", "area:src/net/sessions.py"]);
+  assert.deepEqual(partTies(parts, facts), [[0, 2, 2], [0, 1, 1], [1, 2, 2]]);
 });
