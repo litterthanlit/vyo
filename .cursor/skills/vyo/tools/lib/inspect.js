@@ -78,6 +78,7 @@
     : null;
   // The layout's chrome cards (a macro plaque): solid panels that hide whatever the canvas draws under them.
   const cards = [...sheet.querySelectorAll("[data-card]")].map((el) => ({ name: el.dataset.card, rect: box(el.getBoundingClientRect()) }));
+  const luminous = window.__vyoLuminousMetrics ?? null;
 
-  return { sheet: sr, footerTop, texts, boxes, rows, dots, blocks, regions, figureHot, faces, inter: probe('"Inter Display"') || probe("Inter"), drawn: window.drawn === true, cards, cover, coverError: window.coverError ?? null, plate, plateError: window.plateError ?? null };
+  return { sheet: sr, footerTop, texts, boxes, rows, dots, blocks, regions, figureHot, faces, inter: probe('"Inter Display"') || probe("Inter"), drawn: window.drawn === true, cards, cover, coverError: window.coverError ?? null, plate, plateError: window.plateError ?? null, luminous, luminousError: window.__vyoLuminousError ?? null };
 }

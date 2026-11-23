@@ -1,0 +1,58 @@
+{
+  "version": 3,
+  "frame": "luminous",
+  "facts": "f02627b09f16",
+  "product": {
+    "name": "Hypher",
+    "repo": "hypher",
+    "date": "2026-11-23"
+  },
+  "theme": "alabaster",
+  "headline": "Switch agents without starting over.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "luminous",
+        "id": "luminous",
+        "accent": "area:hypher-web/shared",
+        "subject": {
+          "concept": "Two ink-wash workspace waves separated by a carved alabaster channel, bridged across the gap by one folded vermilion handoff ribbon beneath pale ice-mist orbital echoes.",
+          "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 840 1190\" width=\"840\" height=\"1190\"><defs><filter id=\"b4\" filterUnits=\"userSpaceOnUse\" x=\"-120\" y=\"-120\" width=\"1080\" height=\"1430\"><feGaussianBlur stdDeviation=\"4\"/></filter><filter id=\"b10\" filterUnits=\"userSpaceOnUse\" x=\"-120\" y=\"-120\" width=\"1080\" height=\"1430\"><feGaussianBlur stdDeviation=\"10\"/></filter><filter id=\"b18\" filterUnits=\"userSpaceOnUse\" x=\"-120\" y=\"-120\" width=\"1080\" height=\"1430\"><feGaussianBlur stdDeviation=\"18\"/></filter><filter id=\"b28\" filterUnits=\"userSpaceOnUse\" x=\"-120\" y=\"-120\" width=\"1080\" height=\"1430\"><feGaussianBlur stdDeviation=\"28\"/></filter><linearGradient id=\"mistArc\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0%\" stop-color=\"#FFFFFF\" stop-opacity=\"0\"/><stop offset=\"28%\" stop-color=\"#BCCCD9\" stop-opacity=\"0.78\"/><stop offset=\"70%\" stop-color=\"#92ACC2\" stop-opacity=\"0.62\"/><stop offset=\"100%\" stop-color=\"#E2EAF1\" stop-opacity=\"0.2\"/></linearGradient><linearGradient id=\"slateCrest\" x1=\"0.2\" y1=\"0\" x2=\"0.48\" y2=\"1\"><stop offset=\"0%\" stop-color=\"#132940\"/><stop offset=\"16%\" stop-color=\"#274E72\"/><stop offset=\"40%\" stop-color=\"#88A6C0\"/><stop offset=\"72%\" stop-color=\"#CEDBE7\"/><stop offset=\"100%\" stop-color=\"#FFFFFF\"/></linearGradient><linearGradient id=\"slateDeep\" x1=\"0.25\" y1=\"0\" x2=\"0.48\" y2=\"1\"><stop offset=\"0%\" stop-color=\"#10243A\"/><stop offset=\"18%\" stop-color=\"#24496B\"/><stop offset=\"44%\" stop-color=\"#7E9EB9\"/><stop offset=\"76%\" stop-color=\"#CBD8E4\"/><stop offset=\"100%\" stop-color=\"#FFFFFF\"/></linearGradient><linearGradient id=\"slateSoft\" x1=\"0.35\" y1=\"0\" x2=\"0.5\" y2=\"1\"><stop offset=\"0%\" stop-color=\"#32587B\"/><stop offset=\"28%\" stop-color=\"#89A6C0\"/><stop offset=\"68%\" stop-color=\"#D4E0EA\"/><stop offset=\"100%\" stop-color=\"#FFFFFF\"/></linearGradient><linearGradient id=\"vermilionRibbon\" x1=\"0.05\" y1=\"0.6\" x2=\"0.95\" y2=\"0.35\"><stop offset=\"0%\" stop-color=\"#EC404C\"/><stop offset=\"24%\" stop-color=\"#DC1E2A\"/><stop offset=\"62%\" stop-color=\"#C81824\"/><stop offset=\"88%\" stop-color=\"#DF2632\"/><stop offset=\"100%\" stop-color=\"#B51420\"/></linearGradient><linearGradient id=\"vermilionHalo\" x1=\"0\" y1=\"0.5\" x2=\"1\" y2=\"0.5\"><stop offset=\"0%\" stop-color=\"#F79EA5\" stop-opacity=\"0.28\"/><stop offset=\"35%\" stop-color=\"#E83642\" stop-opacity=\"0.74\"/><stop offset=\"80%\" stop-color=\"#D41C28\" stop-opacity=\"0.82\"/><stop offset=\"100%\" stop-color=\"#E85A64\" stop-opacity=\"0.38\"/></linearGradient></defs><rect width=\"840\" height=\"1190\" fill=\"#FFFFFF\"/><path d=\"M 575,155 C 655,118 755,112 845,138 L 845,205 C 760,178 665,184 588,208 Z\" fill=\"url(#mistArc)\" opacity=\"0.78\" filter=\"url(#b28)\"/><path d=\"M 505,222 C 605,175 725,168 845,202 L 845,282 C 735,248 625,255 520,285 Z\" fill=\"url(#mistArc)\" filter=\"url(#b18)\"/><path d=\"M 425,310 C 542,248 698,236 845,276 L 845,358 C 708,320 562,330 442,368 Z\" fill=\"url(#mistArc)\" opacity=\"0.88\" filter=\"url(#b18)\"/><path d=\"M 365,412 C 460,350 590,330 730,348 C 785,355 820,365 845,375 L 845,442 C 715,408 555,412 405,468 Z\" fill=\"url(#mistArc)\" opacity=\"0.75\" filter=\"url(#b18)\"/><path d=\"M 495,332 C 610,278 738,268 845,294 L 845,375 C 738,348 618,358 505,402 Z\" fill=\"url(#slateCrest)\" filter=\"url(#b4)\"/><path d=\"M 490,378 C 608,338 742,330 845,352 L 845,388 C 740,366 614,374 494,414 Z\" fill=\"#FFFFFF\" opacity=\"0.96\" filter=\"url(#b4)\"/><path d=\"M 465,418 C 588,372 728,360 845,384 L 845,485 C 725,460 588,472 475,512 Z\" fill=\"url(#slateSoft)\" filter=\"url(#b10)\"/><path d=\"M 480,415 C 598,372 732,362 845,385 L 845,432 C 732,408 598,418 482,462 Z\" fill=\"url(#slateDeep)\" filter=\"url(#b4)\"/><path d=\"M 0,685 C 95,605 225,548 364,548 C 398,548 418,565 424,592 L 372,835 L 0,880 Z\" fill=\"url(#slateCrest)\" filter=\"url(#b10)\"/><path d=\"M 0,682 C 100,595 228,544 368,548 C 396,549 412,566 404,590 C 296,596 152,648 0,736 Z\" fill=\"url(#slateDeep)\" filter=\"url(#b4)\"/><path d=\"M 0,758 C 120,688 250,658 386,668 L 366,712 C 242,704 118,735 0,805 Z\" fill=\"#FFFFFF\" opacity=\"0.98\" filter=\"url(#b4)\"/><path d=\"M 0,814 C 115,745 245,722 362,736 C 374,738 368,782 338,852 L 268,1025 L 0,1045 Z\" fill=\"url(#slateCrest)\" filter=\"url(#b10)\"/><path d=\"M 0,812 C 115,744 242,722 356,736 C 362,754 352,776 340,788 C 232,776 112,802 0,868 Z\" fill=\"url(#slateDeep)\" filter=\"url(#b4)\"/><path d=\"M 0,942 C 102,890 212,874 314,892 L 298,940 C 202,924 100,944 0,994 Z\" fill=\"#FFFFFF\" opacity=\"0.96\" filter=\"url(#b4)\"/><path d=\"M 0,998 C 102,944 210,928 306,952 C 316,998 288,1115 256,1190 L 0,1190 Z\" fill=\"url(#slateCrest)\" filter=\"url(#b10)\"/><path d=\"M 0,996 C 102,944 208,930 302,952 C 304,974 294,992 284,1004 C 196,984 98,1004 0,1054 Z\" fill=\"url(#slateDeep)\" filter=\"url(#b4)\"/><path d=\"M 0,1095 C 92,1062 188,1058 272,1080 L 264,1128 C 182,1108 88,1112 0,1144 Z\" fill=\"#FFFFFF\" opacity=\"0.9\" filter=\"url(#b10)\"/><path d=\"M 412,732 C 520,640 675,592 845,602 L 845,845 L 368,908 Z\" fill=\"url(#slateCrest)\" filter=\"url(#b10)\"/><path d=\"M 424,724 C 534,634 684,592 845,602 L 845,668 C 685,654 538,688 432,762 Z\" fill=\"url(#slateDeep)\" filter=\"url(#b4)\"/><path d=\"M 398,805 C 522,742 685,720 845,736 L 845,786 C 685,768 525,790 402,852 Z\" fill=\"#FFFFFF\" opacity=\"0.98\" filter=\"url(#b4)\"/><path d=\"M 366,876 C 508,804 680,782 845,802 L 845,1015 L 332,1058 Z\" fill=\"url(#slateCrest)\" filter=\"url(#b10)\"/><path d=\"M 374,870 C 512,802 684,782 845,800 L 845,862 C 684,842 516,862 380,924 Z\" fill=\"url(#slateDeep)\" filter=\"url(#b4)\"/><path d=\"M 352,962 C 504,910 680,896 845,920 L 845,972 C 682,946 508,960 356,1010 Z\" fill=\"#FFFFFF\" opacity=\"0.97\" filter=\"url(#b4)\"/><path d=\"M 328,1034 C 492,974 680,964 845,990 L 845,1190 L 298,1190 Z\" fill=\"url(#slateCrest)\" filter=\"url(#b10)\"/><path d=\"M 336,1030 C 496,972 682,964 845,988 L 845,1048 C 682,1022 500,1032 342,1084 Z\" fill=\"url(#slateDeep)\" filter=\"url(#b4)\"/><path d=\"M 348,1118 C 502,1076 682,1072 845,1098 L 845,1148 C 682,1122 502,1126 352,1166 Z\" fill=\"#FFFFFF\" opacity=\"0.9\" filter=\"url(#b10)\"/><path d=\"M 462,465 C 422,585 372,728 312,888 C 274,988 240,1094 212,1190 L 332,1190 C 362,1075 400,956 442,838 C 492,695 538,572 580,474 Z\" fill=\"#FFFFFF\" opacity=\"0.99\" filter=\"url(#b10)\"/><path d=\"M 476,472 C 436,590 386,732 326,892 C 288,992 254,1098 228,1190 L 316,1190 C 348,1076 385,958 426,842 C 476,698 522,576 564,480 Z\" fill=\"#FFFFFF\" filter=\"url(#b4)\"/><path d=\"M 192,625 C 318,538 492,482 678,468 C 750,462 805,468 845,480 L 845,595 C 765,578 655,575 530,595 C 402,616 285,655 182,702 Z\" fill=\"url(#vermilionHalo)\" opacity=\"0.66\" filter=\"url(#b18)\"/><path d=\"M 218,622 C 335,540 502,486 688,474 C 755,470 808,476 845,488 L 845,578 C 762,562 652,558 525,580 C 405,600 302,636 208,678 Z\" fill=\"url(#vermilionRibbon)\" filter=\"url(#b4)\"/><path d=\"M 248,634 C 365,560 518,512 688,504 C 755,500 808,508 845,522 L 845,542 C 795,528 738,522 676,524 C 516,530 375,574 265,642 Z\" fill=\"#FFFFFF\" opacity=\"0.9\" filter=\"url(#b4)\"/><path d=\"M 255,642 C 378,568 532,526 702,522 C 765,520 812,528 845,540 L 845,602 C 765,585 655,582 528,602 C 405,622 308,655 228,688 Z\" fill=\"url(#vermilionRibbon)\" opacity=\"0.96\" filter=\"url(#b4)\"/></svg>"
+        },
+        "microType": [
+          { "text": "shared memory", "u": 0.72, "v": 0.19, "style": "whisper" },
+          { "text": "editor", "u": 0.85, "v": 0.27, "style": "part" },
+          { "text": "browser", "u": 0.65, "v": 0.29, "style": "part" },
+          { "text": "next agent", "u": 0.79, "v": 0.34, "style": "part" },
+          { "text": "fresh eyes", "u": 0.56, "v": 0.37, "style": "whisper" },
+          { "text": "handoff note", "u": 0.57, "v": 0.45, "style": "core" },
+          { "text": "carry context", "u": 0.80, "v": 0.46, "style": "core" },
+          { "text": "fold", "u": 0.38, "v": 0.48, "style": "core" },
+          { "text": "first agent", "u": 0.20, "v": 0.51, "style": "part" },
+          { "text": "pass it on", "u": 0.46, "v": 0.54, "style": "core" },
+          { "text": "pick up cleanly", "u": 0.70, "v": 0.55, "style": "part" },
+          { "text": "open thread", "u": 0.14, "v": 0.61, "style": "part" },
+          { "text": "channel", "u": 0.43, "v": 0.63, "style": "whisper" },
+          { "text": "same state", "u": 0.66, "v": 0.64, "style": "part" },
+          { "text": "capture", "u": 0.23, "v": 0.69, "style": "part" },
+          { "text": "no lost thread", "u": 0.82, "v": 0.69, "style": "part" },
+          { "text": "keep moving", "u": 0.56, "v": 0.73, "style": "part" },
+          { "text": "leave clean", "u": 0.17, "v": 0.77, "style": "part" },
+          { "text": "relay", "u": 0.39, "v": 0.79, "style": "whisper" },
+          { "text": "next turn", "u": 0.76, "v": 0.80, "style": "part" },
+          { "text": "save state", "u": 0.15, "v": 0.87, "style": "part" },
+          { "text": "never reset", "u": 0.55, "v": 0.87, "style": "part" },
+          { "text": "clean break", "u": 0.33, "v": 0.91, "style": "whisper" },
+          { "text": "still moving", "u": 0.78, "v": 0.92, "style": "part" }
+        ]
+      }
+    ],
+    "texts": [
+      {
+        "role": "legend",
+        "id": "legend",
+        "text": "vermilion marks the handoff note"
+      }
+    ]
+  }
+}

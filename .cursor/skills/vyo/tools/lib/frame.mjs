@@ -50,7 +50,13 @@ export const ROLES = {
   plate: {
     legend: { size: [11.5, 11.5, 11.5], lh: () => 14.5, count: [1, 1], max: 180, sentences: 2, em: 0.55 },
   },
+  // Luminous optical mosaic: bespoke soft-lit SVG refracted through real codebase strata on a 7px lattice,
+  // paired with Vyo's frameless Swiss-Japanese typography and zone-anchored micro-type.
+  luminous: {
+    legend: { size: [11, 11, 11], lh: () => 15, count: [1, 1], max: 140, sentences: 2, em: 0.6, mono: true },
+  },
 };
+export const LUMINOUS_THEMES = ["obsidian", "alabaster"];
 export const FRAMES = Object.keys(ROLES);
 /** Frames that draw a record line instead of the swiss footer. */
 export const RECORD_FRAMES = ["loose", "signal"];

@@ -739,6 +739,11 @@ The checks are one table, `CHECKS` in `lib/check.mjs`, of `{ id, level, stage, a
 | `still` | ✗ | The PNG and PDF show the finished poster whatever the spec's `motion`: no row hidden, every `mark` at its full width, and a cover or plate canvas showing its still frame. The GIF's frames are the only place motion is partial |
 | `record` | ✗ | Loose, signal, cover and plate. The record line is drawn once and matches the expected text (loose/signal: `<name> at <commit>, <date>. Drawn by Vyo.`; cover/plate: its day, commit and counts). Without `product.commit`: `the record line has no commit; set product.commit to the short hash (vyo compose --repo fills it)` |
 | `headline-lines` | ! | The headline wraps to more than 2 lines. Swiss only |
+| `luminous-jargon` | ✗ | Luminous only, spec stage. No banned jargon in `headline`, `legend`, `subject.concept`, or any `microType[].text` |
+| `luminous-subject` | ! | Luminous only, spec stage. Warns when `subject.svg` lacks soft-lighting primitives (`linearGradient`, `radialGradient`, `feGaussianBlur`, or `opacity`) |
+| `luminous-tonal` | ! | Luminous only, page stage. Warns when the rasterized `subject.svg` reads as flat clip-art (`activeBins < 4` or `midToneRatio < 0.18`) |
+| `luminous-accent` | ! | Luminous only, page stage. Warns when focal crimson/vermilion beads cover under 3% or over 45% of lit mosaic cells |
+| `luminous-sanctuary` | ✗ | Luminous only, page stage. Fails when any bright mosaic cell collides with the rendered frameless headline, header, or legend bounding box |
 
 ---
 
