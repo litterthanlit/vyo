@@ -1,6 +1,6 @@
 # vyo
 
-vyo draws a codebase as one poster or cover that someone who does not code can read. Your coding agent picks an object for the product, and vyo sizes every part of the code to fit it.
+vyo draws a codebase as one poster or cover that someone who does not code can read. Your coding agent draws an object for what the product does, and vyo sizes every part of the code to fit it.
 
 <table align="center">
   <tr>
@@ -35,7 +35,7 @@ The same engine draws posters in other looks:
 - **topo** — marching-squares topographic elevation map rising around each area's lines and import passes, with index/minor contours and summit markers (`pulse` loop).
 - **blueprint** — octilinear PCB / architectural circuit schematic with proportional part chambers subdivided into file cells and wired by chamfered import traces and vias (`signal` loop).
 
-**Sculptural 3D Covers** (`--frame cover`) turn one of 22 ready silhouettes (or any silhouette you draw or trace from a PNG) into a 3D object (`dome`, `extrude`, or `revolve` solids) cut honestly into layers by each part's share of the code, with four selectable high-res **finishes**:
+**Sculptural 3D Covers** (`--frame cover`) turn an object your agent draws for the product (or a logo traced from a PNG) into a 3D object (`dome`, `extrude`, or `revolve` solids) cut honestly into layers by each part's share of the code, with four selectable high-res **finishes**:
 
 - **studio** — continuous-tone studio-lit matte obsidian/metallic/ceramic 3D surface with softbox key, Fresnel rim, distance-field ambient occlusion, accent bloom, film grain, and subtle 5px micro-type shimmer.
 - **halftone** — precision 22.5° rotated dot-matrix sampled from the studio lighting buffer with accent bloom.
@@ -73,8 +73,8 @@ To try vyo without installing it, run `npx -y @litterthanlit/vyo init` and have 
 ## How it works
 
 1. `vyo scan` reads the code with no network and no model. Two scans of the same tree give the same file.
-2. Your agent names each part in plain words and chooses the part the product is about. For a shape, it draws the silhouette from a few simple pieces.
-3. `vyo sketch` shows the layout in a quick picture before the full render, so the agent can fix the shape first.
+2. Your agent names each part in plain words and chooses the part the product is about. For a shape, it reads the README, picks an object for what the product does, and draws it from a few simple pieces.
+3. `vyo sketch` shows the layout in a quick picture before the full render. The agent writes the one word the sketch reads as, and redraws until that word is the object.
 4. `vyo render` draws the poster to HTML, PNG and PDF.
 5. Checks run on what was drawn. They reject jargon, file paths, placeholder text and text that collides with the picture, and each failure says what to change.
 

@@ -64,8 +64,15 @@ export const coverStrataOf = (region) => (typeof region.strata === "string" ? CO
 export const coverWords = (region, ground = "navy") => ({
   orange: coverStrataOf(region)?.outline ? "ring" : "band",
   color: COVER_GROUNDS[ground]?.colorName ?? "orange",
-  object: (typeof region.shape === "object" && SILHOUETTES[region.shape?.like]?.noun) || null,
+  object: shapeObject(region.shape),
 });
+
+/** The object a shape draws, for its legend: the noun the agent wrote, or a ready silhouette's; null while unwritten. */
+export function shapeObject(shape) {
+  if (!shape || typeof shape !== "object") return null;
+  const own = typeof shape.object === "string" && shape.object.trim() && !shape.object.trim().startsWith("…") ? shape.object.trim() : null;
+  return own ?? SILHOUETTES[shape.like]?.noun ?? null;
+}
 
 /** The legend a cover's picture says: the object, how its parts are cut, and what the accent is. */
 export function coverLegend(region, product, accent, ground = "navy") {

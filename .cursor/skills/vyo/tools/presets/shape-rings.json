@@ -34,6 +34,9 @@
           "area:lib/recipes": "recipe book"
         },
         "shape": {
+          "object": "jar",
+          "why": "Pantry keeps the recipes you cook and plans a week of dinners from them, as a jar keeps staples for the week.",
+          "reads": "jar",
           "fit": {
             "h": 0.74,
             "cy": 0.6
@@ -107,7 +110,7 @@
         "y": 790,
         "w": 240,
         "align": "center",
-        "text": "Every ring is a part of Pantry, its area as big as its share of the code. The orange rings are the plan."
+        "text": "Every ring of the jar is a part of Pantry, its area as big as its share of the code. The orange rings are the plan."
       }
     ]
   }

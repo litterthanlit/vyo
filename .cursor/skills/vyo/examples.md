@@ -152,7 +152,18 @@ A dark sculptural `studio` cover in the `editorial` gallery layout on `obsidian`
         "kind": "field",
         "id": "cover",
         "field": "shape",
-        "shape": { "like": "pear" },
+        "shape": {
+          "object": "jar",
+          "why": "Pantry keeps the recipes you cook and plans a week of dinners from them, as a jar keeps staples for the week.",
+          "reads": "jar",
+          "ops": [
+            { "add": "rect", "at": [12, 0], "size": [76, 16], "round": 4 },
+            { "add": "rect", "at": [20, 15], "size": [60, 10] },
+            { "add": "rect", "at": [0, 24], "size": [100, 112], "round": 26 },
+            { "cut": "rect", "at": [0, 14], "size": [100, 3] },
+            { "crease": "rect", "at": [12, 58], "size": [76, 42], "round": 4 }
+          ]
+        },
         "strata": "outline",
         "accent": "area:app/(app)",
         "names": {
@@ -172,7 +183,7 @@ A dark sculptural `studio` cover in the `editorial` gallery layout on `obsidian`
       }
     ],
     "texts": [
-      { "role": "legend", "id": "legend", "text": "This pear is the code of Pantry, one layer per part, each as big as its share. The cyan outer ring is screens." }
+      { "role": "legend", "id": "legend", "text": "This jar is the code of Pantry, one layer per part, each as big as its share. The cyan outer ring is screens." }
     ]
   },
   "motion": { "kind": "turn" }
@@ -265,7 +276,7 @@ An architectural `blueprint` circuit-schematic plate on `abyss` (`#070D1A` + blu
 
 ### Cover looks: xerox, spin, and OG landscape
 
-A punk `xerox` cover on `blood` red with the `fast-forward` silhouette and `copier` loop:
+A punk `xerox` cover on `blood` red with the drawn jar and the `copier` loop:
 
 ```json
 {
@@ -283,20 +294,31 @@ A punk `xerox` cover on `blood` red with the `fast-forward` silhouette and `copi
         "kind": "field",
         "id": "cover",
         "field": "shape",
-        "shape": { "like": "fast-forward" },
+        "shape": {
+          "object": "jar",
+          "why": "Pantry keeps the recipes you cook and plans a week of dinners from them, as a jar keeps staples for the week.",
+          "reads": "jar",
+          "ops": [
+            { "add": "rect", "at": [12, 0], "size": [76, 16], "round": 4 },
+            { "add": "rect", "at": [20, 15], "size": [60, 10] },
+            { "add": "rect", "at": [0, 24], "size": [100, 112], "round": 26 },
+            { "cut": "rect", "at": [0, 14], "size": [100, 3] },
+            { "crease": "rect", "at": [12, 58], "size": [76, 42], "round": 4 }
+          ]
+        },
         "strata": "down",
         "accent": "area:app/(app)"
       }
     ],
     "texts": [
-      { "role": "legend", "id": "legend", "text": "This fast-forward mark is the code of Pantry, one band per part, each as big as its share. The yellow band is screens." }
+      { "role": "legend", "id": "legend", "text": "This jar is the code of Pantry, one band per part, each as big as its share. The yellow band is screens." }
     ]
   },
   "motion": { "kind": "copier" }
 }
 ```
 
-A kinetic 360° `spin` cover on `acid` green with an extruded `plug` slab, and a landscape `og` (`1280×640`) cover on `cobalt`:
+A kinetic 360° `spin` cover on `acid` green with the jar extruded as a slab, and a landscape `og` (`1280×640`) cover on `cobalt`:
 
 ```json
 {
@@ -315,14 +337,25 @@ A kinetic 360° `spin` cover on `acid` green with an extruded `plug` slab, and a
         "kind": "field",
         "id": "cover",
         "field": "shape",
-        "shape": { "like": "plug" },
+        "shape": {
+          "object": "jar",
+          "why": "Pantry keeps the recipes you cook and plans a week of dinners from them, as a jar keeps staples for the week.",
+          "reads": "jar",
+          "ops": [
+            { "add": "rect", "at": [12, 0], "size": [76, 16], "round": 4 },
+            { "add": "rect", "at": [20, 15], "size": [60, 10] },
+            { "add": "rect", "at": [0, 24], "size": [100, 112], "round": 26 },
+            { "cut": "rect", "at": [0, 14], "size": [100, 3] },
+            { "crease": "rect", "at": [12, 58], "size": [76, 42], "round": 4 }
+          ]
+        },
         "solid": { "kind": "extrude", "depth": 1.1 },
         "strata": "down",
         "accent": "area:app/(app)"
       }
     ],
     "texts": [
-      { "role": "legend", "id": "legend", "text": "This plug is the code of Pantry, one band per part, each as big as its share. The pink band is screens." }
+      { "role": "legend", "id": "legend", "text": "This jar is the code of Pantry, one band per part, each as big as its share. The pink band is screens." }
     ]
   },
   "motion": { "kind": "turn" }
@@ -345,13 +378,24 @@ A kinetic 360° `spin` cover on `acid` green with an extruded `plug` slab, and a
         "kind": "field",
         "id": "cover",
         "field": "shape",
-        "shape": { "like": "compass" },
+        "shape": {
+          "object": "jar",
+          "why": "Pantry keeps the recipes you cook and plans a week of dinners from them, as a jar keeps staples for the week.",
+          "reads": "jar",
+          "ops": [
+            { "add": "rect", "at": [12, 0], "size": [76, 16], "round": 4 },
+            { "add": "rect", "at": [20, 15], "size": [60, 10] },
+            { "add": "rect", "at": [0, 24], "size": [100, 112], "round": 26 },
+            { "cut": "rect", "at": [0, 14], "size": [100, 3] },
+            { "crease": "rect", "at": [12, 58], "size": [76, 42], "round": 4 }
+          ]
+        },
         "strata": "down",
         "accent": "area:app/(app)"
       }
     ],
     "texts": [
-      { "role": "legend", "id": "legend", "text": "This compass is the code of Pantry, one band per part, each as big as its share. The yellow band is screens." }
+      { "role": "legend", "id": "legend", "text": "This jar is the code of Pantry, one band per part, each as big as its share. The yellow band is screens." }
     ]
   },
   "motion": { "kind": "copier" }
@@ -666,6 +710,9 @@ Before rendering, `vyo sketch` printed the jar's strata, its 62% of the sheet an
           "area:lib/recipes": "recipe book"
         },
         "shape": {
+          "object": "jar",
+          "why": "Pantry keeps the recipes you cook and plans a week of dinners from them, as a jar keeps staples for the week.",
+          "reads": "jar",
           "rotate": 9,
           "fit": { "h": 0.9, "cx": 0.52, "cy": 0.64 },
           "ops": [
@@ -732,6 +779,9 @@ Before rendering, `vyo sketch` printed 22 rings of 7px for 12 parts, the accent'
           "area:lib/recipes": "recipe book"
         },
         "shape": {
+          "object": "jar",
+          "why": "Pantry keeps the recipes you cook and plans a week of dinners from them, as a jar keeps staples for the week.",
+          "reads": "jar",
           "fit": {
             "h": 0.74,
             "cy": 0.6
@@ -805,7 +855,7 @@ Before rendering, `vyo sketch` printed 22 rings of 7px for 12 parts, the accent'
         "y": 790,
         "w": 240,
         "align": "center",
-        "text": "Every ring is a part of Pantry, its area as big as its share of the code. The orange rings are the plan."
+        "text": "Every ring of the jar is a part of Pantry, its area as big as its share of the code. The orange rings are the plan."
       }
     ]
   }
@@ -857,6 +907,9 @@ Before rendering, `vyo sketch` printed each stratum's share of the area against 
         "bevel": 0.8,
         "strata": { "by": "angle", "angle": 90 },
         "shape": {
+          "object": "jar",
+          "why": "Pantry keeps the recipes you cook and plans a week of dinners from them, as a jar keeps staples for the week.",
+          "reads": "jar",
           "fit": { "h": 0.74, "cx": 0.5, "cy": 0.6 },
           "ops": [
             { "add": "rect", "at": [12, 0], "size": [76, 16], "round": 4 },
@@ -885,7 +938,7 @@ Before rendering, `vyo sketch` printed each stratum's share of the area against 
 
 ## A cover, as a full spec for Pantry
 
-`vyo compose <facts> --frame cover --repo <repo>` writes this with `…` in the product name, the headline, the accent, the names and the legend, and picks the object; this is it filled in, and the `cover` preset. The pear is a ready silhouette, so the spec has no ops; `"strata": "outline"` makes the accent, the screens (19% of the code), the orange shell, and the other parts stack inside it. Before rendering, `vyo sketch` printed `shell: the orange shell is 16px thick, 18.5% of the code`, one line per part with its share of the lines and of the glyphs in the still, and the still as a 280px PNG; `vyo render --gif` then wrote the PNG, the PDF and a 7-second loop.
+`vyo compose <facts> --frame cover --repo <repo>` writes this with `…` in the product name, the headline, the accent, the names, the shape's `object`, `why`, `reads` and `ops`, and the legend; it picks no object, and prints three ready silhouettes with their ops as references. This is it filled in, and the `cover` preset: a pear drawn in five ops (two ellipses for the body and the neck, a polygon joining them, a capsule stem, a leaf), with the solid `{ "bevel": 1, "depth": 0.9 }` for a full, round fruit. The sketch read "pear", so that is `reads`. A jar of staples, as on the shape posters above, says more about what Pantry does; the pear stays because the earlier renders and tests measure it; `"strata": "outline"` makes the accent, the screens (19% of the code), the orange shell, and the other parts stack inside it. Before rendering, `vyo sketch` printed `shell: the orange shell is 16px thick, 18.5% of the code`, one line per part with its share of the lines and of the glyphs in the still, and the still as a 280px PNG; `vyo render --gif` then wrote the PNG, the PDF and a 7-second loop.
 
 ```json
 {
@@ -922,8 +975,18 @@ Before rendering, `vyo sketch` printed each stratum's share of the area against 
           "area:lib/recipes": "recipe book"
         },
         "shape": {
-          "like": "pear"
+          "object": "pear",
+          "why": "Pantry plans a week of dinners from the recipes you cook, and a pear stands for the food it plans.",
+          "reads": "pear",
+          "ops": [
+            { "add": "ellipse", "at": [50, 67], "r": [33, 31] },
+            { "add": "ellipse", "at": [50, 35], "r": [17, 20] },
+            { "add": "polygon", "points": [[34, 36], [66, 36], [80, 58], [20, 58]], "round": 4 },
+            { "add": "capsule", "from": [50, 17], "to": [54, 4], "r": 2.4 },
+            { "add": "ellipse", "at": [62, 11], "r": [11, 5], "rotate": -28 }
+          ]
         },
+        "solid": { "bevel": 1, "depth": 0.9 },
         "strata": "outline"
       }
     ],

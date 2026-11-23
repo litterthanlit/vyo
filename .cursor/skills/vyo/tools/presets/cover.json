@@ -26,7 +26,19 @@
           "area:lib/plan": "the plan",
           "area:lib/recipes": "recipe book"
         },
-        "shape": { "like": "pear" },
+        "shape": {
+          "object": "pear",
+          "why": "Pantry plans a week of dinners from the recipes you cook, and a pear stands for the food it plans.",
+          "reads": "pear",
+          "ops": [
+            { "add": "ellipse", "at": [50, 67], "r": [33, 31] },
+            { "add": "ellipse", "at": [50, 35], "r": [17, 20] },
+            { "add": "polygon", "points": [[34, 36], [66, 36], [80, 58], [20, 58]], "round": 4 },
+            { "add": "capsule", "from": [50, 17], "to": [54, 4], "r": 2.4 },
+            { "add": "ellipse", "at": [62, 11], "r": [11, 5], "rotate": -28 }
+          ]
+        },
+        "solid": { "bevel": 1, "depth": 0.9 },
         "strata": "outline"
       }
     ],

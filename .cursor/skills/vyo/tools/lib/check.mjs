@@ -9,7 +9,9 @@ import { shapeMask } from "./mask.mjs";
 import { coverOf } from "./cover-render.mjs";
 import { plateOf } from "./plate-render.mjs";
 import { coverFindings, COVER_LIMITS } from "./cover-report.mjs";
-import { COVER, coverLegend, coverWords } from "./cover.mjs";
+import { COVER, coverLegend, coverWords, shapeObject } from "./cover.mjs";
+import { SILHOUETTES } from "./silhouettes.mjs";
+import { BUNDLED_MASKS } from "./png-mask.mjs";
 import { FIELDS } from "./fields/index.mjs";
 import { PLATES } from "./plates/index.mjs";
 import { shapeReport, shapeFindings, SHAPE_LIMITS, SHAPE_LIMB } from "./shape-report.mjs";
@@ -112,6 +114,30 @@ const coverShapeReport = (spec, facts) => {
   return { region, parts, dominant: dominance(facts, partOptions(region)), mask: shapeMask(region.shape), rows: [] };
 };
 const COVER_ONLY = ["cover"];
+
+// The words on a drawn shape. A drawn shape is one with ops; a ready silhouette or a traced mask may carry them too.
+const SHAPE_FRAMES = ["loose", "signal", "cover"];
+const shapeRegionsOf = (spec) => fieldsOf(spec).filter((r) => r.field === "shape" && r.shape && typeof r.shape === "object" && !Array.isArray(r.shape));
+const written = (v) => typeof v === "string" && !!v.trim() && !v.trim().startsWith("…");
+/** A noun folded to compare: lowercase, and a simple plural made singular ("gears", "boxes", "batteries"). */
+export const singular = (w) => {
+  const x = String(w).toLowerCase().trim();
+  if (/ies$/.test(x)) return `${x.slice(0, -3)}y`;
+  if (/(x|ch|sh|ss)es$/.test(x)) return x.slice(0, -2);
+  return /[^s]s$/.test(x) ? x.slice(0, -1) : x;
+};
+const lastWord = (t) => String(t).trim().split(/\s+/).pop();
+/** Does the word the sketch reads name the object? The whole noun or its last word ("plane" for "paper plane"), either number. */
+export const readsAs = (reads, object) => {
+  const [r, o] = [reads, object].map((t) => singular(String(t).replace(/[^\p{L}\p{N}\s-]/gu, "")));
+  return r === o || singular(lastWord(r)) === singular(lastWord(o));
+};
+/** Does the legend name the object, singular or plural, or by its last word? */
+const legendNames = (legend, object) => [object, lastWord(object)].some((o) => [o, `${o}s`, `${o}es`, singular(o)].some((w) => hasWord(legend, w)));
+// Words that carry no meaning of their own in a why: what is left after them, the product's name and the object's
+// is what the sentence says about the product. A why with nothing left only names the product.
+const FILLER = new Set("a an the is are was be its it it's this that these those of for and or but to in on at as by from with into so because since like named name called sounds sound looks look product app tool project our my your their".split(" "));
+const contentWords = (t) => (String(t).toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((w) => w.length > 2 && !FILLER.has(w));
 /** A cover check judged on the frames the page drew: the still, and the loop when render drew one. */
 const coverCheck = (id, about) => ({
   id, level: "fail", stage: "page", frames: COVER_ONLY, about,
@@ -138,7 +164,8 @@ const placedSpec = ({ spec, facts }) => {
 /**
  * @typedef {{ spec: any, facts: any, presets: Record<string, any>, page?: any }} CheckInput
  * A check with `frames` runs only on posters in those frames; without, on every poster.
- * @type {{ id: string, level: "fail" | "warn", stage: "spec" | "page", frames?: ("swiss" | "loose" | "signal")[], about: string, run: (i: CheckInput) => string[] }[]}
+ * `words` marks a check of a shape's words, not its outline: the loose sketch runs it beside its own shape lines.
+ * @type {{ id: string, level: "fail" | "warn", stage: "spec" | "page", frames?: ("swiss" | "loose" | "signal")[], words?: true, about: string, run: (i: CheckInput) => string[] }[]}
  */
 export const CHECKS = [
   {
@@ -220,6 +247,48 @@ export const CHECKS = [
       fieldsOf(spec)
         .filter((r) => !FIELDS[r.field].fits.some((w) => startsWord(r.fits, w)))
         .map((r) => `region ${r.id}: fits must say why a ${r.field} matches the product's story; use ${anyOf(FIELDS[r.field].fits)}`),
+  },
+  {
+    id: "shape-reads", level: "fail", stage: "spec", frames: SHAPE_FRAMES, words: true,
+    about: "a drawn shape says what it is (object), why it stands for what the product does (why), and the one word its sketch reads as (reads), and that word is the object",
+    run: ({ spec }) =>
+      shapeRegionsOf(spec).flatMap((r) => {
+        const s = r.shape;
+        if (s.like !== undefined || s.mask !== undefined) return [];
+        // A placeholder is the spec check's to report, with what to write.
+        if (["object", "why", "reads"].some((k) => typeof s[k] === "string" && s[k].trim().startsWith("…"))) return [];
+        const missing = ["object", "why", "reads"].filter((k) => !written(s[k]));
+        if (missing.length) return [`region ${r.id}: a drawn shape needs ${missing.join(", ")}: the object you drew, one sentence on why it stands for what the product does, and the one word you see in the sketch PNG (see "Draw the shape")`];
+        return readsAs(s.reads, s.object) ? [] : [`region ${r.id}: the sketch reads as "${s.reads}", not the ${s.object} you drew; redraw it simpler, with the one feature that makes it a ${s.object} large, then sketch again and write the word you see in reads`];
+      }),
+  },
+  {
+    id: "shape-stock", level: "warn", stage: "spec", frames: SHAPE_FRAMES, words: true,
+    about: "a shape is drawn for this product: a ready silhouette (like) or a bundled mask is stock, and a why says what the product does, not only its name",
+    run: ({ spec }) =>
+      shapeRegionsOf(spec).flatMap((r) => {
+        const s = r.shape;
+        const out = [];
+        const stock = s.like !== undefined ? `the ready ${SILHOUETTES[s.like]?.noun ?? s.like} ("like": "${s.like}")` : BUNDLED_MASKS.includes(s.mask) ? `the bundled "${s.mask}" mask` : null;
+        if (stock) out.push(`region ${r.id}: ${stock} is a stock silhouette, which rarely stands for one product; draw an object for what this product does (see "Draw the shape"), or keep it only if the owner asked for that object`);
+        // Only the product's name and the object left: the why is a pun on the name, not what the product does.
+        if (written(s.why) && hasProduct(s.why, spec)) {
+          const own = new Set([...contentWords(spec.product.name), ...contentWords(written(s.object) ? s.object : ""), ...(written(s.object) ? contentWords(s.object).map((w) => `${w}s`) : [])]);
+          if (!contentWords(s.why).some((w) => !own.has(w))) out.push(`region ${r.id}: why only names the product; say what ${spec.product.name} does that the ${written(s.object) ? s.object : "object"} stands for, from its README, not its name`);
+        }
+        return out;
+      }),
+  },
+  {
+    id: "shape-legend", level: "warn", stage: "spec", frames: ["loose", "signal"], words: true,
+    about: "the legend of a shape poster names the object the shape draws (a cover's legend check asks the same, as a failure)",
+    run: ({ spec }) =>
+      shapeRegionsOf(spec).flatMap((r) => {
+        const object = shapeObject(r.shape);
+        const legend = spec.figure.texts.find((t) => t.role === "legend")?.text;
+        if (!object || !written(legend) || legendNames(legend, object)) return [];
+        return [`the legend never names the ${object}; say what the picture is, like "Every layer of the ${object} is a part of ${spec.product.name}, …", not "This shape is …"`];
+      }),
   },
   shapeCheck("shape-dominant", "warn", "spec", "no part of a drawn shape is one slab: a part over 75% of the lines, or among under 4 parts, is split when it has folders inside it, and an accent over 75% with none to split is named, so it can move to a smaller part", undefined, ["loose", "cover"]),
   shapeCheck("shape-simple", "warn", "spec", "a drawn shape has at most 8 ops and no run of small repeated details that merge at thumbnail size", undefined, ["loose", "cover"]),

@@ -112,11 +112,14 @@ const PLANTED = [
   [
     "a shape whose first stratum falls in a stem too narrow for its name",
     "shape",
-    (s) => (s.figure.regions[0].shape = { ops: [{ add: "rect", at: [0, 0], size: [6, 120] }, { add: "rect", at: [-40, 120], size: [84, 60], round: 10 }], fit: { h: 0.8 } }),
+    (s) => (s.figure.regions[0].shape = { object: "jar", why: "A planted flaw: a stem too narrow for its name.", reads: "jar", ops: [{ add: "rect", at: [0, 0], size: [6, 120] }, { add: "rect", at: [-40, 120], size: [84, 60], round: 10 }], fit: { h: 0.8 } }),
     /^✗ shape-name: part "saved recipes" never shows its whole name: its stratum's widest run of type is \d+px and the name needs \d+px; widen the shape where the stratum falls/m,
   ],
   ["a legend placed on the shape", "shape", (s) => Object.assign(s.figure.texts.find((t) => t.role === "legend"), { x: 300, y: 600 }), /^✗ shape-room: the legend \(\d+ by \d+ at \d+,\d+\) sits on the shape or within 16px of it; move it into the top-(left|right) corner/m],
   ["a shape that paints nothing", "shape", (s) => s.figure.regions[0].shape.ops.push({ cut: "rect", at: [-50, -50], size: [300, 300] }), /^✗ spec: figure\.regions\[0\]\.shape: the ops paint nothing on the sheet/m],
+  ["a drawn shape with no reads", "shape", (s) => delete s.figure.regions[0].shape.reads, /^✗ shape-reads: region shape: a drawn shape needs reads: /m],
+  ["a sketch that reads as another object", "shape", (s) => (s.figure.regions[0].shape.reads = "box"), /^✗ shape-reads: region shape: the sketch reads as "box", not the jar you drew; redraw it simpler/m],
+  ["a cover whose reads is still the placeholder", "cover", (s) => (s.figure.regions[0].shape.reads = "… the word"), /^✗ spec: figure\.regions\[0\]\.shape\.reads: still the placeholder; write the one word you honestly see in the sketch PNG/m],
 ];
 
 // A drawn shape's flaws are warnings: the poster still renders, and the agent weighs the `!` line.
@@ -136,6 +139,20 @@ for (const [name, shape, expect] of RINGS_WARNINGS) {
   fs.writeFileSync(file, JSON.stringify(spec, null, 2));
   const r = vyo("check", file, "--facts", factsFile);
   result(expect.test(r.stderr), `planted rings flaw (${name}) warns with ${expect}`, `exit ${r.status}\n${r.stderr}`);
+}
+
+// A stock silhouette and a legend that never names the object are warnings: the poster renders, the `!` line asks.
+const WORD_WARNINGS = [
+  ["a ready silhouette", (s) => (s.figure.regions[0].shape = { like: "bulb" }), /^! shape-stock: region shape: the ready light bulb \("like": "bulb"\) is a stock silhouette/m],
+  ["a legend without the object", (s) => (s.figure.texts.find((t) => t.role === "legend").text = "This shape is the code of Pantry, as big as its code. The orange layer is the plan."), /^! shape-legend: the legend never names the jar; /m],
+];
+for (const [name, mutate, expect] of WORD_WARNINGS) {
+  const spec = preset("shape");
+  mutate(spec);
+  const file = path.join(OUT, "planted-words.json");
+  fs.writeFileSync(file, JSON.stringify(spec, null, 2));
+  const r = vyo("check", file, "--facts", factsFile);
+  result(expect.test(r.stderr), `planted shape words flaw (${name}) warns with ${expect}`, `exit ${r.status}\n${r.stderr}`);
 }
 
 for (const [name, mutate, expect] of SHAPE_WARNINGS) {
@@ -383,7 +400,7 @@ const COVER_GROUNDS_LIST =Object.keys(COVER_GROUNDS).map((g) => `"${g}"`).join("
 const COVER_PLANTED = [
   ["a free colour for the ground", (s) => (s.ground = "#14281F"), new RegExp(`^✗ spec: ground: "#14281F" is not a ground; a free colour is not offered; use ${COVER_GROUNDS_LIST}$`, "m")],
   ["an accent that names no part", (s) => (s.figure.regions[0].accent = "area:nowhere"), /^✗ cover-accent: the accent area:nowhere names no part, so nothing prints in orange; put the accent on /m],
-  ["a form as thin as a pole", (s) => (s.figure.regions[0].shape = { ops: [{ add: "rect", at: [0, 0], size: [6, 100] }] }), /^✗ cover-names: "[a-z ]+" \(\d+% of the code\) never prints its whole name in the still, frame \d+; at \d+ characters it does not fit its stratum there, so shorten it to \d+ characters or fewer$/m],
+  ["a form as thin as a pole", (s) => { s.figure.regions[0].shape = { object: "pole", why: "A planted flaw: a form too thin for its names.", reads: "pole", ops: [{ add: "rect", at: [0, 0], size: [6, 100] }] }; s.figure.texts[0].text = "This pole is the code of Pantry, one layer per part, each as big as its share. The orange outer ring is the screens."; }, /^✗ cover-names: "[a-z ]+" \(\d+% of the code\) never prints its whole name in the still, frame \d+; at \d+ characters it does not fit its stratum there, so shorten it to \d+ characters or fewer$/m],
 ];
 for (const [name, mutate, expect] of COVER_PLANTED) {
   const spec = preset("cover");

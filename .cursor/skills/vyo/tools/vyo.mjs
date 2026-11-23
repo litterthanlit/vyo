@@ -267,7 +267,7 @@ function shapeNotes() {
   const kinds = Object.entries(SHAPE_KINDS).map(([k, keys]) => `${k} {${Object.keys(keys).join(", ")}}`).join(", ");
   const R = SHAPE_ROOM;
   return [
-    'shape: replace the placeholder with your silhouette, ops painted in order into one mask: { "ops": [...], "rotate": deg, "fit": { "w", "h", "cx", "cy" } }',
+    'shape format: { "object", "why", "reads", "ops": [...], "rotate": deg, "fit": { "w", "h", "cx", "cy" } }, the ops painted in order into one mask.',
     `  or trace it from a PNG instead of ops: { "mask": "${BUNDLED_MASKS.join('" or "')}" or a path, "fit": ... }; its dark pixels are the silhouette.`,
     `  each op is { "add": kind, ... } or { "cut": kind, ... }, the first an add. Kinds: ${kinds}.`,
     '  example: { "add": "rect", "at": [16, 0], "size": [68, 16], "round": 3 }. ellipse r is [rx, ry]; arc from and to are degrees clockwise from twelve o\'clock; any op takes rotate about its own centre.',
@@ -314,18 +314,41 @@ function cmdShapes(argv) {
   const width = Math.max(...SILHOUETTE_NAMES.map((n) => n.length));
   lines.push(
     "",
-    'Ready silhouettes for a shape, as "shape": { "like": "<name>" }. Pick the object that fits the product; draw your own only when none does:',
-    ...SILHOUETTE_NAMES.map((n) => {
-      const ago = usedAgo(shapes, n);
-      const used = ago === null ? "" : ago === 0 ? " Picked for the latest cover here." : ` Picked here ${ago + 1} covers ago.`;
-      return `  ${n.padEnd(width)}  for ${SILHOUETTES[n].suits}; drawn as ${SILHOUETTES[n].about.replace(/^[^:]*: /, "")}.${used}`;
-    }),
-    "",
-    'To draw your own, "shape": { "ops": [...] } in a 100-unit box, y down, the first op an add. One op of each kind:',
+    'Draw the shape for the product: "shape": { "object", "why", "reads", "ops": [...] }, the ops in a 100-unit box, y down, the first an add (SKILL.md, "Draw the shape"). One op of each kind:',
     ...Object.entries(OP_EXAMPLES).map(([kind, op]) => `  ${kind.padEnd(8)}  ${JSON.stringify(op)}`),
+    "",
+    `Reference silhouettes: vocabulary for the ops, not the answer. Each is "shape": { "like": "<name>" }, which warns shape-stock; take one only if the owner asked for that object:`,
+    ...SILHOUETTE_NAMES.map((n) => `  ${n.padEnd(width)}  for ${SILHOUETTES[n].suits}; drawn as ${SILHOUETTES[n].about.replace(/^[^:]*: /, "")}.`),
   );
   process.stdout.write(lines.join("\n") + "\n");
   return 0;
+}
+
+/**
+ * Reference silhouettes for a drawing: the ready ones whose README words match best, by the same rule the cover
+ * once picked by. They teach the ops; the agent draws its own object for the product.
+ */
+function shapeReferences(repo, facts, count = 3) {
+  const readme = repo && fs.existsSync(repo) ? fs.readdirSync(repo).find((f) => /^readme/i.test(f)) : undefined;
+  const text = readme ? fs.readFileSync(path.join(repo, readme), "utf8").slice(0, 6000) : "";
+  const hashKey = parseInt(String(facts.hash).slice(0, 8), 16) || 0;
+  const pool = { ...SILHOUETTES };
+  const refs = [];
+  while (refs.length < count) {
+    const pick = pickSilhouette(pool, text, [], hashKey);
+    refs.push(pick);
+    delete pool[pick.name];
+  }
+  return refs;
+}
+
+/** What compose prints for a shape still to draw: the steps, then the references with their ops. */
+function drawLines(refs) {
+  return [
+    'shape: draw it yourself (SKILL.md, "Draw the shape"). Read the README and write why first: what the product does, not its name. Then object: one thing that stands for that: not a pun on the name, not a stock metaphor like a bulb for ideas, never a heart, a circle or a box. Draw it in 3 to 6 ops, run vyo sketch, open the sketch PNG and write the one word you honestly see as reads. If that word is not the object, redraw it simpler and sketch again.',
+    `  references, not the answer: ready silhouettes, the closest by README words first, to learn the ops from (vyo shapes lists all ${SILHOUETTE_NAMES.length}). Take one as "like" only if the owner asked for that object.`,
+    ...refs.map(({ name, matched }) => `  ${name}: for ${SILHOUETTES[name].suits}${matched?.length ? ` (README: ${matched.map((w) => `"${w}…"`).join(", ")})` : ""}. ops: ${JSON.stringify(SILHOUETTES[name].ops)}`),
+  ];
 }
 
 /**
@@ -370,20 +393,9 @@ function composeCover(factsFile, opt) {
   const out = opt.out ?? path.join(path.dirname(factsFile), `${facts.repo.name}-poster.json`);
   if (fs.existsSync(out) && !opt.force) throw new Failure(`${out} exists; it may hold your words. Pass --force to replace it with a fresh scaffold`);
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-  const earlier = (() => {
-    try {
-      return JSON.parse(fs.readFileSync(out, "utf8")).figure.regions[0].shape.like;
-    } catch {
-      return undefined;
-    }
-  })();
-  const logFile = opt["shapes-log"] ?? path.join(path.dirname(path.resolve(out)), "recent-shapes.json");
-  const readme = opt.repo ? fs.readdirSync(opt.repo).find((f) => /^readme/i.test(f)) : undefined;
-  const text = readme ? fs.readFileSync(path.join(opt.repo, readme), "utf8").slice(0, 6000) : "";
-  const hashKey = parseInt(String(facts.hash).slice(0, 8), 16) || 0;
-  const pick = SILHOUETTES[earlier] ? { name: earlier, matched: null } : pickSilhouette(SILHOUETTES, text, readRecent(logFile).shapes, hashKey);
-  const like = pick.name;
-  if (pick.matched) recordShape(logFile, like);
+  // The agent draws the object; compose only measures the accent window on the closest reference silhouette.
+  const refs = shapeReferences(opt.repo, facts);
+  const like = refs[0].name;
   const share = (p) => p.loc / linesIn(parts);
   const around = (p) => aroundProduct(p.id);
   const probe = coverScaffold(facts, { commit, date, split: split.length ? split : undefined, parts, strata: "outline", like, ground, look, format, crop, layout, finish, accent: parts[parts.length - 1].id });
@@ -393,20 +405,19 @@ function composeCover(factsFile, opt) {
   const fits = (p, [lo, hi]) => share(p) >= lo && share(p) <= hi;
   const outline = look === "living" && !!win.ring && parts.some((p) => !around(p) && fits(p, win.ring));
   const window = outline ? win.ring : win.band;
-  const scaffold = coverScaffold(facts, { commit, date, accent: opt.accent, split: split.length ? split : undefined, parts, strata: outline ? "outline" : "down", like, ground, look, format, crop, layout, finish });
+  const scaffold = coverScaffold(facts, { commit, date, accent: opt.accent, split: split.length ? split : undefined, parts, strata: outline ? "outline" : "down", ground, look, format, crop, layout, finish });
   fs.writeFileSync(out, JSON.stringify(scaffold, null, 2) + "\n");
-  const S = SILHOUETTES[like];
   const width = Math.max(...parts.map((p) => p.id.length));
   const color = COVER_GROUNDS[ground].colorName ?? "orange";
-  const accentLabel = outline ? `${color} outer ring on the ${S.noun}` : `${color} band across the ${S.noun}`;
+  const accentLabel = outline ? `${color} outer ring on an object` : `${color} band across an object`;
   const lines = [
     `Wrote ${out}. Edit that file: replace each value that starts with "…" and change nothing else.`,
     ...(cut.length ? [`Split ${cut.join(", and ")}, so no part is most of the object.`] : []),
-    `parts (id, share of the code, scanned name). * marks a part that makes a good ${accentLabel}: ${pct(window[0])} to ${pct(window[1])} of the code. - marks code around the product, never the accent.`,
+    `parts (id, share of the code, scanned name). * marks a part that makes a good ${accentLabel}: ${pct(window[0])} to ${pct(window[1])} of the code, measured on a ${SILHOUETTES[like].noun}; the sketch measures your drawing. - marks code around the product, never the accent.`,
     ...parts.map((p) => `  ${around(p) ? "-" : fits(p, window) ? "*" : " "} ${p.id.padEnd(width)} ${pct(share(p)).padStart(4)}  ${p.name}${around(p) ? `  ${around(p)}, never the accent` : ""}${unplainName(p.name) ? "  ! needs a plain name" : ""}`),
     `accent: the id of the part the product is about. If it has no *, write it anyway: the sketch says how to make it show.`,
-    `shape: compose picked the ${S.noun} ("like": "${like}"), for ${S.suits}${pick.matched?.length ? `; the README says ${pick.matched.map((w) => `"${w}…"`).join(", ")}` : ""}. If another object in vyo shapes suits the product better, write its name and put its name in the legend for "${S.noun}".`,
-    `legend: the pattern is written; replace <product> and <the accent's plain name>, and delete the leading "…".`,
+    ...drawLines(refs),
+    `legend: the pattern is written; replace <object> with the object you draw, <product> and <the accent's plain name>, and delete the leading "…".`,
     `ground: ${Object.keys(COVER_GROUNDS).join(", ")}. look: ${COVER_LOOKS.join(", ")}. finish: ${COVER_FINISHES.join(", ")}. layout: ${COVER_LAYOUTS.join(", ")}. format: ${FORMAT_NAMES.join(", ")}. Names: every part, lowercase, at most 24 characters, saying what it does for a person.`,
     `Then: vyo sketch ${out}, open the sketch PNG, act on every finding, then vyo render ${out} --gif.`,
   ];
@@ -592,6 +603,7 @@ function cmdCompose(argv) {
     ...(field ? [`vyo parts ${pos[0]}${field === "wave" ? "" : ` --field ${field}`} lists the parts: pick the accent by its id and give every part a plain name in names${unplain.length ? ` (${unplain.length} flagged by vyo parts must not keep their scanned name)` : ""}.`] : []),
     ...(avoided ? [`Or draw the object yourself: compose again with --field shape --style ${Object.keys(SHAPE_STYLES).join("|")} when one thing a stranger names in a second stands for the product.`] : []),
     ...(RECORD_FRAMES.includes(frame) ? looseNotes(field, space, frame) : authoringNotes(notes, field)),
+    ...(field === "shape" ? drawLines(shapeReferences(opt.repo, facts)) : []),
   ];
   process.stdout.write(lines.join("\n") + "\n");
   return 0;
@@ -624,7 +636,7 @@ function coverSketch(file, spec, opt) {
         : `✗ record: product has no ${p.commit === undefined ? "commit" : "date"}, which compose wrote; run git -C <repo> log -1 --format=%h and --format=%cs and set them as "commit" and "date" in product\n`,
     );
   }
-  const drawable =!errors.some((e) => /^(version|frame|product|ground|figure\.regions(\[0\])?(:|\.(kind|field|shape|strata|solid|turn|split|accent))|figure\.texts(:|\[\d+\]\.role))/.test(e) && !/\.names\[/.test(e));
+  const drawable = !errors.some((e) => /^(version|frame|product|ground|figure\.regions(\[0\])?(:|\.(kind|field|shape|strata|solid|turn|split|accent))|figure\.texts(:|\[\d+\]\.role))/.test(e) && !/\.names\[/.test(e) && !SHAPE_WORD_ERROR.test(e));
   for (const e of errors) process.stdout.write(`✗ spec: ${e}\n`);
   if (!drawable) {
     process.stdout.write("Fix the ✗ spec lines above, then sketch again: the cover cannot be drawn until its shape, ground and parts are valid.\n");
@@ -689,14 +701,17 @@ function plateSketch(file, spec, opt) {
   return 0;
 }
 
+// An error in a shape's object, why or reads: words, not geometry, so the sketch still draws.
+const SHAPE_WORD_ERROR = /\.shape\.(object|why|reads):/;
+
 function cmdSketch(argv) {
   const { pos, opt } = args(argv, { facts: { type: "string" } }, 1);
   const spec = readJson(pos[0], "poster spec");
   if (spec?.frame === "cover") return coverSketch(pos[0], spec, opt);
   if (spec?.frame === "plate") return plateSketch(pos[0], spec, opt);
   // Placeholder words and copy rules wait for render; the sketch needs the geometry, the texts and the notes count.
-  // A drawn shape is geometry too, so its placeholder blocks the sketch.
-  const blocking = validateSpec(spec).filter((e) => /^(figure\.(regions|texts)|figure:|notes:|version|product)/.test(e) && (/\.shape/.test(e) || !/still the placeholder|: (jargon|a file path|a "01|a middle dot)/.test(e)));
+  // A drawn shape is geometry too, so its placeholder blocks the sketch; its words do not, since reads needs the sketch.
+  const blocking = validateSpec(spec).filter((e) => /^(figure\.(regions|texts)|figure:|notes:|version|product)/.test(e) && !SHAPE_WORD_ERROR.test(e) && (/\.shape/.test(e) || !/still the placeholder|: (jargon|a file path|a "01|a middle dot)/.test(e)));
   if (blocking.length) {
     for (const e of blocking) fail(`spec: ${e}`);
     return 1;
@@ -709,7 +724,7 @@ function cmdSketch(argv) {
   for (const e of validateSpec(spec).filter((x) => !blocking.includes(x))) process.stdout.write(`✗ spec: ${e}\n`);
   if (facts) {
     const frame = spec.frame ?? "loose";
-    for (const c of CHECKS.filter((x) => x.stage === "spec" && x.id !== "spec" && !x.id.startsWith("shape-") && (!x.frames || x.frames.includes(frame)))) {
+    for (const c of CHECKS.filter((x) => x.stage === "spec" && x.id !== "spec" && (!x.id.startsWith("shape-") || x.words) && (!x.frames || x.frames.includes(frame)))) {
       for (const m of c.run({ spec, facts, presets: loadPresets() })) process.stdout.write(`${c.level === "fail" ? "✗" : "!"} ${c.id}: ${m}\n`);
     }
   }

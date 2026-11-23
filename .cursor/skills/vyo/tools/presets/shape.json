@@ -34,6 +34,9 @@
           "area:lib/recipes": "recipe book"
         },
         "shape": {
+          "object": "jar",
+          "why": "Pantry keeps the recipes you cook and plans a week of dinners from them, as a jar keeps staples for the week.",
+          "reads": "jar",
           "rotate": 9,
           "fit": { "h": 0.9, "cx": 0.52, "cy": 0.64 },
           "ops": [

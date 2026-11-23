@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { validateSpec } from "../lib/spec.mjs";
 import { shapeMask, maskGrid, runsPath, SHAPE_ROOM } from "../lib/mask.mjs";
 import { shapeReport, shapeFindings, thinFeatures, SHAPE_CHECKS } from "../lib/shape-report.mjs";
-import { CHECKS } from "../lib/check.mjs";
+import { CHECKS, runChecks, readsAs } from "../lib/check.mjs";
 import { sketch, sketchImage } from "../lib/sketch.mjs";
 import { regionParts } from "../lib/parts.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
@@ -83,8 +83,8 @@ test("every shape error is reported at once, by op index, in the house style", (
 test("a shape that paints nothing, a placeholder, a missing shape, a swiss shape and a stray style are refused", () => {
   const f = "figure.regions[0]";
   assert.deepEqual(validateSpec(withShape({ ops: [rect([0, 0], [10, 10]), { cut: "rect", at: [-1, -1], size: [12, 12] }] })), [`${f}.shape: the ops paint nothing on the sheet; the cuts remove all of it, or fit.cx and fit.cy move it off`]);
-  assert.match(validateSpec(withShape("… the silhouette"))[0], /^figure\.regions\[0\]\.shape: still the placeholder; draw the silhouette as \{ ops: \[\.\.\.\] \}/);
-  assert.match(validateSpec(withShape(undefined)).join("\n"), /^figure\.regions\[0\]\.shape: missing; draw the silhouette/m);
+  assert.match(validateSpec(withShape("… the silhouette"))[0], /^figure\.regions\[0\]\.shape: still the placeholder; draw the object yourself as \{ "object", "why", "reads", "ops": \[\.\.\.\] \} \(see "Draw the shape" in SKILL\.md/);
+  assert.match(validateSpec(withShape(undefined)).join("\n"), /^figure\.regions\[0\]\.shape: missing; draw the object yourself/m);
   assert.ok(validateSpec(withShape(jar().figure.regions[0].shape, { style: "spiral" })).some((e) => /^figure\.regions\[0\]\.style: "spiral" is not a style; use rings or relief or symbols, or leave it out$/.test(e)));
   assert.ok(validateSpec(withShape(jar().figure.regions[0].shape, { style: "bands" })).includes(`${f}.style: "bands" is not a style; use rings or relief or symbols, or leave it out`), "bands no longer ships");
   const swiss = { ...jar(), frame: "swiss" };
@@ -362,4 +362,62 @@ test("the symbols style: the drawn mask in shaded symbols, every part a band of 
   assert.deepEqual(found["shape-name"], [], "symbols draw no names, so shape-name does not apply");
   const sketch = sketchImage({ ...spec, frame: "signal", figure: { ...spec.figure, regions: [region] } }, recipe);
   assert.ok(sketch && sketch.length > 1000, "the sketch PNG draws the symbols");
+});
+
+// A drawn shape says what it is, why it stands for the product, and what its sketch reads as. Each planted flaw
+// is reported by its own check, in the house voice.
+const wordFindings = (spec, id) => runChecks("spec", { spec, facts: recipe, presets: {} }).filter((f) => f.id === id).map((f) => f.message);
+const drawnJar = (over = {}) => ({ ...jar().figure.regions[0].shape, ...over });
+
+test("a drawn shape's object, why and reads: validated, placeholders named, and none of them blocks the geometry", () => {
+  const f = "figure.regions[0].shape";
+  assert.deepEqual(validateSpec(jar()), [], "the jar preset carries its words");
+  const long = validateSpec(withShape(drawnJar({ object: "a very big glass jar", why: "It keeps food. It is a jar.", reads: "x".repeat(33) })));
+  for (const want of [
+    `${f}.object: "a very big glass jar" is 5 words; name the object in a word or two, like "jar" or "paper plane"`,
+    `${f}.why: one sentence only, on why the object stands for what the product does`,
+    `${f}.reads: 33 characters; at most 32`,
+  ]) assert.ok(long.includes(want), `expected ${want} in ${JSON.stringify(long, null, 1)}`);
+  assert.ok(validateSpec(withShape(drawnJar({ object: 7 }))).includes(`${f}.object: must be text: the plain noun you draw, like "gear" or "jar": an object for what the product does, not a pun on its name`));
+  const blank = validateSpec(withShape(drawnJar({ reads: "… the word" })));
+  assert.deepEqual(blank, [`${f}.reads: still the placeholder; write the one word you honestly see in the sketch PNG (run vyo sketch first); if it is not the object, redraw it simpler and sketch again`], "a blank reads still lets the ops be checked, and only it is reported");
+  assert.ok(validateSpec(withShape(drawnJar({ ops: "… the ops" }))).includes(`${f}.ops: still the placeholder; draw the object as 3 to 6 ops in a 100-unit box, y down, the first an add (see "Draw the shape" in SKILL.md; vyo compose --field shape prints the format)`));
+});
+
+test("shape-reads fails a drawn shape with no reads, or one that reads as another object", () => {
+  assert.deepEqual(wordFindings(jar(), "shape-reads"), [], "the jar preset reads as a jar");
+  const { reads, ...noReads } = drawnJar();
+  assert.equal(reads, "jar");
+  assert.deepEqual(wordFindings(withShape(noReads), "shape-reads"), [
+    'region shape: a drawn shape needs reads: the object you drew, one sentence on why it stands for what the product does, and the one word you see in the sketch PNG (see "Draw the shape")',
+  ]);
+  assert.match(wordFindings(withShape({ ops: drawnJar().ops }), "shape-reads")[0], /^region shape: a drawn shape needs object, why, reads: /);
+  assert.deepEqual(wordFindings(withShape(drawnJar({ object: "cape", reads: "leaf" })), "shape-reads"), [
+    'region shape: the sketch reads as "leaf", not the cape you drew; redraw it simpler, with the one feature that makes it a cape large, then sketch again and write the word you see in reads',
+  ]);
+  assert.equal(CHECKS.find((c) => c.id === "shape-reads").level, "fail");
+  for (const [r, o] of [["Jars", "jar"], ["plane", "paper plane"], ["boxes", "box"], ["batteries", "battery"], ["glass", "glass"]]) assert.ok(readsAs(r, o), `${r} reads as ${o}`);
+  for (const [r, o] of [["leaf", "cape"], ["box", "jar"]]) assert.ok(!readsAs(r, o), `${r} is not ${o}`);
+  assert.deepEqual(wordFindings(withShape({ like: "pear" }), "shape-reads"), [], "a ready silhouette is shape-stock's to judge");
+});
+
+test("shape-stock warns on a ready silhouette, a bundled mask, and a why that only names the product", () => {
+  assert.deepEqual(wordFindings(jar(), "shape-stock"), [], "a drawn jar with a why about what Pantry does is quiet");
+  assert.deepEqual(wordFindings(withShape({ like: "bulb" }), "shape-stock"), [
+    'region shape: the ready light bulb ("like": "bulb") is a stock silhouette, which rarely stands for one product; draw an object for what this product does (see "Draw the shape"), or keep it only if the owner asked for that object',
+  ]);
+  assert.match(wordFindings(withShape({ mask: "wings" }), "shape-stock")[0], /^region shape: the bundled "wings" mask is a stock silhouette/);
+  assert.deepEqual(wordFindings(withShape(drawnJar({ why: "Pantry is called Pantry, so a jar." })), "shape-stock"), [
+    "region shape: why only names the product; say what Pantry does that the jar stands for, from its README, not its name",
+  ]);
+  assert.equal(CHECKS.find((c) => c.id === "shape-stock").level, "warn");
+});
+
+test("shape-legend warns when a shape poster's legend never names its object", () => {
+  assert.deepEqual(wordFindings(jar(), "shape-legend"), [], "the jar preset's legend names the jar");
+  const spec = jar();
+  spec.figure.texts.find((t) => t.role === "legend").text = "This shape is the code of Pantry, as big as its code. The orange layer is the plan.";
+  assert.deepEqual(wordFindings(spec, "shape-legend"), ['the legend never names the jar; say what the picture is, like "Every layer of the jar is a part of Pantry, …", not "This shape is …"']);
+  spec.figure.texts.find((t) => t.role === "legend").text = "Every layer of these jars is a part of Pantry, as big as its code. The orange layer is the plan.";
+  assert.deepEqual(wordFindings(spec, "shape-legend"), [], "the plural names it too");
 });

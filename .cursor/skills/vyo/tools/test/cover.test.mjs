@@ -26,6 +26,8 @@ const preset = () => ({ ...JSON.parse(fs.readFileSync(path.join(HERE, "..", "pre
 /** The cover preset with its region changed by `over`, and the spec by `top`. */
 const coverWith = (over = {}, top = {}) => {
   const s = preset();
+  // The preset draws its pear and gives the pear's solid; a ready silhouette brings its own.
+  if (over.shape?.like !== undefined) delete s.figure.regions[0].solid;
   Object.assign(s.figure.regions[0], over);
   return Object.assign(s, top);
 };
@@ -175,7 +177,7 @@ test("every ready silhouette validates, passes every shape check, and makes a vi
     // The silhouette's own checks; a relief poster's cover, accent and tone checks judge the jar preset's layout.
     const own = ["shape-simple", "shape-limb", "shape-thin", "shape-dominant"];
     assert.deepEqual(runChecks("spec", { spec: relief, facts: recipe, presets: {} }).filter((f) => own.includes(f.id)), [], `${name} as a relief poster`);
-    assert.deepEqual(runChecks("spec", { spec: cover({ shape }), facts: recipe, presets: {} }).filter((f) => f.id !== "cover-shell"), [], `${name} as a cover`);
+    assert.deepEqual(runChecks("spec", { spec: cover({ shape }), facts: recipe, presets: {} }).filter((f) => f.id !== "cover-shell"), [{ id: "shape-stock", level: "warn", message: `region shape: the ready ${SILHOUETTES[name].noun} ("like": "${name}") is a stock silhouette, which rarely stands for one product; draw an object for what this product does (see "Draw the shape"), or keep it only if the owner asked for that object` }], `${name} as a cover: only shape-stock`);
     const spec = cover({ shape });
     const c = coverOf(spec, recipe);
     assert.ok(c.shell.at(0.27) >= COVER_LIMITS.thin - 0.5, `${name}: 27% of the code makes a shell of ${Math.round(c.shell.at(0.27))}px`);
@@ -270,7 +272,7 @@ test("the template: the name one size until it would leave the sheet, the box be
   assert.ok(tall.box.top > short.box.top && tall.box.bottom < short.box.bottom, "more lines of words leave the form less room, never overlap it");
 });
 
-test("compose --frame cover writes a scaffold whose only blanks are the words, the names and the accent, and the filled spec sketches clean", () => {
+test("compose --frame cover leaves the object to draw, prints references that are not the answer, and the filled spec sketches clean", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-cover-"));
   const factsFile = path.join(dir, "recipe-facts.json");
   fs.writeFileSync(factsFile, JSON.stringify(recipe));
@@ -278,40 +280,58 @@ test("compose --frame cover writes a scaffold whose only blanks are the words, t
   const r = spawnSync(process.execPath, [VYO, "compose", factsFile, "--frame", "cover", "--out", out], { encoding: "utf8" });
   assert.equal(r.status, 0, r.stderr);
   const spec = JSON.parse(fs.readFileSync(out, "utf8"));
-  const like = spec.figure.regions[0].shape.like;
-  assert.ok(SILHOUETTES[like], "compose picks a ready object");
-  // The window, printed once, is the one the sketch's shell check holds the object to.
+  const shape = spec.figure.regions[0].shape;
+  assert.deepEqual(Object.keys(shape), ["object", "why", "reads", "ops"], "compose picks no object: the agent draws one");
+  assert.ok(Object.values(shape).every((v) => v.startsWith("… ")), "every part of the drawing is a placeholder");
+  // The window, printed once, is measured on the closest reference and named as such.
+  const noun = /measured on an? ([a-z -]+); the sketch measures your drawing\./.exec(r.stdout)?.[1];
+  const like = SILHOUETTE_NAMES.find((n) => SILHOUETTES[n].noun === noun);
+  assert.ok(like, r.stdout);
   const probe = cover({ shape: { like }, strata: "outline" });
   probe.figure.texts[0].text = coverLegend(probe.figure.regions[0], "recipe", "a plain name");
   const win = coverWindow(coverOf(probe, recipe));
   const strata = spec.figure.regions[0].strata;
   const [lo, hi] = strata === "outline" ? win.ring : win.band;
   assert.equal(r.stdout.match(/\d+% to \d+% of the code/g).length, 1, r.stdout);
-  assert.match(r.stdout, new RegExp(`^parts \\(id, share of the code, scanned name\\)\\. \\* marks a part that makes a good orange (outer ring on|band across) the ${SILHOUETTES[like].noun}: ${Math.round(lo * 100)}% to ${Math.round(hi * 100)}% of the code\\.`, "m"));
+  assert.match(r.stdout, new RegExp(`^parts \\(id, share of the code, scanned name\\)\\. \\* marks a part that makes a good orange (outer ring on|band across) an object: ${Math.round(lo * 100)}% to ${Math.round(hi * 100)}% of the code, measured on an? ${noun};`, "m"));
   const parts = regionParts(spec.figure.regions[0], recipe);
   const total = parts.reduce((s, p) => s + p.loc, 0);
   const ringable = !!win.ring && parts.some((p) => !aroundProduct(p.id) && p.loc / total >= win.ring[0] && p.loc / total <= win.ring[1]);
-  assert.equal(strata, ringable ? "outline" : "down", "an outline when a part the product could be about makes a ring on this object, else bands");
+  assert.equal(strata, ringable ? "outline" : "down", "an outline when a part the product could be about makes a ring on the reference, else bands");
   assert.match(r.stdout, /^  - area:\.\s+8%\s+Recipe  setup, never the accent$/m, "the root's files are marked as setup");
   assert.doesNotMatch(r.stdout, /^  \* area:\.\s/m);
+  // The steps, then three references with their ops, labelled as references.
+  assert.match(r.stdout, /^shape: draw it yourself \(SKILL\.md, "Draw the shape"\)\. Read the README and write why first/m);
+  assert.match(r.stdout, /^  references, not the answer: /m);
+  const refs = [...r.stdout.matchAll(/^  ([a-z-]+): for .* ops: (\[.*\])$/gm)];
+  assert.equal(refs.length, 3, r.stdout);
+  assert.equal(refs[0][1], like, "the window is measured on the first reference");
+  for (const [, name, ops] of refs) assert.deepEqual(JSON.parse(ops), SILHOUETTES[name].ops, name);
   const blanks = [];
   const walk = (v, at) => (typeof v === "string" ? v.startsWith("…") && blanks.push(at) : v && typeof v === "object" && Object.entries(v).forEach(([k, x]) => walk(x, `${at}.${k}`)));
   walk(spec, "spec");
-  assert.deepEqual(blanks.filter((b) => !/\.names\./.test(b)), ["spec.product.name", "spec.headline", "spec.figure.regions.0.accent", "spec.figure.texts.0.text"]);
-  assert.equal(blanks.filter((b) => /\.names\./.test(b)).length, regionParts(spec.figure.regions[0], recipe).length, "every part is named");
-  assert.equal(spec.figure.texts[0].text, `… ${coverLegend(spec.figure.regions[0], "<product>", "<the accent's plain name>")}`, "the legend's pattern names this object and this strata");
-  assert.match(spec.figure.texts[0].text, new RegExp(`^… This ${SILHOUETTES[like].noun} is the code of <product>, one (layer|band) per part`));
+  const S = "spec.figure.regions.0.shape";
+  assert.deepEqual(blanks.filter((b) => !/\.names\./.test(b)), ["spec.product.name", "spec.headline", "spec.figure.regions.0.accent", `${S}.object`, `${S}.why`, `${S}.reads`, `${S}.ops`, "spec.figure.texts.0.text"]);
+  assert.equal(blanks.filter((b) => /\.names\./.test(b)).length, parts.length, "every part is named");
+  assert.equal(spec.figure.texts[0].text, `… ${coverLegend({ shape: { object: "<object>" }, strata }, "<product>", "<the accent's plain name>")}`, "the legend's pattern leaves the object to name");
+  assert.match(spec.figure.texts[0].text, /^… This <object> is the code of <product>, one (layer|band) per part/);
   assert.equal(spec.ground, "navy");
   assert.deepEqual(spec.motion, { kind: "turn" });
-  // The folder's log keeps two covers off the same object, and composing the same spec again keeps its object.
-  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, "recent-shapes.json"), "utf8")).shapes, [like]);
-  const second = path.join(dir, "other-poster.json");
-  assert.equal(spawnSync(process.execPath, [VYO, "compose", factsFile, "--frame", "cover", "--out", second], { encoding: "utf8" }).status, 0);
-  assert.notEqual(JSON.parse(fs.readFileSync(second, "utf8")).figure.regions[0].shape.like, like, "a second cover in the folder takes another object");
-  assert.equal(spawnSync(process.execPath, [VYO, "compose", factsFile, "--frame", "cover", "--out", out, "--force"], { encoding: "utf8" }).status, 0);
-  assert.equal(JSON.parse(fs.readFileSync(out, "utf8")).figure.regions[0].shape.like, like, "composing again keeps the object");
+  assert.ok(!fs.existsSync(path.join(dir, "recent-shapes.json")), "a cover records no pick: there is none");
+  // The scaffold as written: the sketch cannot draw it, and render refuses it.
+  const unfilled = spawnSync(process.execPath, [VYO, "sketch", out], { encoding: "utf8" });
+  assert.equal(unfilled.status, 1);
+  assert.match(unfilled.stdout, /^✗ spec: figure\.regions\[0\]\.shape\.ops: still the placeholder; draw the object as 3 to 6 ops/m);
+  assert.match(unfilled.stdout, /^✗ spec: figure\.regions\[0\]\.shape\.reads: still the placeholder; write the one word you honestly see in the sketch PNG/m);
+  // The ops drawn and reads still blank: the sketch draws, so the agent can look and write reads.
   const filled = preset();
   filled.product = { ...spec.product, name: "Pantry", commit: "04186f4" };
+  const drawing = { ...filled, figure: { ...filled.figure, regions: [{ ...filled.figure.regions[0], shape: { ...filled.figure.regions[0].shape, reads: shape.reads } }] } };
+  fs.writeFileSync(out, JSON.stringify(drawing));
+  const looking = spawnSync(process.execPath, [VYO, "sketch", out], { encoding: "utf8" });
+  assert.equal(looking.status, 0, looking.stdout);
+  assert.match(looking.stdout, /^✗ spec: figure\.regions\[0\]\.shape\.reads: still the placeholder/m);
+  assert.match(looking.stdout, /^sketch PNG: /m);
   fs.writeFileSync(out, JSON.stringify(filled));
   const s = spawnSync(process.execPath, [VYO, "sketch", out], { encoding: "utf8" });
   assert.equal(s.status, 0, s.stdout + s.stderr);
@@ -319,13 +339,16 @@ test("compose --frame cover writes a scaffold whose only blanks are the words, t
   assert.match(s.stdout, /^shell: the orange shell is \d+px thick, 18\.5% of the code/m);
   const png = decodePng(fs.readFileSync(path.join(dir, "recipe-sketch.png")));
   assert.equal(png.width, 280, "the sketch PNG is the still at a third of its size");
+  const wrong = { ...filled, figure: { ...filled.figure, regions: [{ ...filled.figure.regions[0], shape: { ...filled.figure.regions[0].shape, reads: "leaf" } }] } };
+  fs.writeFileSync(out, JSON.stringify(wrong));
+  assert.match(spawnSync(process.execPath, [VYO, "sketch", out], { encoding: "utf8" }).stdout, /^✗ shape-reads: region shape: the sketch reads as "leaf", not the pear you drew; redraw it simpler/m);
   const blank = { ...filled, headline: "… one plain sentence" };
   blank.figure.regions[0].shape = "… a shape";
   fs.writeFileSync(out, JSON.stringify(blank));
   const b = spawnSync(process.execPath, [VYO, "sketch", out], { encoding: "utf8" });
   assert.equal(b.status, 1);
   assert.match(b.stdout, /^✗ spec: headline: still the placeholder; write it$/m);
-  assert.match(b.stdout, /^✗ spec: figure\.regions\[0\]\.shape: still the placeholder; .*\{ "like": "<name>" \}/m);
+  assert.match(b.stdout, /^✗ spec: figure\.regions\[0\]\.shape: still the placeholder; draw the object yourself/m);
 });
 
 test("a cover spec that lost its commit or date gets the exact values to restore from sketch", () => {

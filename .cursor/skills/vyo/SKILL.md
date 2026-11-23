@@ -35,9 +35,9 @@ Start from vyo v2's two flagship directions — pick the one that best fits the 
 | Art direction | Command | Best for |
 |---|---|---|
 | **Data-as-Art Vector Plate** *(flagship)* | `compose --frame plate --plate topo\|blueprint --layout editorial\|blueprint\|macro\|classic --ground obsidian\|carbon\|abyss\|graphite\|bone` | Album-cover / gallery print driven straight from the codebase: marching-squares topographic elevation maps (`topo`) or octilinear PCB circuit schematics wired from real imports (`blueprint`), with `pulse`/`signal` looping GIFs |
-| **Studio-Lit 3D Cover** *(flagship)* | `compose --frame cover --finish studio\|halftone\|wireframe\|type --layout editorial\|classic\|blueprint\|macro --ground obsidian\|carbon\|abyss\|graphite\|bone` | Sculpted 3D product object cut by real line shares: continuous-tone studio lighting (`studio`: softbox key + Fresnel rim + distance-field AO + film grain), precision 22.5° `halftone` dot-matrix, smoked-glass `wireframe` contours, or classic 6px Commit Mono `type` relief across 22 ready silhouettes or traced PNG masks |
+| **Studio-Lit 3D Cover** *(flagship)* | `compose --frame cover --finish studio\|halftone\|wireframe\|type --layout editorial\|classic\|blueprint\|macro --ground obsidian\|carbon\|abyss\|graphite\|bone` | Sculpted 3D product object cut by real line shares: continuous-tone studio lighting (`studio`: softbox key + Fresnel rim + distance-field AO + film grain), precision 22.5° `halftone` dot-matrix, smoked-glass `wireframe` contours, or classic 6px Commit Mono `type` relief, on an object you draw for the product or a traced PNG mask |
 | **Zine / Turntable Cover** *(opt-in looks)* | `compose --frame cover --look xerox\|spin --ground bone\|obsidian\|carbon\|<legacy>` | Expressive `xerox` 2-plate photocopy treatment (`copier` loop) or 360° kinetic `spin` turntable in `type` finish |
-| **Editorial Shape Poster** | `compose --field shape --style relief\|rings\|symbols [--frame signal]` | Custom drawn silhouette (`ops`), ready object (`like`), or traced PNG logo (`mask`) with serif (`loose`) or brutalist (`signal`) typography |
+| **Editorial Shape Poster** | `compose --field shape --style relief\|rings\|symbols [--frame signal]` | An object you draw for the product (`ops`), or the owner's traced PNG logo (`mask`), with serif (`loose`) or brutalist (`signal`) typography |
 | **Architectural Field** | `compose --field seismic\|orbit\|slabs\|river\|... [--frame loose\|signal]` | Full-sheet typographic fields driven by LOC, files, and imports across 15 field engines |
 
 **Primary recommended palettes (`--ground`):** Start from the 5 refined studio & archival gallery palettes — **`obsidian`** (near-black `#09090B` + cyan), **`carbon`** (warm charcoal `#111113` + copper), **`abyss`** (deep midnight `#070D1A` + blue), **`graphite`** (slate dark `#14171C` + violet), and **`bone`** (archival warm paper `#EFECE6` + ultramarine). Legacy grounds (`navy`, `charcoal`, `forest`, `paper`, `cobalt`, `xerox`, `riso`, `blood`, `acid`) remain available as opt-in grounds for backward compatibility.
@@ -77,20 +77,20 @@ A cover builds one bold 3D object, cut into layers by the codebase's real line c
    ```
    - **Finishes (`--finish`):** `studio` (continuous-tone studio lighting with softbox key, Fresnel rim, distance-field AO, accent bloom, film grain & subtle 5px micro-type shimmer), `halftone` (precision 22.5° dot-matrix with accent bloom), `wireframe` (smoked-glass Fresnel body with 3D latitude/longitude/elevation hairlines), or `type` (default; classic 6px Commit Mono typographic relief, also used by `--look xerox` and `--look spin`).
    - **Layouts (`--layout`):** `editorial` (Swiss gallery grid with top-left title, archival record & part breakdown), `classic` (top metadata columns + bottom display name), `blueprint` (drafting perimeter frame + bottom-right title block), or `macro` (full-bleed monumental crop with translucent corner plaques).
-   Compose splits any part over 40% of the code into its folders or files, picks a matching object from the 22 ready silhouettes, sets the strata and motion (`turn` for `living`/`spin`, `copier` for `xerox`), and writes the legend pattern. It prints every part with its share of the code (`*` strong accent on this object, `-` surrounding code).
+   Compose splits any part over 40% of the code into its folders or files, leaves the object for you to draw (it prints three ready silhouettes with their ops as references, not the answer), sets the strata and motion (`turn` for `living`/`spin`, `copier` for `xerox`), and writes the legend pattern. It prints every part with its share of the code (`*` strong accent, measured on the first reference until the sketch measures your drawing; `-` surrounding code).
 3. Read the repo's README. Open the spec compose wrote and edit it in place: replace each value that starts with `…`, and change nothing else. Never write the spec from scratch; it holds the commit, the date and the splits.
    - `product.name`: the name customers see, as the README writes it.
    - `headline`: one plain sentence, at most 72 characters, on what the product does for a person.
    - `accent`: the id of the part the product is about, the code that does the product's main job. Never a part marked `-`. A `*` only says the part will look good; if the part the product is about has none, choose it anyway, and the sketch says how to make it show.
    - `names`: every part, lowercase, at most 24 characters, saying what it does for a person ("sign-in", "the plan"). Never a folder, file or company name.
-   - The legend's `text`: delete the leading `…`, and put the product's name for `<product>` and the accent's plain name for `<the accent's plain name>`. Match the accent colour word (`cyan`, `copper`, `blue`, `violet`, `ultramarine`, or legacy `orange`/`pink`/`yellow`) that compose wrote for your chosen `ground`.
-   - `shape`: compose picked one of the 22 objects and said why. Keep it, pick another from `npx vyo shapes` whose "for ..." fits the product better (and update the object's name in the legend), or trace a custom PNG with `{ "mask": "path/to/silhouette.png" }`.
-   - Optional 3D solid override (`region.solid.kind`): `"dome"` (sculpted organic volume, default), `"extrude"` (crisp architectural slab with side walls — great for `plug`, `anvil`, `fast-forward`, `monolith`, `key`, `bolt`, and `spin`), or `"revolve"` (axisymmetric lathe — great for `flask`, `bulb`, `bell`, `pear`, `cup`).
+   - The legend's `text`: delete the leading `…`, and put the object you draw for `<object>`, the product's name for `<product>` and the accent's plain name for `<the accent's plain name>`. Match the accent colour word (`cyan`, `copper`, `blue`, `violet`, `ultramarine`, or legacy `orange`/`pink`/`yellow`) that compose wrote for your chosen `ground`.
+   - `shape`: draw it, as "Draw the shape" says: `why` from the README first, then `object`, then the `ops`. Leave `reads` for step 5. Trace the owner's own logo with `{ "mask": "path/to/silhouette.png" }` only when they have one.
+   - Optional 3D solid override (`region.solid.kind`): `"dome"` (sculpted organic volume, default), `"extrude"` (crisp architectural slab with side walls, for a flat object such as a gear, a key, a bolt or a cursor, and for `spin`), or `"revolve"` (axisymmetric lathe, for a round object such as a flask, a jar, a bell or a cup).
 4. Pick a curated `ground` palette (free hex colours are refused so contrast always hits):
    - **Primary studio & archival palettes (recommended defaults):** `obsidian` (`#09090B` + cyan), `carbon` (`#111113` + copper), `abyss` (`#070D1A` + blue), `graphite` (`#14171C` + violet), `bone` (`#EFECE6` + ultramarine).
    - **Legacy & opt-in palettes (backward compatibility):** `navy`, `charcoal`, `forest`, `paper`, `cobalt`, `xerox`, `riso`, `blood`, `acid`.
    Leave out `series` for a single cover; set it, like `"02/04"`, only for a numbered set (or let `vyo series` render a numbered grid of 2–4 covers/plates).
-5. `npx vyo sketch <repo>/vyo/<name>-poster.json`. Act on every finding, then sketch again until none is left. Open the sketch PNG: say in one word what the object is; if the word is wrong, pick another object.
+5. `npx vyo sketch <repo>/vyo/<name>-poster.json`. It draws while `reads` is blank. Open the sketch PNG and write in `reads` the one word you honestly see. If it is not the object, redraw it simpler and sketch again: `shape-reads` fails until it is. Act on every finding, then sketch again until none is left.
 6. `npx vyo render <repo>/vyo/<name>-poster.json --gif`. It writes the PNG, thumbnail, PDF, looping GIF and MP4. Act on any finding and render again.
 7. Reply as "Reply in chat" says, with the PNG and the GIF.
 
@@ -117,7 +117,7 @@ A cover builds one bold 3D object, cut into layers by the codebase's real line c
 
 A look is three choices: what draws the form, the frame around it, and the sheet.
 
-**Draw a shape or generate a field.** Draw a `shape` when one object a stranger would name in a second stands for the product (a jar for a pantry, a paper plane for a hand-off, a prism for an engine), or the owner asks for a picture. Draw it from `ops`, pick one of the 22 ready silhouettes with `{ "like": "<name>" }`, or trace a PNG with `{ "mask": "<path>" }` (see "Draw the shape"). Its `style` sets the look over the silhouette:
+**Draw a shape or generate a field.** Draw a `shape` when one object a stranger would name in a second stands for what the product does (a jar for a pantry, a gear for a tool that builds from precise parts, a cursor for interface skills), or the owner asks for a picture. You draw it from `ops` (see "Draw the shape"); trace the owner's own logo with `{ "mask": "<path>" }`. Its `style` sets the look over the silhouette:
 
 - `relief`: the default. A lit volume in fine 6px type, each part a layer of its own name, the accent glowing. The object is the poster's pull, with quiet space around it.
 - `symbols`: the silhouette in shaded clusters of `- : = + #`, like ASCII art, lit from the top left, the accent's rows in the accent colour. On charcoal in the signal frame with one orange accent it reads as fine grey marks with one hot band. The parts' names do not print, so add the parts list.
@@ -148,20 +148,49 @@ Every field from `scatter` to `contour`, plus `seismic` and `orbit`, takes `symb
 
 ## Draw the shape
 
-**Fast path — trace a custom PNG silhouette in 3 lines:**
-1. Find or export any high-contrast dark-on-white (or transparent) PNG logo, mascot, hardware outline, or icon (up to 4096px).
-2. Write `"shape": { "mask": "path/to/icon.png" }` (or bundled `"wings"` / `"trace"`).
-3. Run `vyo sketch` and `vyo render` — every finish (`studio`, `halftone`, `wireframe`, `type`), look (`living`, `xerox`, `spin`, `relief`, `rings`, `symbols`), and solid (`dome`, `extrude`, `revolve`) works on traced masks identically to `ops`.
+You draw the object. It stands for what this product does, in the skill's design language; it is never a stock picture. Compose leaves `"shape": { "object", "why", "reads", "ops" }`, each a `…` placeholder that render refuses. Fill them in this order:
 
-Or pick/draw a silhouette:
-1. Pick one object a stranger would name in a second, tied to the story. Never a heart, a plain circle or a box. Simple reads: a 3-op flask was legible at once, an 11-op locomotive half legible.
-2. If one of the 22 objects in `npx vyo shapes` fits (classic: `stopwatch`, `flask`, `plane`, `pear`, `key`, `bell`, `cup`, `bolt`, `lighthouse`, `kite`, `bulb`, `lantern`; industrial/graphic: `prism`, `plug`, `anvil`, `turbine`, `radar`, `disc`, `monolith`, `tuning-fork`, `fast-forward`, `compass`), write `"shape": { "like": "<name>" }` and skip to step 6. Otherwise name the one feature that makes it that object, like the jar's lid and shoulders. Draw it in 3 to 6 ops in a 100-unit box, y down, with that feature large, about as tall as it is wide or taller. Leave out small repeated details such as wheels or windows: they merge at thumbnail size. Keep a post or stem short: a long thin limb takes the object's height and reads as a pole with a small head. `compose --field shape` prints the format.
-3. A traced PNG shape takes `fit` (except on a cover) and no `ops` or `rotate`.
-4. Leave `fit` out: the engine fits the shape inside the sheet and centres it in the room the words leave. Set `fit` only to bleed it off an edge on purpose. Leave `x` and `y` out of the text blocks too: the engine places them in the room the shape leaves. Pin a block with `x` and `y` only for a reason, like a hole cut for the legend or a `mark` laid over it.
-5. If `shape-dominant` says to split a part, add the `"split"` it gives to the region and run `parts --field shape --split <its id>`. Its folders become parts, or its files when it has no folders; if it was the accent, put the accent on the one the story is about.
-6. Set the `style` (see "Choose the look"). Rings want a fat, round object with a hole cut where the legend should sit, and `"echo": 6` adds faded outlines; a thin or spiky shape starves them, so take relief, or fatten it until `shape-rings` is quiet.
-7. Sketch, then open `<name>-sketch.png`; it shows the shading of the form. Say in one word what you see. If that word is not the object, redraw it simpler. Act on every finding.
-8. Render and look at the thumbnail again.
+1. **Why, first.** Read the README and docs. Write `why`: one sentence, at most 160 characters, on what the product does for a person and why your object stands for that. Not its name: "Anatomy, so a bone" is a pun, and `shape-stock` warns when `why` says nothing but the name.
+2. **The object.** Write `object`: one plain noun a stranger names in a second, for what the product does. Not a pun on the name, not a stock metaphor like a bulb for "ideas", never a heart, a plain circle or a box.
+3. **Draw it** in 3 to 6 ops in a 100-unit box, y down, the first an add. Name the one feature that makes it that object, like a jar's lid and shoulders or a gear's teeth, and draw that large, about as tall as the object is wide or taller. Leave out small repeated details such as wheels or windows: they merge at thumbnail size. Keep a post or stem short: a long thin limb takes the object's height and reads as a pole with a small head. A 3-op flask was legible at once, an 11-op locomotive half legible. `compose --field shape` and `npx vyo shapes` print the format.
+4. **Sketch** (`npx vyo sketch <spec>`; it draws while `reads` is blank) and open `<name>-sketch.png`. Write `reads`: the one word you honestly see at that size, not the word you hoped for.
+5. **Redraw until it matches.** `shape-reads` fails while `reads` is not the object. Redraw it simpler, with its one feature larger, sketch again and write the new word. Act on every other finding.
+6. **Name it in the legend**: "Every layer of the gear is a part of …", never "This shape is …". `shape-legend` warns on a poster whose legend leaves the object out; a cover's `legend` check fails.
+7. Set the `style` (see "Choose the look"). Rings want a fat, round object with a hole cut where the legend should sit, and `"echo": 6` adds faded outlines; a thin or spiky shape starves them, so take relief, or fatten it until `shape-rings` is quiet.
+8. If `shape-dominant` says to split a part, add the `"split"` it gives to the region and run `parts --field shape --split <its id>`. Its folders become parts, or its files when it has no folders; if it was the accent, put the accent on the one the story is about.
+9. Leave `fit` out: the engine fits the shape inside the sheet and centres it in the room the words leave. Set `fit` only to bleed it off an edge on purpose (a cover takes no `fit`). Leave `x` and `y` out of the text blocks too: the engine places them in the room the shape leaves. Pin a block with `x` and `y` only for a reason, like a hole cut for the legend or a `mark` laid over it.
+10. Render and look at the thumbnail again.
+
+**Drawn shapes that worked.** Each was drawn for its product, sketched, and read as its object in one word at thumbnail size:
+
+- **A gear** for Anatomy, which builds working objects from precise parts. A round body, four crossing bars that make eight teeth, and a hole:
+  ```json
+  { "object": "gear", "why": "Anatomy builds working objects from precise parts, the way a gear's teeth mesh to make a machine run.", "reads": "gear", "ops": [
+    { "add": "circle", "at": [50, 50], "r": 38 },
+    { "add": "rect", "at": [39, 2], "size": [22, 96] },
+    { "add": "rect", "at": [39, 2], "size": [22, 96], "rotate": 45 },
+    { "add": "rect", "at": [39, 2], "size": [22, 96], "rotate": 90 },
+    { "add": "rect", "at": [39, 2], "size": [22, 96], "rotate": 135 },
+    { "cut": "circle", "at": [50, 50], "r": 13 }
+  ] }
+  ```
+- **A mouse cursor** for UI Skills, which teaches agents to build interfaces people point at and click. The arrow, its tail, and a crease down its edge:
+  ```json
+  { "object": "cursor", "why": "UI Skills teaches agents to build interfaces people point at and click, and the cursor is where that happens.", "reads": "cursor", "ops": [
+    { "add": "polygon", "points": [[18, 0], [18, 88], [40, 68], [56, 64], [84, 62]] },
+    { "add": "polygon", "points": [[34, 66], [52, 100], [70, 92], [58, 62]] },
+    { "crease": "capsule", "from": [20, 6], "to": [20, 80] }
+  ] }
+  ```
+- **A shield with a bolt** for Superpowers, which gives agents skills that guard their work and make them stronger. A shield outline with a lightning bolt cut through it:
+  ```json
+  { "object": "shield", "why": "Superpowers gives agents skills that guard their work and make them stronger, a shield charged with a bolt.", "reads": "shield", "ops": [
+    { "add": "path", "d": "M50 0 L100 14 L100 52 C100 78 76 94 50 106 C24 94 0 78 0 52 L0 14 Z" },
+    { "cut": "polygon", "points": [[58, 12], [24, 56], [44, 56], [36, 92], [76, 42], [54, 42], [66, 12]] }
+  ] }
+  ```
+
+**Drawn shapes that review rejected.** A bone for Anatomy: a pun on the name, not what the repo does; the gear says what it does. A cape for Superpowers: the sketch read "leaf", so `reads` would have failed it; the shield with a bolt read at once.
 
 A relief needs no hints: the default is a rounded volume lit from the top left. Add one only for a feature the outline cannot show, and sketch again after each:
 
@@ -169,6 +198,14 @@ A relief needs no hints: the default is a rounded volume lit from the top left. 
 - `{ "crease": kind, ... }` folds the surface along that kind's outline, or along a capsule's or arc's centre line, like a lid's ridges. It never changes the silhouette.
 - Region `bevel` (0 to 1, default 0.7) is how much of the form is rounded: 0.2 for a flat top, 1 for a dome.
 - Region `strata` turns the layers: `{ "by": "angle", "angle": 135 }` across a diagonal form, `{ "by": "depth" }` for shells from the outline in.
+
+### Reference shapes
+
+The 22 ready silhouettes are vocabulary, not answers: classic `stopwatch`, `flask`, `plane`, `pear`, `key`, `bell`, `cup`, `bolt`, `lighthouse`, `kite`, `bulb`, `lantern`; industrial `prism`, `plug`, `anvil`, `turbine`, `radar`, `disc`, `monolith`, `tuning-fork`, `fast-forward`, `compass`. `npx vyo shapes` describes each, and compose prints the three closest to the README with their ops, labelled "references, not the answer". Read their ops to learn how a few adds, cuts and creases make an object. Write `"shape": { "like": "<name>" }` only when the owner asks for that object; `shape-stock` warns on it otherwise.
+
+### Trace a PNG
+
+When the owner has a mark of their own, a logo, mascot or hardware outline, trace it: `"shape": { "mask": "path/to/icon.png" }`, a high-contrast dark-on-white (or transparent) PNG up to 4096px. Its dark pixels are the silhouette. It takes `fit` (except on a cover) and no `ops` or `rotate`, and every finish, look, style and solid draws it as it draws ops. The bundled `wings` and `trace` masks are demos; `shape-stock` warns on them.
 
 ## The words
 
@@ -197,7 +234,7 @@ Follow [plain-language-rules.md](plain-language-rules.md).
 | region `accent` | The accent part's id from `vyo parts` |
 | region `names` | Part id to plain name, at most 24 characters each |
 | region `sentence` | Wave only, at most 40 characters, set in every 5th row |
-| region `shape` | Shape only: `{ like }`, one of 22 ready silhouettes from `vyo shapes`; `{ ops, rotate?, fit? }`, one you draw; or `{ mask, fit? }`, one traced from a PNG (see "Draw the shape") |
+| region `shape` | Shape only: `{ object, why, reads, ops, rotate?, fit? }`, the object you draw: `object` the plain noun (at most 32 characters), `why` one sentence on why it stands for what the product does (at most 160), `reads` the one word the sketch reads as; or `{ mask, fit? }`, the owner's PNG traced; or `{ like }`, a reference shape, only when the owner asks for that object (see "Draw the shape") |
 | region `style`, `echo` | Shape only: `relief` (default), `rings` or `symbols`; `echo` 0 to 12 faded outlines, rings only |
 | region `bevel`, `strata` | Relief only, optional: how rounded the form is, and which way its layers run. A cover's `strata` is `"outline"` (the default), `"down"` or `"diagonal"` |
 | `ground`, `layout`, `format`, `series` | Cover and plate: `ground` prefers the 5 primary gallery palettes (`obsidian`, `carbon`, `abyss`, `graphite`, `bone`) and also supports 9 legacy grounds (`navy`, `charcoal`, `forest`, `paper`, `cobalt`, `xerox`, `riso`, `blood`, `acid`); `layout` is `classic`, `editorial`, `blueprint` or `macro`; `format` is `poster` (default, 840×1190), `square` (960×960) or `og` (1280×640); `series` like `"02/04"` prints in the header tag for a numbered set |
@@ -241,7 +278,7 @@ Render writes `<name>-poster.html`, `.png`, `-thumb.png` and `.pdf` beside the s
 ## Reply in chat
 
 1. One sentence on what the app does.
-2. The art direction (plate kind / cover finish & look / field & style, layout, and ground) and the accent part, quoting the `fits` sentence (if present).
+2. The art direction (plate kind / cover finish & look / field & style, layout, and ground) and the accent part, quoting the `fits` sentence (if present). For a shape, the object and its `why`.
 3. The legend, quoted.
 4. The absolute paths of the PNG and the PDF (and the GIF).
 5. Gaps: what the code has but a user cannot use yet, any part name you could not make plain, and a request for the real name if no doc gave one.
