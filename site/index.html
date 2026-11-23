@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vyo: posters of your codebase</title>
+<meta name="description" content="vyo is an agent skill and npm CLI that scans a codebase and draws it as a poster where every size is lines of code and every link a real import, then checks the render so a misleading poster fails.">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f3f3f1" media="(prefers-color-scheme: light)">
+<!-- Open Graph / Twitter. og:image is relative so the site works on any domain;
+     crawlers prefer an absolute URL, so swap in https://<your-domain>/assets/og.jpg once the domain is known. -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="vyo: posters of your codebase">
+<meta property="og:description" content="Scan a repo, draw it as a poster where every mark is a real fact, and let the checks fail anything that misrepresents the code.">
+<meta property="og:image" content="assets/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="600">
+<meta property="og:image:alt" content="A vyo cover of Pantry, a test recipe app: the pear drawn in type, glowing orange at its edge.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="vyo: posters of your codebase">
+<meta name="twitter:description" content="Scan a repo, draw it as a poster where every mark is a real fact, and let the checks fail anything that misrepresents the code.">
+<meta name="twitter:image" content="assets/og.jpg">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Schibsted+Grotesk:wght@500;600;700&display=swap">
+<link rel="preload" as="image" href="assets/img/plate-topo-960.webp" imagesrcset="assets/img/plate-topo-960.webp 960w, assets/img/plate-topo-1600.webp 1600w" imagesizes="(min-width: 1000px) 30vw, 52vw" fetchpriority="high">
+<link rel="stylesheet" href="assets/site.css?v=1">
+<script>document.documentElement.classList.add("js")</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="top">
+  <div class="nav-in">
+    <a class="mark" href="#top" aria-label="vyo, back to top">vyo<span class="dot" aria-hidden="true">.</span></a>
+    <nav aria-label="Sections">
+      <ul role="list">
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#install">Install</a></li>
+        <li><a href="#styles">Styles</a></li>
+      </ul>
+    </nav>
+    <a class="nav-gh" href="https://github.com/litterthanlit/vyo">GitHub <span class="ver">v0.2.0</span></a>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+
+<!-- HERO -->
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero-copy">
+    <p class="eyebrow">Agent skill + CLI for Cursor, Claude Code and Codex</p>
+    <h1 id="hero-title">Your codebase as a poster, where every mark is a&nbsp;real&nbsp;fact.</h1>
+    <p class="lede">vyo scans a repo into its files, lines and imports, and draws it as one poster someone who does not code can read. Sizes are lines of code, links are real imports, and the checks fail any render that misrepresents the code.</p>
+    <div class="cta">
+      <div class="cmd cmd-hero">
+        <code><span class="pr" aria-hidden="true">$</span> npm install --save-dev @litterthanlit/vyo</code>
+        <button type="button" class="copy" data-copy="npm install --save-dev @litterthanlit/vyo"><span class="copy-label">Copy</span><span class="visually-hidden"> install command</span></button>
+      </div>
+      <a class="btn-ghost" href="https://github.com/litterthanlit/vyo">View on GitHub <span aria-hidden="true">&rarr;</span></a>
+    </div>
+    <p class="hero-note">Every poster on this page is a real render of <strong>Pantry</strong>, a small recipe planner kept as a test fixture in the repo: 593 lines in 41 files.</p>
+  </div>
+
+  <div class="hero-art" aria-label="Four vyo renders of Pantry">
+    <figure class="print p1">
+      <img src="assets/img/plate-topo-960.webp" srcset="assets/img/plate-topo-960.webp 960w, assets/img/plate-topo-1600.webp 1600w" sizes="(min-width: 1000px) 30vw, 52vw" width="960" height="1360" alt="Topo plate: Pantry's code as a topographic map of grey contour lines, one hill per part, the screens hill ringed in copper." fetchpriority="high" decoding="async">
+      <figcaption>topo plate / carbon</figcaption>
+    </figure>
+    <figure class="print p2">
+      <img src="assets/img/finish-studio-960.webp" srcset="assets/img/finish-studio-480.webp 480w, assets/img/finish-studio-960.webp 960w, assets/img/finish-studio-1600.webp 1600w" sizes="(min-width: 1000px) 24vw, 42vw" width="960" height="1360" alt="Studio cover: a softbox-lit grey pear with a glowing orange rim on navy, 'Pantry' set large below." loading="eager" decoding="async">
+      <figcaption>studio finish / navy</figcaption>
+    </figure>
+    <figure class="print p3">
+      <img src="assets/img/look-xerox-480.webp" srcset="assets/img/look-xerox-480.webp 480w, assets/img/look-xerox-960.webp 960w" sizes="(min-width: 1000px) 16vw, 30vw" width="480" height="680" alt="Xerox cover: the pear as a two-plate photocopy in type with orange toner and an archive stamp." loading="eager" decoding="async">
+      <figcaption>xerox look</figcaption>
+    </figure>
+    <figure class="print p4">
+      <img src="assets/img/plate-blueprint-480.webp" srcset="assets/img/plate-blueprint-480.webp 480w, assets/img/plate-blueprint-960.webp 960w" sizes="(min-width: 1000px) 16vw, 30vw" width="480" height="680" alt="Blueprint plate: chambers sized by lines and wired by traces along real imports, the screens chamber in blue." loading="eager" decoding="async">
+      <figcaption>blueprint plate / abyss</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how" aria-labelledby="how-title">
+  <div class="sec-head">
+    <p class="kicker">How it works</p>
+    <h2 id="how-title">Scan, compose, sketch, render. Then the checks decide.</h2>
+    <p>The skill tells your coding agent how to read the repo, choose the picture and write the words. The <code>vyo</code> command does the drawing and checks the result. Run it from the repo you want to explain.</p>
+  </div>
+
+  <ol class="steps" role="list">
+    <li class="step">
+      <span class="step-n" aria-hidden="true">1</span>
+      <div>
+        <h3>Scan</h3>
+        <p>Reads the code as text into <code>facts.json</code>: files, lines and imports. No network, no model, and your code is never run. Two scans of the same tree give the same file.</p>
+        <pre class="code"><code>npx vyo scan . --out vyo/app-facts.json</code></pre>
+      </div>
+    </li>
+    <li class="step">
+      <span class="step-n" aria-hidden="true">2</span>
+      <div>
+        <h3>Compose</h3>
+        <p>Writes a scaffold spec for the look you choose. Your agent names each part in plain words, writes a one-line headline, and picks the accent: the part the product is about.</p>
+        <pre class="code"><code>npx vyo compose vyo/app-facts.json \
+  --frame plate --plate blueprint --layout blueprint \
+  --ground abyss --repo . --out vyo/app-poster.json</code></pre>
+      </div>
+    </li>
+    <li class="step">
+      <span class="step-n" aria-hidden="true">3</span>
+      <div>
+        <h3>Sketch</h3>
+        <p>A quick picture of the layout before the full render, plus every check that needs no browser, so the agent fixes the shape and the words first.</p>
+        <pre class="code"><code>npx vyo sketch vyo/app-poster.json</code></pre>
+      </div>
+    </li>
+    <li class="step">
+      <span class="step-n" aria-hidden="true">4</span>
+      <div>
+        <h3>Render and check</h3>
+        <p>Draws the poster in headless Chromium to HTML, a 2&times; PNG, a thumbnail and a PDF, and with <code>--gif</code> a looping GIF and MP4. Then it measures what was drawn. Any <code>&#x2717;</code> finding exits 1 and names the one change to make.</p>
+        <pre class="code"><code>npx vyo render vyo/app-poster.json --gif</code></pre>
+      </div>
+    </li>
+  </ol>
+
+  <div class="honest">
+    <div class="honest-copy">
+      <h3 class="h-sub">Honest encoding</h3>
+      <p class="honest-lede">Nothing on the sheet is decoration. Each mark is a number from the scan, and the legend says which.</p>
+      <dl class="enc">
+        <div><dt>Size</dt><dd>Lines of code. A part with a tenth of the lines gets a tenth of the chamber, glyphs or strata.</dd></div>
+        <div><dt>Links</dt><dd>Real imports between areas of the code, read by the scan, never drawn by hand.</dd></div>
+        <div><dt>Accent</dt><dd>The one part you choose: the code that does the product's main job.</dd></div>
+      </dl>
+      <h3 class="h-sub">Checks that fail, not warn</h3>
+      <ul class="checks" role="list">
+        <li><code>plate-parts</code> every line of the scan is conserved across the plate, and every part is drawn.</li>
+        <li><code>cover-share</code> each part's share of the printed glyphs is within 1 point of its share of the lines, and with <code>--gif</code> in every frame.</li>
+        <li><code>blocks-inside</code> <code>text-clear</code> <code>labels-whole</code> no text off the sheet, painted over, or cut short.</li>
+        <li><code>copy</code> no jargon, file paths or placeholder text left in the words.</li>
+      </ul>
+    </div>
+
+    <figure class="annotated">
+      <div class="ann-frame">
+        <img src="assets/img/plate-blueprint-960.webp" srcset="assets/img/plate-blueprint-480.webp 480w, assets/img/plate-blueprint-960.webp 960w" sizes="(min-width: 1000px) 34vw, 92vw" width="960" height="1360" alt="The blueprint plate of Pantry with three callouts: a chamber sized by lines, a trace along an import, and the accent chamber for the screens." loading="lazy" decoding="async">
+        <span class="pin" style="--x:34%;--y:21%" aria-hidden="true"><b>A</b></span>
+        <span class="pin" style="--x:59.5%;--y:52%" aria-hidden="true"><b>B</b></span>
+        <span class="pin" style="--x:77%;--y:22%" aria-hidden="true"><b>C</b></span>
+      </div>
+      <figcaption>
+        <ol class="ann-list" role="list">
+          <li><b>A</b> The accent. Screens, the part Pantry is about, drawn in the ground's accent colour.</li>
+          <li><b>B</b> A trace. Each one follows a real import between two parts.</li>
+          <li><b>C</b> A chamber. One part of the code, its area sized by its lines, subdivided into its files.</li>
+        </ol>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section class="install" id="install" aria-labelledby="install-title">
+  <div class="sec-head">
+    <p class="kicker">Install</p>
+    <h2 id="install-title">Three commands in the project you want to explain.</h2>
+  </div>
+
+  <div class="install-grid">
+    <div class="term" role="group" aria-label="Install commands">
+      <div class="term-bar" aria-hidden="true"><span></span><span></span><span></span></div>
+      <ol class="term-lines" role="list">
+        <li><code><span class="pr" aria-hidden="true">$</span> npm install --save-dev @litterthanlit/vyo</code><button type="button" class="copy" data-copy="npm install --save-dev @litterthanlit/vyo"><span class="copy-label">Copy</span><span class="visually-hidden"> npm install command</span></button></li>
+        <li><code><span class="pr" aria-hidden="true">$</span> npx vyo init</code><button type="button" class="copy" data-copy="npx vyo init"><span class="copy-label">Copy</span><span class="visually-hidden"> init command</span></button></li>
+        <li><code><span class="pr" aria-hidden="true">$</span> npx playwright install chromium</code><button type="button" class="copy" data-copy="npx playwright install chromium"><span class="copy-label">Copy</span><span class="visually-hidden"> Chromium install command</span></button></li>
+      </ol>
+    </div>
+
+    <ul class="notes" role="list">
+      <li><span class="note-k">init</span><p>Copies the skill into <code>.cursor/skills/vyo/</code> and <code>.claude/skills/vyo/</code>. Pass <code>--cursor</code> or <code>--claude</code> to choose one, or <code>--codex</code> to also point <code>AGENTS.md</code> at the skill.</p></li>
+      <li><span class="note-k">Chromium</span><p>Already have Chromium or Chrome? Set <code>VYO_CHROMIUM</code> to its path and skip the last command. A GIF also needs <code>ffmpeg</code> on the path.</p></li>
+      <li><span class="note-k">Node</span><p>Node.js 20 or later.</p></li>
+      <li><span class="note-k">Try it</span><p>Without installing: run <code>npx -y @litterthanlit/vyo init</code>, and have the agent run <code>npx -y @litterthanlit/vyo</code> wherever the skill says <code>npx vyo</code>.</p></li>
+    </ul>
+  </div>
+
+  <div class="ask">
+    <p class="kicker">Then say this to your agent</p>
+    <blockquote>
+      <p>&ldquo;Explain this app as a poster. Draw it as a shape.&rdquo;</p>
+      <p class="ask-alt">or, for a cover with its loop: &ldquo;Make a cover for this app.&rdquo;</p>
+    </blockquote>
+    <p>The agent follows the skill and replies with the paths of a PNG and a PDF, and for a cover a GIF, in <code>vyo/</code> at the project root.</p>
+  </div>
+
+  <div class="facts">
+    <div><h3>What it reads</h3><p>Nothing leaves your machine. The scan reads source files as text and runs only <code>git</code>, to read the latest commit, with hooks off. Dotfiles such as <code>.env</code>, hidden folders, tests, <code>node_modules</code> and build output are skipped.</p></div>
+    <div><h3>Languages</h3><p>JavaScript, TypeScript and Python get full detection: screens, requests and saved records. Go, Ruby, Rust, PHP, Java, Kotlin, Swift, C#, C and C++, Dart, Scala, Elixir, Lua and Zig are drawn by size.</p></div>
+  </div>
+</section>
+
+<!-- STYLES -->
+<section class="styles" id="styles" aria-labelledby="styles-title">
+  <div class="sec-head sec-head-wide">
+    <p class="kicker">Styles</p>
+    <h2 id="styles-title">One scan, many prints.</h2>
+    <p>Every render below is the same Pantry scan, with all checks passing. A look is a few choices: the plate or object, its finish, the layout, the ground and the format. Where two choices produce the same image, it is shown once.</p>
+  </div>
+
+  <div class="filters" role="group" aria-label="Filter styles by axis">
+    <button type="button" class="chip" data-filter="all" aria-pressed="true">All</button>
+    <button type="button" class="chip" data-filter="plates" aria-pressed="false">Plates</button>
+    <button type="button" class="chip" data-filter="layouts" aria-pressed="false">Layouts</button>
+    <button type="button" class="chip" data-filter="finishes" aria-pressed="false">Finishes</button>
+    <button type="button" class="chip" data-filter="looks" aria-pressed="false">Looks</button>
+    <button type="button" class="chip" data-filter="grounds" aria-pressed="false">Grounds</button>
+    <button type="button" class="chip" data-filter="formats" aria-pressed="false">Formats</button>
+    <button type="button" class="chip" data-filter="frames" aria-pressed="false">Frames</button>
+    <button type="button" class="chip" data-filter="fields" aria-pressed="false">Fields</button>
+  </div>
+
+  <div class="axes">
+<!-- STYLES:START -->
+<section class="axis" id="axis-plates" data-axis="plates" aria-labelledby="h-plates">
+  <header class="axis-head"><h3 id="h-plates">Plates</h3><div><p>Full-sheet vector drawings made straight from the scan: <code>topo</code> is an elevation map of lines and import passes, <code>blueprint</code> a circuit schematic of chambers sized by lines and wired along real imports.</p></div></header>
+  <ul class="tiles tiles-plates" role="list">
+    <li class="tile tile-poster" id="t-plate-topo">
+      <button type="button" class="shot" data-full="assets/img/plate-topo-1600.webp" data-w="1600" data-h="2267" data-caption="Plate: topo. carbon ground, blueprint layout" data-alt="Topo plate on a carbon ground: a topographic map of Pantry&#x27;s code drawn in thin grey contour lines, one hill per part with its name and line count; the screens hill is ringed in copper at the centre." aria-label="Enlarge plate topo">
+        <img src="assets/img/plate-topo-480.webp" srcset="assets/img/plate-topo-480.webp 480w, assets/img/plate-topo-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Topo plate on a carbon ground: a topographic map of Pantry&#x27;s code drawn in thin grey contour lines, one hill per part with its name and line count; the screens hill is ringed in copper at the centre." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">topo</span><span class="cap-meta">carbon ground, blueprint layout</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-plate-blueprint">
+      <button type="button" class="shot" data-full="assets/img/plate-blueprint-1600.webp" data-w="1600" data-h="2267" data-caption="Plate: blueprint. abyss ground, blueprint layout" data-alt="Blueprint plate on an abyss ground: a grid of rectangular chambers, one per part of Pantry&#x27;s code and sized by its lines, joined by chamfered traces; the screens chamber and its traces glow blue." aria-label="Enlarge plate blueprint">
+        <img src="assets/img/plate-blueprint-480.webp" srcset="assets/img/plate-blueprint-480.webp 480w, assets/img/plate-blueprint-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Blueprint plate on an abyss ground: a grid of rectangular chambers, one per part of Pantry&#x27;s code and sized by its lines, joined by chamfered traces; the screens chamber and its traces glow blue." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">blueprint</span><span class="cap-meta">abyss ground, blueprint layout</span></p>
+    </li>
+  </ul>
+</section>
+<section class="axis" id="axis-layouts" data-axis="layouts" aria-labelledby="h-layouts">
+  <header class="axis-head"><h3 id="h-layouts">Layouts</h3><div><p>Four gallery templates that place the title, the record and the legend around a cover or a plate.</p></div></header>
+  <ul class="tiles tiles-layouts" role="list">
+    <li class="tile tile-poster" id="t-layout-cover-classic">
+      <button type="button" class="shot" data-full="assets/img/layout-cover-classic-1600.webp" data-w="1600" data-h="2267" data-caption="Layout: classic. cover, navy, type finish" data-alt="The default cover: a navy sheet with a pear drawn in small type, banded by the parts of Pantry&#x27;s code, its outer shell in orange for the screens; metadata columns at the top and &#x27;Pantry&#x27; set large at the foot." aria-label="Enlarge layout classic">
+        <img src="assets/img/layout-cover-classic-480.webp" srcset="assets/img/layout-cover-classic-480.webp 480w, assets/img/layout-cover-classic-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="The default cover: a navy sheet with a pear drawn in small type, banded by the parts of Pantry&#x27;s code, its outer shell in orange for the screens; metadata columns at the top and &#x27;Pantry&#x27; set large at the foot." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">classic</span><span class="cap-meta">cover, navy, type finish</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-layout-cover-editorial">
+      <button type="button" class="shot" data-full="assets/img/layout-cover-editorial-1600.webp" data-w="1600" data-h="2267" data-caption="Layout: editorial. cover, navy" data-alt="Editorial layout: &#x27;Pantry&#x27; and the headline top left in a Swiss grid with an archival record and a part breakdown, the type-relief pear below." aria-label="Enlarge layout editorial">
+        <img src="assets/img/layout-cover-editorial-480.webp" srcset="assets/img/layout-cover-editorial-480.webp 480w, assets/img/layout-cover-editorial-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Editorial layout: &#x27;Pantry&#x27; and the headline top left in a Swiss grid with an archival record and a part breakdown, the type-relief pear below." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">editorial</span><span class="cap-meta">cover, navy</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-layout-cover-blueprint">
+      <button type="button" class="shot" data-full="assets/img/layout-cover-blueprint-1600.webp" data-w="1600" data-h="2267" data-caption="Layout: blueprint. cover, navy" data-alt="Blueprint layout: a drafting frame around the sheet with a title block at the bottom right, the type-relief pear in the middle." aria-label="Enlarge layout blueprint">
+        <img src="assets/img/layout-cover-blueprint-480.webp" srcset="assets/img/layout-cover-blueprint-480.webp 480w, assets/img/layout-cover-blueprint-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Blueprint layout: a drafting frame around the sheet with a title block at the bottom right, the type-relief pear in the middle." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">blueprint</span><span class="cap-meta">cover, navy</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-layout-cover-macro">
+      <button type="button" class="shot" data-full="assets/img/layout-cover-macro-1600.webp" data-w="1600" data-h="2267" data-caption="Layout: macro. cover, navy" data-alt="Macro layout: the pear cropped full-bleed and monumental, its orange shell along the right edge, with small translucent plaques in the corners." aria-label="Enlarge layout macro">
+        <img src="assets/img/layout-cover-macro-480.webp" srcset="assets/img/layout-cover-macro-480.webp 480w, assets/img/layout-cover-macro-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Macro layout: the pear cropped full-bleed and monumental, its orange shell along the right edge, with small translucent plaques in the corners." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">macro</span><span class="cap-meta">cover, navy</span></p>
+    </li>
+  </ul>
+</section>
+<section class="axis" id="axis-finishes" data-axis="finishes" aria-labelledby="h-finishes">
+  <header class="axis-head"><h3 id="h-finishes">Finishes</h3><div><p>How a cover's 3D object is surfaced. Every finish is cut into layers by each part's share of the code.</p><p class="axis-also">Not repeated: <strong>type</strong> (6px Commit Mono relief) is the <a href="#t-layout-cover-classic" data-ref="t-layout-cover-classic">classic</a> render in Layouts.</p></div></header>
+  <ul class="tiles tiles-finishes" role="list">
+    <li class="tile tile-poster" id="t-finish-studio">
+      <button type="button" class="shot" data-full="assets/img/finish-studio-1600.webp" data-w="1600" data-h="2267" data-caption="Finishe: studio. continuous-tone studio light" data-alt="Studio finish: the pear as a smooth, softbox-lit grey volume with a glowing orange rim on navy, &#x27;Pantry&#x27; large below." aria-label="Enlarge finishe studio">
+        <img src="assets/img/finish-studio-480.webp" srcset="assets/img/finish-studio-480.webp 480w, assets/img/finish-studio-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Studio finish: the pear as a smooth, softbox-lit grey volume with a glowing orange rim on navy, &#x27;Pantry&#x27; large below." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">studio</span><span class="cap-meta">continuous-tone studio light</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-finish-halftone">
+      <button type="button" class="shot" data-full="assets/img/finish-halftone-1600.webp" data-w="1600" data-h="2267" data-caption="Finishe: halftone. 22.5° dot matrix" data-alt="Halftone finish: the lit pear rendered as a rotated dot screen with an orange rim on navy." aria-label="Enlarge finishe halftone">
+        <img src="assets/img/finish-halftone-480.webp" srcset="assets/img/finish-halftone-480.webp 480w, assets/img/finish-halftone-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Halftone finish: the lit pear rendered as a rotated dot screen with an orange rim on navy." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">halftone</span><span class="cap-meta">22.5° dot matrix</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-finish-wireframe">
+      <button type="button" class="shot" data-full="assets/img/finish-wireframe-1600.webp" data-w="1600" data-h="2267" data-caption="Finishe: wireframe. smoked glass and hairlines" data-alt="Wireframe finish: the pear as smoked glass traced with latitude and longitude hairlines inside an orange shell." aria-label="Enlarge finishe wireframe">
+        <img src="assets/img/finish-wireframe-480.webp" srcset="assets/img/finish-wireframe-480.webp 480w, assets/img/finish-wireframe-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Wireframe finish: the pear as smoked glass traced with latitude and longitude hairlines inside an orange shell." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">wireframe</span><span class="cap-meta">smoked glass and hairlines</span></p>
+    </li>
+  </ul>
+</section>
+<section class="axis" id="axis-looks" data-axis="looks" aria-labelledby="h-looks">
+  <header class="axis-head"><h3 id="h-looks">Looks</h3><div><p>Treatments for the type finish, each with its own loop when rendered as a GIF.</p><p class="axis-also">Not repeated: <strong>living</strong> (slow turn under a fixed lamp) is the <a href="#t-layout-cover-classic" data-ref="t-layout-cover-classic">classic</a> render in Layouts.</p></div></header>
+  <ul class="tiles tiles-looks" role="list">
+    <li class="tile tile-poster" id="t-look-xerox">
+      <button type="button" class="shot" data-full="assets/img/look-xerox-1600.webp" data-w="1600" data-h="2267" data-caption="Look: xerox. two-plate photocopy" data-alt="Xerox look: the pear as a thresholded two-plate photocopy in type with orange toner, paper speckle and an archive stamp, &#x27;Pantry&#x27; in heavy type across the foot." aria-label="Enlarge look xerox">
+        <img src="assets/img/look-xerox-480.webp" srcset="assets/img/look-xerox-480.webp 480w, assets/img/look-xerox-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Xerox look: the pear as a thresholded two-plate photocopy in type with orange toner, paper speckle and an archive stamp, &#x27;Pantry&#x27; in heavy type across the foot." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">xerox</span><span class="cap-meta">two-plate photocopy</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-look-spin">
+      <button type="button" class="shot" data-full="assets/img/look-spin-1600.webp" data-w="1600" data-h="2267" data-caption="Look: spin. 360° turntable" data-alt="Spin look: the type-relief pear turned partway round on a turntable, &#x27;Pantry&#x27; in heavy type across the foot." aria-label="Enlarge look spin">
+        <img src="assets/img/look-spin-480.webp" srcset="assets/img/look-spin-480.webp 480w, assets/img/look-spin-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Spin look: the type-relief pear turned partway round on a turntable, &#x27;Pantry&#x27; in heavy type across the foot." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">spin</span><span class="cap-meta">360° turntable</span></p>
+    </li>
+  </ul>
+</section>
+<section class="axis" id="axis-grounds" data-axis="grounds" aria-labelledby="h-grounds">
+  <header class="axis-head"><h3 id="h-grounds">Grounds</h3><div><p>Curated palettes, so contrast always holds. The first five are the recommended studio and archival grounds; the rest are kept for backward compatibility.</p><p class="axis-also">Not repeated: <strong>navy</strong> (legacy) is the <a href="#t-layout-cover-classic" data-ref="t-layout-cover-classic">classic</a> render in Layouts.</p></div></header>
+  <ul class="tiles tiles-grounds" role="list">
+    <li class="tile tile-poster" id="t-ground-obsidian">
+      <button type="button" class="shot" data-full="assets/img/ground-obsidian-1600.webp" data-w="1600" data-h="2267" data-caption="Ground: obsidian. near-black, cyan" data-alt="The pear cover on the obsidian ground: near-black with a cyan accent shell." aria-label="Enlarge ground obsidian">
+        <img src="assets/img/ground-obsidian-480.webp" srcset="assets/img/ground-obsidian-480.webp 480w, assets/img/ground-obsidian-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="The pear cover on the obsidian ground: near-black with a cyan accent shell." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">obsidian</span><span class="cap-meta">near-black, cyan</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-ground-carbon">
+      <button type="button" class="shot" data-full="assets/img/ground-carbon-1600.webp" data-w="1600" data-h="2267" data-caption="Ground: carbon. warm charcoal, copper" data-alt="The pear cover on the carbon ground: warm charcoal with a copper accent shell." aria-label="Enlarge ground carbon">
+        <img src="assets/img/ground-carbon-480.webp" srcset="assets/img/ground-carbon-480.webp 480w, assets/img/ground-carbon-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="The pear cover on the carbon ground: warm charcoal with a copper accent shell." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">carbon</span><span class="cap-meta">warm charcoal, copper</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-ground-abyss">
+      <button type="button" class="shot" data-full="assets/img/ground-abyss-1600.webp" data-w="1600" data-h="2267" data-caption="Ground: abyss. deep midnight, blue" data-alt="The pear cover on the abyss ground: deep midnight with a blue accent shell." aria-label="Enlarge ground abyss">
+        <img src="assets/img/ground-abyss-480.webp" srcset="assets/img/ground-abyss-480.webp 480w, assets/img/ground-abyss-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="The pear cover on the abyss ground: deep midnight with a blue accent shell." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">abyss</span><span class="cap-meta">deep midnight, blue</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-ground-graphite">
+      <button type="button" class="shot" data-full="assets/img/ground-graphite-1600.webp" data-w="1600" data-h="2267" data-caption="Ground: graphite. slate, violet" data-alt="The pear cover on the graphite ground: slate with a violet accent shell." aria-label="Enlarge ground graphite">
+        <img src="assets/img/ground-graphite-480.webp" srcset="assets/img/ground-graphite-480.webp 480w, assets/img/ground-graphite-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="The pear cover on the graphite ground: slate with a violet accent shell." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">graphite</span><span class="cap-meta">slate, violet</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-ground-bone">
+      <button type="button" class="shot" data-full="assets/img/ground-bone-1600.webp" data-w="1600" data-h="2267" data-caption="Ground: bone. archival paper, ultramarine" data-alt="The pear cover on the bone ground: warm archival paper with a light pear and an ultramarine accent shell." aria-label="Enlarge ground bone">
+        <img src="assets/img/ground-bone-480.webp" srcset="assets/img/ground-bone-480.webp 480w, assets/img/ground-bone-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="The pear cover on the bone ground: warm archival paper with a light pear and an ultramarine accent shell." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">bone</span><span class="cap-meta">archival paper, ultramarine</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-ground-charcoal">
+      <button type="button" class="shot" data-full="assets/img/ground-charcoal-1600.webp" data-w="1600" data-h="2267" data-caption="Ground: charcoal. legacy" data-alt="The pear cover on the charcoal ground, with an orange accent shell." aria-label="Enlarge ground charcoal">
+        <img src="assets/img/ground-charcoal-480.webp" srcset="assets/img/ground-charcoal-480.webp 480w, assets/img/ground-charcoal-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="The pear cover on the charcoal ground, with an orange accent shell." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">charcoal</span><span class="cap-meta">legacy</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-ground-forest">
+      <button type="button" class="shot" data-full="assets/img/ground-forest-1600.webp" data-w="1600" data-h="2267" data-caption="Ground: forest. legacy" data-alt="The pear cover on the forest-green ground, with an orange accent shell." aria-label="Enlarge ground forest">
+        <img src="assets/img/ground-forest-480.webp" srcset="assets/img/ground-forest-480.webp 480w, assets/img/ground-forest-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="The pear cover on the forest-green ground, with an orange accent shell." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">forest</span><span class="cap-meta">legacy</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-ground-paper">
+      <button type="button" class="shot" data-full="assets/img/ground-paper-1600.webp" data-w="1600" data-h="2267" data-caption="Ground: paper. legacy" data-alt="The pear cover on the paper ground: a light sheet with an orange accent shell." aria-label="Enlarge ground paper">
+        <img src="assets/img/ground-paper-480.webp" srcset="assets/img/ground-paper-480.webp 480w, assets/img/ground-paper-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="The pear cover on the paper ground: a light sheet with an orange accent shell." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">paper</span><span class="cap-meta">legacy</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-ground-cobalt">
+      <button type="button" class="shot" data-full="assets/img/ground-cobalt-1600.webp" data-w="1600" data-h="2267" data-caption="Ground: cobalt. legacy" data-alt="The pear cover on the cobalt ground: saturated blue with the pear in blue tones." aria-label="Enlarge ground cobalt">
+        <img src="assets/img/ground-cobalt-480.webp" srcset="assets/img/ground-cobalt-480.webp 480w, assets/img/ground-cobalt-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="The pear cover on the cobalt ground: saturated blue with the pear in blue tones." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">cobalt</span><span class="cap-meta">legacy</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-ground-xerox">
+      <button type="button" class="shot" data-full="assets/img/ground-xerox-1600.webp" data-w="1600" data-h="2267" data-caption="Ground: xerox. legacy" data-alt="The pear cover on the xerox ground: near-black with a blue accent shell." aria-label="Enlarge ground xerox">
+        <img src="assets/img/ground-xerox-480.webp" srcset="assets/img/ground-xerox-480.webp 480w, assets/img/ground-xerox-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="The pear cover on the xerox ground: near-black with a blue accent shell." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">xerox</span><span class="cap-meta">legacy</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-ground-riso">
+      <button type="button" class="shot" data-full="assets/img/ground-riso-1600.webp" data-w="1600" data-h="2267" data-caption="Ground: riso. legacy" data-alt="The pear cover on the riso ground: cream paper with a pink accent shell and navy title." aria-label="Enlarge ground riso">
+        <img src="assets/img/ground-riso-480.webp" srcset="assets/img/ground-riso-480.webp 480w, assets/img/ground-riso-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="The pear cover on the riso ground: cream paper with a pink accent shell and navy title." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">riso</span><span class="cap-meta">legacy</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-ground-blood">
+      <button type="button" class="shot" data-full="assets/img/ground-blood-1600.webp" data-w="1600" data-h="2267" data-caption="Ground: blood. legacy" data-alt="The pear cover on the blood ground: bright red with a yellow accent shell." aria-label="Enlarge ground blood">
+        <img src="assets/img/ground-blood-480.webp" srcset="assets/img/ground-blood-480.webp 480w, assets/img/ground-blood-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="The pear cover on the blood ground: bright red with a yellow accent shell." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">blood</span><span class="cap-meta">legacy</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-ground-acid">
+      <button type="button" class="shot" data-full="assets/img/ground-acid-1600.webp" data-w="1600" data-h="2267" data-caption="Ground: acid. legacy" data-alt="The pear cover on the acid ground: bright yellow with a pink accent shell." aria-label="Enlarge ground acid">
+        <img src="assets/img/ground-acid-480.webp" srcset="assets/img/ground-acid-480.webp 480w, assets/img/ground-acid-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="The pear cover on the acid ground: bright yellow with a pink accent shell." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">acid</span><span class="cap-meta">legacy</span></p>
+    </li>
+  </ul>
+</section>
+<section class="axis" id="axis-formats" data-axis="formats" aria-labelledby="h-formats">
+  <header class="axis-head"><h3 id="h-formats">Formats</h3><div><p>The same cover or plate at three sheet sizes.</p><p class="axis-also">Not repeated: <strong>poster</strong> (840 × 1190) is the <a href="#t-layout-cover-classic" data-ref="t-layout-cover-classic">classic</a> render in Layouts.</p></div></header>
+  <ul class="tiles tiles-formats" role="list">
+    <li class="tile tile-square" id="t-format-square">
+      <button type="button" class="shot" data-full="assets/img/format-square-1600.webp" data-w="1600" data-h="1600" data-caption="Format: square. 960 × 960" data-alt="Square album-cover format: the type-relief pear cover on navy, &#x27;Pantry&#x27; at the foot." aria-label="Enlarge format square">
+        <img src="assets/img/format-square-480.webp" srcset="assets/img/format-square-480.webp 480w, assets/img/format-square-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="480" alt="Square album-cover format: the type-relief pear cover on navy, &#x27;Pantry&#x27; at the foot." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">square</span><span class="cap-meta">960 × 960</span></p>
+    </li>
+    <li class="tile tile-og" id="t-format-og">
+      <button type="button" class="shot" data-full="assets/img/format-og-1600.webp" data-w="1600" data-h="800" data-caption="Format: og. 1280 × 640" data-alt="Landscape Open Graph card: the record and headline on the left above &#x27;Pantry&#x27; set large, the pear in type on the right with an orange edge." aria-label="Enlarge format og">
+        <img src="assets/img/format-og-480.webp" srcset="assets/img/format-og-480.webp 480w, assets/img/format-og-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="240" alt="Landscape Open Graph card: the record and headline on the left above &#x27;Pantry&#x27; set large, the pear in type on the right with an orange edge." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">og</span><span class="cap-meta">1280 × 640</span></p>
+    </li>
+  </ul>
+</section>
+<section class="axis" id="axis-frames" data-axis="frames" aria-labelledby="h-frames">
+  <header class="axis-head"><h3 id="h-frames">Frames</h3><div><p>The typography around a field poster: the serif <code>loose</code> frame, the brutalist <code>signal</code> frame, the older <code>swiss</code> frame, and the <code>cover</code> template.</p><p class="axis-also">Not repeated: <strong>loose</strong> (serif, field bleeds off the sheet) is the <a href="#t-field-wave" data-ref="t-field-wave">wave</a> render in Fields.</p></div></header>
+  <ul class="tiles tiles-frames" role="list">
+    <li class="tile tile-poster" id="t-frame-signal">
+      <button type="button" class="shot" data-full="assets/img/frame-signal-1600.webp" data-w="1600" data-h="2267" data-caption="Frame: signal. high-contrast grotesque" data-alt="Signal frame: a heavy white headline top left over a list of parts in bold capitals, a dark band of type bending down the sheet." aria-label="Enlarge frame signal">
+        <img src="assets/img/frame-signal-480.webp" srcset="assets/img/frame-signal-480.webp 480w, assets/img/frame-signal-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Signal frame: a heavy white headline top left over a list of parts in bold capitals, a dark band of type bending down the sheet." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">signal</span><span class="cap-meta">high-contrast grotesque</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-frame-swiss">
+      <button type="button" class="shot" data-full="assets/img/frame-swiss-1600.webp" data-w="1600" data-h="2267" data-caption="Frame: swiss. masthead, notes and counts" data-alt="Swiss frame on a light sheet: the &#x27;Pantry.&#x27; masthead, a band of type rows across the page and a footer of notes." aria-label="Enlarge frame swiss">
+        <img src="assets/img/frame-swiss-480.webp" srcset="assets/img/frame-swiss-480.webp 480w, assets/img/frame-swiss-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Swiss frame on a light sheet: the &#x27;Pantry.&#x27; masthead, a band of type rows across the page and a footer of notes." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">swiss</span><span class="cap-meta">masthead, notes and counts</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-frame-cover">
+      <button type="button" class="shot" data-full="assets/img/frame-cover-1600.webp" data-w="1600" data-h="2267" data-caption="Frame: cover. gallery template, one 3D object" data-alt="Cover frame: the type-relief pear on navy with its record at the top and &#x27;Pantry&#x27; large at the foot." aria-label="Enlarge frame cover">
+        <img src="assets/img/frame-cover-480.webp" srcset="assets/img/frame-cover-480.webp 480w, assets/img/frame-cover-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Cover frame: the type-relief pear on navy with its record at the top and &#x27;Pantry&#x27; large at the foot." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">cover</span><span class="cap-meta">gallery template, one 3D object</span></p>
+    </li>
+  </ul>
+</section>
+<section class="axis" id="axis-fields" data-axis="fields" aria-labelledby="h-fields">
+  <header class="axis-head"><h3 id="h-fields">Fields</h3><div><p>When no single object fits, a field draws the parts of the code as type across the whole sheet. Shapes trace a silhouette in one of three styles.</p></div></header>
+  <ul class="tiles tiles-fields" role="list">
+    <li class="tile tile-poster" id="t-field-shape-relief">
+      <button type="button" class="shot" data-full="assets/img/field-shape-relief-1600.webp" data-w="1600" data-h="2267" data-caption="Field: shape, relief. lit volume in 6px type" data-alt="Shape field in relief on navy: a jar drawn as a lit volume in small type, one layer per part, the accent layer glowing orange near the base." aria-label="Enlarge field shape, relief">
+        <img src="assets/img/field-shape-relief-480.webp" srcset="assets/img/field-shape-relief-480.webp 480w, assets/img/field-shape-relief-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Shape field in relief on navy: a jar drawn as a lit volume in small type, one layer per part, the accent layer glowing orange near the base." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">shape, relief</span><span class="cap-meta">lit volume in 6px type</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-shape">
+      <button type="button" class="shot" data-full="assets/img/field-shape-1600.webp" data-w="1600" data-h="2267" data-caption="Field: shape, relief (light). on a light sheet" data-alt="Shape field in relief on a light sheet: a jar in fine grey type, one layer per part, a salmon-orange band near the base." aria-label="Enlarge field shape, relief (light)">
+        <img src="assets/img/field-shape-480.webp" srcset="assets/img/field-shape-480.webp 480w, assets/img/field-shape-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Shape field in relief on a light sheet: a jar in fine grey type, one layer per part, a salmon-orange band near the base." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">shape, relief (light)</span><span class="cap-meta">on a light sheet</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-shape-rings">
+      <button type="button" class="shot" data-full="assets/img/field-shape-rings-1600.webp" data-w="1600" data-h="2267" data-caption="Field: shape, rings. names along the outline" data-alt="Shape field in rings: a jar outline filled with rings of type, one ring per part, the outer ring in orange." aria-label="Enlarge field shape, rings">
+        <img src="assets/img/field-shape-rings-480.webp" srcset="assets/img/field-shape-rings-480.webp 480w, assets/img/field-shape-rings-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Shape field in rings: a jar outline filled with rings of type, one ring per part, the outer ring in orange." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">shape, rings</span><span class="cap-meta">names along the outline</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-shape-symbols">
+      <button type="button" class="shot" data-full="assets/img/field-shape-symbols-1600.webp" data-w="1600" data-h="2267" data-caption="Field: shape, symbols. shaded ASCII marks" data-alt="Shape field in symbols on a light sheet: the form drawn in faint clusters of dashes, colons, equals and hash marks." aria-label="Enlarge field shape, symbols">
+        <img src="assets/img/field-shape-symbols-480.webp" srcset="assets/img/field-shape-symbols-480.webp 480w, assets/img/field-shape-symbols-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Shape field in symbols on a light sheet: the form drawn in faint clusters of dashes, colons, equals and hash marks." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">shape, symbols</span><span class="cap-meta">shaded ASCII marks</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-wave">
+      <button type="button" class="shot" data-full="assets/img/field-wave-1600.webp" data-w="1600" data-h="2267" data-caption="Field: wave. one band bent down the page" data-alt="Wave field on a light sheet: one band of type rows bending down the page, headline lower left, parts listed top right." aria-label="Enlarge field wave">
+        <img src="assets/img/field-wave-480.webp" srcset="assets/img/field-wave-480.webp 480w, assets/img/field-wave-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Wave field on a light sheet: one band of type rows bending down the page, headline lower left, parts listed top right." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">wave</span><span class="cap-meta">one band bent down the page</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-terrain">
+      <button type="button" class="shot" data-full="assets/img/field-terrain-1600.webp" data-w="1600" data-h="2267" data-caption="Field: terrain. a peak per part" data-alt="Terrain field on navy: a range of type peaks, one per part, as tall as its code and as wide as its files." aria-label="Enlarge field terrain">
+        <img src="assets/img/field-terrain-480.webp" srcset="assets/img/field-terrain-480.webp 480w, assets/img/field-terrain-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Terrain field on navy: a range of type peaks, one per part, as tall as its code and as wide as its files." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">terrain</span><span class="cap-meta">a peak per part</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-river">
+      <button type="button" class="shot" data-full="assets/img/field-river-1600.webp" data-w="1600" data-h="2267" data-caption="Field: river. many streams into one" data-alt="River field on navy: streams of type merging from the left into one channel, one stream drawn in orange." aria-label="Enlarge field river">
+        <img src="assets/img/field-river-480.webp" srcset="assets/img/field-river-480.webp 480w, assets/img/field-river-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="River field on navy: streams of type merging from the left into one channel, one stream drawn in orange." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">river</span><span class="cap-meta">many streams into one</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-seismic">
+      <button type="button" class="shot" data-full="assets/img/field-seismic-1600.webp" data-w="1600" data-h="2267" data-caption="Field: seismic. stacked ridgelines" data-alt="Seismic field on navy: stacked ridgelines of type, each part a ridge whose height is its lines, the foreground ridge in orange." aria-label="Enlarge field seismic">
+        <img src="assets/img/field-seismic-480.webp" srcset="assets/img/field-seismic-480.webp 480w, assets/img/field-seismic-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Seismic field on navy: stacked ridgelines of type, each part a ridge whose height is its lines, the foreground ridge in orange." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">seismic</span><span class="cap-meta">stacked ridgelines</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-orbit">
+      <button type="button" class="shot" data-full="assets/img/field-orbit-1600.webp" data-w="1600" data-h="2267" data-caption="Field: orbit. discs ranked by imports" data-alt="Orbit field on navy: discs of type sized by lines and arranged in orbits, one disc in orange." aria-label="Enlarge field orbit">
+        <img src="assets/img/field-orbit-480.webp" srcset="assets/img/field-orbit-480.webp 480w, assets/img/field-orbit-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Orbit field on navy: discs of type sized by lines and arranged in orbits, one disc in orange." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">orbit</span><span class="cap-meta">discs ranked by imports</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-radial">
+      <button type="button" class="shot" data-full="assets/img/field-radial-1600.webp" data-w="1600" data-h="2267" data-caption="Field: radial. a triangle from an apex" data-alt="Radial field: a tall triangle of type spreading down from an apex on a dark sheet." aria-label="Enlarge field radial">
+        <img src="assets/img/field-radial-480.webp" srcset="assets/img/field-radial-480.webp 480w, assets/img/field-radial-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Radial field: a tall triangle of type spreading down from an apex on a dark sheet." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">radial</span><span class="cap-meta">a triangle from an apex</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-sphere">
+      <button type="button" class="shot" data-full="assets/img/field-sphere-1600.webp" data-w="1600" data-h="2267" data-caption="Field: sphere. globes flattening down" data-alt="Sphere field: rows of globes built from type that flatten down the dark page, one in orange." aria-label="Enlarge field sphere">
+        <img src="assets/img/field-sphere-480.webp" srcset="assets/img/field-sphere-480.webp 480w, assets/img/field-sphere-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Sphere field: rows of globes built from type that flatten down the dark page, one in orange." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">sphere</span><span class="cap-meta">globes flattening down</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-scatter">
+      <button type="button" class="shot" data-full="assets/img/field-scatter-1600.webp" data-w="1600" data-h="2267" data-caption="Field: scatter. separate clouds" data-alt="Scatter field: separate clouds of type on a dark sheet, one with green accent rows." aria-label="Enlarge field scatter">
+        <img src="assets/img/field-scatter-480.webp" srcset="assets/img/field-scatter-480.webp 480w, assets/img/field-scatter-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Scatter field: separate clouds of type on a dark sheet, one with green accent rows." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">scatter</span><span class="cap-meta">separate clouds</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-shatter">
+      <button type="button" class="shot" data-full="assets/img/field-shatter-1600.webp" data-w="1600" data-h="2267" data-caption="Field: shatter. a grid broken on a fault" data-alt="Shatter field on a light sheet: a grid of type blocks broken along a fault." aria-label="Enlarge field shatter">
+        <img src="assets/img/field-shatter-480.webp" srcset="assets/img/field-shatter-480.webp 480w, assets/img/field-shatter-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Shatter field on a light sheet: a grid of type blocks broken along a fault." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">shatter</span><span class="cap-meta">a grid broken on a fault</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-glyph">
+      <button type="button" class="shot" data-full="assets/img/field-glyph-1600.webp" data-w="1600" data-h="2267" data-caption="Field: glyph. one giant letter" data-alt="Glyph field: a giant letter A built from rows of type on a dark sheet, its feet in green." aria-label="Enlarge field glyph">
+        <img src="assets/img/field-glyph-480.webp" srcset="assets/img/field-glyph-480.webp 480w, assets/img/field-glyph-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Glyph field: a giant letter A built from rows of type on a dark sheet, its feet in green." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">glyph</span><span class="cap-meta">one giant letter</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-bleed">
+      <button type="button" class="shot" data-full="assets/img/field-bleed-1600.webp" data-w="1600" data-h="2267" data-caption="Field: bleed. a form off the sheet" data-alt="Bleed field: a huge curved form of type whose centre lies off the left edge of the dark sheet." aria-label="Enlarge field bleed">
+        <img src="assets/img/field-bleed-480.webp" srcset="assets/img/field-bleed-480.webp 480w, assets/img/field-bleed-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Bleed field: a huge curved form of type whose centre lies off the left edge of the dark sheet." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">bleed</span><span class="cap-meta">a form off the sheet</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-slabs">
+      <button type="button" class="shot" data-full="assets/img/field-slabs-1600.webp" data-w="1600" data-h="2267" data-caption="Field: slabs. stacked layers" data-alt="Slabs field in the swiss frame: stacked slabs of type with staggered ends under the &#x27;Pantry.&#x27; masthead, notes in the footer." aria-label="Enlarge field slabs">
+        <img src="assets/img/field-slabs-480.webp" srcset="assets/img/field-slabs-480.webp 480w, assets/img/field-slabs-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Slabs field in the swiss frame: stacked slabs of type with staggered ends under the &#x27;Pantry.&#x27; masthead, notes in the footer." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">slabs</span><span class="cap-meta">stacked layers</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-spiral">
+      <button type="button" class="shot" data-full="assets/img/field-spiral-1600.webp" data-w="1600" data-h="2267" data-caption="Field: spiral. a coil" data-alt="Spiral field: a coil of type winding into the centre of a dark sheet, its outer tail in green." aria-label="Enlarge field spiral">
+        <img src="assets/img/field-spiral-480.webp" srcset="assets/img/field-spiral-480.webp 480w, assets/img/field-spiral-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Spiral field: a coil of type winding into the centre of a dark sheet, its outer tail in green." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">spiral</span><span class="cap-meta">a coil</span></p>
+    </li>
+    <li class="tile tile-poster" id="t-field-contour">
+      <button type="button" class="shot" data-full="assets/img/field-contour-1600.webp" data-w="1600" data-h="2267" data-caption="Field: contour. nested rings round hills" data-alt="Contour field: nested rings of type around a few hills on a dark sheet." aria-label="Enlarge field contour">
+        <img src="assets/img/field-contour-480.webp" srcset="assets/img/field-contour-480.webp 480w, assets/img/field-contour-960.webp 960w" sizes="(min-width: 1200px) 220px, (min-width: 720px) 25vw, 46vw" width="480" height="680" alt="Contour field: nested rings of type around a few hills on a dark sheet." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">contour</span><span class="cap-meta">nested rings round hills</span></p>
+    </li>
+  </ul>
+</section>
+<!-- STYLES:END -->
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="foot-in">
+    <p class="mark mark-foot">vyo<span class="dot" aria-hidden="true">.</span></p>
+    <ul class="foot-links" role="list">
+      <li><a href="https://github.com/litterthanlit/vyo">GitHub</a></li>
+      <li><a href="https://www.npmjs.com/package/@litterthanlit/vyo">npm</a></li>
+      <li><a href="https://github.com/litterthanlit/vyo/blob/HEAD/LICENSE">MIT License</a></li>
+      <li><span class="ver">v0.2.0</span></li>
+    </ul>
+    <p class="foot-note">Posters are renders of Pantry, a recipe planner kept as a test fixture. Bundled fonts Commit Mono, Newsreader and Inter are under the SIL Open Font License 1.1.</p>
+  </div>
+</footer>
+
+<dialog class="lb" id="lightbox" aria-modal="true" aria-labelledby="lb-cap">
+  <div class="lb-in">
+    <figure class="lb-fig">
+      <img id="lb-img" alt="" width="1600" height="2267" decoding="async">
+      <figcaption id="lb-cap"></figcaption>
+    </figure>
+    <div class="lb-ctl">
+      <button type="button" class="lb-btn" data-lb="prev" aria-label="Previous render"><span aria-hidden="true">&larr;</span></button>
+      <span class="lb-count" id="lb-count" aria-live="polite"></span>
+      <button type="button" class="lb-btn" data-lb="next" aria-label="Next render"><span aria-hidden="true">&rarr;</span></button>
+      <button type="button" class="lb-btn lb-close" data-lb="close" aria-label="Close">Close <kbd>Esc</kbd></button>
+    </div>
+  </div>
+</dialog>
+
+<script src="assets/site.js?v=1" defer></script>
+</body>
+</html>
