@@ -20,6 +20,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
+      - name: Check site asset hashes
+        working-directory: .
+        run: node site/tools/stamp.mjs --check
       - run: npm ci
       - name: Install Chromium and ffmpeg
         run: |
