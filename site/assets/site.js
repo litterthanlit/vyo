@@ -129,20 +129,20 @@
     if (opener) opener.focus();
   });
 
-  /* Star counts: one GitHub API read, cached for the session. On any failure the pills stay hidden and the buttons still link. */
+  /* Star counts: one GitHub API read, cached for the session. The pill shows only at 1+ stars and stays hidden on failure or zero and the buttons still link. */
   const stars = document.querySelectorAll("[data-star]");
   if (stars.length) {
     const KEY = "vyo-stars";
     const compact = (n) => (n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k" : String(n));
     const show = (n) => {
       stars.forEach((a) => {
+        if (n < 1) return;
         const pill = a.querySelector("[data-star-count]");
         pill.querySelector("[data-star-n]").textContent = compact(n);
         pill.setAttribute("data-ready", "");
         a.setAttribute("aria-label", "Star litterthanlit/vyo on GitHub, " + n + (n === 1 ? " star" : " stars"));
       });
     };
-    const hide = () => stars.forEach((a) => a.querySelector("[data-star-count]").setAttribute("data-off", ""));
     let cached = null;
     try { const v = parseInt(sessionStorage.getItem(KEY), 10); if (v >= 0) cached = v; } catch (_) {}
     if (cached !== null) show(cached);
@@ -155,7 +155,7 @@
           try { sessionStorage.setItem(KEY, String(n)); } catch (_) {}
           show(n);
         })
-        .catch(hide);
+        .catch(() => {});
     }
   }
 })();
