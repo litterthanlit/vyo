@@ -11,7 +11,7 @@
       --border: #2a2d35;
       --text: #eceef2;
       --muted: #9399a6;
-      --accent: #c8232c;
+      --accent: #e83b2e;
     }
     * { box-sizing: border-box; }
     body {
@@ -25,7 +25,7 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      background: rgba(17, 18, 21, 0.9);
+      background: rgba(17, 18, 21, 0.92);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
       padding: 16px 28px;
@@ -69,7 +69,7 @@
       border-color: var(--text);
     }
     .tab.new-pill {
-      border-color: rgba(200, 35, 44, 0.65);
+      border-color: rgba(232, 59, 46, 0.7);
     }
     .tab.new-pill.active {
       background: var(--accent);
@@ -77,10 +77,22 @@
       border-color: var(--accent);
     }
     main {
-      max-width: 1480px;
+      max-width: 1520px;
       margin: 0 auto;
       padding: 28px;
     }
+    .banner {
+      margin-bottom: 22px;
+      padding: 14px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+    .banner strong { color: var(--text); }
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -115,7 +127,7 @@
       padding: 14px 16px 16px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 5px;
     }
     .row {
       display: flex;
@@ -131,11 +143,12 @@
       border: 1px solid var(--border);
       border-radius: 4px;
       padding: 1px 6px;
+      white-space: nowrap;
     }
-    .badge.fusion {
-      color: #ff8e94;
-      border-color: rgba(200, 35, 44, 0.5);
-      background: rgba(200, 35, 44, 0.12);
+    .badge.own {
+      color: #ff9c94;
+      border-color: rgba(232, 59, 46, 0.55);
+      background: rgba(232, 59, 46, 0.14);
     }
     .desc { font-size: 12px; color: var(--muted); line-height: 1.45; }
     .lightbox {
@@ -175,17 +188,22 @@
   <header>
     <div>
       <h1>vyo — Editorial Poster Grammars</h1>
-      <div class="sub">Real codebase scans (vyo, Flask, Pantry) · Click any poster to inspect full size</div>
+      <div class="sub">Real codebase scans (vyo, Flask, Pantry, Hypher) · Click any poster to inspect full size</div>
     </div>
     <div class="tabs" role="tablist">
-      <button class="tab new-pill active" data-filter="fusion">1 + 3 Fusion (4)</button>
-      <button class="tab" data-filter="all">All (10)</button>
+      <button class="tab new-pill active" data-filter="own">Vyo Own Thing (4)</button>
+      <button class="tab" data-filter="fusion">1 + 3 Fusion (4)</button>
       <button class="tab" data-filter="mosaic">a-mosaic (2)</button>
       <button class="tab" data-filter="cascade">b-cascade (2)</button>
       <button class="tab" data-filter="strata">c-strata (2)</button>
+      <button class="tab" data-filter="all">All (14)</button>
     </div>
   </header>
   <main>
+    <div class="banner" id="banner">
+      <strong>"Make sure the agent draws whatever the repo is, as if they're explaining it in a poster."</strong>
+      — Four completely different bespoke 3-layer SVGs drawn on the spot to explain each repo, rendered through one original vyo Refracted Print-Matrix engine, drafting-sheet chrome, and anchored plain-language callouts.
+    </div>
     <div class="grid" id="grid"></div>
   </main>
   <div class="lightbox" id="lightbox">
@@ -195,9 +213,40 @@
   <script>
     const POSTERS = [
       {
+        group: "own",
+        tag: "VYO SHEET · 01 · sumi",
+        own: true,
+        title: "vyo — Code Turned Into One Sheet",
+        desc: "71 files · 12,559 lines · 228 imports. Incoming source-tree streams refracted through a glowing vermilion lens (the drawing engine) into a framed poster sheet.",
+        src: "/explorations/img/vyo-own.jpg"
+      },
+      {
+        group: "own",
+        tag: "VYO SHEET · 02 · washi",
+        own: true,
+        title: "Flask — One Small File, Grown on Demand",
+        desc: "36 files · 8,068 lines · 94 imports. A single incoming request conduit hits one glowing vermilion core junction and fans out into clean mineral-indigo routing lanes.",
+        src: "/explorations/img/flask-own.jpg"
+      },
+      {
+        group: "own",
+        tag: "VYO SHEET · 03 · cobalt",
+        own: true,
+        title: "Pantry — A Week of Dinners in One Go",
+        desc: "41 files · 593 lines · 60 imports. Scattered saved-recipe arcs settle into seven calm vertical day-pillars (mon–sun), unified by one electric Klein cobalt weekly-plan band.",
+        src: "/explorations/img/pantry-own.jpg"
+      },
+      {
+        group: "own",
+        tag: "VYO SHEET · 04 · pine",
+        own: true,
+        title: "Hypher — Switch Agents Without Starting Over",
+        desc: "308 files · 47,675 lines · 618 imports. Two opposing celadon-silver agent workspaces separated by a dark chasm, bridged cleanly across the gap by a molten amber handoff note.",
+        src: "/explorations/img/hypher-own.jpg"
+      },
+      {
         group: "fusion",
         tag: "d-mosaic-strata",
-        fusion: true,
         title: "vyo — Obsidian Signal Mosaic",
         desc: "71 files · 12,559 lines · 228 imports. Refracted horizontal strata quantized to a 7px dot/square lattice on pitch black with sparse plain-language micro-type.",
         src: "/explorations/img/vyo-signal-mosaic.jpg"
@@ -205,7 +254,6 @@
       {
         group: "fusion",
         tag: "d-mosaic-strata",
-        fusion: true,
         title: "Flask — Obsidian Signal Mosaic",
         desc: "36 files · 8,068 lines · 94 imports. Broader glacial strata from Flask's larger core modules rendered through the 7px mosaic + sparse micro-type lattice.",
         src: "/explorations/img/flask-signal-mosaic.jpg"
@@ -213,7 +261,6 @@
       {
         group: "fusion",
         tag: "d-mosaic-strata",
-        fusion: true,
         title: "vyo — Obsidian Refracted Bloom",
         desc: "71 files · 12,559 lines. Organic branching bloom sliced and refracted through codebase import strata on obsidian, quantized into glowing 7px mosaic cells.",
         src: "/explorations/img/vyo-bloom-strata.jpg"
@@ -221,9 +268,8 @@
       {
         group: "fusion",
         tag: "d-mosaic-strata",
-        fusion: true,
         title: "vyo — Daylight Strata Mosaic",
-        desc: "71 files · 12,559 lines. Cool alabaster paper, slate + mist + crimson palette, clean Inter grotesque type, and stepped horizontal strata — zero flowers needed.",
+        desc: "71 files · 12,559 lines. Cool alabaster paper, slate + mist + crimson palette, clean Inter grotesque type, and stepped horizontal strata.",
         src: "/explorations/img/vyo-daylight-strata.jpg"
       },
       {
@@ -244,7 +290,7 @@
         group: "cascade",
         tag: "b-cascade",
         title: "vyo — Translucent Cascade",
-        desc: "71 files · 12,559 lines · 1,207 multiply-blended vertical shards with risograph ink grain. Charcoal spine: fields · indigo: engine · rose: scan · saffron: CLI & covers.",
+        desc: "71 files · 12,559 lines · 1,207 multiply-blended vertical shards with risograph ink grain.",
         src: "/explorations/img/vyo-cascade.jpg"
       },
       {
@@ -271,11 +317,13 @@
     ];
 
     const grid = document.getElementById("grid");
+    const banner = document.getElementById("banner");
     const lb = document.getElementById("lightbox");
     const lbImg = document.getElementById("lb-img");
     const lbCap = document.getElementById("lb-cap");
 
     function render(filter) {
+      banner.style.display = (filter === "own" || filter === "all") ? "block" : "none";
       grid.innerHTML = "";
       POSTERS.filter(p => filter === "all" || p.group === filter).forEach(p => {
         const card = document.createElement("article");
@@ -285,7 +333,7 @@
           <div class="meta">
             <div class="row">
               <span class="title">${p.title}</span>
-              <span class="badge ${p.fusion ? "fusion" : ""}">${p.tag}</span>
+              <span class="badge ${p.own ? "own" : ""}">${p.tag}</span>
             </div>
             <div class="desc">${p.desc}</div>
           </div>
@@ -309,7 +357,7 @@
     lb.addEventListener("click", () => lb.classList.remove("open"));
     window.addEventListener("keydown", e => { if (e.key === "Escape") lb.classList.remove("open"); });
 
-    render("fusion");
+    render("own");
   </script>
 </body>
 </html>
