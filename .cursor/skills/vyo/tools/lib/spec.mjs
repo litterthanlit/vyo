@@ -49,6 +49,7 @@ export const LIMITS = {
   name: 24, headline: 72, hot: 24, noteTitle: 24, noteText: 220, notBuilt: 6, notBuiltItem: 32, audience: 40,
   fits: 160, regions: 6, texts: 14, words: [2, 14], word: 24, lines: [2, 4], line: 5,
   profile: [3, 24], polygon: [3, 40], holes: 4, path: 4000, fields: 1, partName: 24, sentence: 40, every: [2, 20], minShare: [0, 0.2], maxParts: [2, 24], ops: 24, fit: [0.05, 3], centre: [-0.5, 1.5],
+  object: 32, why: 160, reads: 32,
 };
 export const TONES = ["soft", "mid", "ink", "cold", "cool"];
 export const DOT_TONES = [...TONES, "hot"];
@@ -79,7 +80,7 @@ const KEYS = {
     plate: ["role", "id", "text"],
   },
   ellipse: ["cx", "cy", "rx", "ry"],
-  shape: ["ops", "like", "mask", "rotate", "fit"],
+  shape: ["object", "why", "reads", "ops", "like", "mask", "rotate", "fit"],
   fit: ["w", "h", "cx", "cy"],
 };
 export const ROUTE_TONES = [...TONES, "hot"];
@@ -266,12 +267,44 @@ const OP_TYPES = {
 const SHAPE_FACES = ["lit", "dim", "round"];
 const CREASE_LINE = { capsule: "r", arc: "width" };
 
+// A drawn shape's words: what it is, why it stands for the product, and what the agent saw in the sketch.
+// Each placeholder says what to write; none of them blocks the sketch, which the agent needs to write reads.
+export const SHAPE_WORDS = {
+  object: 'the plain noun you draw, like "gear" or "jar": an object for what the product does, not a pun on its name',
+  why: `one sentence, at most ${LIMITS.why} characters, on why that object stands for what the product does, from its README or docs, not its name`,
+  reads: "the one word you honestly see in the sketch PNG (run vyo sketch first); if it is not the object, redraw it simpler and sketch again",
+};
+export const DRAW_STEP = 'see "Draw the shape" in SKILL.md';
+const OPS_TODO = `3 to 6 ops in a 100-unit box, y down, the first an add (${DRAW_STEP}; vyo compose --field shape prints the format)`;
+/** The drawing compose leaves for the agent: the object, why, the ops and what the sketch reads, each still to write. */
+export const shapePlaceholder = () => ({ object: hold(SHAPE_WORDS.object), why: hold(SHAPE_WORDS.why), reads: hold(SHAPE_WORDS.reads), ops: hold(OPS_TODO) });
+const oneSentence = (t) => !/[.!?]\s+\S/.test(t.trim());
+const wordCount = (t) => t.trim().split(/\s+/).length;
+
+/** The words on a shape, each checked by type and length; a placeholder says what to write. */
+function checkShapeWords(f, shape, err) {
+  for (const k of ["object", "why", "reads"]) {
+    const v = shape[k];
+    if (v === undefined) continue;
+    if (isPlaceholder(v)) err(`${f}.${k}: still the placeholder; write ${SHAPE_WORDS[k]}`);
+    else if (!isStr(v) || !v.trim()) err(`${f}.${k}: must be text: ${SHAPE_WORDS[k]}`);
+    else {
+      if (v.length > LIMITS[k]) err(`${f}.${k}: ${v.length} characters; at most ${LIMITS[k]}`);
+      if (k === "object" && wordCount(v) > 3) err(`${f}.object: "${v}" is ${wordCount(v)} words; name the object in a word or two, like "jar" or "paper plane"`);
+      if (k === "reads" && wordCount(v) > 3) err(`${f}.reads: "${v}" is ${wordCount(v)} words; write the one word you see in the sketch, like "jar"`);
+      if (k === "why" && !oneSentence(v)) err(`${f}.why: one sentence only, on why the object stands for what the product does`);
+    }
+  }
+}
+
 /** Rules for a drawn silhouette: each op one verb and one kind with its keys, the first an add, and something painted. */
 function checkShapeSpec(f, shape, err) {
-  if (isPlaceholder(shape)) return err(`${f}: still the placeholder; draw the silhouette as { ops: [...] } (vyo compose --field shape prints the format), or name a ready one as { "like": "<name>" } (vyo shapes lists them)`);
-  if (!isObj(shape)) return err(`${f}: must be { ops, rotate, fit }`);
-  const before = err.count();
+  if (isPlaceholder(shape)) return err(`${f}: still the placeholder; draw the object yourself as { "object", "why", "reads", "ops": [...] } (${DRAW_STEP}; vyo compose --field shape prints the format)`);
+  if (!isObj(shape)) return err(`${f}: must be { object, why, reads, ops, rotate, fit }`);
   unknownKeys(shape, KEYS.shape, `${f}.`, err);
+  checkShapeWords(f, shape, err);
+  // The words are written after a sketch, so they never stop the geometry being checked.
+  const before = err.count();
   if (shape.rotate !== undefined && !isNum(shape.rotate)) err(`${f}.rotate: a number of degrees, clockwise`);
   if (shape.fit !== undefined) {
     if (!isObj(shape.fit)) err(`${f}.fit: must be { w, h, cx, cy }`);
@@ -304,6 +337,7 @@ function checkShapeSpec(f, shape, err) {
     if (!mask?.area) err(`${f}.mask: the image has no dark pixels on the sheet; the silhouette is its pixels darker than mid grey`);
     return;
   }
+  if (isPlaceholder(shape.ops)) return err(`${f}.ops: still the placeholder; draw the object as ${OPS_TODO}`);
   if (!Array.isArray(shape.ops) || shape.ops.length < 1 || shape.ops.length > LIMITS.ops) return err(`${f}.ops: a list of 1 to ${LIMITS.ops} ops, each { "add", "cut" or "crease": kind, ... }, or a mask: a bundled name or a path to a PNG`);
   const kinds = Object.keys(SHAPE_KINDS).join(", ");
   shape.ops.forEach((op, i) => {
@@ -335,7 +369,7 @@ function checkField(f, r, err, copy, frame) {
   if (!kind) return err(`${f}.field: "${r.field}" is not a field; use ${Object.keys(FIELDS).join(" or ")}`);
   if (kind.frames && !kind.frames.includes(frame)) err(`${f}.field: a ${r.field} field draws only in the ${kind.frames.join(" or ")} frame; remove frame or set it to ${kind.frames[0]}`);
   if (kind.options.includes("shape")) {
-    if (r.shape === undefined) err(`${f}.shape: missing; draw the silhouette as { ops: [...] } (vyo compose --field shape prints the format)`);
+    if (r.shape === undefined) err(`${f}.shape: missing; draw the object yourself as { "object", "why", "reads", "ops": [...] } (${DRAW_STEP}; vyo compose --field shape prints the format)`);
     else checkShapeSpec(`${f}.shape`, r.shape, err);
     if (frame === "cover") {
       for (const k of ["style", "bevel", "echo"]) if (r[k] !== undefined) err(`${f}.${k}: the cover draws its own living relief; remove ${k}${k === "bevel" ? " (solid.bevel sets it)" : ""}`);
@@ -734,7 +768,7 @@ function fieldRegion(field, { accent, parts, seed, letter }) {
     ...(seed !== undefined ? { seed } : {}),
     ...(letter ? { letter } : {}),
     ...(parts.length ? { names: Object.fromEntries(parts.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])) } : {}),
-    ...(FIELDS[field].options.includes("shape") ? { shape: hold("the silhouette as { ops: [...] }, in the format vyo compose --field shape prints") } : {}),
+    ...(FIELDS[field].options.includes("shape") ? { shape: shapePlaceholder() } : {}),
     ...(FIELDS[field].options.includes("sentence") ? { sentence: hold(`a sentence woven in every ${WAVE.every}th row, at most ${LIMITS.sentence} characters, or remove it`) } : {}),
   };
 }
@@ -824,7 +858,8 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
  * @param {{ commit?: string, date: string, accent?: string, split?: string[], parts: { id: string, name: string }[] }} o
  */
 export function coverScaffold(facts, { commit, date, accent, split, parts, strata = "outline", like, ground = "navy", look, format, crop, layout, finish }) {
-  const region = { shape: like ? { like } : undefined, strata };
+  // The legend's pattern names the object the agent draws; a like (compose's probe) names its own.
+  const region = { shape: like ? { like } : { object: "<object>" }, strata };
   return {
     version: 3,
     frame: "cover",
@@ -846,7 +881,7 @@ export function coverScaffold(facts, { commit, date, accent, split, parts, strat
           accent: accent ?? hold("the id of the part the product is about, from the list compose printed"),
           ...(split ? { split } : {}),
           names: Object.fromEntries(parts.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])),
-          shape: like ? { like } : hold(`{ "like": "<name>" }, one of ${SILHOUETTE_NAMES.join(", ")}`),
+          shape: like ? { like } : shapePlaceholder(),
           strata,
         },
       ],

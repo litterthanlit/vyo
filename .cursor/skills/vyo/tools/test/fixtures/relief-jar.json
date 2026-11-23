@@ -36,6 +36,9 @@
         "bevel": 0.8,
         "strata": { "by": "angle", "angle": 90 },
         "shape": {
+          "object": "jar",
+          "why": "Pantry keeps the recipes you cook and plans a week of dinners from them, as a jar keeps staples for the week.",
+          "reads": "jar",
           "fit": { "h": 0.74, "cx": 0.5, "cy": 0.6 },
           "ops": [
             { "add": "rect", "at": [12, 0], "size": [76, 16], "round": 4 },
