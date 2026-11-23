@@ -128,4 +128,34 @@
     img.removeAttribute("src");
     if (opener) opener.focus();
   });
+
+  /* Star counts: one GitHub API read, cached for the session. On any failure the pills stay hidden and the buttons still link. */
+  const stars = document.querySelectorAll("[data-star]");
+  if (stars.length) {
+    const KEY = "vyo-stars";
+    const compact = (n) => (n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k" : String(n));
+    const show = (n) => {
+      stars.forEach((a) => {
+        const pill = a.querySelector("[data-star-count]");
+        pill.querySelector("[data-star-n]").textContent = compact(n);
+        pill.setAttribute("data-ready", "");
+        a.setAttribute("aria-label", "Star litterthanlit/vyo on GitHub, " + n + (n === 1 ? " star" : " stars"));
+      });
+    };
+    const hide = () => stars.forEach((a) => a.querySelector("[data-star-count]").setAttribute("data-off", ""));
+    let cached = null;
+    try { const v = parseInt(sessionStorage.getItem(KEY), 10); if (v >= 0) cached = v; } catch (_) {}
+    if (cached !== null) show(cached);
+    else {
+      fetch("https://api.github.com/repos/litterthanlit/vyo", { headers: { Accept: "application/vnd.github+json" } })
+        .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+        .then((d) => {
+          const n = d && d.stargazers_count;
+          if (!Number.isInteger(n) || n < 0) throw new Error("bad count");
+          try { sessionStorage.setItem(KEY, String(n)); } catch (_) {}
+          show(n);
+        })
+        .catch(hide);
+    }
+  }
 })();
