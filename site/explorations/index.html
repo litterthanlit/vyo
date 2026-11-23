@@ -11,7 +11,7 @@
       --border: #2a2d35;
       --text: #eceef2;
       --muted: #9399a6;
-      --accent: #e83b2e;
+      --accent: #e0313c;
     }
     * { box-sizing: border-box; }
     body {
@@ -69,7 +69,7 @@
       border-color: var(--text);
     }
     .tab.new-pill {
-      border-color: rgba(232, 59, 46, 0.7);
+      border-color: rgba(224, 49, 60, 0.72);
     }
     .tab.new-pill.active {
       background: var(--accent);
@@ -145,10 +145,10 @@
       padding: 1px 6px;
       white-space: nowrap;
     }
-    .badge.own {
+    .badge.hot {
       color: #ff9c94;
-      border-color: rgba(232, 59, 46, 0.55);
-      background: rgba(232, 59, 46, 0.14);
+      border-color: rgba(224, 49, 60, 0.55);
+      background: rgba(224, 49, 60, 0.14);
     }
     .desc { font-size: 12px; color: var(--muted); line-height: 1.45; }
     .lightbox {
@@ -188,21 +188,21 @@
   <header>
     <div>
       <h1>vyo — Editorial Poster Grammars</h1>
-      <div class="sub">Real codebase scans (vyo, Flask, Pantry, Hypher) · Click any poster to inspect full size</div>
+      <div class="sub">Real codebase scans (vyo, Hypher, Flask, Pantry) · Click any poster to inspect full size</div>
     </div>
     <div class="tabs" role="tablist">
-      <button class="tab new-pill active" data-filter="own">Vyo Own Thing (4)</button>
+      <button class="tab new-pill active" data-filter="luminous">Luminous Optical (4)</button>
       <button class="tab" data-filter="fusion">1 + 3 Fusion (4)</button>
       <button class="tab" data-filter="mosaic">a-mosaic (2)</button>
       <button class="tab" data-filter="cascade">b-cascade (2)</button>
       <button class="tab" data-filter="strata">c-strata (2)</button>
-      <button class="tab" data-filter="all">All (14)</button>
+      <button class="tab" data-filter="own">e-vyo-own (4)</button>
+      <button class="tab" data-filter="all">All (18)</button>
     </div>
   </header>
   <main>
     <div class="banner" id="banner">
-      <strong>"Make sure the agent draws whatever the repo is, as if they're explaining it in a poster."</strong>
-      — Four completely different bespoke 3-layer SVGs drawn on the spot to explain each repo, rendered through one original vyo Refracted Print-Matrix engine, drafting-sheet chrome, and anchored plain-language callouts.
+      <strong>Luminous Optical (`f-luminous`)</strong> — Built directly on 1 + 3 Fusion's continuous HDR optical light-field & 7px chromatic mosaic engine, with frameless vyo typography and a bespoke sculpted visual metaphor for every repo (zero flat clip-art, zero border chrome, zero pre-made shapes).
     </div>
     <div class="grid" id="grid"></div>
   </main>
@@ -213,36 +213,36 @@
   <script>
     const POSTERS = [
       {
-        group: "own",
-        tag: "VYO SHEET · 01 · sumi",
-        own: true,
-        title: "vyo — Code Turned Into One Sheet",
-        desc: "71 files · 12,559 lines · 228 imports. Incoming source-tree streams refracted through a glowing vermilion lens (the drawing engine) into a framed poster sheet.",
-        src: "/explorations/img/vyo-own.jpg"
+        group: "luminous",
+        tag: "f-luminous · obsidian",
+        hot: true,
+        title: "Hypher — Sculpted Folded Wing",
+        desc: "308 files · 47,675 lines · 618 imports. Diagonally soaring glider with a glacier-cyan lit upper wing, carved dark keel shadow, and blazing crimson handoff-note crease trailing kinetic codebase strata.",
+        src: "/explorations/img/hypher-luminous.jpg"
       },
       {
-        group: "own",
-        tag: "VYO SHEET · 02 · washi",
-        own: true,
-        title: "Flask — One Small File, Grown on Demand",
-        desc: "36 files · 8,068 lines · 94 imports. A single incoming request conduit hits one glowing vermilion core junction and fans out into clean mineral-indigo routing lanes.",
-        src: "/explorations/img/flask-own.jpg"
+        group: "luminous",
+        tag: "f-luminous · obsidian",
+        hot: true,
+        title: "vyo — Luminous Optical Prism",
+        desc: "71 files · 12,559 lines · 228 imports. Cool incoming code-mist beam hits a translucent 3D glass prism and explodes into a cascading crimson/cyan/amethyst refracted spectrum waterfall.",
+        src: "/explorations/img/vyo-luminous.jpg"
       },
       {
-        group: "own",
-        tag: "VYO SHEET · 03 · cobalt",
-        own: true,
-        title: "Pantry — A Week of Dinners in One Go",
-        desc: "41 files · 593 lines · 60 imports. Scattered saved-recipe arcs settle into seven calm vertical day-pillars (mon–sun), unified by one electric Klein cobalt weekly-plan band.",
-        src: "/explorations/img/pantry-own.jpg"
+        group: "luminous",
+        tag: "f-luminous · obsidian",
+        hot: true,
+        title: "Flask — Radiant Core Seed",
+        desc: "36 files · 8,068 lines · 94 imports. Compact glowing crimson-and-pearl request core surrounded by a velvety dark moat, blossoming outward into concentric optical cyan/amethyst caustic ripples.",
+        src: "/explorations/img/flask-luminous.jpg"
       },
       {
-        group: "own",
-        tag: "VYO SHEET · 04 · pine",
-        own: true,
-        title: "Hypher — Switch Agents Without Starting Over",
-        desc: "308 files · 47,675 lines · 618 imports. Two opposing celadon-silver agent workspaces separated by a dark chasm, bridged cleanly across the gap by a molten amber handoff note.",
-        src: "/explorations/img/hypher-own.jpg"
+        group: "luminous",
+        tag: "f-luminous · alabaster",
+        hot: true,
+        title: "Pantry — Terraced Harvest Waves",
+        desc: "41 files · 593 lines · 60 imports. Seven ink-wash terraced harvest hills (mon–sun) on cool alabaster paper, unified horizontally by one sweeping vermilion-crimson weekly-plan tide.",
+        src: "/explorations/img/pantry-luminous.jpg"
       },
       {
         group: "fusion",
@@ -313,6 +313,34 @@
         title: "Flask — Chromatic Strata",
         desc: "36 files · 8,068 lines · 52 horizontal slices. Broader glacial strata from larger modules; request core drives the upper-right refraction.",
         src: "/explorations/img/flask-strata.jpg"
+      },
+      {
+        group: "own",
+        tag: "e-vyo-own · archive",
+        title: "vyo — Drafting Sheet (earlier pass)",
+        desc: "Earlier flat 3-layer SVG diagram pass kept for comparison.",
+        src: "/explorations/img/vyo-own.jpg"
+      },
+      {
+        group: "own",
+        tag: "e-vyo-own · archive",
+        title: "Flask — Drafting Sheet (earlier pass)",
+        desc: "Earlier flat 3-layer SVG diagram pass kept for comparison.",
+        src: "/explorations/img/flask-own.jpg"
+      },
+      {
+        group: "own",
+        tag: "e-vyo-own · archive",
+        title: "Pantry — Drafting Sheet (earlier pass)",
+        desc: "Earlier flat 3-layer SVG diagram pass kept for comparison.",
+        src: "/explorations/img/pantry-own.jpg"
+      },
+      {
+        group: "own",
+        tag: "e-vyo-own · archive",
+        title: "Hypher — Drafting Sheet (earlier pass)",
+        desc: "Earlier flat 3-layer SVG diagram pass kept for comparison.",
+        src: "/explorations/img/hypher-own.jpg"
       }
     ];
 
@@ -323,7 +351,7 @@
     const lbCap = document.getElementById("lb-cap");
 
     function render(filter) {
-      banner.style.display = (filter === "own" || filter === "all") ? "block" : "none";
+      banner.style.display = (filter === "luminous" || filter === "all") ? "block" : "none";
       grid.innerHTML = "";
       POSTERS.filter(p => filter === "all" || p.group === filter).forEach(p => {
         const card = document.createElement("article");
@@ -333,7 +361,7 @@
           <div class="meta">
             <div class="row">
               <span class="title">${p.title}</span>
-              <span class="badge ${p.own ? "own" : ""}">${p.tag}</span>
+              <span class="badge ${p.hot ? "hot" : ""}">${p.tag}</span>
             </div>
             <div class="desc">${p.desc}</div>
           </div>
@@ -357,7 +385,7 @@
     lb.addEventListener("click", () => lb.classList.remove("open"));
     window.addEventListener("keydown", e => { if (e.key === "Escape") lb.classList.remove("open"); });
 
-    render("own");
+    render("luminous");
   </script>
 </body>
 </html>
