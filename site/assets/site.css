@@ -14,11 +14,11 @@
   --print-edge: rgba(255, 255, 255, 0.07);
   --shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.8);
   --focus: #ededea;
-  --btn-bg: #1d1d21;
-  --btn-bg-hover: #27272c;
-  --btn-line: #38383e;
-  --btn-ink: #ffffff;
-  --btn-muted: #b4b4af;
+  --btn-bg: #ededea;
+  --btn-bg-hover: #d2d2ce;
+  --btn-line: #ededea;
+  --btn-ink: #0b0b0c;
+  --btn-muted: #4a4a47;
 
   --f-display: "Schibsted Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
   --f-body: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
