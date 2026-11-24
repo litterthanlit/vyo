@@ -1,10 +1,17 @@
 # vyo
 
-<p align="center"><img src="https://raw.githubusercontent.com/litterthanlit/vyo/main/docs/posters/relief-pantry-dark-web.png" width="420" alt="A dark poster headed 'A week of dinners, planned in one go.' A jar drawn as a lit, rounded volume in dense small type, one layer per part of the code. The layer for the plan glows orange."></p>
+<p align="center"><img src="https://raw.githubusercontent.com/litterthanlit/vyo/main/site/assets/img/hypher-obsidian-960.webp" width="380" alt="Hypher obsidian poster: a soaring folded origami glider in a luminous 7px mosaic with a glowing crimson handoff-note fold crease over refracted codebase strata."></p>
 
-vyo explains an app to someone who does not code. It scans a repository and draws the codebase as one poster or album-grade cover: every part of the code as a row, ridgeline, orbital constellation, stream, or sculpted 3D object, sized by its code, with the part the product is about in an accent colour, a legend that says what the picture shows, and a few plain sentences. Covers (`vyo compose --frame cover`) come in three looks (`living`, `xerox`, `spin`), 10 curated palettes, 22 ready silhouettes, three 3D solid modes (`dome`, `extrude`, `revolve`), and `poster`/`square`/`og` formats; `vyo series` renders 2–4 covers into one contact sheet, and `vyo render --gif` writes the looping GIF and MP4.
+**Your agent reads the repo, then draws it as a poster.**
 
-vyo has two halves. The skill tells your coding agent (Cursor, Claude Code or Codex) how to read the repo, choose the picture and write the words. The `vyo` command does the drawing and checks the result: it rejects jargon, file paths, placeholder text and text that collides with the picture.
+vyo scans a codebase into real files, lines and cross-area imports. Your coding agent (Cursor, Claude Code or Codex) invents and draws a bespoke soft-lit visual explanation on the spot — **no pre-made shapes** — and vyo refracts it through your codebase's real strata across **5 optical print styles** and **5 curated palettes**:
+
+- **Print styles (`--style`):** `obsidian` (7px dark luminous mosaic), `alabaster` (7px daylight museum screenprint), `optics` (continuous darkroom refraction with RGB fringe and 35mm grain), `riso` (3-plate multiply risograph on warm washi paper), and `contour` (24-level Marching Squares topographic iso-lines).
+- **Curated palettes (`--palette`):** `crimson`, `pine`, `abyss` (dark grounds) and `vermilion`, `cobalt` (light grounds).
+- **One drawing, five mediums:** Author one soft-lit SVG once; vyo auto-detects polarity and renders natively across all five styles.
+- **Automated checks:** `luminous-tonal`, `luminous-accent`, `luminous-sanctuary` and `luminous-jargon` inspect every rendered sheet so flat clip-art, blown-out highlights, code jargon, file paths, placeholders, or artwork colliding with typography fail with exact fix instructions.
+
+Legacy frames (`plate`, `cover`, `loose`, `signal`, `swiss`) and `vyo series` remain fully supported.
 
 ## Install
 
@@ -16,26 +23,38 @@ npx vyo init
 npx playwright install chromium
 ```
 
-1. The first command adds the tools. The fonts are bundled.
+1. The first command adds the CLI and bundled fonts.
 2. `npx vyo init` copies the skill into `.cursor/skills/vyo/` and `.claude/skills/vyo/`. When the repository already has one of those folders, it writes only that one. Pass `--cursor` or `--claude` to choose, `--codex` to also add a short block to `AGENTS.md` that points Codex at the skill, and `--dir <repo>` to install into another folder. Running it again overwrites the same files.
 3. The last command downloads the Chromium that renders the poster. If you already have Chromium or Chrome, set `VYO_CHROMIUM` to its path instead.
 
-To try vyo without adding it to the project, use `npx -y @litterthanlit/vyo init` and let the agent run `npx -y @litterthanlit/vyo`.
+To try vyo without adding it to the project, run `npx -y @litterthanlit/vyo init` and have your agent run `npx -y @litterthanlit/vyo` wherever the skill says `npx vyo`.
 
 ## Make a poster
 
-Ask your agent: "Explain this app as a poster." It follows the skill, runs `vyo scan`, `vyo compose`, `vyo sketch` and `vyo render`, and replies with the paths of the PNG and the PDF in `vyo/` at the repository root.
+Say this to your agent:
 
-To steer the result, copy `project-context.example.md` from the skill folder to `project-context.md` beside it, and fill in the product's name, its audience and the story you want told.
+> "Analyze this repo and explain what it does as a vyo poster."
+
+Or pick a medium directly: *"Make a riso or contour poster for this codebase."*
+
+The agent follows the skill, runs `vyo scan`, `vyo compose --frame luminous`, `vyo sketch` and `vyo render`, and writes a 2× PNG, a thumbnail and a print-ready PDF into `vyo/` at the repository root.
+
+To steer the story, copy `project-context.example.md` from the skill folder to `project-context.md` beside it and fill in the product's name, audience and focus.
+
+## What it reads
+
+- Nothing leaves your machine. `vyo scan` makes no network calls and calls no model.
+- Your code is never executed. The scan reads source files as text and runs only `git`, to read the latest commit, with hooks switched off.
+- Dotfiles such as `.env`, hidden folders, tests, `node_modules` and build output at a project root are skipped.
 
 ## Languages
 
-JavaScript, TypeScript and Python get full detection: screens, requests and saved records. Every other listed language (Go, Ruby, Rust, PHP, Java, Kotlin, Swift, C#, C and C++, Dart, Scala, Elixir, Lua and Zig) is drawn by size.
+JavaScript, TypeScript, Python and Agent Skills `.md` repositories get full structural detection (screens, requests, saved records and skill layouts). Go, Ruby, Rust, PHP, Java, Kotlin, Swift, C#, C and C++, Dart, Scala, Elixir, Lua and Zig are scanned and drawn by size and imports.
 
 ## Requirements
 
-Node.js 20 or later (Playwright needs it), and Chromium for `render` and `check`. The other commands need no browser.
+Node.js 20 or later (Playwright needs it), and Chromium for `render`, `sketch` (luminous) and `check`.
 
 ## Licence
 
-The fonts, Commit Mono, Newsreader and Inter (subset), are under the SIL Open Font License 1.1. See `fonts/LICENSE.md`.
+MIT. The bundled fonts — Commit Mono, Newsreader and Inter (subset) — are under the SIL Open Font License 1.1. See `fonts/LICENSE.md`.

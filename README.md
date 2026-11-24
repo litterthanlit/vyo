@@ -1,50 +1,74 @@
 # vyo
 
-vyo draws a codebase as one poster or cover that someone who does not code can read. Your coding agent picks an object for the product, and vyo sizes every part of the code to fit it.
+**Your agent reads the repo, then draws it as a poster.**
+
+vyo scans a codebase into its real files, lines and imports. Your coding agent invents and draws a bespoke soft-lit visual explanation on the spot — **zero pre-made shapes** — and vyo prints it through five optical print styles and automated quality checks.
 
 <table align="center">
   <tr>
-    <td align="center" valign="top"><a href="docs/posters/cover-pantry.gif"><img src="docs/posters/cover-pantry-web.png" width="200" alt="A cream cover headed by a small record and the line 'A week of dinners, planned in one go from the recipes you already cook.' A pear drawn as a lit volume in small type, banded top to bottom by parts of the code; the band for the plan is highlighted in orange near its base. 'Pantry' is set large at the foot."></a></td>
-    <td align="center" valign="top"><a href="docs/posters/cover-hypher.gif"><img src="docs/posters/cover-hypher-web.png" width="200" alt="A navy cover with the line 'Switch agents without starting over: the work travels in a handoff note.' A paper plane in small type, a lit wing over a dim keel, cut in diagonal bands; the band for the handoff note glows orange across the wing. 'Hypher' is set large at the foot."></a></td>
-    <td align="center" valign="top"><a href="docs/posters/cover-flask.gif"><img src="docs/posters/cover-flask-web.png" width="200" alt="A charcoal cover with the line 'A web app from one small file, grown only as far as you need it.' A round-bellied flask with a cap and a debossed label, drawn in small type and banded top to bottom; the request core settles in orange at its base. 'Flask' is set large at the foot."></a></td>
-    <td align="center" valign="top"><a href="docs/posters/cover-express.gif"><img src="docs/posters/cover-express-web.png" width="200" alt="A forest-green cover with the line 'Fast, minimal web servers for Node: a router and little else.' A stopwatch in small type whose outer shell, the example apps, is orange all round, with the framework and the other parts banded inside it. 'Express' is set large at the foot."></a></td>
+    <td align="center" valign="top">
+      <img src="site/assets/img/hypher-obsidian-960.webp" width="210" alt="Hypher obsidian poster: a soaring folded origami glider in a luminous 7px mosaic with a blazing crimson handoff-note fold crease."><br>
+      <sub><strong>Hypher</strong> &middot; <code>obsidian &middot; crimson</code></sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="site/assets/img/shader-lab-optics-960.webp" width="210" alt="Shader Lab optics poster: a swirling GLSL caustic glass vortex with a glowing crimson inner refraction ring over continuous darkroom strata."><br>
+      <sub><strong>Shader Lab</strong> &middot; <code>optics &middot; crimson</code></sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="site/assets/img/anatomy-contour-960.webp" width="210" alt="Anatomy contour poster: an exploded isometric cutaway dial and glowing crimson escapement rendered in 24 elevation iso-lines on pitch black."><br>
+      <sub><strong>Anatomy</strong> &middot; <code>contour &middot; crimson</code></sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="site/assets/img/vyo-riso-960.webp" width="210" alt="vyo riso poster: a translucent 3D glass prism splitting source files into a Klein-cobalt and charcoal 3-plate risograph overprint on warm washi paper."><br>
+      <sub><strong>vyo</strong> &middot; <code>riso &middot; cobalt</code></sub>
+    </td>
   </tr>
 </table>
 
-<p align="center">Four covers on one template. Each object turns slowly under a fixed lamp: click a cover for its loop. Every band is a part of the code, as big as its share of the lines, and the orange one is the part the product is about. Flask and Express are the open-source projects; Pantry is a recipe planner kept as a test fixture; Hypher hands work from one coding agent to the next.</p>
+<p align="center">Four real repositories, four bespoke agent-drawn visual explanations. Strata band heights equal each area's real share of source lines, horizontal refraction shear and chromatic fringe come from real cross-file imports, and the focal accent highlights the part the product is about.</p>
 
-The same engine draws posters in other looks:
+### One agent drawing → 5 print styles
+
+Switch mediums without redrawing a single path. Every print below is rendered from the exact same 7.1 KB soft-lit Hypher SVG and real codebase scan (305 files · 47,116 lines · 531 imports):
 
 <table align="center">
   <tr>
-    <td align="center" valign="top"><img src="docs/posters/rings-pantry-dark-web.png" width="280" alt="A dark poster headed 'A week of dinners, planned in one go.' A jar outline is filled with rings inside rings. Each ring is lines of small type naming one part of the code. The orange rings are the plan. Faint outlines echo the jar around it."></td>
-    <td align="center" valign="top"><img src="docs/posters/relief-pantry-dark-web.png" width="280" alt="A dark poster headed 'A week of dinners, planned in one go.' A jar rendered as a lit, rounded volume in dense small type. Each layer is the name of one part of the code. The layer for the plan glows orange near the bottom."></td>
-  </tr>
-  <tr>
-    <td align="center" valign="top"><img src="docs/posters/rings-hypher-dark-web.png" width="280" alt="A dark poster headed 'Switch agents without starting over.' A large paper-plane shape is filled with rings of small type, one ring per part of the code. The orange outer rings read 'handoff note'. The core is drawn in level lines."></td>
-    <td align="center" valign="top"><img src="docs/posters/relief-hypher-dark-web.png" width="280" alt="A dark poster headed 'Switch agents without starting over.' A paper plane with lit, folded wings, drawn in dense small type. Each band is the name of one part of the code. A band named 'handoff note' glows orange across the wing."></td>
+    <td align="center" valign="top">
+      <img src="site/assets/img/hypher-obsidian-480.webp" width="160" alt="Hypher rendered in obsidian style: 7px luminous mosaic with HDR refraction on pitch black."><br>
+      <sub><code>obsidian</code></sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="site/assets/img/hypher-alabaster-480.webp" width="160" alt="Hypher rendered in alabaster style: 7px daylight museum screenprint on archival paper."><br>
+      <sub><code>alabaster</code></sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="site/assets/img/hypher-optics-480.webp" width="160" alt="Hypher rendered in optics style: continuous darkroom refraction with RGB fringe and 35mm film grain."><br>
+      <sub><code>optics</code></sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="site/assets/img/hypher-riso-480.webp" width="160" alt="Hypher rendered in riso style: 3-plate multiply risograph overprint with drum slip and warm washi grain."><br>
+      <sub><code>riso</code></sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="site/assets/img/hypher-contour-480.webp" width="160" alt="Hypher rendered in contour style: 24-level Marching Squares elevation iso-lines with glowing accent contours."><br>
+      <sub><code>contour</code></sub>
+    </td>
   </tr>
 </table>
 
-<p align="center">The same two products in two of the looks. Pantry is a recipe planner kept as a test fixture. Hypher is a tool for handing work from one coding agent to the next.</p>
+## The styles
 
-## The looks
+**Luminous Prints (`--frame luminous`, v0.3.0 flagship)** pair one agent-authored soft-lit SVG metaphor with codebase-driven refraction, frameless typography, and zone-anchored plain-language micro-type across **5 optical print styles**:
 
-**Vector Data-as-Art Plates** (`--frame plate`) turn the codebase's real file slices, line counts, and cross-area import graph directly into pure high-resolution vector prints:
+- **`obsidian`** *(default)* — deep pitch-black `7px` luminous optical mosaic (`120×170`) with HDR codebase strata refraction and glowing focal beads.
+- **`alabaster`** — crisp daylight `7px` museum screenprint with automatic light/dark tonal translation on archival paper.
+- **`optics`** — full-resolution continuous darkroom refraction with horizontal slice cuts, kinetic trails, cyan-paired chromatic dispersion, specular halation, and fine 35mm film grain.
+- **`riso`** — 3-plate tactile risograph on warm archival washi paper (`#F6F3EB`) with codebase-driven plate misregistration, optical `multiply` overprint, and cotton-fiber ink grain.
+- **`contour`** — 24-level Marching Squares topographic elevation iso-lines with glowing accent contours, codebase fault-line ticks, and cartographic label breaks.
 
-- **topo** — marching-squares topographic elevation map rising around each area's lines and import passes, with index/minor contours and summit markers (`pulse` loop).
-- **blueprint** — octilinear PCB / architectural circuit schematic with proportional part chambers subdivided into file cells and wired by chamfered import traces and vias (`signal` loop).
+All five styles pair with **5 curated palettes (`--palette`)**: `crimson`, `pine`, and `abyss` on dark grounds; `vermilion` and `cobalt` on light grounds. Author one SVG once — the engine auto-detects polarity and translates it across all five mediums without redrawing.
 
-**Sculptural 3D Covers** (`--frame cover`) turn one of 22 ready silhouettes (or any silhouette you draw or trace from a PNG) into a 3D object (`dome`, `extrude`, or `revolve` solids) cut honestly into layers by each part's share of the code, with four selectable high-res **finishes**:
-
-- **studio** — continuous-tone studio-lit matte obsidian/metallic/ceramic 3D surface with softbox key, Fresnel rim, distance-field ambient occlusion, accent bloom, film grain, and subtle 5px micro-type shimmer.
-- **halftone** — precision 22.5° rotated dot-matrix sampled from the studio lighting buffer with accent bloom.
-- **wireframe** — smoked-glass Fresnel body with depth-tested 3D latitude, longitude, and elevation contour hairlines.
-- **type** — sculpted 6px Commit Mono typographic relief across three visual looks: **living** (slowly turning volume under a fixed lamp), **xerox** (2-plate thresholded toner photocopy with paper grain, archive stamp & copier loop), and **spin** (full 360° kinetic turntable).
-
-Both plates and covers share **4 gallery layouts** (`classic`, `editorial`, `blueprint`, `macro`), **3 formats** (`poster` 840×1190, `square` 960×960, `og` 1280×640), **5 refined studio & archival palettes** (`obsidian`, `carbon`, `abyss`, `graphite`, `bone`) — plus 9 legacy grounds (`navy`, `charcoal`, `forest`, `paper`, `cobalt`, `xerox`, `riso`, `blood`, `acid`) kept for backward compatibility — and `vyo series` to compose 2–4 covers or plates into one gallery contact sheet or synchronized GIF.
-
-A **shape** poster draws a silhouette in one of three styles — **relief** (lit sculpted volume, default), **rings** (concentric outline rings), or **symbols** (shaded `- : = + #` ASCII art) — in either the serif `loose` frame or the brutalist high-contrast `signal` frame. When no single object fits, vyo also generates typographic fields directly from the scan: **seismic**, **orbit**, **river**, **terrain**, **slabs**, **spiral**, **contour**, and more. `vyo render --gif` animates any spec with `motion`.
+**Legacy frames remain supported:** Data-as-Art Vector Plates (`--frame plate`: `topo`, `blueprint`), Sculptural 3D Covers (`--frame cover`: `studio`, `halftone`, `wireframe`, `type`, plus `xerox`/`spin` looks and `vyo render --gif`), Editorial Shape & Field Posters (`--frame loose`, `--frame signal`, `--frame swiss`), and multi-poster contact sheets (`vyo series`).
 
 ## Install and make a poster
 
@@ -56,27 +80,27 @@ npx vyo init
 npx playwright install chromium
 ```
 
-`npx vyo init` copies the skill into `.cursor/skills/vyo/` and `.claude/skills/vyo/`. If you already have a Chromium or Chrome, set `VYO_CHROMIUM` to its path and skip the last command. Node.js 20 or later is required.
+`npx vyo init` copies the skill into `.cursor/skills/vyo/` and `.claude/skills/vyo/` (pass `--cursor`, `--claude`, or `--codex` to choose). If you already have Chromium or Chrome, set `VYO_CHROMIUM` to its path and skip the last command. Node.js 20 or later is required.
 
 Then say this to your agent:
 
-> Explain this app as a poster. Draw it as a shape.
+> "Analyze this repo and explain what it does as a vyo poster."
 
-or, for a cover with its loop:
+Or ask for a specific print style:
 
-> Make a cover for this app.
+> "Make a riso or contour poster for this codebase."
 
-The agent follows the skill and replies with the paths of a PNG and a PDF, and for a cover a GIF, in `vyo/` at the project root.
+The agent follows the skill and writes a 2× PNG (`1680×2380`), a thumbnail, and a print-ready PDF into `vyo/` at the project root.
 
 To try vyo without installing it, run `npx -y @litterthanlit/vyo init` and have the agent run `npx -y @litterthanlit/vyo` wherever the skill says `npx vyo`.
 
 ## How it works
 
-1. `vyo scan` reads the code with no network and no model. Two scans of the same tree give the same file.
-2. Your agent names each part in plain words and chooses the part the product is about. For a shape, it draws the silhouette from a few simple pieces.
-3. `vyo sketch` shows the layout in a quick picture before the full render, so the agent can fix the shape first.
-4. `vyo render` draws the poster to HTML, PNG and PDF.
-5. Checks run on what was drawn. They reject jargon, file paths, placeholder text and text that collides with the picture, and each failure says what to change.
+1. **`vyo scan`** reads the codebase as text into `facts.json` (files, lines, and cross-area imports) with no network and no model. Two scans of the same tree give the exact same file.
+2. **`vyo compose`** scaffolds a `--frame luminous` spec for your chosen `--style` and `--palette`. Your coding agent reads the repo, invents and draws a bespoke soft-lit SVG metaphor explaining the product, names each part in plain words, and places zone-anchored micro-type.
+3. **`vyo sketch`** renders a fast preview of the artwork, strata refraction, and typography sanctuary so the agent can inspect and refine before the full optical pass.
+4. **`vyo render`** prints the final HTML, 2× PNG, thumbnail, and print-ready PDF in headless Chromium.
+5. **Automated checks** measure the finished sheet: `luminous-tonal` flags flat clip-art SVGs, `luminous-accent` verifies focal balance, `luminous-sanctuary` fails if bright artwork collides with typography, and `luminous-jargon` rejects code jargon, file paths, and leftover placeholders. Any `✗` finding exits 1 and names the exact change to make.
 
 ## What it reads
 
@@ -86,7 +110,7 @@ To try vyo without installing it, run `npx -y @litterthanlit/vyo init` and have 
 
 ## Languages
 
-JavaScript, TypeScript and Python get full detection: screens, requests and saved records. Go, Ruby, Rust, PHP, Java, Kotlin, Swift, C#, C and C++, Dart, Scala, Elixir, Lua and Zig are drawn by size.
+JavaScript, TypeScript, Python and Agent Skills `.md` repositories get full structural detection (screens, requests, saved records, and skill layouts). Go, Ruby, Rust, PHP, Java, Kotlin, Swift, C#, C and C++, Dart, Scala, Elixir, Lua and Zig are scanned and drawn by size and imports.
 
 ## More
 
