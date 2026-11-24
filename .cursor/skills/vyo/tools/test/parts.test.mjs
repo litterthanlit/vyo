@@ -114,3 +114,30 @@ test("dominance names the part that is most of the code and what splitting it gi
   assert.deepEqual(dominance(lone), { part: partsFromFacts(lone)[0], share: 0.9, count: 2, split: null }, "a part with no folders inside has nothing to split");
   assert.equal(dominance(recipe), null, "the recipe fixture's parts are fine");
 });
+
+test("empty source files never form a zero-line part", () => {
+  const withEmpty = {
+    facts: [
+      { id: "area:.", kind: "area", name: "App", meta: { leaf: false } },
+      { id: "area:empty", kind: "area", name: "Empty", meta: { leaf: true } },
+      { id: "area:src", kind: "area", name: "Src", meta: { leaf: true } },
+    ],
+    files: {
+      "empty/a.py": { area: "area:empty", loc: 0 },
+      "empty/b.py": { area: "area:empty", loc: 0 },
+      "empty/c.py": { area: "area:empty", loc: 0 },
+      "src/main.py": { area: "area:src", loc: 120 },
+    },
+  };
+  assert.deepEqual(partsFromFacts(withEmpty).map((p) => [p.id, p.loc]), [["area:src", 120]]);
+  const withRoot = {
+    ...withEmpty,
+    files: { ...withEmpty.files, "run.py": { area: "area:.", loc: 20 } },
+  };
+  assert.deepEqual(partsFromFacts(withRoot).map((p) => [p.id, p.loc, p.files]), [["area:.", 20, 4], ["area:src", 120, 1]]);
+  const allEmpty = {
+    facts: [{ id: "area:empty", kind: "area", name: "Empty", meta: { leaf: true } }],
+    files: { "empty/a.py": { area: "area:empty", loc: 0 }, "empty/b.py": { area: "area:empty", loc: 0 } },
+  };
+  assert.deepEqual(partsFromFacts(allEmpty), []);
+});

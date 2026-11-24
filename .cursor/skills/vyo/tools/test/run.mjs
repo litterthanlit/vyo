@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { buildPage, renderPage } from "../lib/render.mjs";
 import { fieldItems } from "../lib/sketch.mjs";
-import { BROWSER_NOTE } from "../lib/browser.mjs";
+import { BROWSER_NOTE, launchChromium } from "../lib/browser.mjs";
 import { runChecks } from "../lib/check.mjs";
 import { coverOf } from "../lib/cover-render.mjs";
 import { COVER_FRAMES } from "../lib/cover.mjs";
@@ -277,6 +277,26 @@ for (const kind of ["resolve", "wipe"]) {
   fs.writeFileSync(file, JSON.stringify({ ...preset("signal-paper"), motion: { kind, frames: 8, fps: 8 } }, null, 2));
   const r = vyo("render", file, "--facts", factsFile, "--no-pdf");
   result(r.status === 0 && /^PASS$/m.test(r.stdout), `a spec with ${kind} motion renders its still as the finished poster`, `exit ${r.status}\n${r.stdout}${r.stderr}`);
+}
+{
+  const spec = { ...preset("terrain"), motion: { kind: "resolve", frames: 8, fps: 8 } };
+  const html = buildPage(spec, facts);
+  const browser = await launchChromium();
+  try {
+    const page = await browser.newPage({ viewport: { width: 840, height: 1188 } });
+    await page.setContent(html, { waitUntil: "load" });
+    await page.waitForFunction(() => window.drawn === true, null, { timeout: 60000 });
+    const opacities = () => page.evaluate(() => [...document.querySelectorAll(".row")].map((el) => Number(getComputedStyle(el).opacity)));
+    const initial = await opacities();
+    await page.evaluate(() => window.applyMotion(0.5));
+    await page.evaluate(() => window.applyMotion(1));
+    const final = await opacities();
+    const shaded = initial.some((a) => a > 0 && a < 0.95);
+    const preserved = initial.length > 0 && initial.length === final.length && initial.every((a, i) => Math.abs(a - final[i]) < 1e-4);
+    result(shaded && preserved, "resolve motion preserves terrain per-row shading opacity on the final frame", `shaded=${shaded}, initial=${JSON.stringify(initial.slice(0, 8))}, final=${JSON.stringify(final.slice(0, 8))}`);
+  } finally {
+    await browser.close();
+  }
 }
 
 // The cover: its loop through render --gif, the page's still against the sketch's, and planted flaws.

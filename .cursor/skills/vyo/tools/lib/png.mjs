@@ -132,6 +132,9 @@ export function decodePng(buf) {
     const bit = i * depth;
     return (pix[row + (bit >> 3)] >> (8 - depth - (bit & 7))) & max;
   };
+  const rawSample = (y, i) => (depth === 16 ? pix.readUInt16BE(y * stride + i * 2) : sample(y, i));
+  const trnsGray = colorType === 0 && alphas && alphas.length >= 2 ? alphas.readUInt16BE(0) : -1;
+  const trnsRgb = colorType === 2 && alphas && alphas.length >= 6 ? [alphas.readUInt16BE(0), alphas.readUInt16BE(2), alphas.readUInt16BE(4)] : null;
   const luma = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
   const onWhite = (l, alpha) => Math.round(l * (alpha / 255) + 255 * (1 - alpha / 255));
   const scale = depth < 8 ? 255 / max : 1;
@@ -145,10 +148,15 @@ export function decodePng(buf) {
         const p = idx * 3;
         const rgb = p + 2 < palette.length ? luma(palette[p], palette[p + 1], palette[p + 2]) : 0;
         l = onWhite(rgb, alphas && idx < alphas.length ? alphas[idx] : 255);
-      } else if (colorType === 0) l = Math.round(sample(y, k) * scale);
-      else if (colorType === 4) l = onWhite(sample(y, k), sample(y, k + 1));
-      else if (colorType === 2) l = Math.round(luma(sample(y, k), sample(y, k + 1), sample(y, k + 2)));
-      else l = onWhite(luma(sample(y, k), sample(y, k + 1), sample(y, k + 2)), sample(y, k + 3));
+      } else if (colorType === 0) {
+        l = trnsGray >= 0 && rawSample(y, k) === trnsGray ? 255 : Math.round(sample(y, k) * scale);
+      } else if (colorType === 4) l = onWhite(sample(y, k), sample(y, k + 1));
+      else if (colorType === 2) {
+        l =
+          trnsRgb && rawSample(y, k) === trnsRgb[0] && rawSample(y, k + 1) === trnsRgb[1] && rawSample(y, k + 2) === trnsRgb[2]
+            ? 255
+            : Math.round(luma(sample(y, k), sample(y, k + 1), sample(y, k + 2)));
+      } else l = onWhite(luma(sample(y, k), sample(y, k + 1), sample(y, k + 2)), sample(y, k + 3));
       gray[y * width + x] = l;
     }
   }

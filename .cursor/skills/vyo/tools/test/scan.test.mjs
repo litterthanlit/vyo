@@ -603,6 +603,19 @@ describe("other frameworks", () => {
       },
     ));
 
+  test("Fastify: register() options prefix applies only to its plugin, never to the server or sibling plugins", () =>
+    withRepo(
+      {
+        "package.json": '{"name":"f","dependencies":{"fastify":"5"}}',
+        "src/server.js": 'import Fastify from "fastify";\nimport catalog from "./catalog.js";\nimport orders from "./orders.js";\nconst app = Fastify();\napp.register(catalog, { prefix: "/catalog" });\napp.register(orders, { prefix: "/orders" });\napp.get("/health", async () => ({ ok: true }));\n',
+        "src/catalog.js": 'export default async function catalog(fastify) {\n  fastify.get("/items", async () => []);\n}\n',
+        "src/orders.js": 'export default async function orders(fastify) {\n  fastify.get("/recent", async () => []);\n}\n',
+      },
+      (f) => {
+        assert.deepEqual(ids(f, "endpoint"), ["endpoint:/catalog/items", "endpoint:/health", "endpoint:/orders/recent"]);
+      },
+    ));
+
   test("SvelteKit, Nuxt, Remix and React Router screens", async () => {
     await withRepo(
       {
@@ -1153,6 +1166,23 @@ describe("real-world edges", () => {
       assert.deepEqual(ids(facts, "screen"), ["screen:/#apps/admin", "screen:/#apps/web"]);
       assert.deepEqual(facts.repo.packages, ["apps/admin", "apps/web", "packages/ui"]);
       assert.ok(hasImport(facts, "apps/web/app/page.tsx", "packages/ui/src/button.tsx"));
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("monorepo: colliding endpoint paths keep each package's own HTTP methods", async () => {
+    const root = mk();
+    try {
+      write(root, "package.json", JSON.stringify({ name: "mono", private: true, workspaces: ["apps/*"] }));
+      write(root, "apps/admin/package.json", JSON.stringify({ name: "admin", dependencies: { next: "14.0.0" } }));
+      write(root, "apps/admin/app/api/items/route.ts", "export async function GET() { return Response.json([]); }\n");
+      write(root, "apps/web/package.json", JSON.stringify({ name: "web", dependencies: { next: "14.0.0" } }));
+      write(root, "apps/web/app/api/items/route.ts", "export async function POST() { return Response.json({}); }\n");
+      const facts = await scanRepo(root);
+      assert.deepEqual(ids(facts, "endpoint"), ["endpoint:/api/items#apps/admin", "endpoint:/api/items#apps/web"]);
+      assert.deepEqual(fact(facts, "endpoint:/api/items#apps/admin").meta.methods, ["GET"]);
+      assert.deepEqual(fact(facts, "endpoint:/api/items#apps/web").meta.methods, ["POST"]);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

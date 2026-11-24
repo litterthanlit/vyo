@@ -81,9 +81,30 @@ function detectExpressLike(ctx) {
     const receivers = new Map(); // name -> own prefix
     for (const m of code.matchAll(/\b(?:const|let|var)\s+(\w+)\s*(?::[^=\n]+)?=\s*(?:new\s+)?(?:express\s*\(|express\.Router\s*\(|Router\s*\(|(?:Fastify|fastify)\s*\(|Hono\b|Elysia\b|KoaRouter\b|Koa\b|createRouter\b)/g)) {
       let own = "";
-      const tail = code.slice(m.index, m.index + 300);
-      const bp = /\.basePath\(\s*["'`]([^"'`]*)["'`]/.exec(tail) || /\bprefix\s*:\s*["'`]([^"'`]*)["'`]/.exec(tail);
-      if (bp) own = bp[1];
+      let open = m[0].endsWith("(") ? m.index + m[0].length - 1 : -1;
+      if (open < 0) {
+        const rest = code.slice(m.index + m[0].length, m.index + m[0].length + 120);
+        const call = /^\s*(?:<[^>\n]*>)?\s*\(/.exec(rest);
+        if (call) open = m.index + m[0].length + call[0].length - 1;
+      }
+      const close = open >= 0 ? matchClose(code, open) : -1;
+      if (close > open) {
+        const pf = /\bprefix\s*:\s*["'`]([^"'`]*)["'`]/.exec(code.slice(open + 1, close));
+        if (pf) own = pf[1];
+        let pos = close + 1;
+        for (;;) {
+          const cm = /^\s*\.\s*(\w+)\s*\(/.exec(code.slice(pos, pos + 80));
+          if (!cm) break;
+          const cOpen = pos + cm[0].length - 1;
+          const cClose = matchClose(code, cOpen);
+          if (cClose < 0) break;
+          if (cm[1] === "basePath") {
+            const bp = /^\s*["'`]([^"'`]*)["'`]/.exec(code.slice(cOpen + 1, cClose));
+            if (bp) own = bp[1];
+          }
+          pos = cClose + 1;
+        }
+      }
       receivers.set(m[1], own);
     }
     for (const g of ["app", "router", "fastify", "server"]) if (!receivers.has(g) && hasServerDep) receivers.set(g, "");
@@ -119,14 +140,23 @@ function detectExpressLike(ctx) {
       }
       node.routes.push({ path: mm[3], methods });
     }
-    // mounts: app.use('/api', usersRouter)
+    // mounts: app.use('/api', usersRouter) or fastify.register(plugin, { prefix: '/api' })
     const requireBind = new Map();
     for (const rm of code.matchAll(/\b(?:const|let|var)\s+(\w+)\s*=\s*require\(\s*["'](\.[^"']*)["']\s*\)/g)) {
       const f = ctx.resolveSpec(file, rm[2]);
       if (f) requireBind.set(rm[1], f);
     }
     for (const um of code.matchAll(new RegExp(`\\b(${names.join("|")})\\s*\\.(use|route|register)\\s*\\(\\s*(?:(["'\`])(\\/[^"'\`\\n]*)\\3\\s*,\\s*)?([\\w$.]+)`, "g"))) {
-      const [, parent, verb, , prefix, expr] = um;
+      const [, parent, verb, , rawPrefix, expr] = um;
+      let prefix = rawPrefix ?? "";
+      if (!prefix && verb === "register") {
+        const open = code.indexOf("(", um.index + parent.length);
+        const close = open >= 0 ? matchClose(code, open) : -1;
+        if (close > um.index + um[0].length) {
+          const opt = /\bprefix\s*:\s*["'`]([^"'`]*)["'`]/.exec(code.slice(um.index + um[0].length, close));
+          if (opt) prefix = opt[1];
+        }
+      }
       if (verb === "route" && !prefix) continue;
       let childFile = requireBind.get(expr.split(".")[0]) || null;
       let childVar = null;
@@ -139,7 +169,7 @@ function detectExpressLike(ctx) {
       }
       if (!childFile) continue;
       const pk = key(file, parent);
-      edges.set(`pending:${childFile}:${childVar ?? "*"}:${pk}:${prefix ?? ""}`, [{ pending: true, childFile, childVar, parent: pk, prefix: prefix ?? "" }]);
+      edges.set(`pending:${childFile}:${childVar ?? "*"}:${pk}:${prefix}`, [{ pending: true, childFile, childVar, parent: pk, prefix }]);
     }
   }
 

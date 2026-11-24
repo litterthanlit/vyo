@@ -60,6 +60,26 @@ test("grey with alpha composites on white, so a transparent ground is light", ()
   assert.deepEqual([...img.gray], [255, 0]);
 });
 
+test("RGB and grayscale tRNS transparent keys composite onto white", () => {
+  // RGB 2x1: pixel 0 is black (transparent via tRNS 0,0,0), pixel 1 is dark gray (10,10,10) opaque.
+  const rgbRows = Buffer.from([0, 0, 0, 0, 10, 10, 10]);
+  const rgbTrns = Buffer.from([0, 0, 0, 0, 0, 0]);
+  const rgb = decodePng(png(ihdr(2, 1, 8, 2), chunk("tRNS", rgbTrns), chunk("IDAT", zlib.deflateSync(rgbRows))));
+  assert.deepEqual([...rgb.gray], [255, 10]);
+
+  // Grayscale 8-bit 2x1: pixel 0 is 0 (transparent via tRNS 0), pixel 1 is 20 (opaque).
+  const grayRows = Buffer.from([0, 0, 20]);
+  const grayTrns = Buffer.from([0, 0]);
+  const gray = decodePng(png(ihdr(2, 1, 8, 0), chunk("tRNS", grayTrns), chunk("IDAT", zlib.deflateSync(grayRows))));
+  assert.deepEqual([...gray.gray], [255, 20]);
+
+  // Grayscale 16-bit 2x1: pixel 0 is 0x0001 (transparent via tRNS), pixel 1 is 0x0002 (opaque, high byte 0).
+  const gray16Rows = Buffer.from([0, 0, 1, 0, 2]);
+  const gray16Trns = Buffer.from([0, 1]);
+  const gray16 = decodePng(png(ihdr(2, 1, 16, 0), chunk("tRNS", gray16Trns), chunk("IDAT", zlib.deflateSync(gray16Rows))));
+  assert.deepEqual([...gray16.gray], [255, 0]);
+});
+
 test("malformed or hostile PNGs fail with a png: message, never a crash or a huge allocation", () => {
   const bad = [
     ["not a PNG", Buffer.from("hello world")],

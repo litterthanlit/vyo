@@ -346,9 +346,11 @@ function composeCover(factsFile, opt) {
   let parts = partsOf(split);
   if (!parts.length) throw new Failure(`no parts to draw; the scan found no code, so a cover has nothing to show. Compose a fill poster instead: vyo compose ${factsFile} --from <preset>`);
   const linesIn = (list) => list.reduce((s, p) => s + p.loc, 0) || 1;
-  for (let big; split.length < 4 && (big = parts.find((p) => p.loc / linesIn(parts) > L.share && !split.includes(p.id))); ) {
+  const tried = new Set(split);
+  for (let big; split.length < 4 && (big = parts.find((p) => p.loc / linesIn(parts) > L.share && !tried.has(p.id))); ) {
+    tried.add(big.id);
     const finer = partsOf([...split, big.id]);
-    if (finer.length <= parts.length) break;
+    if (finer.length <= parts.length) continue;
     cut.push(`${big.id} (${pct(big.loc / linesIn(parts))}) into ${finer.length - parts.length + 1} parts`);
     split.push(big.id);
     parts = finer;
@@ -541,7 +543,11 @@ function coverSketch(file, spec, opt) {
   const region = spec.figure.regions[0];
   const names = Object.fromEntries(Object.entries(region.names ?? {}).filter(([, n]) => typeof n === "string" && !n.trim().startsWith(PLACEHOLDER)));
   const legend = spec.figure.texts.find((t) => t.role === "legend");
-  const drawn = { ...spec, figure: { ...spec.figure, regions: [{ ...region, names }], texts: [{ ...legend, text: typeof legend?.text === "string" ? legend.text : "" }] } };
+  const drawn = {
+    ...spec,
+    headline: typeof spec.headline === "string" ? spec.headline : "",
+    figure: { ...spec.figure, regions: [{ ...region, names }], texts: [{ ...legend, text: typeof legend?.text === "string" ? legend.text : "" }] },
+  };
   process.stdout.write(coverSketchLines(drawn, facts).join("\n") + "\n");
   const presets = loadPresets();
   const findings = coverSketchFindings(drawn, facts);

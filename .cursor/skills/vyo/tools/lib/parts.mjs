@@ -83,6 +83,12 @@ export function partsFromFacts(facts, { minShare = PART_DEFAULTS.minShare, maxPa
   const deepestSmall = (x, y) => depth(y[0]) - depth(x[0]) || bySize(x, y);
 
   for (let id; (id = first((x) => depth(x) > 1 && parts.get(x).loc < minShare * total, deepestSmall)); ) mergeUp(id);
+  for (const [id, p] of [...parts]) {
+    if (p.loc > 0) continue;
+    const into = id === ROOT ? null : parentOf(id);
+    if (into && parts.get(into)?.loc > 0) mergeUp(id);
+    else parts.delete(id);
+  }
   for (let id; parts.size > maxParts && (id = first((x) => x !== ROOT, bySize)); ) mergeUp(id);
 
   return [...parts]

@@ -335,3 +335,53 @@ test("a cover spec that lost its commit or date gets the exact values to restore
   const s = spawnSync(process.execPath, [VYO, "sketch", out], { encoding: "utf8" });
   assert.match(s.stdout, new RegExp(`^✗ record: product has no commit, which compose wrote; set "commit": "${hash}" and "date": "${date}" in product`, "m"), s.stdout);
 });
+
+test("compose --frame cover skips an unsplittable oversized root and still splits a large feature part", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-cover-split-"));
+  const facts = {
+    version: 1,
+    hash: "0123456789ab",
+    repo: { name: "demo" },
+    facts: [
+      { id: "area:.", kind: "area", name: "Demo", meta: { leaf: false } },
+      { id: "area:feature", kind: "area", name: "Feature", meta: { leaf: true } },
+      { id: "area:feature/alpha", kind: "area", name: "Alpha", meta: { leaf: false } },
+      { id: "area:feature/beta", kind: "area", name: "Beta", meta: { leaf: false } },
+      { id: "area:feature/gamma", kind: "area", name: "Gamma", meta: { leaf: false } },
+      { id: "area:other", kind: "area", name: "Other", meta: { leaf: true } },
+    ],
+    files: {
+      "index.js": { area: "area:.", loc: 530 },
+      "feature/alpha/a.js": { area: "area:feature/alpha", loc: 145 },
+      "feature/beta/b.js": { area: "area:feature/beta", loc: 145 },
+      "feature/gamma/c.js": { area: "area:feature/gamma", loc: 140 },
+      "other/o.js": { area: "area:other", loc: 40 },
+    },
+  };
+  const factsFile = path.join(dir, "demo-facts.json");
+  const out = path.join(dir, "demo-poster.json");
+  fs.writeFileSync(factsFile, JSON.stringify(facts));
+  const r = spawnSync(process.execPath, [VYO, "compose", factsFile, "--frame", "cover", "--out", out], { encoding: "utf8" });
+  assert.equal(r.status, 0, r.stderr);
+  const spec = JSON.parse(fs.readFileSync(out, "utf8"));
+  assert.deepEqual(spec.figure.regions[0].split, ["area:feature"], "root cannot split, so compose continues and splits feature");
+  const parts = regionParts(spec.figure.regions[0], facts);
+  assert.deepEqual(
+    parts.map((p) => p.id),
+    ["area:.", "area:feature/alpha", "area:feature/beta", "area:feature/gamma", "area:other"],
+  );
+});
+
+test("cover sketch reports a missing headline without crashing coverWrap", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-cover-headline-"));
+  const factsFile = path.join(dir, "recipe-facts.json");
+  const out = path.join(dir, "recipe-poster.json");
+  fs.writeFileSync(factsFile, JSON.stringify(recipe));
+  const broken = preset();
+  delete broken.headline;
+  fs.writeFileSync(out, JSON.stringify(broken));
+  const s = spawnSync(process.execPath, [VYO, "sketch", out], { encoding: "utf8" });
+  assert.equal(s.status, 0, s.stdout + s.stderr);
+  assert.match(s.stdout, /^✗ spec: headline: missing$/m);
+  assert.doesNotMatch(s.stderr, /TypeError/);
+});

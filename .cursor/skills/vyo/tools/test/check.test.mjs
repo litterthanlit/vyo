@@ -129,6 +129,12 @@ test("field-parts passes a field that draws every part, and names each part it n
   assert.deepEqual(missing.filter((f) => f.id === "field-parts").map((f) => [f.level, f.message]), [["fail", 'region wave: part "AI features" (area:lib/ai) is never drawn; move the text blocks that cover it']]);
   const lost = fieldFindings(fieldPage(), fieldSpec({ accent: "area:nowhere" })).filter((f) => f.id === "field-parts");
   assert.deepEqual(lost.map((f) => f.message), ["region wave: accent area:nowhere names no part; vyo parts lists the part ids"]);
+  const withEmpty = {
+    ...recipe,
+    facts: [...recipe.facts, { id: "area:stubs", kind: "area", name: "Stubs", meta: { leaf: true } }],
+    files: { ...recipe.files, "stubs/a.py": { area: "area:stubs", loc: 0 }, "stubs/b.py": { area: "area:stubs", loc: 0 }, "stubs/c.py": { area: "area:stubs", loc: 0 } },
+  };
+  assert.deepEqual(runChecks("page", { spec: fieldSpec(), facts: withEmpty, page: fieldPage() }).filter((f) => f.id === "field-parts"), []);
 });
 
 test("a field is exempt from row-variety, region-size, thin-region and the rows-crowding rule, not from blocks-apart", () => {
