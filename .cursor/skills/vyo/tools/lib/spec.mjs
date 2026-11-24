@@ -8,7 +8,7 @@ import { RINGS } from "./fields/shape-rings.mjs";
 import { SHAPE_KINDS, opKind, shapeMask } from "./mask.mjs";
 // Loads a traced shape's image for shapeMask, in Node.
 import "./png-mask.mjs";
-import { ROLES as FRAME_ROLES, FRAMES, RECORD_FRAMES, LUMINOUS_THEMES, frameOf, sizeRange, LIST } from "./frame.mjs";
+import { ROLES as FRAME_ROLES, FRAMES, RECORD_FRAMES, LUMINOUS_THEMES, LUMINOUS_STYLES, LUMINOUS_PALETTES, LUMINOUS_PALETTE_WORDS, frameOf, sizeRange, LIST } from "./frame.mjs";
 import { SILHOUETTES, SILHOUETTE_NAMES } from "./silhouettes.mjs";
 import { COVER_GROUNDS, COVER_STRATA, COVER_LOOKS, COVER_CROPS, COVER_SOLID_KINDS, COVER_LAYOUTS, COVER_FINISHES, coverLegend } from "./cover.mjs";
 import { PLATES, PLATE_NAMES } from "./plates/index.mjs";
@@ -29,10 +29,12 @@ import { PLATES, PLATE_NAMES } from "./plates/index.mjs";
  *             align?: "left" | "right" | "center", hot?: boolean, parts?: true, items?: string[] }} Text  roles per frame in lib/frame.mjs
  * @typedef {{
  *   version: 3,
- *   frame?: "loose" | "swiss" | "signal" | "cover" | "plate",  loose unless it says swiss, signal, cover or plate
+ *   frame?: "loose" | "swiss" | "signal" | "cover" | "plate" | "luminous",  loose unless it says swiss, signal, cover, plate or luminous
  *   facts: string,
  *   product: { name: string, repo: string, commit?: string, date: string },
- *   theme: "light" | "dark",
+ *   theme: "light" | "dark" | "obsidian" | "alabaster",
+ *   style?: "obsidian" | "alabaster" | "optics" | "riso" | "contour",
+ *   palette?: "crimson" | "pine" | "abyss" | "vermilion" | "cobalt",
  *   accent?: string,
  *   headline: string,
  *   hot?: string,  required unless the figure has a field or plate; refused on a plate
@@ -61,7 +63,7 @@ const RESERVED = ["note", "counts", "notBuilt", "provenance", "credit", "record"
 // Keys that only some kinds of field take, like the wave's sentence.
 const FIELD_OPTIONS = [...new Set(Object.values(FIELDS).flatMap((f) => f.options))];
 const KEYS = {
-  spec: ["version", "frame", "facts", "product", "theme", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience", "motion", "ground", "series", "look", "crop", "format", "layout", "finish"],
+  spec: ["version", "frame", "facts", "product", "theme", "style", "palette", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience", "motion", "ground", "series", "look", "crop", "format", "layout", "finish"],
   product: ["name", "repo", "commit", "date"],
   note: ["title", "text"],
   figure: ["fits", "regions", "texts"],
@@ -685,6 +687,7 @@ export function validateSpec(spec) {
   }
 
   if (frame === "cover") {
+    for (const k of ["style", "palette"]) if (spec[k] !== undefined) err(`${k}: only the luminous frame takes top-level ${k}; remove ${k}`);
     if (spec.theme !== undefined) err(`theme: the cover takes a ground instead; remove theme and set ground to ${GROUND_LIST}`);
     if (spec.accent !== undefined) err("accent: the cover's accent comes from its ground; remove accent");
     if (!isStr(spec.ground) || !COVER_GROUNDS[spec.ground]) {
@@ -698,6 +701,7 @@ export function validateSpec(spec) {
     if (spec.layout !== undefined && !COVER_LAYOUTS.includes(spec.layout)) err(`layout: "${spec.layout}" is not a layout; use ${LAYOUT_LIST}`);
     if (spec.finish !== undefined && !COVER_FINISHES.includes(spec.finish)) err(`finish: "${spec.finish}" is not a cover finish; use ${FINISH_LIST}`);
   } else if (frame === "plate") {
+    for (const k of ["style", "palette"]) if (spec[k] !== undefined) err(`${k}: only the luminous frame takes top-level ${k}; remove ${k}`);
     if (spec.theme !== undefined) err(`theme: a plate takes a ground instead; remove theme and set ground to ${GROUND_LIST}`);
     if (spec.accent !== undefined) err("accent: a plate's accent comes from its ground; remove accent");
     if (spec.hot !== undefined) err("hot: a plate sets its accent part in the ground's colour and draws no hot word; remove hot");
@@ -713,9 +717,13 @@ export function validateSpec(spec) {
     for (const k of ["ground", "series", "look", "crop", "format", "layout", "finish"]) if (spec[k] !== undefined) err(`${k}: the luminous frame does not take ${k}; remove ${k}`);
     if (spec.accent !== undefined) err("accent: set accent on the luminous region instead of top-level hex; remove accent");
     if (spec.hot !== undefined) err("hot: a luminous poster highlights its accent through the soft-lit subject and draws no hot word; remove hot");
-    if (!LUMINOUS_THEMES.includes(spec.theme)) err(`theme: "${spec.theme}" is not a luminous theme; use ${LUMINOUS_THEMES.join(" or ")}`);
+    if (spec.style !== undefined && !LUMINOUS_STYLES.includes(spec.style)) err(`style: "${spec.style}" is not a luminous style; use ${LUMINOUS_STYLES.join(", ")}`);
+    if (spec.palette !== undefined && !LUMINOUS_PALETTES.includes(spec.palette)) err(`palette: "${spec.palette}" is not a luminous palette; use ${LUMINOUS_PALETTES.join(", ")}`);
+    if (spec.theme !== undefined && !LUMINOUS_THEMES.includes(spec.theme)) err(`theme: "${spec.theme}" is not a luminous theme; use ${LUMINOUS_THEMES.join(" or ")}`);
+    else if (spec.theme === undefined && spec.style === undefined) err(`theme: "${spec.theme}" is not a luminous theme; use ${LUMINOUS_THEMES.join(" or ")}`);
   } else {
     for (const k of ["ground", "series", "look", "crop", "format", "layout", "finish"]) if (spec[k] !== undefined) err(`${k}: only the cover or plate frame takes ${k}; remove ${k}`);
+    for (const k of ["style", "palette"]) if (spec[k] !== undefined) err(`${k}: only the luminous frame takes top-level ${k}; remove ${k}`);
     if (!THEMES.includes(spec.theme)) err(`theme: "${spec.theme}" is not a theme; use light or dark`);
   }
   if (frame !== "cover" && frame !== "plate" && frame !== "luminous" && spec.accent !== undefined && !(isStr(spec.accent) && /^#[0-9a-f]{6}$/i.test(spec.accent))) err("accent: a hex colour like #9284FF");
@@ -992,20 +1000,27 @@ export function plateScaffold(facts, { plate = "topo", commit, date, accent, spl
 }
 
 /**
- * The spec `compose --frame luminous` writes: an obsidian or alabaster optical mosaic poster with
+ * The spec `compose --frame luminous` writes: a luminous print poster in one of 5 styles
+ * (`obsidian`, `alabaster`, `optics`, `riso`, `contour`) and 5 curated palettes, with
  * placeholders for product.name, headline, legend, accent, subject.concept, subject.svg, and microType.
  * @param {{ hash: string, repo: { name: string } }} facts
- * @param {{ commit?: string, date: string, accent?: string | string[], theme?: "obsidian" | "alabaster", parts?: { id: string, name: string }[], split?: string[], seed?: number }} o
+ * @param {{ commit?: string, date: string, accent?: string | string[], theme?: "obsidian" | "alabaster", style?: string, palette?: string, parts?: { id: string, name: string }[], split?: string[], seed?: number }} o
  */
-export function luminousScaffold(facts, { commit, date, accent, theme = "obsidian", parts = [], split, seed } = {}) {
-  const isAlabaster = theme === "alabaster";
-  const accentWord = isAlabaster ? "vermilion" : "crimson";
+export function luminousScaffold(facts, { commit, date, accent, theme, style, palette, parts = [], split, seed } = {}) {
+  const effStyle = LUMINOUS_STYLES.includes(style) ? style : theme === "alabaster" ? "alabaster" : "obsidian";
+  const defaultLight = effStyle === "alabaster" || effStyle === "riso" || (effStyle === "contour" && theme === "alabaster");
+  const effPalette = LUMINOUS_PALETTES.includes(palette) ? palette : defaultLight ? "vermilion" : "crimson";
+  const isLight = effStyle === "alabaster" || effStyle === "riso" || (effStyle === "contour" && (effPalette === "vermilion" || effPalette === "cobalt"));
+  const effTheme = LUMINOUS_THEMES.includes(theme) ? theme : isLight ? "alabaster" : "obsidian";
+  const accentWord = LUMINOUS_PALETTE_WORDS[effPalette] ?? (isLight ? "vermilion" : "crimson");
   return {
     version: 3,
     frame: "luminous",
     facts: facts.hash,
     product: { name: hold("the name customers see, as the product's docs write it"), repo: facts.repo.name, ...(commit ? { commit } : {}), date },
-    theme,
+    theme: effTheme,
+    style: effStyle,
+    palette: effPalette,
     headline: hold(`one plain sentence about what the product does for a person, at most ${LIMITS.headline} characters`),
     figure: {
       regions: [
@@ -1017,7 +1032,7 @@ export function luminousScaffold(facts, { commit, date, accent, theme = "obsidia
           ...(seed !== undefined ? { seed } : {}),
           subject: {
             concept: hold("one plain sentence describing the bespoke visual metaphor you are drawing for this product"),
-            svg: hold('self-contained soft-lit <svg viewBox="0 0 840 1190"> with radialGradient/linearGradient, feGaussianBlur, carved shadow valleys, and one glowing crimson accent heart'),
+            svg: hold(`self-contained soft-lit <svg viewBox="0 0 840 1190"> with radialGradient/linearGradient, feGaussianBlur, carved shadow valleys, and one glowing ${accentWord} accent heart`),
           },
           microType: [
             { text: hold("plain phrase for the glowing accent heart"), u: 0.64, v: 0.32, style: "core" },

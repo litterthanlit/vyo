@@ -191,19 +191,20 @@
       <div class="sub">Real codebase scans (vyo, Hypher, Flask, Pantry) · Click any poster to inspect full size</div>
     </div>
     <div class="tabs" role="tablist">
-      <button class="tab new-pill active" data-filter="skill">Real Skill: Hypher (2)</button>
+      <button class="tab new-pill active" data-filter="v3">vyo v3 — 5 Styles (5)</button>
+      <button class="tab" data-filter="skill">Real Skill: Hypher (2)</button>
       <button class="tab" data-filter="luminous">Luminous Optical (4)</button>
       <button class="tab" data-filter="fusion">1 + 3 Fusion (4)</button>
       <button class="tab" data-filter="mosaic">a-mosaic (2)</button>
       <button class="tab" data-filter="cascade">b-cascade (2)</button>
       <button class="tab" data-filter="strata">c-strata (2)</button>
       <button class="tab" data-filter="own">e-vyo-own (4)</button>
-      <button class="tab" data-filter="all">All (20)</button>
+      <button class="tab" data-filter="all">All (25)</button>
     </div>
   </header>
   <main>
     <div class="banner" id="banner">
-      <strong>Real Skill End-to-End Run on Hypher (`vyo compose --frame luminous` → agent-drawn 7 KB soft-lit SVG → `vyo sketch` → `vyo render`)</strong> — Zero hardcoded pixel loops, zero pre-made shapes, zero findings (10/10 tonal bins, 0 sanctuary collisions, 24/24 plain-language micro-type).
+      <strong>vyo v3 — One Agent-Drawn SVG → 5 Distinct Print Styles (`obsidian`, `alabaster`, `optics`, `riso`, `contour`)</strong> — Every poster below was rendered by the real `vyo render` CLI from the <strong>exact same 7.1 KB soft-lit Hypher SVG</strong> + real codebase scan (305 files, 47,116 lines, 531 imports). Zero pre-made shapes, zero SVG edits between styles, zero findings.
     </div>
     <div class="grid" id="grid"></div>
   </main>
@@ -214,9 +215,48 @@
   <script>
     const POSTERS = [
       {
+        group: "v3",
+        tag: "v3 · obsidian",
+        hot: true,
+        title: "Hypher — Obsidian (7px Optical Mosaic)",
+        desc: "Pitch-black ground, continuous HDR optical light, real LOC/import horizontal strata refraction, 7px luminous mosaic with glacier/amethyst squares + circular crimson handoff beads.",
+        src: "/explorations/img/hypher-v3-obsidian.jpg"
+      },
+      {
+        group: "v3",
+        tag: "v3 · alabaster",
+        hot: true,
+        title: "Hypher — Alabaster (Daylight Screenprint)",
+        desc: "Exact same dark-ground Hypher SVG auto-normalized onto cool archival paper: ice-mist → mineral slate → vermilion beads on the 7px lattice with crisp architectural fault cuts.",
+        src: "/explorations/img/hypher-v3-alabaster.jpg"
+      },
+      {
+        group: "v3",
+        tag: "v3 · optics",
+        hot: true,
+        title: "Hypher — Optics (Continuous Darkroom)",
+        desc: "Smooth photographic refraction at full pixel resolution (no dots): sharp codebase slice cuts, silky kinetic wake smears, cyan-paired RGB chromatic dispersion, and fine 35mm film grain.",
+        src: "/explorations/img/hypher-v3-optics.jpg"
+      },
+      {
+        group: "v3",
+        tag: "v3 · riso",
+        hot: true,
+        title: "Hypher — Riso (Multi-Plate Risograph)",
+        desc: "Warm archival washi paper, 3 physical ink drums (Aqua Mist, Federal Blue, Vermilion) composited via true multiply overprint with print-shop drum registration and cotton-fiber grain.",
+        src: "/explorations/img/hypher-v3-riso.jpg"
+      },
+      {
+        group: "v3",
+        tag: "v3 · contour",
+        hot: true,
+        title: "Hypher — Contour (Elevation Iso-Lines)",
+        desc: "Marching Squares topographic iso-lines (24 elevation levels) carved across the soaring glider with glowing crimson handoff contours, wake terraces, and cartographic label breaks.",
+        src: "/explorations/img/hypher-v3-contour.jpg"
+      },
+      {
         group: "skill",
         tag: "vyo skill · obsidian · PASS",
-        hot: true,
         title: "Hypher — Real Skill Run (Obsidian)",
         desc: "305 files · 47,116 lines · area:hypher-web/shared (handoff note core). Pure 7.1 KB agent-authored soft-lit SVG rendered via vyo compose/sketch/render: soaring folded wing, blazing crimson handoff crease, carved shadow valley, kinetic strata wake.",
         src: "/explorations/img/hypher-skill-obsidian.jpg"
@@ -367,7 +407,7 @@
     const lbCap = document.getElementById("lb-cap");
 
     function render(filter) {
-      banner.style.display = (filter === "skill" || filter === "all") ? "block" : "none";
+      banner.style.display = (filter === "v3" || filter === "all") ? "block" : "none";
       grid.innerHTML = "";
       POSTERS.filter(p => filter === "all" || p.group === filter).forEach(p => {
         const card = document.createElement("article");
@@ -401,7 +441,7 @@
     lb.addEventListener("click", () => lb.classList.remove("open"));
     window.addEventListener("keydown", e => { if (e.key === "Escape") lb.classList.remove("open"); });
 
-    render("skill");
+    render("v3");
   </script>
 </body>
 </html>

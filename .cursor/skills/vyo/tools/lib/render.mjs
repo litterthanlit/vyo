@@ -15,7 +15,7 @@ import { launchChromium } from "./browser.mjs";
 import { placeTexts } from "./place.mjs";
 import { coverPage, COVER_FONTS } from "./cover-render.mjs";
 import { platePage, PLATE_FPS } from "./plate-render.mjs";
-import { luminousPage, LUMINOUS_FONTS, LUMINOUS_GROUNDS } from "./luminous-render.mjs";
+import { luminousPage, LUMINOUS_FONTS, luminousGroundFor } from "./luminous-render.mjs";
 import { COVER, COVER_GROUNDS } from "./cover.mjs";
 
 const TOOLS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -47,7 +47,7 @@ export const THEMES = {
 };
 export const tokensOf = (spec) => {
   if (frameOf(spec) === "luminous") {
-    return LUMINOUS_GROUNDS[spec.theme === "alabaster" ? "alabaster" : "obsidian"];
+    return luminousGroundFor(spec);
   }
   if (frameOf(spec) === "cover" || frameOf(spec) === "plate") {
     const g = COVER_GROUNDS[spec.ground];

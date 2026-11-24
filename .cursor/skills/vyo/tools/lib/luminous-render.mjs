@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { buildLuminousStrata } from "./luminous-strata.mjs";
 import { partsFromFacts } from "./parts.mjs";
 import { SHEET } from "./geometry.mjs";
+import { LUMINOUS_STYLES, LUMINOUS_PALETTES } from "./frame.mjs";
 
 const LIB = path.dirname(fileURLToPath(import.meta.url));
 const FONT_DIR = path.join(LIB, "..", "..", "fonts");
@@ -17,16 +18,55 @@ export const LUMINOUS_FONTS = [
   ["Inter Display", 600, "inter-display-600.woff2", "font/woff2"],
 ];
 
+export const LUMINOUS_PALETTE_DEFS = {
+  crimson: { mode: "dark", colorWord: "crimson", paper: "#090A0D", contourPaper: "#0C0D11", ink: "#FFFFFF", hot: "#E52D38" },
+  pine: { mode: "dark", colorWord: "amber", paper: "#0A1311", contourPaper: "#0B1412", ink: "#F7FBF9", hot: "#F2542D" },
+  abyss: { mode: "dark", colorWord: "cyan", paper: "#070C18", contourPaper: "#090E1B", ink: "#F6FAFF", hot: "#00C8FF" },
+  vermilion: { mode: "light", colorWord: "vermilion", paper: "#F2F3F6", risoPaper: "#F6F3EB", contourPaper: "#EFECE6", ink: "#111316", hot: "#CC262F" },
+  cobalt: { mode: "light", colorWord: "cobalt", paper: "#EFECE6", risoPaper: "#F4F1EA", contourPaper: "#EFECE6", ink: "#111316", hot: "#1B4DFF" },
+};
+
 export const LUMINOUS_GROUNDS = {
   obsidian: { paper: "#090A0D", ink: "#FFFFFF", hot: "#E23848" },
   alabaster: { paper: "#F2F3F6", ink: "#111316", hot: "#CC262F" },
 };
 
+/** Resolve effective print style, palette, polarity, and legacy theme from a luminous spec. */
+export function resolveLuminousStyle(spec) {
+  const style = LUMINOUS_STYLES.includes(spec?.style)
+    ? spec.style
+    : spec?.theme === "alabaster"
+      ? "alabaster"
+      : "obsidian";
+  const defaultLight = style === "alabaster" || style === "riso" || (style === "contour" && spec?.theme === "alabaster");
+  const palette = LUMINOUS_PALETTES.includes(spec?.palette)
+    ? spec.palette
+    : defaultLight
+      ? "vermilion"
+      : "crimson";
+  const paletteIsLight = LUMINOUS_PALETTE_DEFS[palette]?.mode === "light";
+  const isLight = style === "alabaster" || style === "riso" || (style === "contour" && paletteIsLight);
+  const theme = isLight ? "alabaster" : "obsidian";
+  return { style, palette, isLight, theme };
+}
+
+/** Return the CSS/token ground colors `{ paper, ink, hot }` for a luminous spec. */
+export function luminousGroundFor(spec) {
+  const { style, palette, isLight } = resolveLuminousStyle(spec);
+  const def = LUMINOUS_PALETTE_DEFS[palette] ?? (isLight ? LUMINOUS_PALETTE_DEFS.vermilion : LUMINOUS_PALETTE_DEFS.crimson);
+  const paper = style === "riso"
+    ? (def.risoPaper ?? "#F6F3EB")
+    : style === "contour"
+      ? (def.contourPaper ?? def.paper)
+      : def.paper;
+  return { paper, ink: def.ink, hot: def.hot };
+}
+
 const cache = new WeakMap();
 
 /**
  * Compute the luminous frame payload once per spec object: region, real codebase strata,
- * theme, product metadata, copy, soft-lit subject, microType, and deterministic seed.
+ * style, palette, theme, product metadata, copy, soft-lit subject, microType, and deterministic seed.
  */
 export function luminousOf(spec, facts) {
   if (cache.has(spec)) return cache.get(spec);
@@ -38,13 +78,16 @@ export function luminousOf(spec, facts) {
       ? [rawAccent]
       : [];
   const strata = buildLuminousStrata(facts, accentIds, { pitch: 7, seed: region?.seed });
-  const theme = spec.theme === "alabaster" ? "alabaster" : "obsidian";
+  const { style, palette, isLight, theme } = resolveLuminousStyle(spec);
   const legend = spec.figure.texts.find((t) => t.role === "legend")?.text ?? "";
   const subject = region?.subject ?? {};
   const microType = Array.isArray(region?.microType) ? region.microType : [];
   const out = {
     region,
     strata,
+    style,
+    palette,
+    isLight,
     theme,
     product: spec.product,
     headline: spec.headline,
@@ -73,9 +116,9 @@ const luminousScript = () =>
 
 /** Build one self-contained HTML page for the luminous frame. */
 export function luminousPage(spec, facts, prelude) {
-  const { theme, product, headline, legend, strata, subject, microType, seed } = luminousOf(spec, facts);
-  const G = LUMINOUS_GROUNDS[theme];
-  const payload = { theme, product, headline, legend, strata, subject, microType, seed };
+  const { style, palette, theme, product, headline, legend, strata, subject, microType, seed } = luminousOf(spec, facts);
+  const G = luminousGroundFor(spec);
+  const payload = { style, palette, theme, product, headline, legend, strata, subject, microType, seed };
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(product.name)} luminous poster</title><style>
 ${fontFaces()}
 * { box-sizing: border-box; margin: 0; padding: 0 }
@@ -90,9 +133,8 @@ html, body { background: var(--paper) }
 
 /** Print a crisp CLI sketch report for a luminous poster. */
 export function luminousSketchText(spec, facts) {
-  const { strata, theme, subject, microType } = luminousOf(spec, facts);
-  const isAlabaster = theme === "alabaster";
-  const defaultSanctuary = isAlabaster ? { x: 0, y: 0, w: 540, h: 252 } : { x: 0, y: 392, w: 396, h: 350 };
+  const { strata, style, palette, isLight, theme, subject, microType } = luminousOf(spec, facts);
+  const defaultSanctuary = isLight ? { x: 0, y: 0, w: 540, h: 252 } : { x: 0, y: 392, w: 396, h: 350 };
   const sBox = subject?.sanctuary && Number.isFinite(subject.sanctuary.x) ? subject.sanctuary : defaultSanctuary;
   const svgStr = typeof subject?.svg === "string" ? subject.svg : "";
   const svgReady = svgStr.trim().length > 0 && !svgStr.trim().startsWith("…") && /<svg\b/i.test(svgStr);
@@ -106,7 +148,7 @@ export function luminousSketchText(spec, facts) {
   const pct = (n) => `${(Math.round(n * 1000) / 10).toFixed(1)}%`;
 
   const lines = [
-    `luminous: ${theme} theme; ${strata.totalFiles} files, ${strata.totalLoc.toLocaleString("en-US")} lines, ${strata.totalImports} imports, ${strata.slices.length} strata slices (${strata.accentFiles} accent files, ${strata.faultRows.length} fault rows)`,
+    `luminous: ${style} style (${palette} palette, ${theme} theme); ${strata.totalFiles} files, ${strata.totalLoc.toLocaleString("en-US")} lines, ${strata.totalImports} imports, ${strata.slices.length} strata slices (${strata.accentFiles} accent files, ${strata.faultRows.length} fault rows)`,
     `concept: ${typeof subject?.concept === "string" ? subject.concept : "(missing)"}`,
     `subject: ${svgReady ? `soft-lit SVG (${svgStr.length} bytes)` : "placeholder / not yet authored"}; refractMask: ${subject?.refractMaskSvg ? "custom SVG" : "auto-derived"}, strength: ${subject?.refractStrength ?? 1}`,
     `sanctuary: x=${sBox.x} y=${sBox.y} w=${sBox.w} h=${sBox.h} (${subject?.sanctuary ? "custom" : `default ${theme}`})`,
