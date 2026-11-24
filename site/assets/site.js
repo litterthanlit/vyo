@@ -50,44 +50,45 @@
     });
   });
 
-  /* Filters by axis. */
+  /* Gallery filter chips by print style. */
   const chips = [...document.querySelectorAll(".chip[data-filter]")];
-  const axes = [...document.querySelectorAll(".axis[data-axis]")];
+  const cards = [...document.querySelectorAll(".repo-card[data-style]")];
+  const bridge = document.querySelector("[data-bridge]");
+  const status = document.getElementById("gallery-status");
   const setFilter = (f) => {
     chips.forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.filter === f)));
-    axes.forEach((a) => { a.hidden = f !== "all" && a.dataset.axis !== f; });
+    let shown = 0;
+    cards.forEach((card) => {
+      const hide = f !== "all" && card.dataset.style !== f;
+      card.hidden = hide;
+      if (!hide) shown += 1;
+    });
+    if (bridge) bridge.hidden = f !== "all";
+    if (status) {
+      status.textContent = f === "all"
+        ? `${shown} featured · 14 prints across 8 repos`
+        : `${shown} ${f} ${shown === 1 ? "poster" : "posters"}`;
+    }
   };
   chips.forEach((c) => c.addEventListener("click", () => setFilter(c.dataset.filter)));
-
-  /* "Same render as" tiles: jump to the canonical tile, revealing its axis if filtered out. */
-  document.querySelectorAll("a[data-ref]").forEach((a) => {
-    a.addEventListener("click", (e) => {
-      const target = document.getElementById(a.dataset.ref);
-      if (!target) return;
-      e.preventDefault();
-      const axis = target.closest(".axis");
-      if (axis && axis.hidden) setFilter("all");
-      const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
-      const btn = target.querySelector(".shot");
-      if (btn) btn.focus({ preventScroll: true });
-      target.classList.remove("flash");
-      void target.offsetWidth;
-      target.classList.add("flash");
-    });
-  });
 
   /* Lightbox: <dialog> with showModal (native focus containment), Esc closes, arrows step, focus returns. */
   const lb = document.getElementById("lightbox");
   if (!lb || typeof lb.showModal !== "function") return;
   const img = document.getElementById("lb-img");
   const cap = document.getElementById("lb-cap");
+  const repoLink = document.getElementById("lb-repo");
   const count = document.getElementById("lb-count");
   let list = [];
   let idx = 0;
   let opener = null;
 
-  const visibleShots = () => [...document.querySelectorAll(".axis:not([hidden]) .shot")];
+  const groupShotsFor = (btn) => {
+    if (btn.closest("#gallery")) return [...document.querySelectorAll("#gallery .repo-card:not([hidden]) .shot")];
+    if (btn.closest("#styles")) return [...document.querySelectorAll("#styles .shot")];
+    if (btn.closest(".hero-art")) return [...document.querySelectorAll(".hero-art .shot")];
+    return [btn];
+  };
   const show = (i) => {
     idx = (i + list.length) % list.length;
     const b = list[idx];
@@ -96,17 +97,27 @@
     img.height = +b.dataset.h;
     img.alt = b.dataset.alt || "";
     img.src = b.dataset.full;
-    cap.textContent = b.dataset.caption;
+    cap.textContent = b.dataset.caption || "";
+    if (repoLink) {
+      if (b.dataset.repoUrl) {
+        repoLink.href = b.dataset.repoUrl;
+        repoLink.textContent = "View on GitHub ↗";
+        repoLink.hidden = false;
+      } else {
+        repoLink.hidden = true;
+        repoLink.removeAttribute("href");
+      }
+    }
     count.textContent = `${idx + 1} / ${list.length}`;
     const next = list[(idx + 1) % list.length];
-    if (next) { const p = new Image(); p.src = next.dataset.full; }
+    if (next && next !== b) { const p = new Image(); p.src = next.dataset.full; }
   };
   document.addEventListener("click", (e) => {
     const b = e.target.closest(".shot");
     if (!b) return;
-    list = visibleShots();
+    list = groupShotsFor(b);
     opener = b;
-    show(list.indexOf(b));
+    show(Math.max(0, list.indexOf(b)));
     lb.showModal();
     lb.querySelector('[data-lb="close"]').focus();
   });
@@ -134,7 +145,7 @@
   if (stars.length) {
     const KEY = "vyo-stars";
     const compact = (n) => (n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k" : String(n));
-    const show = (n) => {
+    const renderStars = (n) => {
       stars.forEach((a) => {
         if (n < 1) return;
         const pill = a.querySelector("[data-star-count]");
@@ -145,7 +156,7 @@
     };
     let cached = null;
     try { const v = parseInt(sessionStorage.getItem(KEY), 10); if (v >= 0) cached = v; } catch (_) {}
-    if (cached !== null) show(cached);
+    if (cached !== null) renderStars(cached);
     else {
       fetch("https://api.github.com/repos/litterthanlit/vyo", { headers: { Accept: "application/vnd.github+json" } })
         .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
@@ -153,7 +164,7 @@
           const n = d && d.stargazers_count;
           if (!Number.isInteger(n) || n < 0) throw new Error("bad count");
           try { sessionStorage.setItem(KEY, String(n)); } catch (_) {}
-          show(n);
+          renderStars(n);
         })
         .catch(() => {});
     }

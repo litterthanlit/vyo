@@ -116,7 +116,8 @@ const GEN_HEAD = /@generated|auto-?generated|automatically generated|do not edit
 // Generated files keep their place in `files` but never count toward LOC or kit detection.
 export function detectGen(rel, text) {
   if (GEN_NAME.test(basename(rel)) || GEN_DIR.test(dirname(rel) + "/") || MIGRATION_DIR.test(dirname(rel) + "/")) return true;
-  if (rel.endsWith(".mdx")) return false; // prose: markdown headings start with "#", paragraphs are long lines
+  const ext = extname(rel);
+  if (ext === ".mdx" || ext === ".md") return false; // prose: markdown headings start with "#", paragraphs are long lines
   const head = text
     .slice(0, 700)
     .split("\n")
@@ -139,6 +140,11 @@ export function detectGen(rel, text) {
   if (run > longest) longest = run;
   return longest > 20000 || (lim > 8000 && lim / lines > 400);
 }
+
+const SKILL_REPO_SIGNAL = /(^|\/)(skills\/.*\.md|SKILL\.md)$/i;
+const SKILL_MD_PATH = /(^|\/)(skills\/.*\.md|SKILL\.md)$/i;
+const SKILL_EXTRA_MD_PATH = /(^|\/)(docs|examples)\/.*\.md$/i;
+const SKILL_BOILERPLATE_MD = /^(readme|license|changelog|release-notes)\.md$/i;
 
 // Read the kept source files. Skips files over MAX_BYTES, binary files and anything unreadable.
 // Returns { files: Map<rel,{text,loc,gen}>, skipped: {big,binary,unreadable,capped},
@@ -175,6 +181,29 @@ export function readSourceFiles(dir, paths) {
     by.lines += lines;
     excluded.files++;
     excluded.lines += lines;
+  }
+  const traditionalCount = candidates.length;
+  let isSkillsRepo = false;
+  let hasRootSkill = false;
+  for (const rel of paths) {
+    if (extname(rel) !== ".md" || excludeReason(rel, roots)) continue;
+    if (SKILL_REPO_SIGNAL.test(rel)) {
+      isSkillsRepo = true;
+      if (/^skill\.md$/i.test(rel)) hasRootSkill = true;
+    }
+  }
+  if (isSkillsRepo) {
+    const includeExtraDocs = traditionalCount < 5;
+    for (const rel of paths) {
+      if (extname(rel) !== ".md" || excludeReason(rel, roots)) continue;
+      if (SKILL_BOILERPLATE_MD.test(basename(rel))) continue;
+      const keep =
+        SKILL_MD_PATH.test(rel) ||
+        (hasRootSkill && /^references\/.*\.md$/i.test(rel)) ||
+        (includeExtraDocs && SKILL_EXTRA_MD_PATH.test(rel));
+      if (keep) candidates.push(rel);
+    }
+    candidates.sort(cmp);
   }
   if (candidates.length > MAX_FILES) {
     skipped.capped = candidates.length - MAX_FILES;

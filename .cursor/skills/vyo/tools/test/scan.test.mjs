@@ -1257,3 +1257,70 @@ describe("exclusions drop nothing silently", () => {
     assert.match(stderr, /Left out 2 source files \(8 lines\).*tests\/ 2 files\/8 lines/);
   });
 });
+
+describe("Agent Skills repositories", () => {
+  const md = (title, n = 60) => `# ${title}\n\n${Array.from({ length: n }, (_, i) => `Step ${i + 1}: do the thing.`).join("\n")}\n`;
+
+  test("skills/**/*.md plus docs/ and examples/ (when <5 traditional source files) are scanned cleanly; boilerplate markdown is skipped", () => {
+    const { facts } = scanTree({
+      "README.md": md("Repo"),
+      "LICENSE.md": "MIT\n",
+      "CHANGELOG.md": md("Changes"),
+      "RELEASE-NOTES.md": md("Notes"),
+      "skills/README.md": md("Skills index"),
+      "skills/audit/SKILL.md": md("Audit skill"),
+      "skills/audit/references/playbook.md": md("Audit playbook"),
+      "docs/guide.md": md("Guide"),
+      "examples/001-plan.md": md("Example plan"),
+    });
+    assert.deepEqual(Object.keys(facts.files), [
+      "docs/guide.md",
+      "examples/001-plan.md",
+      "skills/audit/SKILL.md",
+      "skills/audit/references/playbook.md",
+    ]);
+    for (const f of Object.values(facts.files)) {
+      assert.ok(f.loc > 0);
+      assert.equal(f.gen, undefined);
+    }
+    assert.ok(ids(facts, "area").includes("area:skills/audit"));
+    assert.deepEqual(facts.unresolved, {});
+  });
+
+  test("a repo with only README.md (or only hidden .cursor/skills/) still scans empty with 0 files", () => {
+    const plain = scanTree({ "README.md": "# Empty\n\nJust a readme.\n" }).facts;
+    assert.equal(plain.empty, true);
+    assert.deepEqual(Object.keys(plain.files), []);
+
+    const hiddenSkill = scanTree({
+      "README.md": "# App\n",
+      ".cursor/skills/vyo/SKILL.md": md("Hidden skill"),
+    }).facts;
+    assert.equal(hiddenSkill.empty, true);
+    assert.deepEqual(Object.keys(hiddenSkill.files), []);
+  });
+
+  test("with >=5 traditional source files, skills/**/*.md is included while docs/ and examples/ markdown stay out", () => {
+    const { facts } = scanTree({
+      "src/a.ts": "export const a = 1;\n",
+      "src/b.ts": "export const b = 2;\n",
+      "src/c.ts": "export const c = 3;\n",
+      "src/d.ts": "export const d = 4;\n",
+      "src/e.ts": "export const e = 5;\n",
+      "skills/audit/SKILL.md": md("Audit"),
+      "skills/audit/references/playbook.md": md("Playbook"),
+      "docs/design.md": md("Design"),
+      "examples/sample.md": md("Sample"),
+    });
+    assert.deepEqual(Object.keys(facts.files), [
+      "skills/audit/SKILL.md",
+      "skills/audit/references/playbook.md",
+      "src/a.ts",
+      "src/b.ts",
+      "src/c.ts",
+      "src/d.ts",
+      "src/e.ts",
+    ]);
+  });
+});
+

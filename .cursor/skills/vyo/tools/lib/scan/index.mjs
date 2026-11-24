@@ -44,6 +44,7 @@ export function scanRepoDetailed(dirArg) {
       if (ext === ".py") code = stripPy(text);
       else if (ext === ".sql") code = stripSql(text);
       else if (ext === ".mdx") code = scanJs(prepareMdx(text)).code;
+      else if (ext === ".md") code = "";
       else {
         const r = scanJs(text);
         code = r.code;
