@@ -1,0 +1,181 @@
+{
+  "version": 3,
+  "frame": "luminous",
+  "facts": "f02627b09f16",
+  "product": {
+    "name": "Hypher",
+    "repo": "hypher",
+    "date": "2026-11-23"
+  },
+  "theme": "alabaster",
+  "headline": "Switch agents without starting over.",
+  "figure": {
+    "regions": [
+      {
+        "kind": "luminous",
+        "id": "luminous",
+        "accent": "area:hypher-web/shared",
+        "subject": {
+          "concept": "A soaring folded origami glider cutting diagonally upward through pitch black, with an ember-crimson central fold carrying the handoff note between glacier-lit wings and a refracted slipstream wake.",
+          "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 840 1190\" width=\"840\" height=\"1190\"><defs><filter id=\"b3\" filterUnits=\"userSpaceOnUse\" x=\"-120\" y=\"-120\" width=\"1080\" height=\"1430\"><feGaussianBlur stdDeviation=\"3\"/></filter><filter id=\"b8\" filterUnits=\"userSpaceOnUse\" x=\"-120\" y=\"-120\" width=\"1080\" height=\"1430\"><feGaussianBlur stdDeviation=\"8\"/></filter><filter id=\"b16\" filterUnits=\"userSpaceOnUse\" x=\"-120\" y=\"-120\" width=\"1080\" height=\"1430\"><feGaussianBlur stdDeviation=\"16\"/></filter><filter id=\"b28\" filterUnits=\"userSpaceOnUse\" x=\"-120\" y=\"-120\" width=\"1080\" height=\"1430\"><feGaussianBlur stdDeviation=\"28\"/></filter><filter id=\"b44\" filterUnits=\"userSpaceOnUse\" x=\"-120\" y=\"-120\" width=\"1080\" height=\"1430\"><feGaussianBlur stdDeviation=\"44\"/></filter><linearGradient id=\"upperWing\" x1=\"0.22\" y1=\"0.12\" x2=\"0.68\" y2=\"0.86\"><stop offset=\"0%\" stop-color=\"#E8FAFF\"/><stop offset=\"18%\" stop-color=\"#7CD8FF\"/><stop offset=\"48%\" stop-color=\"#2F8FE0\"/><stop offset=\"78%\" stop-color=\"#183E8E\"/><stop offset=\"100%\" stop-color=\"#0A1536\"/></linearGradient><linearGradient id=\"wingRim\" x1=\"0\" y1=\"1\" x2=\"1\" y2=\"0\"><stop offset=\"0%\" stop-color=\"#E4F8FF\"/><stop offset=\"45%\" stop-color=\"#FFFFFF\"/><stop offset=\"100%\" stop-color=\"#D4F6FF\"/></linearGradient><linearGradient id=\"crimsonSpine\" x1=\"0.85\" y1=\"0.08\" x2=\"0.18\" y2=\"0.92\"><stop offset=\"0%\" stop-color=\"#FF5666\"/><stop offset=\"32%\" stop-color=\"#FF1E32\"/><stop offset=\"70%\" stop-color=\"#D61026\"/><stop offset=\"100%\" stop-color=\"#6E0616\"/></linearGradient><linearGradient id=\"keelWing\" x1=\"0.14\" y1=\"0.12\" x2=\"0.94\" y2=\"0.86\"><stop offset=\"0%\" stop-color=\"#B4DCFF\"/><stop offset=\"22%\" stop-color=\"#7A82FF\"/><stop offset=\"54%\" stop-color=\"#523ED8\"/><stop offset=\"82%\" stop-color=\"#2E1A8E\"/><stop offset=\"100%\" stop-color=\"#12083D\"/></linearGradient><linearGradient id=\"keelRidge\" x1=\"0.05\" y1=\"0.12\" x2=\"0.82\" y2=\"0.92\"><stop offset=\"0%\" stop-color=\"#DCF4FF\"/><stop offset=\"34%\" stop-color=\"#8E9CFF\"/><stop offset=\"76%\" stop-color=\"#563FD8\"/><stop offset=\"100%\" stop-color=\"#261472\"/></linearGradient><linearGradient id=\"wakeCyan\" x1=\"0.5\" y1=\"0\" x2=\"0.5\" y2=\"1\"><stop offset=\"0%\" stop-color=\"#DCF6FF\"/><stop offset=\"34%\" stop-color=\"#62B6FF\"/><stop offset=\"72%\" stop-color=\"#385CC8\"/><stop offset=\"100%\" stop-color=\"#141A54\"/></linearGradient><linearGradient id=\"wakeViolet\" x1=\"0.1\" y1=\"0\" x2=\"0.9\" y2=\"1\"><stop offset=\"0%\" stop-color=\"#8A7CFF\"/><stop offset=\"46%\" stop-color=\"#5832D4\"/><stop offset=\"84%\" stop-color=\"#31157E\"/><stop offset=\"100%\" stop-color=\"#10072E\"/></linearGradient><linearGradient id=\"wakeCrimson\" x1=\"0.2\" y1=\"0\" x2=\"0.8\" y2=\"1\"><stop offset=\"0%\" stop-color=\"#FF2B40\"/><stop offset=\"55%\" stop-color=\"#C81226\"/><stop offset=\"100%\" stop-color=\"#560614\"/></linearGradient><radialGradient id=\"noseGlow\" cx=\"0.5\" cy=\"0.5\" r=\"0.5\"><stop offset=\"0%\" stop-color=\"#FFFFFF\" stop-opacity=\"0.95\"/><stop offset=\"42%\" stop-color=\"#80E0FF\" stop-opacity=\"0.55\"/><stop offset=\"100%\" stop-color=\"#000000\" stop-opacity=\"0\"/></radialGradient><radialGradient id=\"tipGlow\" cx=\"0.5\" cy=\"0.5\" r=\"0.5\"><stop offset=\"0%\" stop-color=\"#FFFFFF\" stop-opacity=\"0.92\"/><stop offset=\"45%\" stop-color=\"#52C6FF\" stop-opacity=\"0.5\"/><stop offset=\"100%\" stop-color=\"#000000\" stop-opacity=\"0\"/></radialGradient><radialGradient id=\"heartGlow\" cx=\"0.5\" cy=\"0.5\" r=\"0.5\"><stop offset=\"0%\" stop-color=\"#FF2034\" stop-opacity=\"0.88\"/><stop offset=\"50%\" stop-color=\"#C40C20\" stop-opacity=\"0.4\"/><stop offset=\"100%\" stop-color=\"#000000\" stop-opacity=\"0\"/></radialGradient></defs><rect width=\"840\" height=\"1190\" fill=\"#000000\"/><ellipse cx=\"635\" cy=\"330\" rx=\"250\" ry=\"220\" fill=\"#173270\" opacity=\"0.34\" filter=\"url(#b44)\"/><ellipse cx=\"665\" cy=\"860\" rx=\"250\" ry=\"330\" fill=\"#2A166C\" opacity=\"0.46\" filter=\"url(#b44)\"/><path d=\"M 495,580 C 565,675 520,795 455,930 C 415,1015 470,1120 555,1185 L 835,1185 L 835,550 Z\" fill=\"url(#wakeViolet)\" opacity=\"0.82\" filter=\"url(#b28)\"/><path d=\"M 535,540 C 580,645 515,745 555,865 C 595,970 570,1085 660,1185 L 775,1185 C 745,1040 790,910 735,760 C 695,650 720,565 655,515 Z\" fill=\"url(#wakeCyan)\" opacity=\"0.84\" filter=\"url(#b16)\"/><path d=\"M 455,755 C 525,745 595,785 675,775 C 745,768 800,735 835,760 L 835,840 C 760,855 680,840 600,855 C 530,868 470,842 445,812 Z\" fill=\"url(#wakeCyan)\" opacity=\"0.72\" filter=\"url(#b16)\"/><path d=\"M 475,880 C 540,878 608,915 645,985 C 680,1055 612,1135 655,1185 L 515,1185 C 470,1120 440,1045 455,970 Z\" fill=\"url(#wakeCrimson)\" opacity=\"0.72\" filter=\"url(#b16)\"/><path d=\"M 485,785 C 542,780 580,825 618,868 C 572,900 505,882 468,845 Z\" fill=\"url(#wakeCrimson)\" opacity=\"0.64\" filter=\"url(#b16)\"/><path d=\"M 620,855 C 690,830 765,855 835,898 L 835,1005 C 775,985 715,1000 665,1065 C 625,1025 605,935 620,855 Z\" fill=\"url(#wakeCyan)\" opacity=\"0.82\" filter=\"url(#b16)\"/><path d=\"M 535,985 C 605,950 695,975 770,1040 C 812,1078 825,1138 835,1185 L 695,1185 C 645,1135 565,1080 535,985 Z\" fill=\"url(#wakeViolet)\" opacity=\"0.88\" filter=\"url(#b16)\"/><path d=\"M 455,872 C 515,858 575,880 625,872 C 585,908 515,912 455,898 Z\" fill=\"#000000\" opacity=\"0.78\" filter=\"url(#b8)\"/><path d=\"M 545,730 C 625,718 705,740 785,728 C 735,768 640,765 550,760 Z\" fill=\"#000000\" opacity=\"0.74\" filter=\"url(#b8)\"/><path d=\"M 600,955 C 690,945 765,970 830,955 L 830,992 C 755,1002 675,988 600,982 Z\" fill=\"#000000\" opacity=\"0.68\" filter=\"url(#b8)\"/><path d=\"M 756,96 L 774,280 L 802,605 L 748,745 L 548,725 L 515,610 L 635,380 Z\" fill=\"url(#keelWing)\" filter=\"url(#b8)\"/><path d=\"M 756,96 L 772,315 L 796,595 L 732,705 L 598,648 L 620,420 Z\" fill=\"url(#keelRidge)\" opacity=\"0.72\" filter=\"url(#b16)\"/><path d=\"M 752,118 L 650,342 L 575,528 L 542,658 L 598,672 L 672,475 L 758,180 Z\" fill=\"#C4E4FF\" opacity=\"0.48\" filter=\"url(#b8)\"/><path d=\"M 754,104 L 654,295 L 544,510 L 480,630 L 550,672 L 648,472 L 758,148 Z\" fill=\"#000000\" opacity=\"0.98\" filter=\"url(#b8)\"/><path d=\"M 756,96 L 106,356 L 238,376 L 372,418 L 434,536 L 568,365 Z\" fill=\"url(#upperWing)\" filter=\"url(#b8)\"/><path d=\"M 756,96 L 108,356 L 248,366 L 395,412 L 585,295 Z\" fill=\"url(#upperWing)\" opacity=\"0.88\" filter=\"url(#b3)\"/><path d=\"M 754,97 L 114,354 L 195,342 L 478,218 L 746,112 Z\" fill=\"url(#wingRim)\" opacity=\"0.78\" filter=\"url(#b8)\"/><path d=\"M 756,96 L 110,356\" stroke=\"#FFFFFF\" stroke-width=\"11\" stroke-linecap=\"round\" opacity=\"0.94\" filter=\"url(#b3)\"/><ellipse cx=\"138\" cy=\"352\" rx=\"62\" ry=\"28\" fill=\"url(#tipGlow)\" filter=\"url(#b8)\"/><ellipse cx=\"748\" cy=\"106\" rx=\"68\" ry=\"48\" fill=\"url(#noseGlow)\" filter=\"url(#b8)\"/><path d=\"M 752,104 L 408,520 L 486,586 L 758,146 Z\" fill=\"url(#heartGlow)\" opacity=\"0.88\" filter=\"url(#b28)\"/><path d=\"M 754,102 L 402,480 L 456,568 L 516,542 L 758,136 Z\" fill=\"url(#crimsonSpine)\" opacity=\"0.96\" filter=\"url(#b8)\"/><path d=\"M 754,104 L 428,498 L 470,540 L 756,126 Z\" fill=\"#FF5466\" opacity=\"0.9\" filter=\"url(#b3)\"/><path d=\"M 752,106 L 444,512\" stroke=\"#FF9AA4\" stroke-width=\"9\" stroke-linecap=\"round\" opacity=\"0.88\" filter=\"url(#b3)\"/><path d=\"M 744,136 L 494,558 L 548,602 L 754,170 Z\" fill=\"#000000\" opacity=\"0.96\" filter=\"url(#b8)\"/><path d=\"M 746,152 L 515,575 L 545,595 L 752,180 Z\" fill=\"#000000\" opacity=\"0.98\" filter=\"url(#b3)\"/></svg>",
+          "refractMaskSvg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 840 1190\" width=\"840\" height=\"1190\"><defs><linearGradient id=\"mg\" x1=\"0.5\" y1=\"0\" x2=\"0.5\" y2=\"1\"><stop offset=\"0%\" stop-color=\"#FFFFFF\"/><stop offset=\"38%\" stop-color=\"#F5F5F5\"/><stop offset=\"52%\" stop-color=\"#A0A0A0\"/><stop offset=\"65%\" stop-color=\"#282828\"/><stop offset=\"76%\" stop-color=\"#000000\"/><stop offset=\"100%\" stop-color=\"#000000\"/></linearGradient></defs><rect width=\"840\" height=\"1190\" fill=\"url(#mg)\"/></svg>"
+        },
+        "microType": [
+          {
+            "text": "glide",
+            "u": 0.66,
+            "v": 0.08,
+            "style": "whisper"
+          },
+          {
+            "text": "leading edge",
+            "u": 0.68,
+            "v": 0.14,
+            "style": "part"
+          },
+          {
+            "text": "lift",
+            "u": 0.43,
+            "v": 0.19,
+            "style": "whisper"
+          },
+          {
+            "text": "wing",
+            "u": 0.21,
+            "v": 0.26,
+            "style": "whisper"
+          },
+          {
+            "text": "shared memory",
+            "u": 0.54,
+            "v": 0.25,
+            "style": "part"
+          },
+          {
+            "text": "first agent",
+            "u": 0.35,
+            "v": 0.32,
+            "style": "part"
+          },
+          {
+            "text": "fold",
+            "u": 0.72,
+            "v": 0.28,
+            "style": "core"
+          },
+          {
+            "text": "handoff note",
+            "u": 0.61,
+            "v": 0.36,
+            "style": "core"
+          },
+          {
+            "text": "next agent",
+            "u": 0.79,
+            "v": 0.41,
+            "style": "part"
+          },
+          {
+            "text": "carry context",
+            "u": 0.54,
+            "v": 0.43,
+            "style": "core"
+          },
+          {
+            "text": "browser",
+            "u": 0.87,
+            "v": 0.47,
+            "style": "part"
+          },
+          {
+            "text": "editor",
+            "u": 0.72,
+            "v": 0.5,
+            "style": "part"
+          },
+          {
+            "text": "keep moving",
+            "u": 0.56,
+            "v": 0.55,
+            "style": "part"
+          },
+          {
+            "text": "pick up cleanly",
+            "u": 0.74,
+            "v": 0.58,
+            "style": "part"
+          },
+          {
+            "text": "no lost thread",
+            "u": 0.75,
+            "v": 0.66,
+            "style": "part"
+          },
+          {
+            "text": "relay",
+            "u": 0.56,
+            "v": 0.69,
+            "style": "whisper"
+          },
+          {
+            "text": "pass it on",
+            "u": 0.87,
+            "v": 0.7,
+            "style": "part"
+          },
+          {
+            "text": "same state",
+            "u": 0.71,
+            "v": 0.74,
+            "style": "part"
+          },
+          {
+            "text": "wake",
+            "u": 0.51,
+            "v": 0.78,
+            "style": "whisper"
+          },
+          {
+            "text": "clean trail",
+            "u": 0.63,
+            "v": 0.8,
+            "style": "part"
+          },
+          {
+            "text": "never reset",
+            "u": 0.81,
+            "v": 0.85,
+            "style": "part"
+          },
+          {
+            "text": "turn",
+            "u": 0.47,
+            "v": 0.88,
+            "style": "whisper"
+          },
+          {
+            "text": "fresh eyes",
+            "u": 0.58,
+            "v": 0.91,
+            "style": "core"
+          },
+          {
+            "text": "still flying",
+            "u": 0.77,
+            "v": 0.93,
+            "style": "part"
+          }
+        ]
+      }
+    ],
+    "texts": [
+      {
+        "role": "legend",
+        "id": "legend",
+        "text": "vermilion marks the handoff note"
+      }
+    ]
+  },
+  "style": "alabaster",
+  "palette": "vermilion"
+}

@@ -30,19 +30,64 @@ Without installing it, write `npx -y @litterthanlit/vyo` wherever this file says
 
 ## Pick an art direction
 
-Start from vyo v2's two flagship directions — pick the one that best fits the product's voice:
+Start from vyo's flagship directions — pick the one that best fits the product's voice:
 
 | Art direction | Command | Best for |
 |---|---|---|
+| **Luminous Print** *(flagship — bespoke per repo)* | `compose --frame luminous --style obsidian\|alabaster\|optics\|riso\|contour --palette crimson\|pine\|abyss\|vermilion\|cobalt` | Bespoke visual explanation of *whatever* the repo is: author ONE soft-lit SVG metaphor (radial/linear gradients, Gaussian blur glow, shadow cavities, one glowing focal accent heart), and vyo refracts it through real codebase LOC/import strata into any of **5 print styles** (`obsidian`, `alabaster`, `optics`, `riso`, `contour`) with zone-anchored plain-language micro-type and frameless typography |
 | **Data-as-Art Vector Plate** *(flagship)* | `compose --frame plate --plate topo\|blueprint --layout editorial\|blueprint\|macro\|classic --ground obsidian\|carbon\|abyss\|graphite\|bone` | Album-cover / gallery print driven straight from the codebase: marching-squares topographic elevation maps (`topo`) or octilinear PCB circuit schematics wired from real imports (`blueprint`), with `pulse`/`signal` looping GIFs |
 | **Studio-Lit 3D Cover** *(flagship)* | `compose --frame cover --finish studio\|halftone\|wireframe\|type --layout editorial\|classic\|blueprint\|macro --ground obsidian\|carbon\|abyss\|graphite\|bone` | Sculpted 3D product object cut by real line shares: continuous-tone studio lighting (`studio`: softbox key + Fresnel rim + distance-field AO + film grain), precision 22.5° `halftone` dot-matrix, smoked-glass `wireframe` contours, or classic 6px Commit Mono `type` relief across 22 ready silhouettes or traced PNG masks |
 | **Zine / Turntable Cover** *(opt-in looks)* | `compose --frame cover --look xerox\|spin --ground bone\|obsidian\|carbon\|<legacy>` | Expressive `xerox` 2-plate photocopy treatment (`copier` loop) or 360° kinetic `spin` turntable in `type` finish |
 | **Editorial Shape Poster** | `compose --field shape --style relief\|rings\|symbols [--frame signal]` | Custom drawn silhouette (`ops`), ready object (`like`), or traced PNG logo (`mask`) with serif (`loose`) or brutalist (`signal`) typography |
 | **Architectural Field** | `compose --field seismic\|orbit\|slabs\|river\|... [--frame loose\|signal]` | Full-sheet typographic fields driven by LOC, files, and imports across 15 field engines |
 
-**Primary recommended palettes (`--ground`):** Start from the 5 refined studio & archival gallery palettes — **`obsidian`** (near-black `#09090B` + cyan), **`carbon`** (warm charcoal `#111113` + copper), **`abyss`** (deep midnight `#070D1A` + blue), **`graphite`** (slate dark `#14171C` + violet), and **`bone`** (archival warm paper `#EFECE6` + ultramarine). Legacy grounds (`navy`, `charcoal`, `forest`, `paper`, `cobalt`, `xerox`, `riso`, `blood`, `acid`) remain available as opt-in grounds for backward compatibility.
+**Primary recommended palettes (`--ground` for plates/covers):** Start from the 5 refined studio & archival gallery palettes — **`obsidian`** (near-black `#09090B` + cyan), **`carbon`** (warm charcoal `#111113` + copper), **`abyss`** (deep midnight `#070D1A` + blue), **`graphite`** (slate dark `#14171C` + violet), and **`bone`** (archival warm paper `#EFECE6` + ultramarine). Legacy grounds (`navy`, `charcoal`, `forest`, `paper`, `cobalt`, `xerox`, `riso`, `blood`, `acid`) remain available as opt-in grounds for backward compatibility.
 
 All plates and covers support 4 gallery `--layout`s (`classic`, `editorial`, `blueprint`, `macro`) and 3 `--format`s (`poster` `840×1190` default, `square` `960×960` album cover, `og` `1280×640` landscape Open Graph card). To showcase 2–4 plates or covers side by side in one gallery contact sheet (and optional synchronized GIF), run `npx vyo series <spec1> <spec2> [...] --out <base> [--gif]`.
+
+## Make a luminous poster
+
+A luminous poster lets you draw **whatever the repo actually is** — one evocative, soft-lit visual metaphor — and refracts it through the codebase's real file sizes and cross-area imports across **5 signature print styles** and **5 curated palettes**, paired with Vyo's frameless typography and zone-anchored plain-language micro-type. Follow these steps in order; you need nothing else in this file except "Reply in chat".
+
+**5 signature print styles (`--style`):**
+- **`obsidian`** *(default)* — deep velvety dark `7px` optical mosaic (`120×170`) with glowing chromatic strata.
+- **`alabaster`** — crisp daylight `7px` mineral-slate & vermilion/cobalt screenprint mosaic.
+- **`optics`** — full-resolution continuous darkroom refraction with horizontal slice cuts, kinetic trails, cyan-paired chromatic dispersion, specular halation, and fine 35mm monochrome film grain.
+- **`riso`** — 3-plate tactile risograph on warm archival washi paper (`#F6F3EB`) with codebase-driven horizontal plate misregistration, optical `multiply` overprint, and 2-octave cotton-fiber ink grain.
+- **`contour`** — sculpted Marching Squares topographic elevation iso-lines (works on both dark carbon and warm bone grounds) with glowing accent contours, codebase fault-line ticks, and cartographic label breaks.
+
+**5 curated palettes (`--palette`):**
+- Dark grounds: **`crimson`** (`#090A0D` + crimson, default for dark styles), **`pine`** (`#0A1311` + molten amber), **`abyss`** (`#070C18` + electric cyan).
+- Light grounds: **`vermilion`** (`#F2F3F6` / warm `#F6F3EB` + vermilion, default for light styles), **`cobalt`** (`#EFECE6` / warm `#F4F1EA` + Klein cobalt).
+
+**Auto dark/light SVG normalization:** You only need to author **one** soft-lit `subject.svg` (whether painted on `#000000` or `#FFFFFF`). The engine automatically detects the SVG's source polarity, extracts continuous `(intensity, accent, coolness)` channels, preserves your typography sanctuary pocket, and renders natively across all 5 styles without redrawing.
+
+1. Scan the repo:
+   ```bash
+   npx vyo scan <repo> --out <facts>
+   ```
+2. Compose the scaffold (pick `--style` and optional `--palette`; `--theme obsidian|alabaster` also remains supported for backward compatibility):
+   ```bash
+   npx vyo compose <facts> --frame luminous --style obsidian --palette crimson --repo <repo> --out <repo>/vyo/<name>-obsidian.json
+   ```
+   Compose prints every codebase area with its share of the code (`*` strong accent candidate, `-` surrounding code) and writes placeholders for `product.name`, `headline`, `legend`, `accent`, `subject.concept`, `subject.svg`, and `microType`.
+3. Read the repo's README and invent **one evocative, soft-lit visual metaphor** that explains what the product actually *is* in 0.5 seconds (for example: a glowing optical prism refracting code into a spectrum, a folded origami wing with a glowing handoff crease, a compact ember seed radiating concentric ripples, or seven terraced harvest hills under a weekly tide). Never reuse one of the 22 canned silhouettes, and never draw a flat PowerPoint flowchart with boxes and arrows.
+4. Author `subject.svg` (`viewBox="0 0 840 1190"`, max 64 KB, no `<script>` or external URLs):
+   - Paint with **continuous soft light**, NOT flat solid fills: use `<radialGradient>`, `<linearGradient>`, `<feGaussianBlur>` glow halos, translucent overlapping forms, and **carved dark shadow valleys** (`#000000` blurred paths on dark SVGs; crisp `#FFFFFF` ridge slits on light SVGs) so every print style has rich mid-tones, chiaroscuro, and specular crests to grab onto.
+   - Give the product's focal accent part **one glowing red/vermilion/crimson heart** (`#E52D38` / `#CC262F`) surrounded by cool glacier-cyan, sapphire, cobalt, or twilight-amethyst (on dark SVGs) or ice-mist and deep mineral slate (on light SVGs) — aiming for ~5–25% of lit area in the accent (the engine automatically remaps your accent heart to `crimson`, `amber`, `cyan`, `vermilion`, or `cobalt` for any chosen palette!).
+   - Leave the **typography sanctuary** calm and open: left-middle (`x 0..396, y 392..742`) on dark-authored SVGs, or top-left (`x 0..540, y 0..252`) on light-authored SVGs (or specify a custom `subject.sanctuary` `{ x, y, w, h }`).
+   - Optionally supply `subject.refractMaskSvg` (white = preserve razor-crisp form, black = full codebase strata refraction) — prefer a smooth full-width vertical or diagonal `<linearGradient>` band rather than small shapes so refraction transitions cleanly across the wake — or omit it to let the engine auto-derive a smooth spatial mask from your lighting gradients.
+5. Write `product.name`, `headline` (one calm sentence, ≤ 72 chars), `legend` (one quiet line, ≤ 140 chars, matching your palette color word, e.g. `"crimson marks the handoff note"`), `accent` (area id), `subject.concept`, and **18–28 zone-anchored plain-language `microType` phrases** (`{ text, u, v, style: "core" | "part" | "whisper" }`, ≤ 28 chars each, zero code jargon) placed right where each part lives in your visual metaphor.
+6. Sketch and visually inspect before full render:
+   ```bash
+   npx vyo sketch <repo>/vyo/<name>-obsidian.json
+   ```
+   Open `<name>-obsidian-sketch.png`. Verify 0.5-second recognizability, rich chiaroscuro (`luminous-tonal`), balanced focal heart (`luminous-accent`), clean sanctuary (`luminous-sanctuary`), and zero jargon (`luminous-jargon`). Iterate if needed.
+7. Render the final `1680×2380` PNG, `280px` thumbnail, and PDF (luminous output files derive their stem from the spec filename, so multiple styles can sit in the same folder without overwriting each other):
+   ```bash
+   npx vyo render <repo>/vyo/<name>-obsidian.json
+   ```
+   Open both the full PNG and `-thumb.png` to confirm the poster reads cleanly at gallery and thumbnail scale, then reply as "Reply in chat" says.
 
 ## Make a plate (Data-as-Art)
 

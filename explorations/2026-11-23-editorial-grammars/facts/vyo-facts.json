@@ -1,0 +1,1319 @@
+{
+ "empty": false,
+ "excluded": {
+  "by": {
+   "test/": {
+    "files": 97,
+    "lines": 5240
+   }
+  },
+  "files": 97,
+  "lines": 5240
+ },
+ "facts": [
+  {
+   "files": [],
+   "id": "area:.",
+   "kind": "area",
+   "loc": 12559,
+   "meta": {
+    "fileCount": 71,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Vyo"
+  },
+  {
+   "files": [],
+   "id": "area:examples",
+   "kind": "area",
+   "loc": 111,
+   "meta": {
+    "fileCount": 2,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Examples"
+  },
+  {
+   "files": [],
+   "id": "area:examples/posters",
+   "kind": "area",
+   "loc": 111,
+   "meta": {
+    "fileCount": 2,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Posters"
+  },
+  {
+   "files": [],
+   "id": "area:tools",
+   "kind": "area",
+   "loc": 12448,
+   "meta": {
+    "fileCount": 69,
+    "leaf": true,
+    "package": "."
+   },
+   "name": "Helper scripts"
+  },
+  {
+   "files": [],
+   "id": "area:tools/lib",
+   "kind": "area",
+   "loc": 11791,
+   "meta": {
+    "fileCount": 67,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Inner workings"
+  },
+  {
+   "files": [],
+   "id": "area:tools/lib/fields",
+   "kind": "area",
+   "loc": 2882,
+   "meta": {
+    "fileCount": 19,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Fields"
+  },
+  {
+   "files": [],
+   "id": "area:tools/lib/scan",
+   "kind": "area",
+   "loc": 3326,
+   "meta": {
+    "fileCount": 22,
+    "leaf": false,
+    "package": "."
+   },
+   "name": "Scan"
+  },
+  {
+   "files": [],
+   "id": "job:/api/cron/weekly-plan",
+   "kind": "job",
+   "meta": {
+    "package": ".",
+    "schedule": "0 8 * * 1"
+   },
+   "name": "Weekly plan"
+  }
+ ],
+ "files": {
+  "examples/posters/build.mjs": {
+   "area": "area:examples/posters",
+   "loc": 60
+  },
+  "examples/posters/wings-mask.mjs": {
+   "area": "area:examples/posters",
+   "loc": 51
+  },
+  "tools/lib/band.mjs": {
+   "area": "area:tools/lib",
+   "loc": 38
+  },
+  "tools/lib/browser.mjs": {
+   "area": "area:tools/lib",
+   "loc": 19
+  },
+  "tools/lib/check.mjs": {
+   "area": "area:tools/lib",
+   "loc": 485
+  },
+  "tools/lib/cover-page.js": {
+   "area": "area:tools/lib",
+   "loc": 116
+  },
+  "tools/lib/cover-render.mjs": {
+   "area": "area:tools/lib",
+   "loc": 100
+  },
+  "tools/lib/cover-report.mjs": {
+   "area": "area:tools/lib",
+   "loc": 133
+  },
+  "tools/lib/cover-sketch.mjs": {
+   "area": "area:tools/lib",
+   "loc": 74
+  },
+  "tools/lib/cover.mjs": {
+   "area": "area:tools/lib",
+   "loc": 664
+  },
+  "tools/lib/fields/bleed.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 33
+  },
+  "tools/lib/fields/chords.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 227
+  },
+  "tools/lib/fields/contour.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 69
+  },
+  "tools/lib/fields/glyph.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 72
+  },
+  "tools/lib/fields/index.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 161
+  },
+  "tools/lib/fields/pose.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 158
+  },
+  "tools/lib/fields/radial.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 41
+  },
+  "tools/lib/fields/river.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 178
+  },
+  "tools/lib/fields/scatter.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 36
+  },
+  "tools/lib/fields/shape-relief.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 586
+  },
+  "tools/lib/fields/shape-rings.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 776
+  },
+  "tools/lib/fields/shape-symbols.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 96
+  },
+  "tools/lib/fields/shape.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 23
+  },
+  "tools/lib/fields/shatter.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 48
+  },
+  "tools/lib/fields/slabs.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 31
+  },
+  "tools/lib/fields/sphere.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 57
+  },
+  "tools/lib/fields/spiral.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 30
+  },
+  "tools/lib/fields/terrain.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 176
+  },
+  "tools/lib/fields/wave.mjs": {
+   "area": "area:tools/lib/fields",
+   "loc": 84
+  },
+  "tools/lib/fill.js": {
+   "area": "area:tools/lib",
+   "loc": 264
+  },
+  "tools/lib/frame.mjs": {
+   "area": "area:tools/lib",
+   "loc": 169
+  },
+  "tools/lib/geometry.mjs": {
+   "area": "area:tools/lib",
+   "loc": 467
+  },
+  "tools/lib/hash.mjs": {
+   "area": "area:tools/lib",
+   "loc": 34
+  },
+  "tools/lib/init.mjs": {
+   "area": "area:tools/lib",
+   "loc": 50
+  },
+  "tools/lib/inspect.js": {
+   "area": "area:tools/lib",
+   "loc": 65
+  },
+  "tools/lib/jargon.mjs": {
+   "area": "area:tools/lib",
+   "loc": 22
+  },
+  "tools/lib/mask.mjs": {
+   "area": "area:tools/lib",
+   "loc": 312
+  },
+  "tools/lib/parts.mjs": {
+   "area": "area:tools/lib",
+   "loc": 168
+  },
+  "tools/lib/place.mjs": {
+   "area": "area:tools/lib",
+   "loc": 246
+  },
+  "tools/lib/png-mask.mjs": {
+   "area": "area:tools/lib",
+   "loc": 66
+  },
+  "tools/lib/png.mjs": {
+   "area": "area:tools/lib",
+   "loc": 150
+  },
+  "tools/lib/recent.mjs": {
+   "area": "area:tools/lib",
+   "loc": 71
+  },
+  "tools/lib/render.mjs": {
+   "area": "area:tools/lib",
+   "loc": 470
+  },
+  "tools/lib/scan/areas.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 136
+  },
+  "tools/lib/scan/detect-http.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 243
+  },
+  "tools/lib/scan/detect-jobs.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 111
+  },
+  "tools/lib/scan/detect-python.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 213
+  },
+  "tools/lib/scan/detect-routes.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 225
+  },
+  "tools/lib/scan/detect-services.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 175
+  },
+  "tools/lib/scan/detect-tables.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 165
+  },
+  "tools/lib/scan/draft.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 133
+  },
+  "tools/lib/scan/facts.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 99
+  },
+  "tools/lib/scan/files.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 208
+  },
+  "tools/lib/scan/glob.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 35
+  },
+  "tools/lib/scan/imports.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 337
+  },
+  "tools/lib/scan/index.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 151
+  },
+  "tools/lib/scan/kit.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 26
+  },
+  "tools/lib/scan/names.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 170
+  },
+  "tools/lib/scan/packages.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 154
+  },
+  "tools/lib/scan/pyutil.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 109
+  },
+  "tools/lib/scan/routes.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 65
+  },
+  "tools/lib/scan/show.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 128
+  },
+  "tools/lib/scan/tokenize.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 249
+  },
+  "tools/lib/scan/uses.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 129
+  },
+  "tools/lib/scan/util.mjs": {
+   "area": "area:tools/lib/scan",
+   "loc": 65
+  },
+  "tools/lib/shape-report.mjs": {
+   "area": "area:tools/lib",
+   "loc": 247
+  },
+  "tools/lib/silhouettes.mjs": {
+   "area": "area:tools/lib",
+   "loc": 168
+  },
+  "tools/lib/sketch.mjs": {
+   "area": "area:tools/lib",
+   "loc": 247
+  },
+  "tools/lib/spec.mjs": {
+   "area": "area:tools/lib",
+   "loc": 738
+  },
+  "tools/postinstall.mjs": {
+   "area": "area:tools",
+   "loc": 2
+  },
+  "tools/vyo.mjs": {
+   "area": "area:tools",
+   "loc": 655
+  }
+ },
+ "hash": "315e5e4c1098",
+ "imports": [
+  [
+   "examples/posters/wings-mask.mjs",
+   "tools/lib/png.mjs"
+  ],
+  [
+   "tools/lib/check.mjs",
+   "tools/lib/band.mjs"
+  ],
+  [
+   "tools/lib/check.mjs",
+   "tools/lib/cover-render.mjs"
+  ],
+  [
+   "tools/lib/check.mjs",
+   "tools/lib/cover-report.mjs"
+  ],
+  [
+   "tools/lib/check.mjs",
+   "tools/lib/cover.mjs"
+  ],
+  [
+   "tools/lib/check.mjs",
+   "tools/lib/fields/index.mjs"
+  ],
+  [
+   "tools/lib/check.mjs",
+   "tools/lib/fields/shape-relief.mjs"
+  ],
+  [
+   "tools/lib/check.mjs",
+   "tools/lib/fields/shape-rings.mjs"
+  ],
+  [
+   "tools/lib/check.mjs",
+   "tools/lib/frame.mjs"
+  ],
+  [
+   "tools/lib/check.mjs",
+   "tools/lib/mask.mjs"
+  ],
+  [
+   "tools/lib/check.mjs",
+   "tools/lib/parts.mjs"
+  ],
+  [
+   "tools/lib/check.mjs",
+   "tools/lib/place.mjs"
+  ],
+  [
+   "tools/lib/check.mjs",
+   "tools/lib/render.mjs"
+  ],
+  [
+   "tools/lib/check.mjs",
+   "tools/lib/shape-report.mjs"
+  ],
+  [
+   "tools/lib/check.mjs",
+   "tools/lib/spec.mjs"
+  ],
+  [
+   "tools/lib/cover-render.mjs",
+   "tools/lib/cover.mjs"
+  ],
+  [
+   "tools/lib/cover-render.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/cover-render.mjs",
+   "tools/lib/parts.mjs"
+  ],
+  [
+   "tools/lib/cover-render.mjs",
+   "tools/lib/png-mask.mjs"
+  ],
+  [
+   "tools/lib/cover-report.mjs",
+   "tools/lib/cover.mjs"
+  ],
+  [
+   "tools/lib/cover-report.mjs",
+   "tools/lib/parts.mjs"
+  ],
+  [
+   "tools/lib/cover-sketch.mjs",
+   "tools/lib/cover-render.mjs"
+  ],
+  [
+   "tools/lib/cover-sketch.mjs",
+   "tools/lib/cover-report.mjs"
+  ],
+  [
+   "tools/lib/cover-sketch.mjs",
+   "tools/lib/cover.mjs"
+  ],
+  [
+   "tools/lib/cover-sketch.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/cover-sketch.mjs",
+   "tools/lib/png.mjs"
+  ],
+  [
+   "tools/lib/cover.mjs",
+   "tools/lib/fields/shape-relief.mjs"
+  ],
+  [
+   "tools/lib/cover.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/cover.mjs",
+   "tools/lib/mask.mjs"
+  ],
+  [
+   "tools/lib/cover.mjs",
+   "tools/lib/silhouettes.mjs"
+  ],
+  [
+   "tools/lib/fields/bleed.mjs",
+   "tools/lib/fields/chords.mjs"
+  ],
+  [
+   "tools/lib/fields/bleed.mjs",
+   "tools/lib/fields/pose.mjs"
+  ],
+  [
+   "tools/lib/fields/bleed.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/chords.mjs",
+   "tools/lib/fields/pose.mjs"
+  ],
+  [
+   "tools/lib/fields/chords.mjs",
+   "tools/lib/fields/wave.mjs"
+  ],
+  [
+   "tools/lib/fields/chords.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/contour.mjs",
+   "tools/lib/fields/chords.mjs"
+  ],
+  [
+   "tools/lib/fields/contour.mjs",
+   "tools/lib/fields/pose.mjs"
+  ],
+  [
+   "tools/lib/fields/contour.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/glyph.mjs",
+   "tools/lib/fields/chords.mjs"
+  ],
+  [
+   "tools/lib/fields/glyph.mjs",
+   "tools/lib/fields/pose.mjs"
+  ],
+  [
+   "tools/lib/fields/glyph.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/index.mjs",
+   "tools/lib/fields/bleed.mjs"
+  ],
+  [
+   "tools/lib/fields/index.mjs",
+   "tools/lib/fields/contour.mjs"
+  ],
+  [
+   "tools/lib/fields/index.mjs",
+   "tools/lib/fields/glyph.mjs"
+  ],
+  [
+   "tools/lib/fields/index.mjs",
+   "tools/lib/fields/radial.mjs"
+  ],
+  [
+   "tools/lib/fields/index.mjs",
+   "tools/lib/fields/river.mjs"
+  ],
+  [
+   "tools/lib/fields/index.mjs",
+   "tools/lib/fields/scatter.mjs"
+  ],
+  [
+   "tools/lib/fields/index.mjs",
+   "tools/lib/fields/shape-relief.mjs"
+  ],
+  [
+   "tools/lib/fields/index.mjs",
+   "tools/lib/fields/shape.mjs"
+  ],
+  [
+   "tools/lib/fields/index.mjs",
+   "tools/lib/fields/shatter.mjs"
+  ],
+  [
+   "tools/lib/fields/index.mjs",
+   "tools/lib/fields/slabs.mjs"
+  ],
+  [
+   "tools/lib/fields/index.mjs",
+   "tools/lib/fields/sphere.mjs"
+  ],
+  [
+   "tools/lib/fields/index.mjs",
+   "tools/lib/fields/spiral.mjs"
+  ],
+  [
+   "tools/lib/fields/index.mjs",
+   "tools/lib/fields/terrain.mjs"
+  ],
+  [
+   "tools/lib/fields/index.mjs",
+   "tools/lib/fields/wave.mjs"
+  ],
+  [
+   "tools/lib/fields/pose.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/radial.mjs",
+   "tools/lib/fields/chords.mjs"
+  ],
+  [
+   "tools/lib/fields/radial.mjs",
+   "tools/lib/fields/wave.mjs"
+  ],
+  [
+   "tools/lib/fields/radial.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/river.mjs",
+   "tools/lib/fields/chords.mjs"
+  ],
+  [
+   "tools/lib/fields/river.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/scatter.mjs",
+   "tools/lib/fields/chords.mjs"
+  ],
+  [
+   "tools/lib/fields/scatter.mjs",
+   "tools/lib/fields/pose.mjs"
+  ],
+  [
+   "tools/lib/fields/scatter.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/shape-relief.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/shape-relief.mjs",
+   "tools/lib/mask.mjs"
+  ],
+  [
+   "tools/lib/fields/shape-relief.mjs",
+   "tools/lib/silhouettes.mjs"
+  ],
+  [
+   "tools/lib/fields/shape-rings.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/shape-rings.mjs",
+   "tools/lib/mask.mjs"
+  ],
+  [
+   "tools/lib/fields/shape-symbols.mjs",
+   "tools/lib/fields/chords.mjs"
+  ],
+  [
+   "tools/lib/fields/shape-symbols.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/shape-symbols.mjs",
+   "tools/lib/mask.mjs"
+  ],
+  [
+   "tools/lib/fields/shape.mjs",
+   "tools/lib/fields/shape-relief.mjs"
+  ],
+  [
+   "tools/lib/fields/shape.mjs",
+   "tools/lib/fields/shape-rings.mjs"
+  ],
+  [
+   "tools/lib/fields/shape.mjs",
+   "tools/lib/fields/shape-symbols.mjs"
+  ],
+  [
+   "tools/lib/fields/shape.mjs",
+   "tools/lib/mask.mjs"
+  ],
+  [
+   "tools/lib/fields/shatter.mjs",
+   "tools/lib/fields/chords.mjs"
+  ],
+  [
+   "tools/lib/fields/shatter.mjs",
+   "tools/lib/fields/pose.mjs"
+  ],
+  [
+   "tools/lib/fields/shatter.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/slabs.mjs",
+   "tools/lib/fields/chords.mjs"
+  ],
+  [
+   "tools/lib/fields/slabs.mjs",
+   "tools/lib/fields/pose.mjs"
+  ],
+  [
+   "tools/lib/fields/slabs.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/sphere.mjs",
+   "tools/lib/fields/chords.mjs"
+  ],
+  [
+   "tools/lib/fields/sphere.mjs",
+   "tools/lib/fields/wave.mjs"
+  ],
+  [
+   "tools/lib/fields/sphere.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/spiral.mjs",
+   "tools/lib/fields/chords.mjs"
+  ],
+  [
+   "tools/lib/fields/spiral.mjs",
+   "tools/lib/fields/pose.mjs"
+  ],
+  [
+   "tools/lib/fields/spiral.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/terrain.mjs",
+   "tools/lib/fields/chords.mjs"
+  ],
+  [
+   "tools/lib/fields/terrain.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/fields/wave.mjs",
+   "tools/lib/fields/chords.mjs"
+  ],
+  [
+   "tools/lib/fields/wave.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/frame.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/mask.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/mask.mjs",
+   "tools/lib/silhouettes.mjs"
+  ],
+  [
+   "tools/lib/parts.mjs",
+   "tools/lib/fields/index.mjs"
+  ],
+  [
+   "tools/lib/parts.mjs",
+   "tools/lib/fields/shape.mjs"
+  ],
+  [
+   "tools/lib/parts.mjs",
+   "tools/lib/scan/detect-services.mjs"
+  ],
+  [
+   "tools/lib/parts.mjs",
+   "tools/lib/scan/glob.mjs"
+  ],
+  [
+   "tools/lib/place.mjs",
+   "tools/lib/frame.mjs"
+  ],
+  [
+   "tools/lib/place.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/place.mjs",
+   "tools/lib/mask.mjs"
+  ],
+  [
+   "tools/lib/place.mjs",
+   "tools/lib/render.mjs"
+  ],
+  [
+   "tools/lib/png-mask.mjs",
+   "tools/lib/mask.mjs"
+  ],
+  [
+   "tools/lib/png-mask.mjs",
+   "tools/lib/png.mjs"
+  ],
+  [
+   "tools/lib/render.mjs",
+   "tools/lib/band.mjs"
+  ],
+  [
+   "tools/lib/render.mjs",
+   "tools/lib/browser.mjs"
+  ],
+  [
+   "tools/lib/render.mjs",
+   "tools/lib/cover-render.mjs"
+  ],
+  [
+   "tools/lib/render.mjs",
+   "tools/lib/cover.mjs"
+  ],
+  [
+   "tools/lib/render.mjs",
+   "tools/lib/fields/index.mjs"
+  ],
+  [
+   "tools/lib/render.mjs",
+   "tools/lib/frame.mjs"
+  ],
+  [
+   "tools/lib/render.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/render.mjs",
+   "tools/lib/parts.mjs"
+  ],
+  [
+   "tools/lib/render.mjs",
+   "tools/lib/place.mjs"
+  ],
+  [
+   "tools/lib/render.mjs",
+   "tools/lib/png-mask.mjs"
+  ],
+  [
+   "tools/lib/render.mjs",
+   "tools/lib/spec.mjs"
+  ],
+  [
+   "tools/lib/scan/areas.mjs",
+   "tools/lib/scan/names.mjs"
+  ],
+  [
+   "tools/lib/scan/areas.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-http.mjs",
+   "tools/lib/scan/files.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-http.mjs",
+   "tools/lib/scan/names.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-http.mjs",
+   "tools/lib/scan/routes.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-http.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-jobs.mjs",
+   "tools/lib/scan/files.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-jobs.mjs",
+   "tools/lib/scan/names.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-jobs.mjs",
+   "tools/lib/scan/pyutil.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-jobs.mjs",
+   "tools/lib/scan/routes.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-jobs.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-python.mjs",
+   "tools/lib/scan/names.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-python.mjs",
+   "tools/lib/scan/pyutil.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-python.mjs",
+   "tools/lib/scan/routes.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-python.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-routes.mjs",
+   "tools/lib/scan/facts.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-routes.mjs",
+   "tools/lib/scan/files.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-routes.mjs",
+   "tools/lib/scan/names.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-routes.mjs",
+   "tools/lib/scan/routes.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-routes.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-services.mjs",
+   "tools/lib/scan/imports.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-services.mjs",
+   "tools/lib/scan/names.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-services.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-tables.mjs",
+   "tools/lib/scan/names.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-tables.mjs",
+   "tools/lib/scan/pyutil.mjs"
+  ],
+  [
+   "tools/lib/scan/detect-tables.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/draft.mjs",
+   "tools/lib/scan/names.mjs"
+  ],
+  [
+   "tools/lib/scan/draft.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/facts.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/files.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/imports.mjs",
+   "tools/lib/scan/files.mjs"
+  ],
+  [
+   "tools/lib/scan/imports.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/hash.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/areas.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/detect-http.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/detect-jobs.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/detect-python.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/detect-routes.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/detect-services.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/detect-tables.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/facts.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/files.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/imports.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/kit.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/packages.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/tokenize.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/uses.mjs"
+  ],
+  [
+   "tools/lib/scan/index.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/kit.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/packages.mjs",
+   "tools/lib/scan/files.mjs"
+  ],
+  [
+   "tools/lib/scan/packages.mjs",
+   "tools/lib/scan/tokenize.mjs"
+  ],
+  [
+   "tools/lib/scan/packages.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/show.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/scan/uses.mjs",
+   "tools/lib/scan/files.mjs"
+  ],
+  [
+   "tools/lib/scan/uses.mjs",
+   "tools/lib/scan/routes.mjs"
+  ],
+  [
+   "tools/lib/scan/uses.mjs",
+   "tools/lib/scan/util.mjs"
+  ],
+  [
+   "tools/lib/shape-report.mjs",
+   "tools/lib/fields/index.mjs"
+  ],
+  [
+   "tools/lib/shape-report.mjs",
+   "tools/lib/fields/shape-relief.mjs"
+  ],
+  [
+   "tools/lib/shape-report.mjs",
+   "tools/lib/fields/shape.mjs"
+  ],
+  [
+   "tools/lib/shape-report.mjs",
+   "tools/lib/frame.mjs"
+  ],
+  [
+   "tools/lib/shape-report.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/shape-report.mjs",
+   "tools/lib/mask.mjs"
+  ],
+  [
+   "tools/lib/shape-report.mjs",
+   "tools/lib/parts.mjs"
+  ],
+  [
+   "tools/lib/shape-report.mjs",
+   "tools/lib/render.mjs"
+  ],
+  [
+   "tools/lib/shape-report.mjs",
+   "tools/lib/silhouettes.mjs"
+  ],
+  [
+   "tools/lib/sketch.mjs",
+   "tools/lib/check.mjs"
+  ],
+  [
+   "tools/lib/sketch.mjs",
+   "tools/lib/fields/index.mjs"
+  ],
+  [
+   "tools/lib/sketch.mjs",
+   "tools/lib/frame.mjs"
+  ],
+  [
+   "tools/lib/sketch.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/sketch.mjs",
+   "tools/lib/mask.mjs"
+  ],
+  [
+   "tools/lib/sketch.mjs",
+   "tools/lib/parts.mjs"
+  ],
+  [
+   "tools/lib/sketch.mjs",
+   "tools/lib/place.mjs"
+  ],
+  [
+   "tools/lib/sketch.mjs",
+   "tools/lib/png.mjs"
+  ],
+  [
+   "tools/lib/sketch.mjs",
+   "tools/lib/render.mjs"
+  ],
+  [
+   "tools/lib/sketch.mjs",
+   "tools/lib/shape-report.mjs"
+  ],
+  [
+   "tools/lib/sketch.mjs",
+   "tools/lib/silhouettes.mjs"
+  ],
+  [
+   "tools/lib/sketch.mjs",
+   "tools/lib/spec.mjs"
+  ],
+  [
+   "tools/lib/spec.mjs",
+   "tools/lib/cover.mjs"
+  ],
+  [
+   "tools/lib/spec.mjs",
+   "tools/lib/fields/index.mjs"
+  ],
+  [
+   "tools/lib/spec.mjs",
+   "tools/lib/fields/shape-rings.mjs"
+  ],
+  [
+   "tools/lib/spec.mjs",
+   "tools/lib/fields/shape.mjs"
+  ],
+  [
+   "tools/lib/spec.mjs",
+   "tools/lib/fields/wave.mjs"
+  ],
+  [
+   "tools/lib/spec.mjs",
+   "tools/lib/frame.mjs"
+  ],
+  [
+   "tools/lib/spec.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/lib/spec.mjs",
+   "tools/lib/jargon.mjs"
+  ],
+  [
+   "tools/lib/spec.mjs",
+   "tools/lib/mask.mjs"
+  ],
+  [
+   "tools/lib/spec.mjs",
+   "tools/lib/png-mask.mjs"
+  ],
+  [
+   "tools/lib/spec.mjs",
+   "tools/lib/silhouettes.mjs"
+  ],
+  [
+   "tools/postinstall.mjs",
+   "tools/lib/browser.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/browser.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/check.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/cover-render.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/cover-report.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/cover-sketch.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/cover.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/fields/index.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/fields/shape.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/frame.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/geometry.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/hash.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/init.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/mask.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/parts.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/png-mask.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/recent.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/render.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/scan/index.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/scan/show.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/silhouettes.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/sketch.mjs"
+  ],
+  [
+   "tools/vyo.mjs",
+   "tools/lib/spec.mjs"
+  ]
+ ],
+ "repo": {
+  "name": "vyo",
+  "packages": [
+   "."
+  ]
+ },
+ "unresolved": {},
+ "uses": [],
+ "version": 1
+}

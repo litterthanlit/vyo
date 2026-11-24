@@ -1,6 +1,7 @@
 // Every rule a poster must pass, as one table. "spec" checks run before render; "page" checks
 // judge the measurements lib/inspect.js takes in the rendered page.
 import { validateSpec, textProblems, hasWord, geometryKey } from "./spec.mjs";
+import { isJargon } from "./jargon.mjs";
 import { bandCounts, bandLine } from "./band.mjs";
 import { fontFacesOf, tokensOf, fieldTokensOf, recordText } from "./render.mjs";
 import { frameOf, ROLES, RECORD_FRAMES } from "./frame.mjs";
@@ -161,10 +162,10 @@ export const CHECKS = [
   {
     id: "preset-copy", level: "warn", stage: "spec", about: "the figure's geometry is not a preset's, unchanged",
     run: ({ spec, presets }) => {
-      const mine = spec.figure.regions.filter((r) => r.kind !== "field" && r.kind !== "plate").map(geometryKey);
+      const mine = spec.figure.regions.filter((r) => r.kind !== "field" && r.kind !== "plate" && r.kind !== "luminous").map(geometryKey);
       if (!mine.length) return [];
       const same = Object.entries(presets).find(([, p]) => {
-        const theirs = new Set(p.figure.regions.filter((r) => r.kind !== "field" && r.kind !== "plate").map(geometryKey));
+        const theirs = new Set(p.figure.regions.filter((r) => r.kind !== "field" && r.kind !== "plate" && r.kind !== "luminous").map(geometryKey));
         return mine.every((k) => theirs.has(k));
       });
       return same ? [`the figure's geometry is the ${same[0]} preset's, unchanged; shape it for this product`] : [];
@@ -246,7 +247,11 @@ export const CHECKS = [
   })),
   {
     id: "drawn", level: "fail", stage: "page", about: "the figure script ran to the end",
-    run: ({ page }) => [...page.errors.map((e) => `page error: ${e}`), ...(page.drawn ? [] : ["the figure never set window.drawn"])],
+    run: ({ page }) => [
+      ...page.errors.map((e) => `page error: ${e}`),
+      ...(page.luminousError ? [`luminous error: ${page.luminousError}`] : []),
+      ...(page.drawn ? [] : ["the figure never set window.drawn"]),
+    ],
   },
   {
     id: "fonts", level: "fail", stage: "page", about: "the poster's faces loaded: Commit Mono 400 and 700, and Newsreader 400 (a cover: Inter 500 and Inter Display 600)",
@@ -278,7 +283,7 @@ export const CHECKS = [
     id: "region-size", level: "fail", stage: "page", about: "every fill region has at least 4 rows and every dots region fits above the footer",
     run: ({ page }) =>
       page.regions.flatMap((r) => {
-        if (r.kind === "field" || r.kind === "routes") return [];
+        if (r.kind === "field" || r.kind === "routes" || r.kind === "plate" || r.kind === "luminous") return [];
         if (r.kind === "fill") return r.rows >= 4 ? [] : [`region ${r.id} has ${r.rows} rows; it needs at least 4, so make it taller or wider`];
         const ok = inside(r.bbox, page.sheet) && r.bbox.bottom <= page.footerTop + 0.5;
         return ok ? [] : [`region ${r.id} does not fit: its letters end at ${round(r.bbox.bottom)}px and ${round(r.bbox.right)}px, the footer starts at ${round(page.footerTop)}px; use a smaller cell or move it`];
@@ -402,8 +407,8 @@ export const CHECKS = [
   {
     id: "silhouette", level: "fail", stage: "page", about: "the figure covers 15% of the sheet above the footer and spans 55% of its height and 60% of its width (a drawn shape is judged by shape-cover instead)",
     run: ({ spec, page }) => {
-      // A shape's rows are type inside a silhouette the mask already measures; a plate draws a full-stage vector canvas.
-      if (frameOf(spec) === "plate" || fieldsOf(spec).some((r) => r.field === "shape")) return [];
+      // A shape's rows are type inside a silhouette the mask already measures; plates and luminous draw full-stage canvases.
+      if (frameOf(spec) === "plate" || frameOf(spec) === "luminous" || fieldsOf(spec).some((r) => r.field === "shape")) return [];
       const s = figureStats(page.rows.map((r) => r.rect), page.dots.map((d) => d.rect), page.footerTop);
       const out = [];
       if (s.coverage < SILHOUETTE.coverage) out.push(`the figure covers ${pct(s.coverage)} of the sheet above the footer; it needs ${pct(SILHOUETTE.coverage)}, so enlarge the shapes`);
@@ -551,6 +556,65 @@ export const CHECKS = [
     run: ({ page }) => {
       const h = page.blocks.find((b) => b.role === "headline");
       return h && h.lines > 2 ? [`the headline runs to ${h.lines} lines; two read best`] : [];
+    },
+  },
+  {
+    id: "luminous-jargon", level: "fail", stage: "spec", frames: ["luminous"], about: "no code jargon in the luminous headline, legend, concept, or microType phrases",
+    run: ({ spec }) => {
+      const out = [];
+      const checkStr = (where, s) => {
+        if (typeof s !== "string" || !s.trim() || s.trim().startsWith("…")) return;
+        const hits = isJargon(s);
+        if (hits.length) out.push(`${where}: jargon: ${hits.map((j) => `"${j}"`).join(", ")} in "${s}"`);
+      };
+      checkStr("headline", spec.headline);
+      const legend = spec.figure?.texts?.find((t) => t?.role === "legend")?.text;
+      checkStr("legend", legend);
+      const region = spec.figure?.regions?.find((r) => r?.kind === "luminous");
+      checkStr("subject.concept", region?.subject?.concept);
+      (region?.microType ?? []).forEach((m, i) => checkStr(`microType[${i}]`, m?.text));
+      return out;
+    },
+  },
+  {
+    id: "luminous-subject", level: "warn", stage: "spec", frames: ["luminous"], about: "a luminous subject SVG uses soft-lighting primitives (gradients, blur, or opacity) instead of flat solid fills",
+    run: ({ spec }) => {
+      const svg = spec.figure?.regions?.find((r) => r?.kind === "luminous")?.subject?.svg;
+      if (typeof svg !== "string" || !svg.trim() || svg.trim().startsWith("…")) return [];
+      const hasSoft = /<(linearGradient|radialGradient|feGaussianBlur)\b|\b(opacity|fill-opacity|stop-opacity)\s*=/i.test(svg);
+      return hasSoft
+        ? []
+        : ["subject.svg has no <radialGradient>, <linearGradient>, <feGaussianBlur>, or opacity; flat solid fills quantize into clip-art on the 7px mosaic — add soft gradients, blurred glow layers, and shadow cavities"];
+    },
+  },
+  {
+    id: "luminous-tonal", level: "warn", stage: "page", frames: ["luminous"], about: "the rasterized luminous subject has continuous tonal richness (at least 4 active luminance bins and >= 18% mid-tone pixels)",
+    run: ({ page }) => {
+      const tr = page.luminous?.tonalRichness;
+      if (!tr) return [];
+      if (tr.activeBins < 4 || tr.midToneRatio < 0.18) {
+        return [`subject.svg reads as flat clip-art (${tr.activeBins} active luminance bins, ${pct(tr.midToneRatio)} mid-tones; needs >= 4 bins and >= 18% mid-tones); add <radialGradient>/<linearGradient>, <feGaussianBlur> halos, and carved shadow cavities`];
+      }
+      return [];
+    },
+  },
+  {
+    id: "luminous-accent", level: "warn", stage: "page", frames: ["luminous"], about: "the focal crimson/vermilion accent covers 3% to 45% of lit mosaic cells",
+    run: ({ page }) => {
+      const m = page.luminous;
+      if (!m) return [];
+      if (m.accentShare < 0.03) return [`accent covers only ${pct(m.accentShare)} of lit cells (under 3%); add a brighter crimson/vermilion focal heart in subject.svg so the accent reads at thumbnail size`];
+      if (m.accentShare > 0.45) return [`accent covers ${pct(m.accentShare)} of lit cells (over 45%); restrain crimson/vermilion to one focal heart so cool strata remain dominant`];
+      return [];
+    },
+  },
+  {
+    id: "luminous-sanctuary", level: "fail", stage: "page", frames: ["luminous"], about: "zero bright mosaic cells collide with the rendered frameless headline, header, or legend",
+    run: ({ page }) => {
+      const n = page.luminous?.sanctuaryCollisions ?? 0;
+      return n > 0
+        ? [`${n} bright mosaic cell${n === 1 ? "" : "s"} collided with the frameless typography sanctuary; keep subject.svg calm inside the sanctuary or adjust subject.sanctuary`]
+        : [];
     },
   },
 ];
