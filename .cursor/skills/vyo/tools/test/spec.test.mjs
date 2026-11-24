@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateSpec, textProblems, hasWord, scaffoldSpec } from "../lib/spec.mjs";
+import { validateSpec, textProblems, hasWord, scaffoldSpec, plateScaffold } from "../lib/spec.mjs";
 import { FIELDS } from "../lib/fields/index.mjs";
 import { BANNED, isJargon } from "../lib/jargon.mjs";
 import { scanRepo } from "../lib/scan/index.mjs";
@@ -221,8 +221,21 @@ test("frames: loose takes its own roles and counts, no notes, and a field; swiss
   const loose = () => ({ ...preset("wave"), frame: "loose", notes: undefined, notBuilt: undefined });
   rejects((s) => (s.figure.texts = [{ role: "masthead", id: "masthead", x: 50, y: 36, w: 490 }]), /^figure\.texts\[0\]\.role: "masthead" is not a role in the loose frame; use label, headline, paragraph, legend, list, rule$/, loose);
   rejects((s) => (s.notes = []), /^notes: the loose frame has no footer/, loose);
-  rejects((s) => (s.frame = "poster"), /^frame: "poster" is not a frame; use swiss or loose or signal or cover$/);
+  rejects((s) => (s.frame = "poster"), /^frame: "poster" is not a frame; use swiss or loose or signal or cover or plate or luminous$/);
   rejects((s) => (s.record = "left"), /^record: only the loose and signal frames have a record line/);
+});
+
+test("a plate refuses hot: it draws no hot word, so words-drawn could never be met", () => {
+  const facts = scanRepo(path.join(HERE, "fixtures", "recipe"));
+  const plate = () => {
+    const s = plateScaffold(facts, { plate: "topo", commit: "04186f4", date: "2026-11-07", parts: partsFromFacts(facts) });
+    s.headline = "A week of dinners, planned in one go.";
+    s.figure.texts[0].text = "Each contour rings Pantry's code, summits sized by lines.";
+    return s;
+  };
+  assert.ok(!validateSpec(plate()).some((e) => /^hot/.test(e)), "a plate without hot says nothing about hot");
+  const errors = errorsOf((s) => (s.hot = "screens"), plate);
+  assert.deepEqual(errors.filter((e) => /^hot/.test(e)), ["hot: a plate sets its accent part in the ground's colour and draws no hot word; remove hot"]);
 });
 
 test("signal: grotesque roles, marks, routes and motion", () => {

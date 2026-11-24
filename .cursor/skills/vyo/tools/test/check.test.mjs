@@ -76,6 +76,19 @@ test("each page check catches its defect", () => {
   }
 });
 
+test("stamp-clear fails a cover whose xerox stamp prints over a text block, and passes one beside it", () => {
+  const run = (stamp) => CHECKS.find((c) => c.id === "stamp-clear").run({ page: { cover: { stamp }, blocks: [{ name: "record", text: "r", rect: rect(640, 62, 796, 106) }, { name: "headline", text: "h", rect: rect(44, 140, 300, 170) }] } });
+  assert.deepEqual(run(rect(640, 39, 796, 110)), ["the archive stamp (640,39 to 796,110) prints over the record's letters; the cover places its stamp itself, so this is an engine fault: try another layout and report it"]);
+  assert.deepEqual(run(rect(470, 30, 630, 100)), []);
+  assert.deepEqual(run(null), []);
+});
+
+test("cards-hold fails a block that runs past its card, and passes one held by its card", () => {
+  const run = (blocks) => CHECKS.find((c) => c.id === "cards-hold").run({ page: { sheet, cards: [{ name: "legend", rect: rect(44, 1080, 400, 1146) }], blocks } });
+  assert.deepEqual(run([{ name: "legend", rect: rect(60, 1092, 380, 1134) }, { name: "headline", rect: rect(44, 140, 300, 170) }]), []);
+  assert.deepEqual(run([{ name: "legend", rect: rect(60, 1092, 412, 1134) }]), ["the legend's letters run past the legend card (text 60,1092 to 412,1134, card 44,1080 to 400,1146); the layout sizes its cards itself, so this is an engine fault: try another layout and report it"]);
+});
+
 test("thin-region warns for a narrow region, and a hole does not make a wide region thin", () => {
   const narrow = rows.map((r, i) => (r.region === "bottom" ? { ...r, rect: rect(380 - (i % 5) * 10, r.rect.top, 460 + (i % 5) * 10, r.rect.bottom) } : r));
   const thin = findings(page({ rows: narrow })).filter((f) => f.id === "thin-region");
@@ -110,7 +123,7 @@ test("every check has a unique id, a level, a stage and a description", () => {
   for (const c of CHECKS) assert.ok(["fail", "warn"].includes(c.level) && ["spec", "page"].includes(c.stage) && c.about, c.id);
   assert.deepEqual(
     CHECKS.map((c) => c.id).sort(),
-    ["accent-part", "band", "blocks-apart", "blocks-inside", "copy", "cover-accent", "cover-names", "cover-seam", "cover-share", "cover-shell", "drawn", "facts-empty", "facts-hash", "field-parts", "fits", "fonts", "headline-lines", "hot-tagged", "legend", "masthead-font", "notes", "one-region", "palette", "part-name", "part-unplain", "path", "preset-copy", "product-name", "record", "region-size", "regions-apart", "row-variety", "rows-fit", "shape-accent", "shape-cover", "shape-dominant", "shape-edge", "shape-limb", "shape-name", "shape-rings", "shape-room", "shape-share", "shape-simple", "shape-thin", "shape-tone", "shape-upright", "silhouette", "spec", "still", "text-clear", "thin-region", "words-drawn"],
+    ["accent-part", "band", "blocks-apart", "blocks-inside", "cards-hold", "copy", "cover-accent", "cover-names", "cover-seam", "cover-share", "cover-shell", "drawn", "facts-empty", "facts-hash", "field-parts", "fits", "fonts", "headline-lines", "hot-tagged", "labels-whole", "legend", "luminous-accent", "luminous-jargon", "luminous-sanctuary", "luminous-subject", "luminous-tonal", "masthead-font", "notes", "one-region", "palette", "part-name", "part-unplain", "path", "plate-parts", "preset-copy", "product-name", "record", "region-size", "regions-apart", "row-variety", "rows-fit", "shape-accent", "shape-cover", "shape-dominant", "shape-edge", "shape-limb", "shape-name", "shape-rings", "shape-room", "shape-share", "shape-simple", "shape-thin", "shape-tone", "shape-upright", "silhouette", "spec", "stamp-clear", "still", "text-clear", "thin-region", "words-drawn"],
   );
 });
 

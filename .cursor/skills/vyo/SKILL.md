@@ -12,7 +12,7 @@ description: >-
 
 # vyo
 
-The poster is a field: the codebase drawn from a scan, each part sized by its code. Either you pick or draw one object that stands for the product and the engine cuts it into the parts (a `cover` or a `shape` field), or the engine generates an architectural form (`seismic` ridgelines, `orbit` dependency constellation, `river`, `slabs`, etc.). The field fills the sheet, and a few plain words sit in the room it leaves. You choose the art direction, the accent part, the plain names and the words. The tools draw, place and check the rest.
+vyo turns a real codebase scan into gallery-grade data art or a sculpted 3D cover that someone who does not code can read. Every geometry is driven by the repo's real line counts, file structure, and cross-area imports. You choose the art direction, the accent part, the plain names, and the words. The tools draw, place, and check the rest.
 
 Run commands from the target repo. `<repo>` is the app's directory, `<name>` its folder name, and `<facts>` is `<repo>/vyo/<name>-facts.json`.
 
@@ -30,38 +30,111 @@ Without installing it, write `npx -y @litterthanlit/vyo` wherever this file says
 
 ## Pick an art direction
 
-Before composing, choose the visual direction that best fits the product's voice instead of defaulting to one look:
+Start from vyo's flagship directions — pick the one that best fits the product's voice:
 
 | Art direction | Command | Best for |
 |---|---|---|
-| **Living 3D Cover** | `compose --frame cover --look living --ground obsidian\|navy\|paper\|riso` | Sculpted, slowly turning 3D relief with luminous sheen, rounded pill highlights on light/vivid grounds, 22 ready silhouettes, `dome`/`extrude`/`revolve` solids |
-| **Punk Xerox / Riso Cover** | `compose --frame cover --look xerox --ground blood\|xerox\|cobalt\|acid\|riso` | Raw zine/album-cover energy: 2-plate thresholded toner, paper grain, misregistration shadows, rubber archive stamp, torn-edge spot highlighters, edge-bleeding Black title, `copier` loop |
-| **Kinetic 3D Spin Cover** | `compose --frame cover --look spin --ground acid\|blood\|cobalt\|obsidian` | Bold brutalist 360° turntable in flat 3-color depth-scaled type, `# + :` extruded side walls, tilted stamp badge, and glitch beats |
-| **Editorial Shape Poster** | `compose --field shape --style relief\|rings\|symbols [--frame signal]` | Custom drawn silhouette (`ops`), ready object (`like`), or traced PNG logo/illustration (`mask`) with serif (`loose`) or brutalist (`signal`) typography |
-| **Architectural Field** | `compose --field seismic\|orbit\|slabs\|river\|... [--frame loose\|signal]` | Codebase-structure-as-art: Joy Division `seismic` ridgelines from LOC/files/imports, `orbit` dependency constellation with import chords, or 12 generative fields |
+| **Luminous Print** *(flagship — bespoke per repo)* | `compose --frame luminous --style obsidian\|alabaster\|optics\|riso\|contour --palette crimson\|pine\|abyss\|vermilion\|cobalt` | Bespoke visual explanation of *whatever* the repo is: author ONE soft-lit SVG metaphor (radial/linear gradients, Gaussian blur glow, shadow cavities, one glowing focal accent heart), and vyo refracts it through real codebase LOC/import strata into any of **5 print styles** (`obsidian`, `alabaster`, `optics`, `riso`, `contour`) with zone-anchored plain-language micro-type and frameless typography |
+| **Data-as-Art Vector Plate** *(flagship)* | `compose --frame plate --plate topo\|blueprint --layout editorial\|blueprint\|macro\|classic --ground obsidian\|carbon\|abyss\|graphite\|bone` | Album-cover / gallery print driven straight from the codebase: marching-squares topographic elevation maps (`topo`) or octilinear PCB circuit schematics wired from real imports (`blueprint`), with `pulse`/`signal` looping GIFs |
+| **Studio-Lit 3D Cover** *(flagship)* | `compose --frame cover --finish studio\|halftone\|wireframe\|type --layout editorial\|classic\|blueprint\|macro --ground obsidian\|carbon\|abyss\|graphite\|bone` | Sculpted 3D product object cut by real line shares: continuous-tone studio lighting (`studio`: softbox key + Fresnel rim + distance-field AO + film grain), precision 22.5° `halftone` dot-matrix, smoked-glass `wireframe` contours, or classic 6px Commit Mono `type` relief across 22 ready silhouettes or traced PNG masks |
+| **Zine / Turntable Cover** *(opt-in looks)* | `compose --frame cover --look xerox\|spin --ground bone\|obsidian\|carbon\|<legacy>` | Expressive `xerox` 2-plate photocopy treatment (`copier` loop) or 360° kinetic `spin` turntable in `type` finish |
+| **Editorial Shape Poster** | `compose --field shape --style relief\|rings\|symbols [--frame signal]` | Custom drawn silhouette (`ops`), ready object (`like`), or traced PNG logo (`mask`) with serif (`loose`) or brutalist (`signal`) typography |
+| **Architectural Field** | `compose --field seismic\|orbit\|slabs\|river\|... [--frame loose\|signal]` | Full-sheet typographic fields driven by LOC, files, and imports across 15 field engines |
 
-All covers support `--format poster` (`840×1190`, default), `--format square` (`960×960`, album cover / social square), and `--format og` (`1280×640`, landscape Open Graph card), plus `--crop center|bleed-right|macro`. To showcase 2–4 covers side by side in one gallery contact sheet (and optional synchronized GIF), run `npx vyo series <spec1> <spec2> [...] --out <base> [--gif]`.
+**Primary recommended palettes (`--ground` for plates/covers):** Start from the 5 refined studio & archival gallery palettes — **`obsidian`** (near-black `#09090B` + cyan), **`carbon`** (warm charcoal `#111113` + copper), **`abyss`** (deep midnight `#070D1A` + blue), **`graphite`** (slate dark `#14171C` + violet), and **`bone`** (archival warm paper `#EFECE6` + ultramarine). Legacy grounds (`navy`, `charcoal`, `forest`, `paper`, `cobalt`, `xerox`, `riso`, `blood`, `acid`) remain available as opt-in grounds for backward compatibility.
 
-## Make a cover
+All plates and covers support 4 gallery `--layout`s (`classic`, `editorial`, `blueprint`, `macro`) and 3 `--format`s (`poster` `840×1190` default, `square` `960×960` album cover, `og` `1280×640` landscape Open Graph card). To showcase 2–4 plates or covers side by side in one gallery contact sheet (and optional synchronized GIF), run `npx vyo series <spec1> <spec2> [...] --out <base> [--gif]`.
 
-A cover is the quickest gallery-grade visual: one bold 3D object, cut into layers by the codebase's real line counts, with the part the product is about in the accent colour. Follow these steps in order; you need nothing else in this file except "Reply in chat".
+## Make a luminous poster
+
+A luminous poster lets you draw **whatever the repo actually is** — one evocative, soft-lit visual metaphor — and refracts it through the codebase's real file sizes and cross-area imports across **5 signature print styles** and **5 curated palettes**, paired with Vyo's frameless typography and zone-anchored plain-language micro-type. Follow these steps in order; you need nothing else in this file except "Reply in chat".
+
+**5 signature print styles (`--style`):**
+- **`obsidian`** *(default)* — deep velvety dark `7px` optical mosaic (`120×170`) with glowing chromatic strata.
+- **`alabaster`** — crisp daylight `7px` mineral-slate & vermilion/cobalt screenprint mosaic.
+- **`optics`** — full-resolution continuous darkroom refraction with horizontal slice cuts, kinetic trails, cyan-paired chromatic dispersion, specular halation, and fine 35mm monochrome film grain.
+- **`riso`** — 3-plate tactile risograph on warm archival washi paper (`#F6F3EB`) with codebase-driven horizontal plate misregistration, optical `multiply` overprint, and 2-octave cotton-fiber ink grain.
+- **`contour`** — sculpted Marching Squares topographic elevation iso-lines (works on both dark carbon and warm bone grounds) with glowing accent contours, codebase fault-line ticks, and cartographic label breaks.
+
+**5 curated palettes (`--palette`):**
+- Dark grounds: **`crimson`** (`#090A0D` + crimson, default for dark styles), **`pine`** (`#0A1311` + molten amber), **`abyss`** (`#070C18` + electric cyan).
+- Light grounds: **`vermilion`** (`#F2F3F6` / warm `#F6F3EB` + vermilion, default for light styles), **`cobalt`** (`#EFECE6` / warm `#F4F1EA` + Klein cobalt).
+
+**Auto dark/light SVG normalization:** You only need to author **one** soft-lit `subject.svg` (whether painted on `#000000` or `#FFFFFF`). The engine automatically detects the SVG's source polarity, extracts continuous `(intensity, accent, coolness)` channels, preserves your typography sanctuary pocket, and renders natively across all 5 styles without redrawing.
+
+1. Scan the repo:
+   ```bash
+   npx vyo scan <repo> --out <facts>
+   ```
+2. Compose the scaffold (pick `--style` and optional `--palette`; `--theme obsidian|alabaster` also remains supported for backward compatibility):
+   ```bash
+   npx vyo compose <facts> --frame luminous --style obsidian --palette crimson --repo <repo> --out <repo>/vyo/<name>-obsidian.json
+   ```
+   Compose prints every codebase area with its share of the code (`*` strong accent candidate, `-` surrounding code) and writes placeholders for `product.name`, `headline`, `legend`, `accent`, `subject.concept`, `subject.svg`, and `microType`.
+3. Read the repo's README and invent **one evocative, soft-lit visual metaphor** that explains what the product actually *is* in 0.5 seconds (for example: a glowing optical prism refracting code into a spectrum, a folded origami wing with a glowing handoff crease, a compact ember seed radiating concentric ripples, or seven terraced harvest hills under a weekly tide). Never reuse one of the 22 canned silhouettes, and never draw a flat PowerPoint flowchart with boxes and arrows.
+4. Author `subject.svg` (`viewBox="0 0 840 1190"`, max 64 KB, no `<script>` or external URLs):
+   - Paint with **continuous soft light**, NOT flat solid fills: use `<radialGradient>`, `<linearGradient>`, `<feGaussianBlur>` glow halos, translucent overlapping forms, and **carved dark shadow valleys** (`#000000` blurred paths on dark SVGs; crisp `#FFFFFF` ridge slits on light SVGs) so every print style has rich mid-tones, chiaroscuro, and specular crests to grab onto.
+   - Give the product's focal accent part **one glowing red/vermilion/crimson heart** (`#E52D38` / `#CC262F`) surrounded by cool glacier-cyan, sapphire, cobalt, or twilight-amethyst (on dark SVGs) or ice-mist and deep mineral slate (on light SVGs) — aiming for ~5–25% of lit area in the accent (the engine automatically remaps your accent heart to `crimson`, `amber`, `cyan`, `vermilion`, or `cobalt` for any chosen palette!).
+   - Leave the **typography sanctuary** calm and open: left-middle (`x 0..396, y 392..742`) on dark-authored SVGs, or top-left (`x 0..540, y 0..252`) on light-authored SVGs (or specify a custom `subject.sanctuary` `{ x, y, w, h }`).
+   - Optionally supply `subject.refractMaskSvg` (white = preserve razor-crisp form, black = full codebase strata refraction) — prefer a smooth full-width vertical or diagonal `<linearGradient>` band rather than small shapes so refraction transitions cleanly across the wake — or omit it to let the engine auto-derive a smooth spatial mask from your lighting gradients.
+5. Write `product.name`, `headline` (one calm sentence, ≤ 72 chars), `legend` (one quiet line, ≤ 140 chars, matching your palette color word, e.g. `"crimson marks the handoff note"`), `accent` (area id), `subject.concept`, and **18–28 zone-anchored plain-language `microType` phrases** (`{ text, u, v, style: "core" | "part" | "whisper" }`, ≤ 28 chars each, zero code jargon) placed right where each part lives in your visual metaphor.
+6. Sketch and visually inspect before full render:
+   ```bash
+   npx vyo sketch <repo>/vyo/<name>-obsidian.json
+   ```
+   Open `<name>-obsidian-sketch.png`. Verify 0.5-second recognizability, rich chiaroscuro (`luminous-tonal`), balanced focal heart (`luminous-accent`), clean sanctuary (`luminous-sanctuary`), and zero jargon (`luminous-jargon`). Iterate if needed.
+7. Render the final `1680×2380` PNG, `280px` thumbnail, and PDF (luminous output files derive their stem from the spec filename, so multiple styles can sit in the same folder without overwriting each other):
+   ```bash
+   npx vyo render <repo>/vyo/<name>-obsidian.json
+   ```
+   Open both the full PNG and `-thumb.png` to confirm the poster reads cleanly at gallery and thumbnail scale, then reply as "Reply in chat" says.
+
+## Make a plate (Data-as-Art)
+
+A plate turns the codebase's real file slices, line counts, and import graph into pure high-resolution vector art on a gallery layout. Follow these steps in order; you need nothing else in this file except "Reply in chat".
 
 1. `npx vyo scan <repo> --out <facts>`
-2. `npx vyo compose <facts> --frame cover --look <living|xerox|spin> --ground <ground> [--format poster|square|og] [--crop center|bleed-right|macro] --repo <repo> --out <repo>/vyo/<name>-poster.json`.
-   Compose splits any part over 40% of the code into its folders or files, picks a matching object from the 22 ready silhouettes, sets the strata and motion (`turn` for `living`/`spin`, `copier` for `xerox`), and writes the legend pattern. It prints every part with its share of the code: `*` marks a part that makes a strong accent on this object, and `-` marks surrounding code (samples, tests, docs, scripts, setup).
+2. Choose a plate kind and compose the scaffold:
+   ```bash
+   npx vyo compose <facts> --frame plate --plate <topo|blueprint> --layout <editorial|blueprint|macro|classic> --ground <obsidian|carbon|abyss|graphite|bone> [--format poster|square|og] --repo <repo> --out <repo>/vyo/<name>-poster.json
+   ```
+   - `topo`: marching-squares topographic elevation map rising around each area's lines and import passes (`motion: { kind: "pulse" }`).
+   - `blueprint`: octilinear PCB / circuit schematic with proportional part chambers and chamfered import traces (`motion: { kind: "signal" }`). Pairs especially well with `--layout blueprint`.
+   Compose auto-splits any part over 40% of the code, sets the matching `motion`, writes the legend pattern, and prints every part (`*` good accent candidate, `-` surrounding code).
+3. Read the repo's README. Open the spec compose wrote and replace every value that starts with `…`:
+   - `product.name`: the name customers see, as the README writes it.
+   - `headline`: one plain sentence, at most 72 characters, on what the product does for a person.
+   - `accent`: the id of the part the product is about (never a part marked `-`).
+   - `names`: every part, lowercase, at most 24 characters, saying what it does for a person ("sign-in", "the plan"). Never a folder, file, or company name.
+   - The legend's `text`: delete the leading `…`, put the product's name for `<product>` and the accent's plain name for `<the accent's plain name>`, keeping the colour word for your `ground` (`cyan`, `copper`, `blue`, `violet`, `ultramarine`, etc.) and the plate's measure words.
+4. `npx vyo sketch <repo>/vyo/<name>-poster.json`. Act on every finding, open `<name>-sketch.png`, and re-run sketch until clean.
+5. `npx vyo render <repo>/vyo/<name>-poster.json --gif`. It writes the PNG, thumbnail, PDF, looping GIF, and MP4, and runs `plate-parts` and every page check. Act on any finding and render again.
+6. Reply as "Reply in chat" says, with the PNG, PDF, and GIF.
+
+## Make a cover (Sculptural 3D)
+
+A cover builds one bold 3D object, cut into layers by the codebase's real line counts, with the part the product is about in the accent colour.
+
+1. `npx vyo scan <repo> --out <facts>`
+2. Compose the scaffold (defaulting to a refined gallery palette and choosing your finish and layout):
+   ```bash
+   npx vyo compose <facts> --frame cover --finish <studio|halftone|wireframe|type> --layout <editorial|classic|blueprint|macro> --ground <obsidian|carbon|abyss|graphite|bone> [--look living|xerox|spin] [--format poster|square|og] [--crop center|bleed-right|macro] --repo <repo> --out <repo>/vyo/<name>-poster.json
+   ```
+   - **Finishes (`--finish`):** `studio` (continuous-tone studio lighting with softbox key, Fresnel rim, distance-field AO, accent bloom, film grain & subtle 5px micro-type shimmer), `halftone` (precision 22.5° dot-matrix with accent bloom), `wireframe` (smoked-glass Fresnel body with 3D latitude/longitude/elevation hairlines), or `type` (default; classic 6px Commit Mono typographic relief, also used by `--look xerox` and `--look spin`).
+   - **Layouts (`--layout`):** `editorial` (Swiss gallery grid with top-left title, archival record & part breakdown), `classic` (top metadata columns + bottom display name), `blueprint` (drafting perimeter frame + bottom-right title block), or `macro` (full-bleed monumental crop with translucent corner plaques).
+   Compose splits any part over 40% of the code into its folders or files, picks a matching object from the 22 ready silhouettes, sets the strata and motion (`turn` for `living`/`spin`, `copier` for `xerox`), and writes the legend pattern. It prints every part with its share of the code (`*` strong accent on this object, `-` surrounding code).
 3. Read the repo's README. Open the spec compose wrote and edit it in place: replace each value that starts with `…`, and change nothing else. Never write the spec from scratch; it holds the commit, the date and the splits.
    - `product.name`: the name customers see, as the README writes it.
    - `headline`: one plain sentence, at most 72 characters, on what the product does for a person.
    - `accent`: the id of the part the product is about, the code that does the product's main job. Never a part marked `-`. A `*` only says the part will look good; if the part the product is about has none, choose it anyway, and the sketch says how to make it show.
    - `names`: every part, lowercase, at most 24 characters, saying what it does for a person ("sign-in", "the plan"). Never a folder, file or company name.
-   - The legend's `text`: delete the leading `…`, and put the product's name for `<product>` and the accent's plain name for `<the accent's plain name>`. Match the accent colour word (`orange`, `yellow`, `pink`, `red`, `vermilion`, `lime`, `gold`, or `blue`) that compose wrote for your chosen `ground`.
+   - The legend's `text`: delete the leading `…`, and put the product's name for `<product>` and the accent's plain name for `<the accent's plain name>`. Match the accent colour word (`cyan`, `copper`, `blue`, `violet`, `ultramarine`, or legacy `orange`/`pink`/`yellow`) that compose wrote for your chosen `ground`.
    - `shape`: compose picked one of the 22 objects and said why. Keep it, pick another from `npx vyo shapes` whose "for ..." fits the product better (and update the object's name in the legend), or trace a custom PNG with `{ "mask": "path/to/silhouette.png" }`.
    - Optional 3D solid override (`region.solid.kind`): `"dome"` (sculpted organic volume, default), `"extrude"` (crisp architectural slab with side walls — great for `plug`, `anvil`, `fast-forward`, `monolith`, `key`, `bolt`, and `spin`), or `"revolve"` (axisymmetric lathe — great for `flask`, `bulb`, `bell`, `pear`, `cup`).
-4. Pick one of the 10 curated `ground` palettes (free hex colours are intentionally refused so contrast always hits):
-   - **Editorial dark:** `navy` (orange), `charcoal` (orange), `forest` (orange), `obsidian` (electric lime `#C8FF00`)
-   - **Editorial / print paper:** `paper` (orange), `xerox` (raw newsprint + punk magenta `#FF0055`), `riso` (warm cream + fluorescent pink `#FF48B0` + cobalt ink)
-   - **High-voltage poster:** `blood` (signal red + acid yellow `#FFEE00`), `acid` (chartreuse `#C8FF00` + vermilion `#FF3B00`), `cobalt` (electric blue `#1E3CFF` + gold `#FFDD00`)
-   Leave out `series` for a single cover; set it, like `"02/04"`, only for a numbered set (or let `vyo series` render a numbered grid of 2–4 covers).
+4. Pick a curated `ground` palette (free hex colours are refused so contrast always hits):
+   - **Primary studio & archival palettes (recommended defaults):** `obsidian` (`#09090B` + cyan), `carbon` (`#111113` + copper), `abyss` (`#070D1A` + blue), `graphite` (`#14171C` + violet), `bone` (`#EFECE6` + ultramarine).
+   - **Legacy & opt-in palettes (backward compatibility):** `navy`, `charcoal`, `forest`, `paper`, `cobalt`, `xerox`, `riso`, `blood`, `acid`.
+   Leave out `series` for a single cover; set it, like `"02/04"`, only for a numbered set (or let `vyo series` render a numbered grid of 2–4 covers/plates).
 5. `npx vyo sketch <repo>/vyo/<name>-poster.json`. Act on every finding, then sketch again until none is left. Open the sketch PNG: say in one word what the object is; if the word is wrong, pick another object.
 6. `npx vyo render <repo>/vyo/<name>-poster.json --gif`. It writes the PNG, thumbnail, PDF, looping GIF and MP4. Act on any finding and render again.
 7. Reply as "Reply in chat" says, with the PNG and the GIF.
@@ -114,16 +187,16 @@ Generate a field when no single object fits, or when the codebase's own architec
 
 Every field from `scatter` to `contour`, plus `seismic` and `orbit`, takes `symbols: true`: the form drawn in sparse clusters of `- : = + #`, shaded by depth, like ASCII art. `seed` moves a generated field's composition; compose writes one, and `0` is the field's own form. A field preference in `project-context.md` wins.
 
-**The frame.** `loose` (the default) is serif words in the room the field leaves, and a record line. `signal` is the high-contrast frame: a charcoal or paper ground, one signal colour, a bundled Inter Display Black (`900`) grotesque headline, wider halo knockout, an archival `meta` line and highlighter `mark`s (see "Signal frame"). `swiss` is a masthead over a footer of notes, for a repo with no git history. `cover` is the fixed poster/square/OG template around a turning or xeroxed 3D object (see "Make a cover"). A shape draws in `loose`, `signal` or `cover`.
+**The frame.** `plate` renders pure high-resolution vector data art (`topo`, `blueprint`) on 4 gallery layouts (see "Make a plate"). `cover` builds a sculpted 3D object with selectable finishes (`studio`, `halftone`, `wireframe`, `type`) and 4 gallery layouts across `poster`/`square`/`og` (see "Make a cover"). `loose` (the default for fields) puts serif words in the room the field leaves, with a record line. `signal` is the high-contrast grotesque frame with archival `meta` and highlighter `mark`s (see "Signal frame"). `swiss` is a masthead over a footer of notes, for a repo with no git history. A shape draws in `loose`, `signal` or `cover`.
 
-**The sheet.** `--theme light` (paper) or `dark` (navy, charcoal in the signal frame). One accent colour; a second colour has to justify itself.
+**The sheet.** `--theme light` (paper) or `dark` (navy, charcoal in the signal frame) for poster frames; `--ground` (preferring `obsidian`, `carbon`, `abyss`, `graphite`, `bone`) for plates and covers. One accent colour; a second colour has to justify itself.
 
 ## Draw the shape
 
 **Fast path — trace a custom PNG silhouette in 3 lines:**
 1. Find or export any high-contrast dark-on-white (or transparent) PNG logo, mascot, hardware outline, or icon (up to 4096px).
 2. Write `"shape": { "mask": "path/to/icon.png" }` (or bundled `"wings"` / `"trace"`).
-3. Run `vyo sketch` and `vyo render` — every look (`living`, `xerox`, `spin`, `relief`, `rings`, `symbols`) and solid (`dome`, `extrude`, `revolve`) works on traced masks identically to `ops`.
+3. Run `vyo sketch` and `vyo render` — every finish (`studio`, `halftone`, `wireframe`, `type`), look (`living`, `xerox`, `spin`, `relief`, `rings`, `symbols`), and solid (`dome`, `extrude`, `revolve`) works on traced masks identically to `ops`.
 
 Or pick/draw a silhouette:
 1. Pick one object a stranger would name in a second, tied to the story. Never a heart, a plain circle or a box. Simple reads: a 3-op flask was legible at once, an 11-op locomotive half legible.
@@ -154,34 +227,36 @@ A relief needs no hints: the default is a rounded volume lit from the top left. 
 
 Follow [plain-language-rules.md](plain-language-rules.md).
 
-## Spec fields for a field poster
+## Spec fields
 
-`compose` fills `version`, `facts`, `product`, `frame` and `theme` (`light` or `dark`), or `ground` on a cover.
+`compose` fills `version`, `facts`, `product`, `frame`, and `theme` (`light` or `dark`), or `ground` on a cover or plate.
 
 | Field | What it is |
 |---|---|
 | `product.name` | The customer-facing name, capitalised as the product's docs write it. `product-name` warns while it is the folder name; keep it if the docs write it that way |
 | `product.commit` | The short hash. `compose --repo` fills it, and the record line needs it |
 | `headline` | At most 72 characters |
+| region `plate` | Plate frame only (`kind: "plate"`): `topo` or `blueprint`. Exactly one per figure; takes optional `accent`, `names`, `split`, `minShare`, `maxParts`, `seed` |
 | region `field` | `shape`, `seismic`, `orbit`, `wave`, `terrain`, `river`, `radial`, `sphere`, `scatter`, `shatter`, `glyph`, `bleed`, `slabs`, `spiral` or `contour`. One field per figure |
-| region `fits` | Why this field matches the story, with its keyword, at most 160 characters |
+| region `fits` | Field posters only: why this field matches the story, with its keyword, at most 160 characters (refused on plates) |
 | region `accent` | The accent part's id from `vyo parts` |
 | region `names` | Part id to plain name, at most 24 characters each |
 | region `sentence` | Wave only, at most 40 characters, set in every 5th row |
 | region `shape` | Shape only: `{ like }`, one of 22 ready silhouettes from `vyo shapes`; `{ ops, rotate?, fit? }`, one you draw; or `{ mask, fit? }`, one traced from a PNG (see "Draw the shape") |
 | region `style`, `echo` | Shape only: `relief` (default), `rings` or `symbols`; `echo` 0 to 12 faded outlines, rings only |
 | region `bevel`, `strata` | Relief only, optional: how rounded the form is, and which way its layers run. A cover's `strata` is `"outline"` (the default), `"down"` or `"diagonal"` |
-| `ground`, `look`, `format`, `crop`, `series` | Cover only: `ground` is one of `navy`, `charcoal`, `forest`, `paper`, `blood`, `acid`, `cobalt`, `xerox`, `riso`, `obsidian`; `look` is `living` (default), `xerox` or `spin`; `format` is `poster` (default, 840×1190), `square` (960×960) or `og` (1280×640); `crop` is `center` (default), `bleed-right` or `macro`; `series` like `"02/04"` prints top right for a numbered set |
+| `ground`, `layout`, `format`, `series` | Cover and plate: `ground` prefers the 5 primary gallery palettes (`obsidian`, `carbon`, `abyss`, `graphite`, `bone`) and also supports 9 legacy grounds (`navy`, `charcoal`, `forest`, `paper`, `cobalt`, `xerox`, `riso`, `blood`, `acid`); `layout` is `classic`, `editorial`, `blueprint` or `macro`; `format` is `poster` (default, 840×1190), `square` (960×960) or `og` (1280×640); `series` like `"02/04"` prints in the header tag for a numbered set |
+| `finish`, `look`, `crop` | Cover only: `finish` is `type` (default), `studio`, `halftone`, or `wireframe`; `look` is `living` (default), `xerox` or `spin`; `crop` is `center` (default), `bleed-right` or `macro` |
 | region `solid`, `turn` | Cover only, optional: `solid` `{ kind?: "dome" \| "extrude" \| "revolve", bevel?, depth?, tilt?, groove? }`, `turn` `{ yaw?, pitch?, lean? }` |
-| region `split` | Shape only, optional: part ids whose folders, or files when they have no folders, become parts, for a part that is most of the code |
-| region `seed` | Generated fields: whole number 0 to 2147483647. 0 keeps the field's own form. Compose writes a non-zero seed |
+| region `split` | Shape and plate, optional: 1 to 4 part ids whose folders (or files when they have no folders) become parts, for a part that is most of the code |
+| region `seed` | Generated fields and plates: whole number 0 to 2147483647. 0 keeps a field's own form. Compose writes a non-zero seed |
 | region `letter` | Glyph only: one character, A–Z or 0–9. Compose uses the first character of the repo name |
 | region `symbols` | `scatter` to `contour`, plus `seismic` and `orbit`: `true` draws the form in shaded `- : = + #` with gaps, instead of part names |
-| `figure.texts` | Exactly one `label` and one `headline` (they print the name and the headline), exactly one `legend`, 0 to 2 `paragraph`, 0 or 1 `list`, 0 or 1 `rule`; the signal frame adds `meta`, `display` and `mark`. Each has `x`, `y`, `w` and optional `size` and `align`; a shape poster leaves `x`, `y` and `w` out and the engine places it, except a `mark` |
-| `motion` | Optional, for `--gif`: `{ kind: "nodes" \| "resolve" \| "wipe", frames: 8 to 36, fps: 6 to 24 }`; a cover's is `{ kind: "turn" }` (living/spin) or `{ kind: "copier" }` (xerox) |
-| `record` | Optional, `bottom` or `left`, to force the record line's side |
+| `figure.texts` | Loose/signal: exactly one `label` and `headline`, one `legend`, 0 to 2 `paragraph`, 0 or 1 `list`, 0 or 1 `rule` (signal adds `meta`, `display`, `mark`). Cover and plate: exactly one `legend` with no coordinates |
+| `motion` | Optional, for `--gif`: `{ kind: "nodes" \| "resolve" \| "wipe", frames: 8 to 36, fps: 6 to 24 }` on posters; `{ kind: "turn" }` (living/spin) or `{ kind: "copier" }` (xerox) on covers; `{ kind: "pulse" }` (topo) or `{ kind: "signal" }` (blueprint) on plates |
+| `record` | Loose/signal only, optional: `bottom` or `left`, to force the record line's side |
 
-A loose or signal spec has no `notes`, `notBuilt`, `hot` or `figure.fits`. [examples.md](examples.md) has specs in full. The package's `tools/README.md` lists every check.
+A loose, signal, cover, or plate spec has no `notes`, `notBuilt`, `hot` or `figure.fits`. [examples.md](examples.md) has specs in full. The package's `tools/README.md` lists every check.
 
 ## Signal frame
 
@@ -189,12 +264,17 @@ Charcoal or cream, one signal colour (lime `#C8FF00` unless the spec's `accent` 
 
 ## Motion & series
 
-`motion` on the spec, then `npx vyo render <spec> --gif`, writes a GIF and an MP4 beside the PNG. `nodes` travels dots along hairline `routes` (a region of open SVG paths with optional nodes), `resolve` fades the rows in from the top, `wipe` grows the marks. On a cover, `turn` swings `living` for 7 seconds (168 frames @ 24fps -> 12fps GIF) or rotates `spin` a full 360° (96 frames @ 12fps), and `copier` pulses a `xerox` cover through photocopier generation grain and micro-jitter (32 frames @ 10fps). Motion reveals the structure; the still must work on its own, and the `still` check holds it to that.
+`motion` on the spec, then `npx vyo render <spec> --gif`, writes a GIF and an MP4 beside the PNG.
+- **Plates:** `pulse` (breathing wave on `topo`) and `signal` (travelling signal pulses along import traces on `blueprint`) run 48-frame loops at 24 fps.
+- **Covers:** `turn` swings `living` for 7 seconds (168 frames @ 24fps -> 12fps GIF) or rotates `spin` a full 360° (96 frames @ 12fps); `copier` pulses a `xerox` cover through photocopier generation grain and micro-jitter (32 frames @ 10fps).
+- **Posters:** `nodes` travels dots along hairline `routes`, `resolve` fades rows in from the top, `wipe` grows `mark`s.
 
-To build a side-by-side contact sheet of 2–4 covers (e.g., multiple repos, or four art directions of one repo):
+Motion reveals the structure; the still must work on its own, and the `still` check holds it to that.
+
+To build a side-by-side contact sheet of 2–4 plates or covers (e.g., multiple repos, or four art directions of one repo):
 
 ```bash
-npx vyo series cover1.json cover2.json cover3.json cover4.json --out vyo/series [--gif]
+npx vyo series spec1.json spec2.json spec3.json spec4.json --out vyo/series [--gif]
 ```
 
 Worked posters and GIFs are in `examples/posters/` in the vyo repository, not in the npm package (listed at the end of [examples.md](examples.md)).
@@ -206,7 +286,7 @@ Render writes `<name>-poster.html`, `.png`, `-thumb.png` and `.pdf` beside the s
 ## Reply in chat
 
 1. One sentence on what the app does.
-2. The art direction / field (and style or cover look/ground) and the accent part, quoting the `fits` sentence (if present).
+2. The art direction (plate kind / cover finish & look / field & style, layout, and ground) and the accent part, quoting the `fits` sentence (if present).
 3. The legend, quoted.
 4. The absolute paths of the PNG and the PDF (and the GIF).
 5. Gaps: what the code has but a user cannot use yet, any part name you could not make plain, and a request for the real name if no doc gave one.

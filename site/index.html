@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vyo: your agent reads the repo, then draws it as a poster</title>
+<meta name="description" content="vyo is an agent skill and CLI for Cursor, Claude Code and Codex. It scans a codebase into real files, lines and imports, lets your coding agent draw a bespoke visual explanation, and prints it through five optical styles.">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f3f3f1" media="(prefers-color-scheme: light)">
+<!-- Open Graph / Twitter. og:image is relative so the site works on any domain;
+     crawlers prefer an absolute URL, so swap in https://<your-domain>/assets/og.jpg once the domain is known. -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="vyo: your agent reads the repo, then draws it as a poster">
+<meta property="og:description" content="Zero pre-made shapes. Scan a codebase, let your coding agent invent a bespoke visual explanation on the spot, and print it through five optical styles.">
+<meta property="og:image" content="assets/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="600">
+<meta property="og:image:alt" content="Four real vyo v3 codebase posters on pitch black: Hypher in obsidian, shader-lab in optics, anatomy in contour, and vyo in cobalt risograph.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="vyo: your agent reads the repo, then draws it as a poster">
+<meta name="twitter:description" content="Zero pre-made shapes. Scan a codebase, let your coding agent invent a bespoke visual explanation on the spot, and print it through five optical styles.">
+<meta name="twitter:image" content="assets/og.jpg">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Schibsted+Grotesk:wght@500;600;700&display=swap">
+<link rel="preload" as="image" href="assets/img/hypher-obsidian-960.webp" imagesrcset="assets/img/hypher-obsidian-960.webp 960w, assets/img/hypher-obsidian-1600.webp 1600w" imagesizes="(min-width: 1000px) 30vw, 52vw" fetchpriority="high">
+<!-- asset ?v= values are content hashes; run node site/tools/stamp.mjs after editing site.css or site.js -->
+<link rel="stylesheet" href="assets/site.css?v=19f95284">
+<script>document.documentElement.classList.add("js")</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="top">
+  <div class="nav-in">
+    <a class="mark" href="#top" aria-label="vyo, back to top">vyo<span class="dot" aria-hidden="true">.</span></a>
+    <nav aria-label="Sections">
+      <ul role="list">
+        <li><a href="#gallery">Gallery</a></li>
+        <li><a href="#styles">Styles</a></li>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#install">Install</a></li>
+      </ul>
+    </nav>
+    <a class="star-btn nav-gh" href="https://github.com/litterthanlit/vyo" data-star aria-label="Star litterthanlit/vyo on GitHub"><svg class="gh-mark" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span class="star-label">Star me</span><span class="star-count" data-star-count aria-hidden="true"><span aria-hidden="true">&#9733;</span> <span data-star-n></span></span></a>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+
+<!-- HERO -->
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero-copy">
+    <p class="eyebrow">Agent skill + CLI for Cursor, Claude Code and Codex</p>
+    <h1 id="hero-title">Your agent reads the repo, then draws it as a&nbsp;poster.</h1>
+    <p class="lede">vyo scans a codebase into its real files, lines and imports. Your coding agent invents a bespoke visual explanation on the spot — no pre-made shapes — and vyo prints it through five optical styles.</p>
+    <div class="cta">
+      <div class="cmd cmd-hero">
+        <code><span class="pr" aria-hidden="true">$</span> npm install --save-dev @litterthanlit/vyo</code>
+        <button type="button" class="copy" data-copy="npm install --save-dev @litterthanlit/vyo"><span class="copy-label">Copy</span><span class="visually-hidden"> install command</span></button>
+      </div>
+      <a class="btn-ghost" href="https://github.com/litterthanlit/vyo">View on GitHub <span aria-hidden="true">&rarr;</span></a>
+    </div>
+    <p class="hero-note"><strong>Zero pre-made shapes.</strong> Every poster on this page was scanned from a real GitHub repository and drawn on the spot.</p>
+  </div>
+
+  <div class="hero-art" aria-label="Four real vyo v3 posters">
+    <figure class="print p1">
+      <button type="button" class="shot print-shot" data-full="assets/img/hypher-obsidian-1600.webp" data-w="1600" data-h="2267" data-caption="Hypher — obsidian · crimson (305 files · 47,116 lines)" data-alt="Hypher obsidian poster: a soaring folded origami glider in a luminous 7px mosaic with a blazing crimson handoff-note fold crease." aria-label="Enlarge Hypher obsidian poster">
+        <img src="assets/img/hypher-obsidian-960.webp" srcset="assets/img/hypher-obsidian-960.webp 960w, assets/img/hypher-obsidian-1600.webp 1600w" sizes="(min-width: 1000px) 30vw, 52vw" width="960" height="1360" alt="Hypher obsidian poster: a soaring folded origami glider in a luminous 7px mosaic with a blazing crimson handoff-note fold crease." fetchpriority="high" decoding="async">
+      </button>
+      <figcaption>Hypher &middot; obsidian</figcaption>
+    </figure>
+    <figure class="print p2">
+      <button type="button" class="shot print-shot" data-full="assets/img/shader-lab-optics-1600.webp" data-w="1600" data-h="2267" data-caption="basementstudio/shader-lab — optics · crimson (650 files · 121,093 lines)" data-alt="shader-lab optics poster: a swirling GLSL caustic glass vortex with a glowing crimson inner refraction ring over continuous darkroom strata." data-repo="basementstudio/shader-lab" data-repo-url="https://github.com/basementstudio/shader-lab" aria-label="Enlarge shader-lab optics poster">
+        <img src="assets/img/shader-lab-optics-960.webp" srcset="assets/img/shader-lab-optics-480.webp 480w, assets/img/shader-lab-optics-960.webp 960w, assets/img/shader-lab-optics-1600.webp 1600w" sizes="(min-width: 1000px) 24vw, 42vw" width="960" height="1360" alt="shader-lab optics poster: a swirling GLSL caustic glass vortex with a glowing crimson inner refraction ring over continuous darkroom strata." loading="eager" decoding="async">
+      </button>
+      <figcaption>shader-lab &middot; optics</figcaption>
+    </figure>
+    <figure class="print p3">
+      <button type="button" class="shot print-shot" data-full="assets/img/vyo-riso-1600.webp" data-w="1600" data-h="2267" data-caption="litterthanlit/vyo — riso · cobalt (80 files · 18,712 lines)" data-alt="vyo riso poster: a translucent 3D prism splitting source files into a Klein-cobalt and charcoal 3-plate risograph overprint on warm washi paper." data-repo="litterthanlit/vyo" data-repo-url="https://github.com/litterthanlit/vyo" aria-label="Enlarge vyo riso poster">
+        <img src="assets/img/vyo-riso-480.webp" srcset="assets/img/vyo-riso-480.webp 480w, assets/img/vyo-riso-960.webp 960w" sizes="(min-width: 1000px) 16vw, 30vw" width="480" height="680" alt="vyo riso poster: a translucent 3D prism splitting source files into a Klein-cobalt and charcoal 3-plate risograph overprint on warm washi paper." loading="eager" decoding="async">
+      </button>
+      <figcaption>vyo &middot; riso / cobalt</figcaption>
+    </figure>
+    <figure class="print p4">
+      <button type="button" class="shot print-shot" data-full="assets/img/anatomy-contour-1600.webp" data-w="1600" data-h="2267" data-caption="wheresryan22/anatomy — contour · crimson (72 files · 30,324 lines)" data-alt="anatomy contour poster: an exploded isometric cutaway dial and glowing crimson escapement rendered in 24 elevation iso-lines on pitch black." data-repo="wheresryan22/anatomy" data-repo-url="https://github.com/wheresryan22/anatomy" aria-label="Enlarge anatomy contour poster">
+        <img src="assets/img/anatomy-contour-480.webp" srcset="assets/img/anatomy-contour-480.webp 480w, assets/img/anatomy-contour-960.webp 960w" sizes="(min-width: 1000px) 16vw, 30vw" width="480" height="680" alt="anatomy contour poster: an exploded isometric cutaway dial and glowing crimson escapement rendered in 24 elevation iso-lines on pitch black." loading="eager" decoding="async">
+      </button>
+      <figcaption>anatomy &middot; contour</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- GALLERY OF REAL REPOS -->
+<section class="gallery" id="gallery" aria-labelledby="gallery-title">
+  <div class="sec-head sec-head-wide">
+    <p class="kicker">Real repositories</p>
+    <h2 id="gallery-title">Every repo gets its own drawing.</h2>
+    <p>No stock silhouettes or canned templates. The agent reads the code, invents a visual metaphor for what the product actually does, and prints it with real file counts, line shares and import-driven strata.</p>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filters" role="group" aria-label="Filter gallery by print style">
+      <button type="button" class="chip" data-filter="all" aria-pressed="true">All <span class="chip-n">10</span></button>
+      <button type="button" class="chip" data-filter="obsidian" aria-pressed="false">Obsidian</button>
+      <button type="button" class="chip" data-filter="alabaster" aria-pressed="false">Alabaster</button>
+      <button type="button" class="chip" data-filter="optics" aria-pressed="false">Optics</button>
+      <button type="button" class="chip" data-filter="riso" aria-pressed="false">Riso</button>
+      <button type="button" class="chip" data-filter="contour" aria-pressed="false">Contour</button>
+    </div>
+    <p class="filter-status" id="gallery-status" aria-live="polite">10 featured &middot; 14 prints across 8 repos</p>
+  </div>
+
+  <ul class="repo-grid" role="list">
+    <li class="repo-card" data-style="optics">
+      <button type="button" class="shot repo-shot" data-full="assets/img/shader-lab-optics-1600.webp" data-w="1600" data-h="2267" data-caption="basementstudio/shader-lab — optics · crimson (650 files · 121,093 lines)" data-alt="shader-lab optics poster: swirling GLSL caustic glass vortex and crimson inner refraction ring over continuous darkroom codebase strata." data-repo="basementstudio/shader-lab" data-repo-url="https://github.com/basementstudio/shader-lab" aria-label="Enlarge basementstudio/shader-lab optics poster">
+        <img src="assets/img/shader-lab-optics-480.webp" srcset="assets/img/shader-lab-optics-480.webp 480w, assets/img/shader-lab-optics-960.webp 960w" sizes="(min-width: 1080px) 30vw, 46vw" width="480" height="680" alt="shader-lab optics poster: swirling GLSL caustic glass vortex and crimson inner refraction ring over continuous darkroom codebase strata." loading="lazy" decoding="async">
+      </button>
+      <div class="repo-meta">
+        <div class="repo-head">
+          <a class="repo-link" href="https://github.com/basementstudio/shader-lab" target="_blank" rel="noreferrer">basementstudio/shader-lab<span class="ext" aria-hidden="true">&#8599;</span></a>
+          <span class="style-tag"><span class="swatch sw-crimson" aria-hidden="true"></span>optics &middot; crimson</span>
+        </div>
+        <p class="repo-desc">Swirling GLSL caustic glass vortex &amp; crimson inner refraction ring.</p>
+        <p class="repo-stats">650 files &middot; 121,093 lines</p>
+      </div>
+    </li>
+
+    <li class="repo-card" data-style="alabaster">
+      <button type="button" class="shot repo-shot" data-full="assets/img/ui-skills-alabaster-1600.webp" data-w="1600" data-h="2267" data-caption="ibelick/ui-skills — alabaster · vermilion (230 files · 23,553 lines)" data-alt="ui-skills alabaster poster: a cubic-Bezier ease-in-out S-curve piercing a mineral-slate optical aperture in a 7px daylight museum screenprint." data-repo="ibelick/ui-skills" data-repo-url="https://github.com/ibelick/ui-skills" aria-label="Enlarge ibelick/ui-skills alabaster poster">
+        <img src="assets/img/ui-skills-alabaster-480.webp" srcset="assets/img/ui-skills-alabaster-480.webp 480w, assets/img/ui-skills-alabaster-960.webp 960w" sizes="(min-width: 1080px) 30vw, 46vw" width="480" height="680" alt="ui-skills alabaster poster: a cubic-Bezier ease-in-out S-curve piercing a mineral-slate optical aperture in a 7px daylight museum screenprint." loading="lazy" decoding="async">
+      </button>
+      <div class="repo-meta">
+        <div class="repo-head">
+          <a class="repo-link" href="https://github.com/ibelick/ui-skills" target="_blank" rel="noreferrer">ibelick/ui-skills<span class="ext" aria-hidden="true">&#8599;</span></a>
+          <span class="style-tag"><span class="swatch sw-vermilion" aria-hidden="true"></span>alabaster &middot; vermilion</span>
+        </div>
+        <p class="repo-desc">Cubic-Bezier ease-in-out S-curve piercing a mineral-slate optical aperture.</p>
+        <p class="repo-stats">230 files &middot; 23,553 lines</p>
+      </div>
+    </li>
+
+    <li class="repo-card" data-style="contour">
+      <button type="button" class="shot repo-shot" data-full="assets/img/anatomy-contour-1600.webp" data-w="1600" data-h="2267" data-caption="wheresryan22/anatomy — contour · crimson (72 files · 30,324 lines)" data-alt="anatomy contour poster: exploded isometric cutaway dial and glowing crimson escapement rendered in 24 elevation iso-lines." data-repo="wheresryan22/anatomy" data-repo-url="https://github.com/wheresryan22/anatomy" aria-label="Enlarge wheresryan22/anatomy contour poster">
+        <img src="assets/img/anatomy-contour-480.webp" srcset="assets/img/anatomy-contour-480.webp 480w, assets/img/anatomy-contour-960.webp 960w" sizes="(min-width: 1080px) 30vw, 46vw" width="480" height="680" alt="anatomy contour poster: exploded isometric cutaway dial and glowing crimson escapement rendered in 24 elevation iso-lines." loading="lazy" decoding="async">
+      </button>
+      <div class="repo-meta">
+        <div class="repo-head">
+          <a class="repo-link" href="https://github.com/wheresryan22/anatomy" target="_blank" rel="noreferrer">wheresryan22/anatomy<span class="ext" aria-hidden="true">&#8599;</span></a>
+          <span class="style-tag"><span class="swatch sw-crimson" aria-hidden="true"></span>contour &middot; crimson</span>
+        </div>
+        <p class="repo-desc">Exploded isometric cutaway dial &amp; glowing escapement in 24 elevation iso-lines.</p>
+        <p class="repo-stats">72 files &middot; 30,324 lines</p>
+      </div>
+    </li>
+
+    <li class="repo-card" data-style="riso">
+      <button type="button" class="shot repo-shot" data-full="assets/img/skills-riso-1600.webp" data-w="1600" data-h="2267" data-caption="mattpocock/skills — riso · cobalt (98 files · 4,563 lines)" data-alt="mattpocock/skills riso poster: interlocking Japanese timber joinery locking around a Klein-cobalt keystone printed as a 3-plate risograph." data-repo="mattpocock/skills" data-repo-url="https://github.com/mattpocock/skills" aria-label="Enlarge mattpocock/skills riso poster">
+        <img src="assets/img/skills-riso-480.webp" srcset="assets/img/skills-riso-480.webp 480w, assets/img/skills-riso-960.webp 960w" sizes="(min-width: 1080px) 30vw, 46vw" width="480" height="680" alt="mattpocock/skills riso poster: interlocking Japanese timber joinery locking around a Klein-cobalt keystone printed as a 3-plate risograph." loading="lazy" decoding="async">
+      </button>
+      <div class="repo-meta">
+        <div class="repo-head">
+          <a class="repo-link" href="https://github.com/mattpocock/skills" target="_blank" rel="noreferrer">mattpocock/skills<span class="ext" aria-hidden="true">&#8599;</span></a>
+          <span class="style-tag"><span class="swatch sw-cobalt" aria-hidden="true"></span>riso &middot; cobalt</span>
+        </div>
+        <p class="repo-desc">Interlocking Japanese timber joinery locking around a Klein-cobalt keystone.</p>
+        <p class="repo-stats">98 files &middot; 4,563 lines</p>
+      </div>
+    </li>
+
+    <li class="repo-card" data-style="obsidian">
+      <button type="button" class="shot repo-shot" data-full="assets/img/superpowers-obsidian-1600.webp" data-w="1600" data-h="2267" data-caption="obra/superpowers — obsidian · pine (70 files · 7,410 lines)" data-alt="obra/superpowers obsidian poster: ascending orbital discipline rings pierced by a molten-amber workflow spine in a luminous 7px pine mosaic." data-repo="obra/superpowers" data-repo-url="https://github.com/obra/superpowers" aria-label="Enlarge obra/superpowers obsidian poster">
+        <img src="assets/img/superpowers-obsidian-480.webp" srcset="assets/img/superpowers-obsidian-480.webp 480w, assets/img/superpowers-obsidian-960.webp 960w" sizes="(min-width: 1080px) 30vw, 46vw" width="480" height="680" alt="obra/superpowers obsidian poster: ascending orbital discipline rings pierced by a molten-amber workflow spine in a luminous 7px pine mosaic." loading="lazy" decoding="async">
+      </button>
+      <div class="repo-meta">
+        <div class="repo-head">
+          <a class="repo-link" href="https://github.com/obra/superpowers" target="_blank" rel="noreferrer">obra/superpowers<span class="ext" aria-hidden="true">&#8599;</span></a>
+          <span class="style-tag"><span class="swatch sw-pine" aria-hidden="true"></span>obsidian &middot; pine</span>
+        </div>
+        <p class="repo-desc">Ascending orbital discipline rings pierced by a molten-amber workflow spine.</p>
+        <p class="repo-stats">70 files &middot; 7,410 lines</p>
+      </div>
+    </li>
+
+    <li class="repo-card" data-style="obsidian">
+      <button type="button" class="shot repo-shot" data-full="assets/img/improve-obsidian-1600.webp" data-w="1600" data-h="2267" data-caption="shadcn/improve — obsidian · abyss (5 files · 511 lines)" data-alt="shadcn/improve obsidian poster: an optical audit spotlight distilling hotspots into cantilevered markdown plan sheets in deep abyss obsidian." data-repo="shadcn/improve" data-repo-url="https://github.com/shadcn/improve" aria-label="Enlarge shadcn/improve obsidian poster">
+        <img src="assets/img/improve-obsidian-480.webp" srcset="assets/img/improve-obsidian-480.webp 480w, assets/img/improve-obsidian-960.webp 960w" sizes="(min-width: 1080px) 30vw, 46vw" width="480" height="680" alt="shadcn/improve obsidian poster: an optical audit spotlight distilling hotspots into cantilevered markdown plan sheets in deep abyss obsidian." loading="lazy" decoding="async">
+      </button>
+      <div class="repo-meta">
+        <div class="repo-head">
+          <a class="repo-link" href="https://github.com/shadcn/improve" target="_blank" rel="noreferrer">shadcn/improve<span class="ext" aria-hidden="true">&#8599;</span></a>
+          <span class="style-tag"><span class="swatch sw-abyss" aria-hidden="true"></span>obsidian &middot; abyss</span>
+        </div>
+        <p class="repo-desc">Optical audit spotlight distilling hotspots into cantilevered markdown plan sheets.</p>
+        <p class="repo-stats">5 files &middot; 511 lines</p>
+      </div>
+    </li>
+
+    <li class="repo-card" data-style="obsidian">
+      <button type="button" class="shot repo-shot" data-full="assets/img/vyo-obsidian-1600.webp" data-w="1600" data-h="2267" data-caption="litterthanlit/vyo — obsidian · crimson (80 files · 18,712 lines)" data-alt="litterthanlit/vyo obsidian poster: translucent 3D glass prism splitting source files into a refracted crimson-and-cyan spectrum." data-repo="litterthanlit/vyo" data-repo-url="https://github.com/litterthanlit/vyo" aria-label="Enlarge litterthanlit/vyo obsidian poster">
+        <img src="assets/img/vyo-obsidian-480.webp" srcset="assets/img/vyo-obsidian-480.webp 480w, assets/img/vyo-obsidian-960.webp 960w" sizes="(min-width: 1080px) 30vw, 46vw" width="480" height="680" alt="litterthanlit/vyo obsidian poster: translucent 3D glass prism splitting source files into a refracted crimson-and-cyan spectrum." loading="lazy" decoding="async">
+      </button>
+      <div class="repo-meta">
+        <div class="repo-head">
+          <a class="repo-link" href="https://github.com/litterthanlit/vyo" target="_blank" rel="noreferrer">litterthanlit/vyo<span class="ext" aria-hidden="true">&#8599;</span></a>
+          <span class="style-tag"><span class="swatch sw-crimson" aria-hidden="true"></span>obsidian &middot; crimson</span>
+        </div>
+        <p class="repo-desc">Translucent 3D glass prism splitting source files into a refracted spectrum.</p>
+        <p class="repo-stats">80 files &middot; 18,712 lines</p>
+      </div>
+    </li>
+
+    <li class="repo-card" data-style="optics">
+      <button type="button" class="shot repo-shot" data-full="assets/img/vyo-optics-1600.webp" data-w="1600" data-h="2267" data-caption="litterthanlit/vyo — optics · pine (80 files · 18,712 lines)" data-alt="litterthanlit/vyo optics poster: the same agent-drawn glass prism rendered in continuous pine darkroom optics with subtle chromatic fringe." data-repo="litterthanlit/vyo" data-repo-url="https://github.com/litterthanlit/vyo" aria-label="Enlarge litterthanlit/vyo optics poster">
+        <img src="assets/img/vyo-optics-480.webp" srcset="assets/img/vyo-optics-480.webp 480w, assets/img/vyo-optics-960.webp 960w" sizes="(min-width: 1080px) 30vw, 46vw" width="480" height="680" alt="litterthanlit/vyo optics poster: the same agent-drawn glass prism rendered in continuous pine darkroom optics with subtle chromatic fringe." loading="lazy" decoding="async">
+      </button>
+      <div class="repo-meta">
+        <div class="repo-head">
+          <a class="repo-link" href="https://github.com/litterthanlit/vyo" target="_blank" rel="noreferrer">litterthanlit/vyo<span class="ext" aria-hidden="true">&#8599;</span></a>
+          <span class="style-tag"><span class="swatch sw-pine" aria-hidden="true"></span>optics &middot; pine</span>
+        </div>
+        <p class="repo-desc">Same agent-drawn prism rendered in continuous pine darkroom optics.</p>
+        <p class="repo-stats">80 files &middot; 18,712 lines</p>
+      </div>
+    </li>
+
+    <li class="repo-card" data-style="riso">
+      <button type="button" class="shot repo-shot" data-full="assets/img/vyo-riso-1600.webp" data-w="1600" data-h="2267" data-caption="litterthanlit/vyo — riso · cobalt (80 files · 18,712 lines)" data-alt="litterthanlit/vyo riso poster: the same agent-drawn glass prism printed as a 3-plate Klein-cobalt risograph with warm paper grain." data-repo="litterthanlit/vyo" data-repo-url="https://github.com/litterthanlit/vyo" aria-label="Enlarge litterthanlit/vyo riso poster">
+        <img src="assets/img/vyo-riso-480.webp" srcset="assets/img/vyo-riso-480.webp 480w, assets/img/vyo-riso-960.webp 960w" sizes="(min-width: 1080px) 30vw, 46vw" width="480" height="680" alt="litterthanlit/vyo riso poster: the same agent-drawn glass prism printed as a 3-plate Klein-cobalt risograph with warm paper grain." loading="lazy" decoding="async">
+      </button>
+      <div class="repo-meta">
+        <div class="repo-head">
+          <a class="repo-link" href="https://github.com/litterthanlit/vyo" target="_blank" rel="noreferrer">litterthanlit/vyo<span class="ext" aria-hidden="true">&#8599;</span></a>
+          <span class="style-tag"><span class="swatch sw-cobalt" aria-hidden="true"></span>riso &middot; cobalt</span>
+        </div>
+        <p class="repo-desc">Same agent-drawn prism printed as a 3-plate Klein-cobalt risograph.</p>
+        <p class="repo-stats">80 files &middot; 18,712 lines</p>
+      </div>
+    </li>
+
+    <li class="repo-card" data-style="obsidian">
+      <button type="button" class="shot repo-shot" data-full="assets/img/hypher-obsidian-1600.webp" data-w="1600" data-h="2267" data-caption="Hypher — obsidian · crimson (305 files · 47,116 lines)" data-alt="Hypher obsidian poster: soaring folded origami glider with a blazing crimson handoff-note fold crease in a 7px luminous mosaic." aria-label="Enlarge Hypher obsidian poster">
+        <img src="assets/img/hypher-obsidian-480.webp" srcset="assets/img/hypher-obsidian-480.webp 480w, assets/img/hypher-obsidian-960.webp 960w" sizes="(min-width: 1080px) 30vw, 46vw" width="480" height="680" alt="Hypher obsidian poster: soaring folded origami glider with a blazing crimson handoff-note fold crease in a 7px luminous mosaic." loading="lazy" decoding="async">
+      </button>
+      <div class="repo-meta">
+        <div class="repo-head">
+          <span class="repo-name">Hypher</span>
+          <span class="style-tag"><span class="swatch sw-crimson" aria-hidden="true"></span>obsidian &middot; crimson</span>
+        </div>
+        <p class="repo-desc">Soaring folded origami glider with a blazing handoff-note fold crease.</p>
+        <p class="repo-stats">305 files &middot; 47,116 lines</p>
+      </div>
+    </li>
+
+    <li class="gallery-bridge" data-bridge>
+      <a class="bridge-inner" href="#styles">
+        <div class="bridge-thumbs" aria-hidden="true">
+          <img src="assets/img/hypher-alabaster-480.webp" width="120" height="170" alt="" loading="lazy" decoding="async">
+          <img src="assets/img/hypher-optics-480.webp" width="120" height="170" alt="" loading="lazy" decoding="async">
+          <img src="assets/img/hypher-riso-480.webp" width="120" height="170" alt="" loading="lazy" decoding="async">
+          <img src="assets/img/hypher-contour-480.webp" width="120" height="170" alt="" loading="lazy" decoding="async">
+        </div>
+        <div class="bridge-copy">
+          <p class="bridge-kicker">+ 4 more Hypher prints below</p>
+          <h3>One drawing, five print mediums.</h3>
+          <p>The exact same 7.1&nbsp;KB Hypher glider rendered in alabaster, optics, riso and contour — without redrawing a single path.</p>
+          <span class="bridge-cta">Compare all 5 styles <span aria-hidden="true">&darr;</span></span>
+        </div>
+      </a>
+    </li>
+  </ul>
+</section>
+
+<!-- FIVE PRINT STYLES -->
+<section class="styles" id="styles" aria-labelledby="styles-title">
+  <div class="sec-head sec-head-wide">
+    <p class="kicker">Five print styles</p>
+    <h2 id="styles-title">One agent drawing. Five print mediums.</h2>
+    <p>Switch styles without redrawing a single path. Every print below is rendered from the exact same 7.1&nbsp;KB soft-lit Hypher SVG and real codebase scan (305 files, 47,116 lines, 531 imports) — paired with five curated palettes.</p>
+  </div>
+
+  <ul class="palettes" role="list" aria-label="Five curated palettes">
+    <li><span class="swatch sw-crimson" aria-hidden="true"></span>crimson</li>
+    <li><span class="swatch sw-pine" aria-hidden="true"></span>pine</li>
+    <li><span class="swatch sw-abyss" aria-hidden="true"></span>abyss</li>
+    <li><span class="swatch sw-vermilion" aria-hidden="true"></span>vermilion</li>
+    <li><span class="swatch sw-cobalt" aria-hidden="true"></span>cobalt</li>
+  </ul>
+
+  <ul class="five-styles" role="list">
+    <li class="style-card">
+      <button type="button" class="shot style-shot" data-full="assets/img/hypher-obsidian-1600.webp" data-w="1600" data-h="2267" data-caption="Style: obsidian — 7px luminous mosaic · HDR refraction · pitch black (Hypher)" data-alt="Hypher in obsidian style: 7px luminous mosaic with HDR refraction on pitch black." aria-label="Enlarge obsidian style print">
+        <img src="assets/img/hypher-obsidian-480.webp" srcset="assets/img/hypher-obsidian-480.webp 480w, assets/img/hypher-obsidian-960.webp 960w" sizes="(min-width: 960px) 18vw, 46vw" width="480" height="680" alt="Hypher in obsidian style: 7px luminous mosaic with HDR refraction on pitch black." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">obsidian</span><span class="cap-meta">7px luminous mosaic &middot; HDR refraction &middot; pitch black</span></p>
+    </li>
+
+    <li class="style-card">
+      <button type="button" class="shot style-shot" data-full="assets/img/hypher-alabaster-1600.webp" data-w="1600" data-h="2267" data-caption="Style: alabaster — 7px museum screenprint · auto daylight translation (Hypher)" data-alt="Hypher in alabaster style: 7px museum screenprint with automatic daylight tonal translation on archival paper." aria-label="Enlarge alabaster style print">
+        <img src="assets/img/hypher-alabaster-480.webp" srcset="assets/img/hypher-alabaster-480.webp 480w, assets/img/hypher-alabaster-960.webp 960w" sizes="(min-width: 960px) 18vw, 46vw" width="480" height="680" alt="Hypher in alabaster style: 7px museum screenprint with automatic daylight tonal translation on archival paper." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">alabaster</span><span class="cap-meta">7px museum screenprint &middot; auto daylight translation</span></p>
+    </li>
+
+    <li class="style-card">
+      <button type="button" class="shot style-shot" data-full="assets/img/hypher-optics-1600.webp" data-w="1600" data-h="2267" data-caption="Style: optics — Continuous darkroom refraction · RGB fringe · 35mm grain (Hypher)" data-alt="Hypher in optics style: continuous darkroom refraction with RGB chromatic fringe and fine 35mm film grain." aria-label="Enlarge optics style print">
+        <img src="assets/img/hypher-optics-480.webp" srcset="assets/img/hypher-optics-480.webp 480w, assets/img/hypher-optics-960.webp 960w" sizes="(min-width: 960px) 18vw, 46vw" width="480" height="680" alt="Hypher in optics style: continuous darkroom refraction with RGB chromatic fringe and fine 35mm film grain." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">optics</span><span class="cap-meta">Continuous darkroom refraction &middot; RGB fringe &middot; 35mm grain</span></p>
+    </li>
+
+    <li class="style-card">
+      <button type="button" class="shot style-shot" data-full="assets/img/hypher-riso-1600.webp" data-w="1600" data-h="2267" data-caption="Style: riso — 3-plate multiply overprint · drum slip · washi grain (Hypher)" data-alt="Hypher in riso style: 3-plate multiply overprint with subtle drum slip and warm washi paper grain." aria-label="Enlarge riso style print">
+        <img src="assets/img/hypher-riso-480.webp" srcset="assets/img/hypher-riso-480.webp 480w, assets/img/hypher-riso-960.webp 960w" sizes="(min-width: 960px) 18vw, 46vw" width="480" height="680" alt="Hypher in riso style: 3-plate multiply overprint with subtle drum slip and warm washi paper grain." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">riso</span><span class="cap-meta">3-plate multiply overprint &middot; drum slip &middot; washi grain</span></p>
+    </li>
+
+    <li class="style-card">
+      <button type="button" class="shot style-shot" data-full="assets/img/hypher-contour-1600.webp" data-w="1600" data-h="2267" data-caption="Style: contour — 24-level Marching Squares iso-lines · glowing contours (Hypher)" data-alt="Hypher in contour style: 24-level Marching Squares elevation iso-lines with glowing crimson accent contours." aria-label="Enlarge contour style print">
+        <img src="assets/img/hypher-contour-480.webp" srcset="assets/img/hypher-contour-480.webp 480w, assets/img/hypher-contour-960.webp 960w" sizes="(min-width: 960px) 18vw, 46vw" width="480" height="680" alt="Hypher in contour style: 24-level Marching Squares elevation iso-lines with glowing crimson accent contours." loading="lazy" decoding="async">
+      </button>
+      <p class="cap"><span class="cap-name">contour</span><span class="cap-meta">24-level Marching Squares iso-lines &middot; glowing contours</span></p>
+    </li>
+  </ul>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how" aria-labelledby="how-title">
+  <div class="sec-head">
+    <p class="kicker">How it works</p>
+    <h2 id="how-title">Scan, compose, sketch, render. Then the checks decide.</h2>
+    <p>The skill teaches your coding agent how to read the repo, invent a visual metaphor and write plain-language copy. The <code>vyo</code> CLI prints the sheet and runs automated checks on the finished render.</p>
+  </div>
+
+  <ol class="steps" role="list">
+    <li class="step">
+      <span class="step-n" aria-hidden="true">1</span>
+      <div>
+        <h3>Scan</h3>
+        <p>Reads the codebase as text into <code>facts.json</code>: files, lines and imports. No network, no model, and your code is never run. Two scans of the same tree give the exact same file.</p>
+        <pre class="code"><code>npx vyo scan . --out vyo/app-facts.json</code></pre>
+      </div>
+    </li>
+    <li class="step">
+      <span class="step-n" aria-hidden="true">2</span>
+      <div>
+        <h3>Compose &amp; draw</h3>
+        <p>Scaffolds a luminous poster spec for your chosen print style. Your agent draws a bespoke soft-lit SVG explaining the product, names each part in plain words, and marks the focal accent.</p>
+        <pre class="code"><code>npx vyo compose vyo/app-facts.json \
+  --frame luminous --style obsidian \
+  --repo . --out vyo/app-poster.json</code></pre>
+      </div>
+    </li>
+    <li class="step">
+      <span class="step-n" aria-hidden="true">3</span>
+      <div>
+        <h3>Sketch</h3>
+        <p>Produces a fast preview of the geometry and typography before the full optical pass, plus every check that needs no browser, so the agent fixes the drawing and words first.</p>
+        <pre class="code"><code>npx vyo sketch vyo/app-poster.json</code></pre>
+      </div>
+    </li>
+    <li class="step">
+      <span class="step-n" aria-hidden="true">4</span>
+      <div>
+        <h3>Render and check</h3>
+        <p>Prints the poster in headless Chromium to HTML, a 2&times; PNG, a thumbnail and a print-ready PDF, then measures the finished pixels. Any <code>&#x2717;</code> finding exits 1 and names the exact change to make.</p>
+        <pre class="code"><code>npx vyo render vyo/app-poster.json</code></pre>
+      </div>
+    </li>
+  </ol>
+
+  <div class="honest">
+    <div class="honest-copy">
+      <h3 class="h-sub">Honest encoding</h3>
+      <p class="honest-lede">The silhouette is invented for the product; the strata and refraction underneath are driven straight from the scan.</p>
+      <dl class="enc">
+        <div><dt>Strata</dt><dd>Horizontal band heights equal each part's share of real source lines — never arbitrary stripes.</dd></div>
+        <div><dt>Imports</dt><dd>Cross-file imports between areas drive horizontal shear and chromatic fringe across the optical waterfall.</dd></div>
+        <div><dt>Accent</dt><dd>The focal area that defines the product, rendered as luminous circular beads or glowing iso-lines.</dd></div>
+      </dl>
+      <h3 class="h-sub">Automated checks</h3>
+      <ul class="checks" role="list">
+        <li><code>luminous-tonal</code> checks luminance histogram richness and warns on flat clip-art SVGs.</li>
+        <li><code>luminous-accent</code> verifies the accent core stands out cleanly without flooding the sheet.</li>
+        <li><code>luminous-sanctuary</code> fails if bright artwork collides with the typography.</li>
+        <li><code>luminous-jargon</code> rejects code jargon, file paths and placeholders in headline, legend and micro-type.</li>
+      </ul>
+    </div>
+
+    <figure class="annotated">
+      <div class="ann-frame">
+        <button type="button" class="shot ann-shot" data-full="assets/img/vyo-obsidian-1600.webp" data-w="1600" data-h="2267" data-caption="Annotated vyo-obsidian poster — 80 files · 18,712 lines" data-alt="Annotated vyo-obsidian poster showing three callouts: A on the crimson focal accent beads in the prism core, B on the refracted codebase strata waterfall, and C on carved plain-language micro-type." data-repo="litterthanlit/vyo" data-repo-url="https://github.com/litterthanlit/vyo" aria-label="Enlarge annotated vyo obsidian poster">
+          <img src="assets/img/vyo-obsidian-960.webp" srcset="assets/img/vyo-obsidian-480.webp 480w, assets/img/vyo-obsidian-960.webp 960w" sizes="(min-width: 1000px) 34vw, 92vw" width="960" height="1360" alt="Annotated vyo-obsidian poster showing three callouts: A on the crimson focal accent beads in the prism core, B on the refracted codebase strata waterfall, and C on carved plain-language micro-type." loading="lazy" decoding="async">
+        </button>
+        <span class="pin" style="--x:61%;--y:29%" aria-hidden="true"><b>A</b></span>
+        <span class="pin" style="--x:53%;--y:71%" aria-hidden="true"><b>B</b></span>
+        <span class="pin" style="--x:78%;--y:43.5%" aria-hidden="true"><b>C</b></span>
+      </div>
+      <figcaption>
+        <ol class="ann-list" role="list">
+          <li><b>A</b> <span>Focal accent (<code>area:tools</code>, the drawing engine) — rendered as luminous circular beads and glow.</span></li>
+          <li><b>B</b> <span>Codebase strata refraction — slice heights are real file lines; horizontal shear and chromatic fringe come from real cross-file imports.</span></li>
+          <li><b>C</b> <span>Plain-language micro-type — carved cleanly into the lattice, checked against <code>luminous-jargon</code>.</span></li>
+        </ol>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section class="install" id="install" aria-labelledby="install-title">
+  <div class="sec-head">
+    <p class="kicker">Install</p>
+    <h2 id="install-title">Three commands in the project you want to explain.</h2>
+  </div>
+
+  <div class="install-grid">
+    <div class="term" role="group" aria-label="Install commands">
+      <div class="term-bar" aria-hidden="true"><span></span><span></span><span></span></div>
+      <ol class="term-lines" role="list">
+        <li><code><span class="pr" aria-hidden="true">$</span> npm install --save-dev @litterthanlit/vyo</code><button type="button" class="copy" data-copy="npm install --save-dev @litterthanlit/vyo"><span class="copy-label">Copy</span><span class="visually-hidden"> npm install command</span></button></li>
+        <li><code><span class="pr" aria-hidden="true">$</span> npx vyo init</code><button type="button" class="copy" data-copy="npx vyo init"><span class="copy-label">Copy</span><span class="visually-hidden"> init command</span></button></li>
+        <li><code><span class="pr" aria-hidden="true">$</span> npx playwright install chromium</code><button type="button" class="copy" data-copy="npx playwright install chromium"><span class="copy-label">Copy</span><span class="visually-hidden"> Chromium install command</span></button></li>
+      </ol>
+    </div>
+
+    <ul class="notes" role="list">
+      <li><span class="note-k">init</span><p>Copies the skill into <code>.cursor/skills/vyo/</code> and <code>.claude/skills/vyo/</code>. Pass <code>--cursor</code> or <code>--claude</code> to choose one, or <code>--codex</code> to also point <code>AGENTS.md</code> at the skill.</p></li>
+      <li><span class="note-k">Chromium</span><p>Already have Chromium or Chrome? Set <code>VYO_CHROMIUM</code> to its path and skip the last command.</p></li>
+      <li><span class="note-k">Node</span><p>Node.js 20 or later.</p></li>
+      <li><span class="note-k">Try it</span><p>Without installing: run <code>npx -y @litterthanlit/vyo init</code>, and have the agent run <code>npx -y @litterthanlit/vyo</code> wherever the skill says <code>npx vyo</code>.</p></li>
+    </ul>
+  </div>
+
+  <div class="ask">
+    <p class="kicker">Then say this to your agent</p>
+    <blockquote>
+      <p>&ldquo;Analyze this repo and explain what it does as a vyo poster.&rdquo;</p>
+      <p class="ask-alt">or pick a medium: &ldquo;Make a riso or contour poster for this codebase.&rdquo;</p>
+    </blockquote>
+    <p>The agent follows the skill, invents a visual metaphor from your code, and writes a 2&times; PNG, a thumbnail and a print-ready PDF into <code>vyo/</code> at the project root.</p>
+  </div>
+
+  <div class="facts">
+    <div><h3>What it reads</h3><p>Nothing leaves your machine. The scan reads source files as text and runs only <code>git</code>, to read the latest commit, with hooks off. Dotfiles such as <code>.env</code>, hidden folders, tests, <code>node_modules</code> and build output are skipped.</p></div>
+    <div><h3>Languages</h3><p>JavaScript, TypeScript, Python and Agent Skills <code>.md</code> repositories get full structural detection. Go, Ruby, Rust, PHP, Java, Kotlin, Swift, C#, C and C++, Dart, Scala, Elixir, Lua and Zig are scanned and drawn by size and imports.</p></div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="foot-in">
+    <p class="mark mark-foot">vyo<span class="dot" aria-hidden="true">.</span></p>
+    <div class="foot-row">
+      <a class="made" href="https://x.com/litterthanli7" target="_blank" rel="noreferrer"><img src="assets/nick.jpg" alt="" width="24" height="24" loading="lazy" decoding="async"><span class="made-t">Made by <strong>Nick</strong> <span class="made-h">@litterthanli7</span></span></a>
+      <ul class="foot-links" role="list">
+        <li><a class="foot-gh" href="https://github.com/litterthanlit/vyo"><svg class="gh-mark" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></li>
+        <li><a href="https://www.npmjs.com/package/@litterthanlit/vyo">npm</a></li>
+        <li><a href="https://github.com/litterthanlit/vyo/blob/HEAD/LICENSE">MIT License</a></li>
+        <li><span class="ver">v3</span></li>
+      </ul>
+    </div>
+    <p class="foot-note">Every poster on this page is a real vyo v3 render of an actual repository: Hypher, vyo, shader-lab, anatomy, ui-skills, superpowers, skills and improve. Bundled fonts Commit Mono, Newsreader and Inter are under the SIL Open Font License 1.1.</p>
+  </div>
+</footer>
+
+<dialog class="lb" id="lightbox" aria-modal="true" aria-labelledby="lb-cap">
+  <div class="lb-in">
+    <figure class="lb-fig">
+      <img id="lb-img" alt="" width="1600" height="2267" decoding="async">
+      <figcaption class="lb-cap-row">
+        <span id="lb-cap"></span>
+        <a id="lb-repo" class="lb-repo" href="" target="_blank" rel="noreferrer" hidden></a>
+      </figcaption>
+    </figure>
+    <div class="lb-ctl">
+      <button type="button" class="lb-btn" data-lb="prev" aria-label="Previous poster"><span aria-hidden="true">&larr;</span></button>
+      <span class="lb-count" id="lb-count" aria-live="polite"></span>
+      <button type="button" class="lb-btn" data-lb="next" aria-label="Next poster"><span aria-hidden="true">&rarr;</span></button>
+      <button type="button" class="lb-btn lb-close" data-lb="close" aria-label="Close">Close <kbd>Esc</kbd></button>
+    </div>
+  </div>
+</dialog>
+
+<script src="assets/site.js?v=11651414" defer></script>
+</body>
+</html>

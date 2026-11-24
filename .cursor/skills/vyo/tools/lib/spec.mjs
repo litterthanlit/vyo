@@ -8,9 +8,10 @@ import { RINGS } from "./fields/shape-rings.mjs";
 import { SHAPE_KINDS, opKind, shapeMask } from "./mask.mjs";
 // Loads a traced shape's image for shapeMask, in Node.
 import "./png-mask.mjs";
-import { ROLES as FRAME_ROLES, FRAMES, RECORD_FRAMES, frameOf, sizeRange, LIST } from "./frame.mjs";
+import { ROLES as FRAME_ROLES, FRAMES, RECORD_FRAMES, LUMINOUS_THEMES, LUMINOUS_STYLES, LUMINOUS_PALETTES, LUMINOUS_PALETTE_WORDS, frameOf, sizeRange, LIST } from "./frame.mjs";
 import { SILHOUETTES, SILHOUETTE_NAMES } from "./silhouettes.mjs";
-import { COVER_GROUNDS, COVER_STRATA, COVER_LOOKS, COVER_CROPS, COVER_SOLID_KINDS, coverLegend } from "./cover.mjs";
+import { COVER_GROUNDS, COVER_STRATA, COVER_LOOKS, COVER_CROPS, COVER_SOLID_KINDS, COVER_LAYOUTS, COVER_FINISHES, coverLegend } from "./cover.mjs";
+import { PLATES, PLATE_NAMES } from "./plates/index.mjs";
 
 /**
  * @typedef {"soft" | "mid" | "ink" | "cold" | "cool"} ToneName
@@ -22,18 +23,22 @@ import { COVER_GROUNDS, COVER_STRATA, COVER_LOOKS, COVER_CROPS, COVER_SOLID_KIND
  * @typedef {{ kind: "dots", id: string, lines: string[], x: number, y: number, cell: number, tones: (ToneName | "hot")[] }} DotsRegion
  * @typedef {{ kind: "field", id: string, field: keyof typeof FIELDS, fits: string, accent?: string, names?: Record<string, string>,
  *             sentence?: string, every?: number, seed?: number, letter?: string, symbols?: boolean, minShare?: number, maxParts?: number }} FieldRegion  drawn from facts.json at render
+ * @typedef {{ kind: "plate", id: string, plate: "topo" | "blueprint", accent?: string, names?: Record<string, string>,
+ *             split?: string[], minShare?: number, maxParts?: number, seed?: number }} PlateRegion
  * @typedef {{ role: string, id: string, text?: string, x: number, y: number, w: number, size?: number,
  *             align?: "left" | "right" | "center", hot?: boolean, parts?: true, items?: string[] }} Text  roles per frame in lib/frame.mjs
  * @typedef {{
  *   version: 3,
- *   frame?: "loose" | "swiss" | "signal" | "cover",  loose unless it says swiss, signal or cover
+ *   frame?: "loose" | "swiss" | "signal" | "cover" | "plate" | "luminous",  loose unless it says swiss, signal, cover, plate or luminous
  *   facts: string,
  *   product: { name: string, repo: string, commit?: string, date: string },
- *   theme: "light" | "dark",
+ *   theme: "light" | "dark" | "obsidian" | "alabaster",
+ *   style?: "obsidian" | "alabaster" | "optics" | "riso" | "contour",
+ *   palette?: "crimson" | "pine" | "abyss" | "vermilion" | "cobalt",
  *   accent?: string,
  *   headline: string,
- *   hot?: string,  required unless the figure has a field
- *   figure: { fits?: string, regions: (FillRegion | DotsRegion | FieldRegion)[], texts: Text[] },  fits on the field region when there is one
+ *   hot?: string,  required unless the figure has a field or plate; refused on a plate
+ *   figure: { fits?: string, regions: (FillRegion | DotsRegion | FieldRegion | PlateRegion)[], texts: Text[] },  fits on the field region when there is one
  *   record?: "bottom" | "left",  loose only: where the record line goes; the engine picks when absent
  *   notes?: { title: string, text: string }[],  swiss only
  *   notBuilt?: string[],  swiss only
@@ -46,23 +51,30 @@ export const LIMITS = {
   name: 24, headline: 72, hot: 24, noteTitle: 24, noteText: 220, notBuilt: 6, notBuiltItem: 32, audience: 40,
   fits: 160, regions: 6, texts: 14, words: [2, 14], word: 24, lines: [2, 4], line: 5,
   profile: [3, 24], polygon: [3, 40], holes: 4, path: 4000, fields: 1, partName: 24, sentence: 40, every: [2, 20], minShare: [0, 0.2], maxParts: [2, 24], ops: 24, fit: [0.05, 3], centre: [-0.5, 1.5],
+  luminousSvgBytes: 65536, luminousConcept: 220, microType: [6, 36], microText: 28,
 };
 export const TONES = ["soft", "mid", "ink", "cold", "cool"];
 export const DOT_TONES = [...TONES, "hot"];
 export const THEMES = ["light", "dark"];
+export const MICRO_STYLES = ["core", "part", "whisper"];
 // Block names the footer and the record use; a figure text cannot take one.
 const RESERVED = ["note", "counts", "notBuilt", "provenance", "credit", "record"];
 
 // Keys that only some kinds of field take, like the wave's sentence.
 const FIELD_OPTIONS = [...new Set(Object.values(FIELDS).flatMap((f) => f.options))];
 const KEYS = {
-  spec: ["version", "frame", "facts", "product", "theme", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience", "motion", "ground", "series", "look", "crop", "format"],
+  spec: ["version", "frame", "facts", "product", "theme", "style", "palette", "accent", "headline", "hot", "figure", "record", "notes", "notBuilt", "audience", "motion", "ground", "series", "look", "crop", "format", "layout", "finish"],
   product: ["name", "repo", "commit", "date"],
   note: ["title", "text"],
   figure: ["fits", "regions", "texts"],
   fill: ["kind", "id", ...SHAPE_KEYS, "holes", "words", "tone", "caps", "band", "size", "hot"],
   dots: ["kind", "id", "lines", "x", "y", "cell", "tones"],
   field: ["kind", "id", "field", "fits", "accent", "names", "minShare", "maxParts", ...FIELD_OPTIONS],
+  plate: ["kind", "id", "plate", "accent", "names", "split", "minShare", "maxParts", "seed"],
+  luminous: ["kind", "id", "accent", "split", "seed", "subject", "microType"],
+  luminousSubject: ["concept", "svg", "refractMaskSvg", "refractStrength", "sanctuary"],
+  luminousSanctuary: ["x", "y", "w", "h", "headlineSize"],
+  microType: ["text", "u", "v", "style", "rad"],
   routes: ["kind", "id", "paths", "nodes"],
   routePath: ["d", "tone"],
   routeNode: ["path", "t", "tone"],
@@ -72,14 +84,17 @@ const KEYS = {
     loose: ["role", "id", "text", "x", "y", "w", "size", "align", "parts", "items"],
     signal: ["role", "id", "text", "x", "y", "w", "h", "size", "align", "parts", "items"],
     cover: ["role", "id", "text"],
+    plate: ["role", "id", "text"],
+    luminous: ["role", "id", "text"],
   },
   ellipse: ["cx", "cy", "rx", "ry"],
   shape: ["ops", "like", "mask", "rotate", "fit"],
   fit: ["w", "h", "cx", "cy"],
 };
 export const ROUTE_TONES = [...TONES, "hot"];
-// turn and copier are the cover's loops, so they take no frames or fps; the others take both.
-export const MOTION = { kinds: ["nodes", "resolve", "wipe", "turn", "copier"], frames: [8, 36], fps: [6, 24] };
+// turn, copier, pulse and signal are self-timed loops, so they take no frames or fps; the others take both.
+export const MOTION = { kinds: ["nodes", "resolve", "wipe", "turn", "copier", "pulse", "signal"], frames: [8, 36], fps: [6, 24] };
+const SELF_TIMED_MOTION = ["turn", "copier", "pulse", "signal"];
 // The cover's solid and turn, each key's range. The yaw stays under 40 degrees so a living/xerox form never goes edge-on.
 export const COVER_RANGES = {
   solid: { bevel: [0, 1], depth: [0.2, 1.5], tilt: [0, 1], groove: [2, 30] },
@@ -91,6 +106,9 @@ const LOOK_LIST = COVER_LOOKS.map((g) => `"${g}"`).join(", ");
 const CROP_LIST = COVER_CROPS.map((g) => `"${g}"`).join(", ");
 const FORMAT_LIST = FORMAT_NAMES.map((g) => `"${g}"`).join(", ");
 const SOLID_KIND_LIST = COVER_SOLID_KINDS.map((g) => `"${g}"`).join(", ");
+const LAYOUT_LIST = COVER_LAYOUTS.map((g) => `"${g}"`).join(", ");
+const FINISH_LIST = COVER_FINISHES.map((g) => `"${g}"`).join(", ");
+const PLATE_LIST = PLATE_NAMES.map((g) => `"${g}"`).join(", ");
 
 const isStr = (v) => typeof v === "string";
 const isNum = (v) => typeof v === "number" && Number.isFinite(v);
@@ -398,6 +416,113 @@ function checkField(f, r, err, copy, frame) {
   if (r.minShare !== undefined && !inRange(r.minShare, ...LIMITS.minShare)) err(`${f}.minShare: ${LIMITS.minShare[0]} to ${LIMITS.minShare[1]}, a share of the lines`);
 }
 
+function checkPlate(f, r, err, copy) {
+  if (!isStr(r.plate) || !PLATE_NAMES.includes(r.plate)) err(`${f}.plate: "${r.plate}" is not a plate; use ${PLATE_LIST}`);
+  if (isPlaceholder(r.accent)) err(`${f}.accent: still the placeholder; write the id of the part the product is about (compose and vyo parts list the ids)`);
+  else if (r.accent !== undefined && !(isStr(r.accent) && /^area:\S+$/.test(r.accent))) err(`${f}.accent: an area id like "area:lib/plan", or a glob of them; vyo parts lists the ids`);
+  const plain = (where, v, max, what) => {
+    if (!isStr(v) || !v.trim()) return err(`${where}: missing`);
+    if (isPlaceholder(v)) return err(`${where}: still the placeholder; write ${what}`);
+    if (v.length > max) err(`${where}: ${v.length} characters; at most ${max}`);
+    copy.push([where, v]);
+  };
+  if (r.names !== undefined) {
+    if (!isObj(r.names)) err(`${f}.names: a map from part id to plain name`);
+    else
+      for (const [id, name] of Object.entries(r.names)) {
+        if (!/^area:\S+$/.test(id)) err(`${f}.names: "${id}" is not a part id like "area:lib/plan"`);
+        plain(`${f}.names["${id}"]`, name, LIMITS.partName, "a plain name for the part");
+      }
+  }
+  if (r.split !== undefined && !(Array.isArray(r.split) && r.split.length >= 1 && r.split.length <= 4 && r.split.every((id) => isStr(id) && /^area:\S+$/.test(id)))) {
+    err(`${f}.split: a list of 1 to 4 part ids, like ["area:source"], each cut into the folders inside it, or its files when it has none`);
+  }
+  if (r.seed !== undefined && !(Number.isInteger(r.seed) && inRange(r.seed, 0, 2147483647))) err(`${f}.seed: a whole number, 0 to 2147483647`);
+  const [lo, hi] = LIMITS.maxParts;
+  if (r.maxParts !== undefined && !(Number.isInteger(r.maxParts) && inRange(r.maxParts, lo, hi))) err(`${f}.maxParts: a whole number, ${lo} to ${hi}`);
+  if (r.minShare !== undefined && !inRange(r.minShare, ...LIMITS.minShare)) err(`${f}.minShare: ${LIMITS.minShare[0]} to ${LIMITS.minShare[1]}, a share of the lines`);
+}
+
+function checkSafeSvg(where, svg, err) {
+  if (!isStr(svg) || !svg.trim()) return err(`${where}: missing; write a self-contained <svg viewBox="0 0 840 1190">`);
+  if (isPlaceholder(svg)) return err(`${where}: still the placeholder; author a soft-lit <svg viewBox="0 0 840 1190">`);
+  const trimmed = svg.trim();
+  if (!/^(?:<\?xml[\s\S]*?\?>\s*)?<svg\b/i.test(trimmed) || !/<\/svg>\s*$/i.test(trimmed)) {
+    err(`${where}: must be a complete <svg ...>...</svg> string`);
+  }
+  const bytes = new TextEncoder().encode(svg).length;
+  if (bytes > LIMITS.luminousSvgBytes) err(`${where}: ${bytes} bytes; at most ${LIMITS.luminousSvgBytes} bytes (64 KB)`);
+  if (/<script\b/i.test(svg)) err(`${where}: <script> tags are not allowed in SVG`);
+  if (/\bjavascript:/i.test(svg)) err(`${where}: javascript: URLs are not allowed in SVG`);
+  if (/\bon[a-z]+\s*=/i.test(svg)) err(`${where}: inline event handlers are not allowed in SVG`);
+  const stripped = svg.replace(/xmlns(?::[a-z0-9_-]+)?\s*=\s*(?:"https?:\/\/www\.w3\.org\/[^"]*"|'https?:\/\/www\.w3\.org\/[^']*')/gi, "");
+  if (/https?:\/\//i.test(stripped)) err(`${where}: external http/https URLs are not allowed in SVG`);
+}
+
+function checkLuminous(f, r, err, copy) {
+  if (isPlaceholder(r.accent)) err(`${f}.accent: still the placeholder; write the id of the part the product is about (compose and vyo parts list the ids)`);
+  else if (r.accent !== undefined) {
+    const okId = (id) => isStr(id) && /^area:\S+$/.test(id);
+    if (isStr(r.accent)) {
+      if (!okId(r.accent)) err(`${f}.accent: an area id like "area:lib/plan", or a list of 1 to 4 of them`);
+    } else if (Array.isArray(r.accent) && r.accent.length >= 1 && r.accent.length <= 4 && r.accent.every(okId)) {
+      // valid array of accent area IDs
+    } else {
+      err(`${f}.accent: an area id like "area:lib/plan", or a list of 1 to 4 of them`);
+    }
+  }
+  if (r.split !== undefined && !(Array.isArray(r.split) && r.split.length >= 1 && r.split.length <= 4 && r.split.every((id) => isStr(id) && /^area:\S+$/.test(id)))) {
+    err(`${f}.split: a list of 1 to 4 part ids, like ["area:source"]`);
+  }
+  if (r.seed !== undefined && !(Number.isInteger(r.seed) && inRange(r.seed, 0, 2147483647))) err(`${f}.seed: a whole number, 0 to 2147483647`);
+
+  const sub = r.subject;
+  if (!isObj(sub)) err(`${f}.subject: missing; must be { concept, svg, refractMaskSvg?, refractStrength?, sanctuary? }`);
+  else {
+    unknownKeys(sub, KEYS.luminousSubject, `${f}.subject.`, err);
+    if (!isStr(sub.concept) || !sub.concept.trim()) err(`${f}.subject.concept: missing`);
+    else if (isPlaceholder(sub.concept)) err(`${f}.subject.concept: still the placeholder; write one plain sentence describing the visual metaphor`);
+    else if (sub.concept.length > LIMITS.luminousConcept) err(`${f}.subject.concept: ${sub.concept.length} characters; at most ${LIMITS.luminousConcept}`);
+    else copy.push([`${f}.subject.concept`, sub.concept]);
+
+    checkSafeSvg(`${f}.subject.svg`, sub.svg, err);
+    if (sub.refractMaskSvg !== undefined) checkSafeSvg(`${f}.subject.refractMaskSvg`, sub.refractMaskSvg, err);
+    if (sub.refractStrength !== undefined && !inRange(sub.refractStrength, 0, 2)) err(`${f}.subject.refractStrength: 0 to 2`);
+    if (sub.sanctuary !== undefined) {
+      const s = sub.sanctuary;
+      if (!isObj(s)) err(`${f}.subject.sanctuary: must be { x, y, w, h, headlineSize? }`);
+      else {
+        unknownKeys(s, KEYS.luminousSanctuary, `${f}.subject.sanctuary.`, err);
+        if (!inRange(s.x, 0, SHEET.width)) err(`${f}.subject.sanctuary.x: 0 to ${SHEET.width}`);
+        if (!inRange(s.y, 0, SHEET.height)) err(`${f}.subject.sanctuary.y: 0 to ${SHEET.height}`);
+        if (!inRange(s.w, 120, SHEET.width)) err(`${f}.subject.sanctuary.w: 120 to ${SHEET.width}`);
+        if (!inRange(s.h, 80, SHEET.height)) err(`${f}.subject.sanctuary.h: 80 to ${SHEET.height}`);
+        if (s.headlineSize !== undefined && !inRange(s.headlineSize, 24, 56)) err(`${f}.subject.sanctuary.headlineSize: 24 to 56`);
+      }
+    }
+  }
+
+  const [mLo, mHi] = LIMITS.microType;
+  if (!Array.isArray(r.microType)) err(`${f}.microType: a list of ${mLo} to ${mHi} entries { text, u, v, style? }`);
+  else if (r.microType.some((m) => isObj(m) && isPlaceholder(m.text))) {
+    err(`${f}.microType: still has placeholder entries; write ${mLo} to ${mHi} plain-language phrases anchored at { text, u, v, style }`);
+  } else {
+    if (r.microType.length < mLo || r.microType.length > mHi) err(`${f}.microType: ${r.microType.length} entries; use ${mLo} to ${mHi}`);
+    r.microType.forEach((m, i) => {
+      const at = `${f}.microType[${i}]`;
+      if (!isObj(m)) return err(`${at}: must be { text, u, v, style? }`);
+      unknownKeys(m, KEYS.microType, `${at}.`, err);
+      if (!isStr(m.text) || !m.text.trim()) err(`${at}.text: missing`);
+      else if (m.text.length > LIMITS.microText) err(`${at}.text: "${m.text}" is ${m.text.length} characters; at most ${LIMITS.microText}`);
+      else copy.push([`${at}.text`, m.text]);
+      if (!inRange(m.u, 0, 1)) err(`${at}.u: 0 to 1`);
+      if (!inRange(m.v, 0, 1)) err(`${at}.v: 0 to 1`);
+      if (m.style !== undefined && !MICRO_STYLES.includes(m.style)) err(`${at}.style: "${m.style}" is not a microType style; use ${MICRO_STYLES.join(", ")}`);
+      if (m.rad !== undefined && !inRange(m.rad, 0.02, 0.35)) err(`${at}.rad: 0.02 to 0.35`);
+    });
+  }
+}
+
 const sentences = (text) => text.split(/[.!?]+(?:\s+|$)/).filter((x) => x.trim()).length;
 
 function checkText(f, t, err, copy, frame, placed) {
@@ -434,7 +559,7 @@ function checkText(f, t, err, copy, frame, placed) {
       copy.push([`${f}.text`, t.text.replace(/\*\*/g, "")]);
     }
   }
-  if (frame === "cover") return;
+  if (frame === "cover" || frame === "plate" || frame === "luminous") return;
   if (t.hot !== undefined && (t.role !== "label" || typeof t.hot !== "boolean")) err(`${f}.hot: only a label can be hot`);
   // Around a drawn shape the engine places a block that leaves out x and y; w, if given, is the widest it may be.
   const auto = placed && t.x === undefined && t.y === undefined;
@@ -449,7 +574,9 @@ function checkText(f, t, err, copy, frame, placed) {
 function checkFigure(fig, err, copy, frame) {
   if (!isObj(fig)) return err("figure: must be { fits, regions, texts }");
   unknownKeys(fig, KEYS.figure, "figure.", err);
-  if (hasField(fig)) {
+  if (frame === "plate" || frame === "luminous") {
+    if (fig.fits !== undefined) err(`figure.fits: a ${frame} has no fits; remove it`);
+  } else if (hasField(fig)) {
     if (fig.fits !== undefined) err("figure.fits: a field poster says why it fits on its field region; move it to the field's fits");
   } else if (!isStr(fig.fits) || !fig.fits.trim()) err("figure.fits: missing");
   else if (isPlaceholder(fig.fits)) err("figure.fits: still the placeholder; say what the picture is and why it acts out the main moment");
@@ -468,13 +595,19 @@ function checkFigure(fig, err, copy, frame) {
     fig.regions.forEach((r, i) => {
       const f = `figure.regions[${i}]`;
       if (!isObj(r)) return err(`${f}: must be a region`);
-      if (!["fill", "dots", "field", "routes"].includes(r.kind)) return err(`${f}.kind: "${r.kind}" is not a region kind; use field, fill, dots or routes`);
+      if (!["fill", "dots", "field", "routes", "plate", "luminous"].includes(r.kind)) return err(`${f}.kind: "${r.kind}" is not a region kind; use field, fill, dots, routes, plate or luminous`);
       unknownKeys(r, KEYS[r.kind], `${f}.`, err);
       idOk(f, r.id);
       if (r.kind === "fill") checkFill(f, r, err);
       else if (r.kind === "dots") checkDots(f, r, err);
       else if (r.kind === "routes") checkRoutes(f, r, err);
-      else checkField(f, r, err, copy, frame);
+      else if (r.kind === "plate") {
+        if (frame !== "plate") err(`${f}.kind: a plate region draws only in the plate frame; set frame to plate`);
+        checkPlate(f, r, err, copy);
+      } else if (r.kind === "luminous") {
+        if (frame !== "luminous") err(`${f}.kind: a luminous region draws only in the luminous frame; set frame to luminous`);
+        checkLuminous(f, r, err, copy);
+      } else checkField(f, r, err, copy, frame);
       for (const [k, list] of [["words", r.words], ["lines", r.lines]]) if (Array.isArray(list) && !list.some(isPlaceholder)) list.forEach((w, j) => isStr(w) && copy.push([`${f}.${k}[${j}]`, w]));
     });
 
@@ -482,6 +615,12 @@ function checkFigure(fig, err, copy, frame) {
   if (frame === "loose" && Array.isArray(fig.regions) && !hasField(fig)) err("figure.regions: the loose frame draws a field; add a field region, or set frame to swiss for fill and dots figures");
   if (frame === "cover" && Array.isArray(fig.regions) && !(fig.regions.length === 1 && isObj(fig.regions[0]) && fig.regions[0].kind === "field" && fig.regions[0].field === "shape")) {
     err('figure.regions: the cover draws exactly one region, { "kind": "field", "field": "shape", ... }; vyo compose --frame cover writes it');
+  }
+  if (frame === "plate" && Array.isArray(fig.regions) && !(fig.regions.length === 1 && isObj(fig.regions[0]) && fig.regions[0].kind === "plate")) {
+    err('figure.regions: a plate draws exactly one region, { "kind": "plate", "plate": "topo" | "blueprint", ... }; vyo compose --frame plate writes it');
+  }
+  if (frame === "luminous" && Array.isArray(fig.regions) && !(fig.regions.length === 1 && isObj(fig.regions[0]) && fig.regions[0].kind === "luminous")) {
+    err('figure.regions: a luminous poster draws exactly one region, { "kind": "luminous", ... }; vyo compose --frame luminous writes it');
   }
   if (frame === "signal" && Array.isArray(fig.regions) && !hasField(fig) && !fig.regions.some((r) => isObj(r) && r.kind === "fill")) {
     err("figure.regions: the signal frame draws a field or a fill; add one, or set frame to swiss");
@@ -492,8 +631,8 @@ function checkFigure(fig, err, copy, frame) {
   fig.texts.forEach((t, i) => {
     const f = `figure.texts[${i}]`;
     if (!isObj(t)) return err(`${f}: must be a text`);
-    if (frame === "cover") {
-      for (const k of Object.keys(t)) if (!KEYS.text.cover.includes(k)) err(`${f}.${k}: the cover places every block itself; remove ${k}`);
+    if (frame === "cover" || frame === "plate" || frame === "luminous") {
+      for (const k of Object.keys(t)) if (!KEYS.text[frame].includes(k)) err(`${f}.${k}: the ${frame} places every block itself; remove ${k}`);
     } else unknownKeys(t, KEYS.text[frame], `${f}.`, err);
     idOk(f, t.id);
     // A highlighter mark lies over type at a spot the agent picks, so it always has x and y.
@@ -548,6 +687,7 @@ export function validateSpec(spec) {
   }
 
   if (frame === "cover") {
+    for (const k of ["style", "palette"]) if (spec[k] !== undefined) err(`${k}: only the luminous frame takes top-level ${k}; remove ${k}`);
     if (spec.theme !== undefined) err(`theme: the cover takes a ground instead; remove theme and set ground to ${GROUND_LIST}`);
     if (spec.accent !== undefined) err("accent: the cover's accent comes from its ground; remove accent");
     if (!isStr(spec.ground) || !COVER_GROUNDS[spec.ground]) {
@@ -558,11 +698,35 @@ export function validateSpec(spec) {
     if (spec.look !== undefined && !COVER_LOOKS.includes(spec.look)) err(`look: "${spec.look}" is not a cover look; use ${LOOK_LIST}`);
     if (spec.crop !== undefined && !COVER_CROPS.includes(spec.crop)) err(`crop: "${spec.crop}" is not a cover crop; use ${CROP_LIST}`);
     if (spec.format !== undefined && !FORMAT_NAMES.includes(spec.format)) err(`format: "${spec.format}" is not a format; use ${FORMAT_LIST}`);
+    if (spec.layout !== undefined && !COVER_LAYOUTS.includes(spec.layout)) err(`layout: "${spec.layout}" is not a layout; use ${LAYOUT_LIST}`);
+    if (spec.finish !== undefined && !COVER_FINISHES.includes(spec.finish)) err(`finish: "${spec.finish}" is not a cover finish; use ${FINISH_LIST}`);
+  } else if (frame === "plate") {
+    for (const k of ["style", "palette"]) if (spec[k] !== undefined) err(`${k}: only the luminous frame takes top-level ${k}; remove ${k}`);
+    if (spec.theme !== undefined) err(`theme: a plate takes a ground instead; remove theme and set ground to ${GROUND_LIST}`);
+    if (spec.accent !== undefined) err("accent: a plate's accent comes from its ground; remove accent");
+    if (spec.hot !== undefined) err("hot: a plate sets its accent part in the ground's colour and draws no hot word; remove hot");
+    for (const k of ["look", "crop", "finish"]) if (spec[k] !== undefined) err(`${k}: only the cover frame takes ${k}; remove ${k}`);
+    if (!isStr(spec.ground) || !COVER_GROUNDS[spec.ground]) {
+      const free = isStr(spec.ground) && /^#|rgb|hsl/i.test(spec.ground);
+      err(`ground: ${spec.ground === undefined ? "missing" : `"${spec.ground}" is not a ground${free ? "; a free colour is not offered" : ""}`}; use ${GROUND_LIST}`);
+    }
+    if (spec.series !== undefined && !(isStr(spec.series) && /^\d{1,2}\/\d{1,2}$/.test(spec.series))) err('series: the plate\'s place in a series, like "02/04", or leave it out');
+    if (spec.layout !== undefined && !COVER_LAYOUTS.includes(spec.layout)) err(`layout: "${spec.layout}" is not a layout; use ${LAYOUT_LIST}`);
+    if (spec.format !== undefined && !FORMAT_NAMES.includes(spec.format)) err(`format: "${spec.format}" is not a format; use ${FORMAT_LIST}`);
+  } else if (frame === "luminous") {
+    for (const k of ["ground", "series", "look", "crop", "format", "layout", "finish"]) if (spec[k] !== undefined) err(`${k}: the luminous frame does not take ${k}; remove ${k}`);
+    if (spec.accent !== undefined) err("accent: set accent on the luminous region instead of top-level hex; remove accent");
+    if (spec.hot !== undefined) err("hot: a luminous poster highlights its accent through the soft-lit subject and draws no hot word; remove hot");
+    if (spec.style !== undefined && !LUMINOUS_STYLES.includes(spec.style)) err(`style: "${spec.style}" is not a luminous style; use ${LUMINOUS_STYLES.join(", ")}`);
+    if (spec.palette !== undefined && !LUMINOUS_PALETTES.includes(spec.palette)) err(`palette: "${spec.palette}" is not a luminous palette; use ${LUMINOUS_PALETTES.join(", ")}`);
+    if (spec.theme !== undefined && !LUMINOUS_THEMES.includes(spec.theme)) err(`theme: "${spec.theme}" is not a luminous theme; use ${LUMINOUS_THEMES.join(" or ")}`);
+    else if (spec.theme === undefined && spec.style === undefined) err(`theme: "${spec.theme}" is not a luminous theme; use ${LUMINOUS_THEMES.join(" or ")}`);
   } else {
-    for (const k of ["ground", "series", "look", "crop", "format"]) if (spec[k] !== undefined) err(`${k}: only the cover frame takes ${k}; set frame to cover or remove ${k}`);
+    for (const k of ["ground", "series", "look", "crop", "format", "layout", "finish"]) if (spec[k] !== undefined) err(`${k}: only the cover or plate frame takes ${k}; remove ${k}`);
+    for (const k of ["style", "palette"]) if (spec[k] !== undefined) err(`${k}: only the luminous frame takes top-level ${k}; remove ${k}`);
     if (!THEMES.includes(spec.theme)) err(`theme: "${spec.theme}" is not a theme; use light or dark`);
   }
-  if (frame !== "cover" && spec.accent !== undefined && !(isStr(spec.accent) && /^#[0-9a-f]{6}$/i.test(spec.accent))) err("accent: a hex colour like #9284FF");
+  if (frame !== "cover" && frame !== "plate" && frame !== "luminous" && spec.accent !== undefined && !(isStr(spec.accent) && /^#[0-9a-f]{6}$/i.test(spec.accent))) err("accent: a hex colour like #9284FF");
 
   const copy = [];
   const field = (name, v, max) => {
@@ -576,9 +740,9 @@ export function validateSpec(spec) {
   checkFigure(spec.figure, err, copy, frame);
   const figureOk = errors.length === before;
 
-  // A field's part names come from facts.json, so its hot word, if any, is checked on the page.
-  const withField = hasField(spec.figure);
-  if (spec.hot !== undefined || !withField) {
+  // A field's part names come from facts.json, so its hot word, if any, is checked on the page. A plate or luminous takes none.
+  const withField = hasField(spec.figure) || frame === "plate" || frame === "luminous";
+  if (frame !== "plate" && frame !== "luminous" && (spec.hot !== undefined || !withField)) {
     if (!isStr(spec.hot) || !spec.hot.trim()) err("hot: missing");
     else if (isPlaceholder(spec.hot)) err("hot: still the placeholder; write it");
     else if (spec.hot.length > LIMITS.hot || spec.hot.trim().split(/\s+/).length > 2) err(`hot: one word or a two-word phrase, at most ${LIMITS.hot} characters`);
@@ -588,8 +752,8 @@ export function validateSpec(spec) {
     }
   }
 
-  if (frame === "cover") {
-    for (const k of ["notes", "notBuilt", "record"]) if (spec[k] !== undefined) err(`${k}: the cover's template has no ${k}; remove it`);
+  if (frame === "cover" || frame === "plate" || frame === "luminous") {
+    for (const k of ["notes", "notBuilt", "record"]) if (spec[k] !== undefined) err(`${k}: the ${frame}'s template has no ${k}; remove it`);
   } else if (RECORD_FRAMES.includes(frame)) {
     for (const k of ["notes", "notBuilt"]) if (spec[k] !== undefined) err(`${k}: the ${frame} frame has no footer; write paragraphs in figure.texts, or set frame to swiss`);
     if (spec.record !== undefined && !["bottom", "left"].includes(spec.record)) err('record: "bottom" or "left", or leave it out and the engine picks');
@@ -614,16 +778,17 @@ export function validateSpec(spec) {
   if (spec.audience !== undefined) field("audience", spec.audience, LIMITS.audience);
 
   if (spec.motion !== undefined) {
-    if (!isObj(spec.motion)) err("motion: must be { kind, frames, fps }");
+    if (frame === "luminous") err("motion: a luminous poster is a high-resolution still; remove motion");
+    else if (!isObj(spec.motion)) err("motion: must be { kind, frames, fps }");
     else {
       unknownKeys(spec.motion, KEYS.motion, "motion.", err);
-      const kinds = frame === "cover" ? ["turn", "copier"] : MOTION.kinds.filter((k) => k !== "turn" && k !== "copier");
+      const kinds = frame === "cover" ? ["turn", "copier"] : frame === "plate" ? ["pulse", "signal"] : MOTION.kinds.filter((k) => !SELF_TIMED_MOTION.includes(k));
       if (!kinds.includes(spec.motion.kind)) err(`motion.kind: "${spec.motion.kind}" is not a motion; use ${kinds.join(" or ")}`);
     }
   }
-  if (isObj(spec.motion) && (spec.motion.kind === "turn" || spec.motion.kind === "copier")) {
+  if (frame !== "luminous" && isObj(spec.motion) && SELF_TIMED_MOTION.includes(spec.motion.kind)) {
     for (const k of ["frames", "fps"]) if (spec.motion[k] !== undefined) err(`motion.${k}: a ${spec.motion.kind} loop sets its own length and rate; remove ${k}`);
-  } else if (spec.motion !== undefined) {
+  } else if (frame !== "luminous" && spec.motion !== undefined) {
     if (isObj(spec.motion)) {
       const [flo, fhi] = MOTION.frames;
       if (!Number.isInteger(spec.motion.frames) || !inRange(spec.motion.frames, flo, fhi)) err(`motion.frames: a whole number, ${flo} to ${fhi}`);
@@ -765,7 +930,7 @@ export function scaffoldSpec(facts, { preset, frame = preset?.frame ?? "loose", 
  * @param {{ hash: string, repo: { name: string } }} facts
  * @param {{ commit?: string, date: string, accent?: string, split?: string[], parts: { id: string, name: string }[] }} o
  */
-export function coverScaffold(facts, { commit, date, accent, split, parts, strata = "outline", like, ground = "navy", look, format, crop }) {
+export function coverScaffold(facts, { commit, date, accent, split, parts, strata = "outline", like, ground = "navy", look, format, crop, layout, finish }) {
   const region = { shape: like ? { like } : undefined, strata };
   return {
     version: 3,
@@ -776,6 +941,8 @@ export function coverScaffold(facts, { commit, date, accent, split, parts, strat
     ...(look && look !== "living" ? { look } : {}),
     ...(format && format !== "poster" ? { format } : {}),
     ...(crop && crop !== "center" ? { crop } : {}),
+    ...(layout && layout !== "classic" ? { layout } : {}),
+    ...(finish && finish !== "type" ? { finish } : {}),
     headline: hold(`one plain sentence about what the product does for a person, at most ${LIMITS.headline} characters`),
     figure: {
       regions: [
@@ -795,3 +962,93 @@ export function coverScaffold(facts, { commit, date, accent, split, parts, strat
     motion: { kind: look === "xerox" ? "copier" : "turn" },
   };
 }
+
+/**
+ * The spec `compose --frame plate` writes: a pure vector plate (`topo` or `blueprint`) in a curated
+ * gallery ground and layout, leaving only the product name, headline, part names, accent and legend to write.
+ * @param {{ hash: string, repo: { name: string } }} facts
+ * @param {{ plate?: "topo" | "blueprint", commit?: string, date: string, accent?: string, split?: string[], parts?: { id: string, name: string }[], ground?: string, layout?: string, format?: string, seed?: number }} o
+ */
+export function plateScaffold(facts, { plate = "topo", commit, date, accent, split, parts = [], ground = "obsidian", layout = "editorial", format = "poster", seed }) {
+  const P = PLATES[plate] ?? PLATES.topo;
+  const color = COVER_GROUNDS[ground]?.colorName ?? "cyan";
+  return {
+    version: 3,
+    frame: "plate",
+    facts: facts.hash,
+    product: { name: hold("the name customers see, as the product's docs write it"), repo: facts.repo.name, ...(commit ? { commit } : {}), date },
+    ground,
+    ...(layout && layout !== "classic" ? { layout } : {}),
+    ...(format && format !== "poster" ? { format } : {}),
+    headline: hold(`one plain sentence about what the product does for a person, at most ${LIMITS.headline} characters`),
+    figure: {
+      regions: [
+        {
+          kind: "plate",
+          id: plate,
+          plate,
+          accent: accent ?? hold("the id of the part the product is about, from the list compose printed"),
+          ...(split ? { split } : {}),
+          ...(seed !== undefined ? { seed } : {}),
+          names: Object.fromEntries(parts.map((p) => [p.id, hold(`a plain name for "${p.name}", at most ${LIMITS.partName} characters`)])),
+        },
+      ],
+      texts: [{ role: "legend", id: "legend", text: hold(P.legend("<product>", "<the accent's plain name>", color)) }],
+    },
+    motion: { kind: P.motion },
+  };
+}
+
+/**
+ * The spec `compose --frame luminous` writes: a luminous print poster in one of 5 styles
+ * (`obsidian`, `alabaster`, `optics`, `riso`, `contour`) and 5 curated palettes, with
+ * placeholders for product.name, headline, legend, accent, subject.concept, subject.svg, and microType.
+ * @param {{ hash: string, repo: { name: string } }} facts
+ * @param {{ commit?: string, date: string, accent?: string | string[], theme?: "obsidian" | "alabaster", style?: string, palette?: string, parts?: { id: string, name: string }[], split?: string[], seed?: number }} o
+ */
+export function luminousScaffold(facts, { commit, date, accent, theme, style, palette, parts = [], split, seed } = {}) {
+  const effStyle = LUMINOUS_STYLES.includes(style) ? style : theme === "alabaster" ? "alabaster" : "obsidian";
+  const defaultLight = effStyle === "alabaster" || effStyle === "riso" || (effStyle === "contour" && theme === "alabaster");
+  const effPalette = LUMINOUS_PALETTES.includes(palette) ? palette : defaultLight ? "vermilion" : "crimson";
+  const isLight = effStyle === "alabaster" || effStyle === "riso" || (effStyle === "contour" && (effPalette === "vermilion" || effPalette === "cobalt"));
+  const effTheme = LUMINOUS_THEMES.includes(theme) ? theme : isLight ? "alabaster" : "obsidian";
+  const accentWord = LUMINOUS_PALETTE_WORDS[effPalette] ?? (isLight ? "vermilion" : "crimson");
+  return {
+    version: 3,
+    frame: "luminous",
+    facts: facts.hash,
+    product: { name: hold("the name customers see, as the product's docs write it"), repo: facts.repo.name, ...(commit ? { commit } : {}), date },
+    theme: effTheme,
+    style: effStyle,
+    palette: effPalette,
+    headline: hold(`one plain sentence about what the product does for a person, at most ${LIMITS.headline} characters`),
+    figure: {
+      regions: [
+        {
+          kind: "luminous",
+          id: "luminous",
+          accent: accent ?? hold("the id of the part the product is about, from the list compose printed"),
+          ...(split ? { split } : {}),
+          ...(seed !== undefined ? { seed } : {}),
+          subject: {
+            concept: hold("one plain sentence describing the bespoke visual metaphor you are drawing for this product"),
+            svg: hold(`self-contained soft-lit <svg viewBox="0 0 840 1190"> with radialGradient/linearGradient, feGaussianBlur, carved shadow valleys, and one glowing ${accentWord} accent heart`),
+          },
+          microType: [
+            { text: hold("plain phrase for the glowing accent heart"), u: 0.64, v: 0.32, style: "core" },
+            { text: hold("plain phrase for a major zone of the metaphor"), u: 0.72, v: 0.56, style: "part" },
+            { text: hold("short quiet whisper beside the lit edge"), u: 0.48, v: 0.74, style: "whisper" },
+          ],
+        },
+      ],
+      texts: [
+        {
+          role: "legend",
+          id: "legend",
+          text: hold(`${accentWord} marks <the accent's plain name>; one short plain line, at most ${FRAME_ROLES.luminous.legend.max} characters`),
+        },
+      ],
+    },
+  };
+}
+

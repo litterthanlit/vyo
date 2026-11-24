@@ -14,6 +14,8 @@ import { loadMaskImage } from "./png-mask.mjs";
 import { launchChromium } from "./browser.mjs";
 import { placeTexts } from "./place.mjs";
 import { coverPage, COVER_FONTS } from "./cover-render.mjs";
+import { platePage, PLATE_FPS } from "./plate-render.mjs";
+import { luminousPage, LUMINOUS_FONTS, luminousGroundFor } from "./luminous-render.mjs";
 import { COVER, COVER_GROUNDS } from "./cover.mjs";
 
 const TOOLS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -31,7 +33,8 @@ const GROT_FONTS = [
 ];
 export const FONT_FACES = FONTS.map(([family, weight]) => ({ family, weight }));
 /** The faces a poster in `frame` loads. */
-export const fontFacesOf = (frame) => (frame === "cover" ? COVER_FONTS : FONTS).map(([family, weight]) => ({ family, weight }));
+export const fontFacesOf = (frame) =>
+  (frame === "luminous" ? LUMINOUS_FONTS : frame === "cover" || frame === "plate" ? COVER_FONTS : FONTS).map(([family, weight]) => ({ family, weight }));
 const MAST_FONT = `"Inter Display", Inter, "Helvetica Neue", Helvetica, Arial, sans-serif`;
 export { SHEET };
 
@@ -43,7 +46,10 @@ export const THEMES = {
   "signal-dark": { paper: "#111111", ink: "#F4F0E6", soft: "#6A675F", mid: "#A8A49A", cold: "#3D4A5C", cool: "#6B7C94", hot: "#C8FF00" },
 };
 export const tokensOf = (spec) => {
-  if (frameOf(spec) === "cover") {
+  if (frameOf(spec) === "luminous") {
+    return luminousGroundFor(spec);
+  }
+  if (frameOf(spec) === "cover" || frameOf(spec) === "plate") {
     const g = COVER_GROUNDS[spec.ground];
     return { paper: g.ground, ink: g.ink, hot: g.accent };
   }
@@ -52,7 +58,7 @@ export const tokensOf = (spec) => {
 };
 /** The colour tokens each field region adds for its own rows, by region id. */
 export const fieldTokensOf = (spec) =>
-  frameOf(spec) === "cover" ? {} : Object.fromEntries(spec.figure.regions.filter((r) => r.kind === "field").map((r) => [r.id, FIELDS[r.field].tokens(spec.theme, frameOf(spec))]));
+  frameOf(spec) === "cover" || frameOf(spec) === "plate" || frameOf(spec) === "luminous" ? {} : Object.fromEntries(spec.figure.regions.filter((r) => r.kind === "field").map((r) => [r.id, FIELDS[r.field].tokens(spec.theme, frameOf(spec))]));
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const hotStop = `<span data-hot data-owner="render" style="color:var(--hot)">.</span>`;
@@ -299,6 +305,8 @@ function routeData(r) {
 export function buildPage(given, facts) {
   const frame = frameOf(given);
   if (frame === "cover") return coverPage(given, facts, PRELUDE);
+  if (frame === "plate") return platePage(given, facts, PRELUDE);
+  if (frame === "luminous") return luminousPage(given, facts, PRELUDE);
   const spec = placeTexts(given, facts);
   const vars = Object.entries(Object.assign({}, ...Object.values(fieldTokensOf(spec)), tokensOf(spec))).map(([k, v]) => `--${k}:${v}`).join(";");
   const halo = frame === "signal" ? SIGNAL_HALO : HALO;
@@ -444,7 +452,7 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.setContent(html, { waitUntil: "load" });
-    await page.waitForFunction(() => window.drawn === true, null, { timeout: 120000 }).catch(() => {});
+    await page.waitForFunction(() => window.drawn === true || window.__vyoLuminousDone === true, null, { timeout: 120000 }).catch(() => {});
     const report = await page.evaluate(`(${fs.readFileSync(path.join(TOOLS, "lib", "inspect.js"), "utf8").replace(/^\/\/.*\n/, "")})()`);
     report.errors = errors;
     report.covered = await coveredText(page);
@@ -456,7 +464,33 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
       await page.emulateMedia({ media: "screen" });
       await page.pdf({ path: `${base}.pdf`, printBackground: true, ...PAPER[paper](sheet) });
     }
-    if (gif && motion) report.loop = motion.kind === "turn" || motion.kind === "copier" ? await writeTurn(page, base, sheet) : await writeGif(page, base, motion);
+    if (gif && motion) {
+      if (motion.kind === "turn" || motion.kind === "copier") report.loop = await writeTurn(page, base, sheet);
+      else if (motion.kind === "pulse" || motion.kind === "signal") report.loop = await writePlateLoop(page, base, sheet);
+      else report.loop = await writeGif(page, base, motion);
+    }
+    return report;
+  } finally {
+    await browser.close();
+  }
+}
+
+/**
+ * Render a quick 1x sketch PNG of a luminous poster in Chromium and return its metrics & report.
+ * Used by `vyo sketch` when `subject.svg` is authored so agents can visually inspect before full render.
+ */
+export async function renderLuminousSketch({ html, pngPath }) {
+  fs.mkdirSync(path.dirname(path.resolve(pngPath)), { recursive: true });
+  const browser = await launchChromium();
+  try {
+    const page = await browser.newPage({ viewport: SHEET, deviceScaleFactor: 1 });
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.setContent(html, { waitUntil: "load" });
+    await page.waitForFunction(() => window.drawn === true || window.__vyoLuminousDone === true, null, { timeout: 60000 }).catch(() => {});
+    const report = await page.evaluate(`(${fs.readFileSync(path.join(TOOLS, "lib", "inspect.js"), "utf8").replace(/^\/\/.*\n/, "")})()`);
+    report.errors = errors;
+    await page.locator(".sheet").screenshot({ path: pngPath });
     return report;
   } finally {
     await browser.close();
@@ -490,6 +524,34 @@ async function writeTurn(page, base, sheet = SHEET) {
     ffmpeg(["-framerate", String(fps), "-i", seq, "-filter_complex", gif, "-loop", "0", `${base}.gif`], "GIF");
     ffmpeg(["-framerate", String(fps), "-i", seq, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", "-vf", `scale=${mp4W}:-2`, `${base}.mp4`], "MP4");
     return { reports, steps };
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/**
+ * A plate's seamless loop (48 frames @ 24fps MP4, 16fps GIF): captures every frame at 1x, restores the 2x still,
+ * and encodes crisp looping GIF and MP4 outputs.
+ * @returns {Promise<{ reports: object[] }>}
+ */
+async function writePlateLoop(page, base, sheet = SHEET) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-plate-"));
+  try {
+    const info = await page.evaluate(() => ({ frames: window.plate.frames, still: window.plate.still ?? 0 }));
+    const n = info.frames;
+    const reports = [];
+    for (let f = 0; f < n; f++) {
+      reports.push(await page.evaluate((k) => window.plateFrame(k, 1, true), f));
+      await page.locator(".sheet").screenshot({ path: path.join(dir, `frame-${String(f).padStart(3, "0")}.png`), scale: "css" });
+    }
+    await page.evaluate(() => window.plateFrame(window.plate.still, 2, false));
+    const seq = path.join(dir, "frame-%03d.png");
+    const gifW = sheet.width > sheet.height ? 720 : 560;
+    const mp4W = sheet.width > sheet.height ? 1280 : 840;
+    const gif = `fps=16,scale=${gifW}:-1:flags=area,split[a][b];[a]palettegen=max_colors=48:stats_mode=full[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`;
+    ffmpeg(["-framerate", String(PLATE_FPS), "-i", seq, "-filter_complex", gif, "-loop", "0", `${base}.gif`], "GIF");
+    ffmpeg(["-framerate", String(PLATE_FPS), "-i", seq, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", "-vf", `scale=${mp4W}:-2`, `${base}.mp4`], "MP4");
+    return { reports };
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

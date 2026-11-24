@@ -19,7 +19,7 @@ export function coverSketchLines(spec, facts) {
   const order = model.order.map((i) => ({ ...model.parts[i], i }));
   const color = model.colors.colorName ?? "orange";
   const lines = [
-    `cover: ${spec.ground} ground${model.look !== "living" ? ` (${model.look})` : ""}${model.format !== "poster" ? `, ${model.format}` : ""}, ${look}, ${model.parts.length} parts; the still is frame ${still.frame} of ${model.frames} (${Math.round(still.turned * 100)}% into the turn)`,
+    `cover: ${spec.ground} ground${model.look !== "living" ? ` (${model.look})` : ""}${model.format !== "poster" ? `, ${model.format}` : ""}${model.layout && model.layout !== "classic" ? `, ${model.layout} layout` : ""}${model.finish && model.finish !== "type" ? `, ${model.finish} finish` : ""}, ${look}, ${model.parts.length} parts; the still is frame ${still.frame} of ${model.frames} (${Math.round(still.turned * 100)}% into the turn)`,
     `strata: ${strata}${model.strata.outline ? ", the accent the outer shell and the others inside it" : ""}`,
     ...(shell ? [`shell: the ${color} shell is ${Math.round(shell.px)}px thick, ${pct(shell.share)} of the code (good: ${COVER_LIMITS.thin}px or more, at most ${Math.round(COVER_LIMITS.share * 100)}%)`] : []),
     `parts, ${model.strata.outline ? "from the outline in" : "in strata order"}: share of the lines, share of the glyphs in the still, whole names in the still`,
@@ -38,6 +38,7 @@ export const coverSketchFindings = (spec, facts) => {
 export function coverSketchImage(spec, facts) {
   const { model, still } = coverOf(spec, facts);
   const { width: W, height: H, cols, cw, lh, x0 } = model.grid;
+  const T = model.template;
   const S = 3;
   const [w, h] = [Math.ceil(W / S), Math.ceil(H / S)];
   const rgb = (hex) => [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16));
@@ -63,6 +64,25 @@ export function coverSketchImage(spec, facts) {
     lay(x, y, x + cw, y + lh, hot ? accent : ink, a);
   }
   const B = coverBlocks(spec, facts);
+  const strokeBox = (b, a) => {
+    lay(b.x, b.y, b.x + b.w, b.y + 3, ink, a);
+    lay(b.x, b.y + b.h - 3, b.x + b.w, b.y + b.h, ink, a);
+    lay(b.x, b.y, b.x + 3, b.y + b.h, ink, a);
+    lay(b.x + b.w - 3, b.y, b.x + b.w, b.y + b.h, ink, a);
+  };
+  if (model.layout === "editorial") {
+    const rw = model.format === "og" ? T.tableW : W - 2 * T.margin;
+    lay(T.margin, T.ruleY, T.margin + rw, T.ruleY + 3, ink, 0.25);
+    lay(T.margin, T.bottomRuleY, T.margin + rw, T.bottomRuleY + 3, ink, 0.25);
+  } else if (model.layout === "blueprint" && T.frame) {
+    strokeBox(T.frame, 0.35);
+    if (T.titleBlock) strokeBox(T.titleBlock, 0.3);
+  } else if (model.layout === "macro" && B.cards) {
+    for (const c of Object.values(B.cards)) {
+      lay(c.x, c.y, c.x + c.w, c.y + c.h, ground, 0.85);
+      strokeBox(c, 0.2);
+    }
+  }
   const bar = (left, top, lines, size) => lines.forEach((t, i) => lay(left, top + i * COVER.lead + 3, left + t.length * size * 0.52, top + i * COVER.lead + 11, ink, 0.35));
   bar(B.record.left, B.record.top, B.record.lines, COVER.small);
   bar(B.headline.left, B.headline.top, B.headline.lines, COVER.small);
