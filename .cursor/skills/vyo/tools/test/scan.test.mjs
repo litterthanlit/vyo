@@ -616,6 +616,20 @@ describe("other frameworks", () => {
       },
     ));
 
+  test("Fastify: two plugins exported from the same module keep separate prefixes, and nested prefix options are ignored", () =>
+    withRepo(
+      {
+        "package.json": '{"name":"f","dependencies":{"fastify":"5"}}',
+        "src/server.js":
+          'import Fastify from "fastify";\nimport { catalog, orders } from "./plugins.js";\nconst app = Fastify();\napp.register(catalog, { cache: { prefix: "items" }, prefix: "/catalog" });\napp.register(orders, { prefix: "/orders" });\napp.get("/health", async () => ({ ok: true }));\n',
+        "src/plugins.js":
+          'export async function catalog(fastify) {\n  fastify.get("/list", async () => []);\n}\nexport const orders = async (instance) => {\n  instance.get("/recent", async () => []);\n};\n',
+      },
+      (f) => {
+        assert.deepEqual(ids(f, "endpoint"), ["endpoint:/catalog/list", "endpoint:/health", "endpoint:/orders/recent"]);
+      },
+    ));
+
   test("SvelteKit, Nuxt, Remix and React Router screens", async () => {
     await withRepo(
       {

@@ -83,17 +83,18 @@ export function partsFromFacts(facts, { minShare = PART_DEFAULTS.minShare, maxPa
   const deepestSmall = (x, y) => depth(y[0]) - depth(x[0]) || bySize(x, y);
 
   for (let id; (id = first((x) => depth(x) > 1 && parts.get(x).loc < minShare * total, deepestSmall)); ) mergeUp(id);
-  for (const [id, p] of [...parts]) {
-    if (p.loc > 0) continue;
-    const into = id === ROOT ? null : parentOf(id);
-    if (into && parts.get(into)?.loc > 0) mergeUp(id);
-    else parts.delete(id);
-  }
   for (let id; parts.size > maxParts && (id = first((x) => x !== ROOT, bySize)); ) mergeUp(id);
 
   return [...parts]
     .sort(([a], [b]) => treeOrder(a, b))
     .map(([id, p], order) => ({ id, name: names[id] ?? areas.get(id)?.name ?? (files.has(id) ? fileName(id) : id.slice(5)), loc: p.loc, files: p.files, order, ...(files.has(id) ? { file: true } : {}) }));
+}
+
+/** The parts in `after` that came from splitting `id` out of `before` (at least 2 when the split cut it). */
+export function splitPieces(before, after, id) {
+  const prev = new Set(before.map((p) => p.id));
+  const inPart = (p) => (id === ROOT ? p.id === ROOT || (p.file && !p.id.slice(5).includes("/")) : p.id === id || p.id.startsWith(`${id}/`));
+  return after.filter((p) => inPart(p) && (p.id === id || !prev.has(p.id)));
 }
 
 // A part over `share` of the lines, or fewer than `parts` parts, draws a shape as one slab. The cold runs' flask
@@ -112,7 +113,8 @@ export function dominance(facts, options = {}) {
   if (!big || (big.loc / total <= DOMINANT.share && parts.length >= DOMINANT.parts)) return null;
   const finer = partsFromFacts(facts, { ...options, split: [...(options.split ?? []), big.id] });
   const largest = Math.max(...finer.map((p) => p.loc)) / total;
-  return { part: big, share: big.loc / total, count: parts.length, split: finer.length > parts.length ? { id: big.id, count: finer.length, largest, into: finer.some((p) => p.file) ? "files" : "folders" } : null };
+  const pieces = splitPieces(parts, finer, big.id);
+  return { part: big, share: big.loc / total, count: parts.length, split: pieces.length >= 2 ? { id: big.id, count: finer.length, largest, into: pieces.some((p) => p.file) ? "files" : "folders" } : null };
 }
 
 // Folders that hold code around the product, never the product itself, by the plain word for what they hold.

@@ -385,3 +385,62 @@ test("cover sketch reports a missing headline without crashing coverWrap", () =>
   assert.match(s.stdout, /^✗ spec: headline: missing$/m);
   assert.doesNotMatch(s.stderr, /TypeError/);
 });
+
+test("cover record counts empty source files alongside non-empty ones", () => {
+  const facts = {
+    version: 1,
+    hash: "0123456789ab",
+    repo: { name: "demo" },
+    facts: [
+      { id: "area:.", kind: "area", name: "Demo", meta: { leaf: false } },
+      { id: "area:empty", kind: "area", name: "Empty", meta: { leaf: true } },
+      { id: "area:src", kind: "area", name: "Src", meta: { leaf: true } },
+    ],
+    files: {
+      "empty/a.py": { area: "area:empty", loc: 0 },
+      "empty/b.py": { area: "area:empty", loc: 0 },
+      "empty/c.py": { area: "area:empty", loc: 0 },
+      "src/a.py": { area: "area:src", loc: 40 },
+      "src/b.py": { area: "area:src", loc: 40 },
+      "src/c.py": { area: "area:src", loc: 40 },
+    },
+  };
+  const spec = cover({ accent: "area:src" });
+  const c = coverOf(spec, facts);
+  assert.equal(c.record[2], "120 lines in 6 files.");
+});
+
+test("compose --frame cover splits an oversized part even when already at the 14-part limit", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-cover-cap-"));
+  const smallNames = Array.from({ length: 13 }, (_, i) => `mod${String(i + 1).padStart(2, "0")}`);
+  const facts = {
+    version: 1,
+    hash: "0123456789ab",
+    repo: { name: "capped" },
+    facts: [
+      { id: "area:.", kind: "area", name: "Capped", meta: { leaf: false } },
+      { id: "area:core", kind: "area", name: "Core", meta: { leaf: true } },
+      { id: "area:core/a", kind: "area", name: "A", meta: { leaf: false } },
+      { id: "area:core/b", kind: "area", name: "B", meta: { leaf: false } },
+      { id: "area:core/c", kind: "area", name: "C", meta: { leaf: false } },
+      ...smallNames.map((n) => ({ id: `area:${n}`, kind: "area", name: n, meta: { leaf: true } })),
+    ],
+    files: {
+      "core/a/x.js": { area: "area:core/a", loc: 180 },
+      "core/b/x.js": { area: "area:core/b", loc: 175 },
+      "core/c/x.js": { area: "area:core/c", loc: 175 },
+      ...Object.fromEntries(smallNames.map((n, i) => [`${n}/x.js`, { area: `area:${n}`, loc: 30 + i }])),
+    },
+  };
+  const factsFile = path.join(dir, "capped-facts.json");
+  const out = path.join(dir, "capped-poster.json");
+  fs.writeFileSync(factsFile, JSON.stringify(facts));
+  const r = spawnSync(process.execPath, [VYO, "compose", factsFile, "--frame", "cover", "--out", out], { encoding: "utf8" });
+  assert.equal(r.status, 0, r.stderr);
+  const spec = JSON.parse(fs.readFileSync(out, "utf8"));
+  assert.deepEqual(spec.figure.regions[0].split, ["area:core"], "compose splits area:core even though total parts stay at 14");
+  const parts = regionParts(spec.figure.regions[0], facts);
+  const total = parts.reduce((s, p) => s + p.loc, 0);
+  assert.equal(parts.length, 14);
+  assert.ok(Math.max(...parts.map((p) => p.loc / total)) < 0.2, "largest part drops below 20%");
+});

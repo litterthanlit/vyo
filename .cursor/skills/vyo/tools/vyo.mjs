@@ -27,7 +27,7 @@ import { NoBrowser } from "./lib/browser.mjs";
 import { MaskFailure, BUNDLED_MASKS } from "./lib/png-mask.mjs";
 import { init, chooseEditors, EDITORS } from "./lib/init.mjs";
 import { FIELDS } from "./lib/fields/index.mjs";
-import { partsFromFacts, partOptions, regionParts, accentIds, unplainName, sameNames, dominance, aroundProduct, PART_DEFAULTS } from "./lib/parts.mjs";
+import { partsFromFacts, partOptions, regionParts, accentIds, unplainName, sameNames, dominance, aroundProduct, splitPieces, PART_DEFAULTS } from "./lib/parts.mjs";
 import { pickField, pickSilhouette, readRecent, recordShape, usedAgo } from "./lib/recent.mjs";
 
 const USAGE = `Usage:
@@ -350,8 +350,9 @@ function composeCover(factsFile, opt) {
   for (let big; split.length < 4 && (big = parts.find((p) => p.loc / linesIn(parts) > L.share && !tried.has(p.id))); ) {
     tried.add(big.id);
     const finer = partsOf([...split, big.id]);
-    if (finer.length <= parts.length) continue;
-    cut.push(`${big.id} (${pct(big.loc / linesIn(parts))}) into ${finer.length - parts.length + 1} parts`);
+    const pieces = splitPieces(parts, finer, big.id);
+    if (pieces.length < 2) continue;
+    cut.push(`${big.id} (${pct(big.loc / linesIn(parts))}) into ${pieces.length} parts`);
     split.push(big.id);
     parts = finer;
   }
