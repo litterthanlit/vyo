@@ -22,7 +22,7 @@ const grow = (r, x, y) => ({ left: r.left - x, right: r.right + x, top: r.top - 
 // Side by side, two things need 8px between them: rects that share a horizontal band are inflated by 4px each.
 const crowd = (a, b) => (sameBand(a, b) ? overlap(grow(a, 4, 4), grow(b, 4, 4)) : overlap(a, b));
 const inside = (r, s) => r.left >= s.left - 0.5 && r.top >= s.top - 0.5 && r.right <= s.right + 0.5 && r.bottom <= s.bottom + 0.5;
-const hasProduct = (name, spec) => !!spec.product?.name && name.toLowerCase().includes(spec.product.name.toLowerCase());
+const hasProduct = (name, spec) => !!spec.product?.name && hasWord(name, spec.product.name);
 const round = (n) => Math.round(n);
 const pct = (n) => `${Math.round(n * 100)}%`;
 const fillIds = (spec) => spec.figure.regions.filter((r) => r.kind === "fill").map((r) => r.id);
@@ -93,7 +93,7 @@ const pageRegionStats = (page) => regionStats(fillRowsOf(page).map((r) => ({ reg
  * A check of every shape field, read from shape-report's findings. `drawn` picks what the finding measures
  * on the page: its rows, its text blocks, or nothing (the mask alone).
  */
-const shapeCheck = (id, level, stage, about, drawn = () => ({}), frames = ["loose"]) => ({
+const shapeCheck = (id, level, stage, about, drawn = () => ({}), frames = ["loose", "signal"]) => ({
   id, level, stage, frames, about,
   run: (i) => {
     if (frameOf(i.spec) === "cover") return shapeFindings(coverShapeReport(i.spec, i.facts))[id];
@@ -207,10 +207,10 @@ export const CHECKS = [
         .filter((r) => !FIELDS[r.field].fits.some((w) => startsWord(r.fits, w)))
         .map((r) => `region ${r.id}: fits must say why a ${r.field} matches the product's story; use ${anyOf(FIELDS[r.field].fits)}`),
   },
-  shapeCheck("shape-dominant", "warn", "spec", "no part of a drawn shape is one slab: a part over 75% of the lines, or among under 4 parts, is split when it has folders inside it, and an accent over 75% with none to split is named, so it can move to a smaller part", undefined, ["loose", "cover"]),
-  shapeCheck("shape-simple", "warn", "spec", "a drawn shape has at most 8 ops and no run of small repeated details that merge at thumbnail size", undefined, ["loose", "cover"]),
-  shapeCheck("shape-limb", "warn", "spec", `no even limb under ${SHAPE_LIMB.width * 100}% of a drawn shape's widest row runs from its top or bottom over ${SHAPE_LIMB.height * 100}% of its height while holding at most ${SHAPE_LIMB.area * 100}% of its area`, undefined, ["loose", "cover"]),
-  shapeCheck("shape-thin", "warn", "spec", `no feature of a drawn shape, and no cut in it, is under ${SHAPE_LIMITS.thin}px across, a hairline at thumbnail size`, undefined, ["loose", "cover"]),
+  shapeCheck("shape-dominant", "warn", "spec", "no part of a drawn shape is one slab: a part over 75% of the lines, or among under 4 parts, is split when it has folders inside it, and an accent over 75% with none to split is named, so it can move to a smaller part", undefined, ["loose", "signal", "cover"]),
+  shapeCheck("shape-simple", "warn", "spec", "a drawn shape has at most 8 ops and no run of small repeated details that merge at thumbnail size", undefined, ["loose", "signal", "cover"]),
+  shapeCheck("shape-limb", "warn", "spec", `no even limb under ${SHAPE_LIMB.width * 100}% of a drawn shape's widest row runs from its top or bottom over ${SHAPE_LIMB.height * 100}% of its height while holding at most ${SHAPE_LIMB.area * 100}% of its area`, undefined, ["loose", "signal", "cover"]),
+  shapeCheck("shape-thin", "warn", "spec", `no feature of a drawn shape, and no cut in it, is under ${SHAPE_LIMITS.thin}px across, a hairline at thumbnail size`, undefined, ["loose", "signal", "cover"]),
   {
     id: "cover-shell", level: "warn", stage: "spec", frames: COVER_ONLY, about: `a cover's outline accent is at least ${COVER_LIMITS.thin}px thick in the still, so it reads as an orange ring round the object; a thinner one keeps its accent as a band`,
     run: ({ spec, facts }) => coverFindings(coverOf(spec, facts), { facts })["cover-shell"],
@@ -228,7 +228,7 @@ export const CHECKS = [
   shapeCheck("shape-share", "fail", "page", `every part of a relief has its share of the glyphs within ${RELIEF.share.part * 100}% of its share of the lines`, ({ page }) => ({ rows: page.rows.map((r) => ({ part: r.part, text: r.text, width: r.rect.width })) })),
   shapeCheck("shape-name", "fail", "page", "every band of a drawn shape shows its part's whole name at least once", ({ page }) => ({ rows: page.rows.map((r) => ({ part: r.part, text: r.text, width: r.rect.width })) })),
   shapeCheck("shape-room", "fail", "page", `every text block sits in the room a drawn shape leaves, ${SHAPE_LIMITS.clear}px clear of it`, ({ page }) => ({
-    blocks: page.blocks.filter((b) => b.role).map((b) => ({ id: b.name, ...b.rect })),
+    blocks: page.blocks.filter((b) => b.role && b.role !== "mark").map((b) => ({ id: b.name, ...b.rect })),
   })),
   {
     id: "drawn", level: "fail", stage: "page", about: "the figure script ran to the end",
@@ -398,7 +398,7 @@ export const CHECKS = [
       const allowed = new Set(Object.values(tokensOf(spec)).map(rgb));
       const own = Object.fromEntries(Object.entries(fieldTokensOf(spec)).map(([id, tokens]) => [`region ${id}`, new Set(Object.values(tokens).map(rgb))]));
       const bad = [...page.texts, ...page.boxes].filter((t) => !allowed.has(t.color) && !own[t.where]?.has(t.color));
-      return [...new Set(bad.map((t) => `${t.where} uses ${t.color}, not a ${spec.theme} token`))];
+      return [...new Set(bad.map((t) => `${t.where} uses ${t.color}, not a ${spec.ground ?? spec.theme} token`))];
     },
   },
   {
@@ -411,13 +411,15 @@ export const CHECKS = [
   },
   {
     id: "copy", level: "fail", stage: "page", about: "no jargon, file paths or AI tells in the visible words",
-    run: ({ page }) => {
+    run: ({ spec, page }) => {
+      const frame = frameOf(spec);
       const texts = [
-        ...page.blocks.filter((b) => b.owner !== "render" && b.role !== "masthead").map((b) => [b.name, b.text]),
+        ...page.blocks.filter((b) => b.owner !== "render" && ROLES[frame]?.[b.role]?.prints !== "name").map((b) => [b.name, b.text]),
         ...page.rows.map((r) => [`region ${r.region}`, r.word]),
         ...page.dots.map((d) => [`region ${d.region}`, d.word]),
       ];
-      return [...new Set(texts.flatMap(([name, text]) => textProblems(text).map((p) => `${name}: ${p}`)))];
+      const allow = spec.product?.name ? [spec.product.name] : [];
+      return [...new Set(texts.flatMap(([name, text]) => textProblems(text, { allow }).map((p) => `${name}: ${p}`)))];
     },
   },
   {

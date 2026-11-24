@@ -261,3 +261,11 @@ test("signal: grotesque roles, marks, routes and motion", () => {
     m.h = 2;
   }, /figure\.texts\[\d+\]\.h: 4 to 1190/, paper);
 });
+
+test("textProblems allows well-known .js brands and the product name while still rejecting file paths", () => {
+  assert.deepEqual(textProblems("Next.js and Node.js serve pages fast."), []);
+  assert.deepEqual(textProblems("MyTool.js formats notes cleanly.", { allow: ["MyTool.js"] }), []);
+  assert.deepEqual(textProblems("Lives in src/Next.js today."), ["a file path"]);
+  assert.deepEqual(textProblems("Runs index.js on start."), ["a file path"]);
+  assert.deepEqual(textProblems("See App.tsx for more."), ["a file path"]);
+});

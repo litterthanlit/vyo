@@ -200,3 +200,45 @@ test("compose --field shape writes relief unless --style says otherwise, with a 
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("CLI edge cases: cover --split works, bad --repo and malformed specs fail cleanly without stack traces", async () => {
+  const { spawnSync } = await import("node:child_process");
+  const os = await import("node:os");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-cli-edge-"));
+  const vyo = (...a) => spawnSync(process.execPath, [path.join(HERE, "..", "vyo.mjs"), ...a], { encoding: "utf8" });
+  try {
+    const facts = path.join(dir, "recipe-facts.json");
+    assert.equal(vyo("scan", path.join(HERE, "fixtures", "recipe"), "--out", facts).status, 0);
+
+    const splitCover = vyo("compose", facts, "--frame", "cover", "--split", "area:lib/plan", "--out", path.join(dir, "cover.json"));
+    assert.equal(splitCover.status, 0, splitCover.stderr);
+    assert.ok(JSON.parse(fs.readFileSync(path.join(dir, "cover.json"), "utf8")).figure.regions[0].split.includes("area:lib/plan"));
+
+    const badRepo = vyo("compose", facts, "--frame", "cover", "--repo", path.join(dir, "nope"), "--out", path.join(dir, "bad-repo.json"));
+    assert.equal(badRepo.status, 1);
+    assert.match(badRepo.stderr, /is not a directory/);
+    assert.doesNotMatch(badRepo.stderr, /ENOENT/);
+
+    const badSpecs = [
+      ["missing-figure", { version: 3, frame: "cover", ground: "navy", facts: "000000000000", product: { name: "P", repo: "recipe", date: "2026-01-01" }, headline: "H." }],
+      ["missing-headline", { version: 3, frame: "loose", theme: "light", facts: "000000000000", product: { name: "P", repo: "recipe", date: "2026-01-01" }, figure: { regions: [{ kind: "field", id: "w", field: "wave", fits: "flows" }], texts: [{ role: "label", id: "label", x: 40, y: 40, w: 200 }, { role: "headline", id: "headline", x: 40, y: 80, w: 300 }, { role: "legend", id: "legend", x: 40, y: 900, w: 240, text: "Code." }] } }],
+      ["bogus-frame", { version: 3, frame: "bogus", theme: "light", facts: "000000000000", product: { name: "P", repo: "recipe", date: "2026-01-01" }, headline: "H.", figure: { regions: [{ kind: "field", id: "w", field: "wave", fits: "flows" }], texts: [{ role: "label", id: "label", x: 40, y: 40, w: 200 }] } }],
+      ["bogus-theme", { version: 3, frame: "loose", theme: "neon", facts: "000000000000", product: { name: "P", repo: "recipe", date: "2026-01-01" }, headline: "H.", figure: { regions: [{ kind: "field", id: "w", field: "wave", fits: "flows" }], texts: [{ role: "label", id: "label", x: 40, y: 40, w: 200 }, { role: "headline", id: "headline", x: 40, y: 80, w: 300 }, { role: "legend", id: "legend", x: 40, y: 900, w: 240, text: "Code." }] } }],
+    ];
+    for (const [name, obj] of badSpecs) {
+      const f = path.join(dir, `${name}.json`);
+      fs.writeFileSync(f, JSON.stringify(obj));
+      const r = vyo("sketch", f, "--facts", facts);
+      assert.equal(r.status, 1, `${name}: expected exit 1, got ${r.status}`);
+      assert.doesNotMatch(r.stderr + r.stdout, /TypeError/, `${name}: no TypeError`);
+    }
+
+    const noProd = path.join(dir, "no-product.json");
+    fs.writeFileSync(noProd, JSON.stringify({ version: 3, frame: "loose", theme: "light", facts: "000000000000", headline: "H." }));
+    const r = vyo("check", noProd, "--facts", facts);
+    assert.equal(r.status, 1);
+    assert.doesNotMatch(r.stderr, /TypeError/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

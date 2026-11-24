@@ -10,7 +10,10 @@ const ROOT = "area:.";
 /** "area:lib/ai" -> ["lib", "ai"]; the root has no segments. */
 export const segmentsOf = (id) => (id === ROOT ? [] : id.slice(5).split("/"));
 /** A file part's scanned name: its file name without the extension, like "sessions". */
-const fileName = (id) => id.slice(id.lastIndexOf("/") + 1).replace(/\.[^.]+$/, "") || id.slice(5);
+const fileName = (id) => {
+  const rel = id.slice(5);
+  return rel.slice(rel.lastIndexOf("/") + 1).replace(/\.[^.]+$/, "") || rel;
+};
 const idOf = (segs) => (segs.length ? `area:${segs.join("/")}` : ROOT);
 
 // Parents before children, siblings by name: the order a file tree lists folders.

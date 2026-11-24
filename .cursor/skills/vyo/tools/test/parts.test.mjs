@@ -135,3 +135,19 @@ test("empty source files keep their file count in partsFromFacts", () => {
   assert.equal(sum(parts, "loc"), 120);
   assert.equal(sum(parts, "files"), 6);
 });
+
+test("splitting root area:. names root-level files without leaking the area: prefix", () => {
+  const flat = {
+    facts: [{ id: "area:.", kind: "area", name: "App", meta: { leaf: true } }],
+    files: {
+      "app.py": { area: "area:.", loc: 120 },
+      "cli.py": { area: "area:.", loc: 100 },
+      "store.py": { area: "area:.", loc: 90 },
+    },
+  };
+  const split = partsFromFacts(flat, { split: ["area:."] });
+  assert.deepEqual(
+    split.map((p) => [p.id, p.name]),
+    [["area:app.py", "app"], ["area:cli.py", "cli"], ["area:store.py", "store"]],
+  );
+});

@@ -178,7 +178,9 @@ Render writes `<name>-poster.html`, `.png` and `.pdf` beside the spec or into `-
 
 ## Edge cases
 
-- **Empty scan.** `compose --field` refuses with `no parts to draw`. Draw your own silhouette (below) and say the poster has no counts. With no docs either, make no poster.
+- **Empty scan.** `compose --field` refuses with `no parts to draw`. Draw your own silhouette (below) and say the poster has no counts. With no docs either, make no poster. If the repo's code lives inside a hidden folder (such as `.cursor/`), `vyo scan` skips dot-folders; scan that subfolder directly instead.
+- **Libraries, CLIs and non-web repos.** `vyo show` may report no web routes, tables or jobs; that is normal for a library, CLI, Go, Rust or Python package. `vyo parts` still lists every code area by lines of code, and field posters and covers draw from those parts.
+- **One huge part on a cover.** A cover requires an accent part of at most 40% of the code (`cover-accent`). `compose --frame cover` splits large parts automatically; if a repo still has no product part at or under 40% (for example a single-file tool), make a poster (`--field shape` or a generated field) instead of a cover.
 - **No git history.** The record line has no commit and `record` fails. Use the swiss frame, whose footer works without one.
 - **No docs.** Keep the folder name, accept the `product-name` warning, and ask for the real name. Never invent one.
 - **No screens.** Say "there is no user interface in this repository" and describe what the service does for its callers.

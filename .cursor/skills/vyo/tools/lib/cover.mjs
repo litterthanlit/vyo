@@ -311,16 +311,33 @@ function coverSurface(solid) {
         const by = (back(i + w) - back(i - w)) / (2 * cell);
         push(x, y, front(i), -fx, -fy, 1, key[i]);
         push(x, y, back(i), bx, by, -1, key[i]);
-        // The rim: where the surface is steep, fill between back and front, its normal rolling from out to up.
+        // The rim: where the surface is steep, fill exposed walls between back and front, its normal rolling from out to up.
+        // Cells completely surrounded by inside neighbors only expose z past their neighbors' front/back surfaces.
         const hx = (half[i + 1] - half[i - 1]) / (2 * cell);
         const hy = (half[i + w] - half[i - w]) / (2 * cell);
         const steep = Math.hypot(hx, hy);
         if (steep > 0.8 && half[i] > cell) {
           const [ox, oy] = [-hx / steep, -hy / steep];
-          for (let z = back(i) + cell; z < front(i) - cell * 0.5; z += cell) {
-            const u = (z - mid[i]) / half[i];
-            const c = Math.sqrt(Math.max(0, 1 - u * u));
-            push(x, y, z, ox * c, oy * c, u, key[i]);
+          const z0 = back(i) + cell;
+          const z1 = front(i) - cell * 0.5;
+          const emit = (from, to) => {
+            for (let z = from; z < to; z += cell) {
+              const u = (z - mid[i]) / half[i];
+              const c = Math.sqrt(Math.max(0, 1 - u * u));
+              push(x, y, z, ox * c, oy * c, u, key[i]);
+            }
+          };
+          const onEdge = !inside[i - 1] || !inside[i + 1] || !inside[i - w] || !inside[i + w];
+          if (onEdge) {
+            emit(z0, z1);
+          } else {
+            const minF = Math.min(front(i - 1), front(i + 1), front(i - w), front(i + w)) - cell;
+            const maxB = Math.max(back(i - 1), back(i + 1), back(i - w), back(i + w)) + cell;
+            if (maxB >= minF) emit(z0, z1);
+            else {
+              if (maxB > z0) emit(z0, Math.min(z1, maxB));
+              if (minF < z1) emit(Math.max(z0, minF), z1);
+            }
           }
         }
       }

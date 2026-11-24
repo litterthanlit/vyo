@@ -22,11 +22,14 @@ const ALWAYS_EXCLUDED_DIRS = new Set([
 ]);
 // Build output, vendored code and served assets: excluded only where they are output, directly under the
 // repo root or a package root. `internal/build/b.go` is source; `dist/` and `apps/web/dist/` are not.
-const OUTPUT_DIRS = new Set(["dist", "build", "out", "coverage", "vendor", "public", "static", "assets"]);
+const OUTPUT_DIRS = new Set(["dist", "build", "_build", "out", "coverage", "vendor", "public", "static", "assets"]);
+// Output directories that are build output only for specific toolchains (e.g., Rust Cargo / Java Maven `target/`).
+const TOOLCHAIN_OUTPUT_DIRS = { target: new Set(["Cargo.toml", "pom.xml"]) };
 
 export const MANIFESTS = new Set([
   "package.json", "pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", "Pipfile", "go.mod",
   "Cargo.toml", "Gemfile", "composer.json", "pom.xml", "build.gradle", "build.gradle.kts", "Package.swift",
+  "pubspec.yaml", "mix.exs", "build.sbt", "build.zig",
 ]);
 
 // Skipped while walking / listing: these directories never hold anything we read.
@@ -35,7 +38,16 @@ const NEVER_WALK = new Set(["node_modules", ".git", "__pycache__", "site-package
 // The repo root and every directory holding a manifest: where an output folder is plausibly output.
 export function packageRoots(paths) {
   const roots = new Set([""]);
-  for (const p of paths) if (MANIFESTS.has(basename(p))) roots.add(dirname(p));
+  const byDir = new Map();
+  for (const p of paths) {
+    const b = basename(p);
+    if (!MANIFESTS.has(b)) continue;
+    const d = dirname(p);
+    roots.add(d);
+    if (!byDir.has(d)) byDir.set(d, new Set());
+    byDir.get(d).add(b);
+  }
+  roots.manifestsByDir = byDir;
   return roots;
 }
 
@@ -56,10 +68,21 @@ export function excludeReason(rel, roots) {
     const s = segs[i];
     if (s.startsWith(".")) return `${segs.slice(0, i + 1).join("/")}/ (hidden)`;
     if (ALWAYS_EXCLUDED_DIRS.has(s)) return `${s}/`;
-    if (OUTPUT_DIRS.has(s) && roots.has(segs.slice(0, i).join("/"))) return `${s}/`;
+    const parent = segs.slice(0, i).join("/");
+    if (OUTPUT_DIRS.has(s) && roots.has(parent)) return `${s}/`;
+    if (TOOLCHAIN_OUTPUT_DIRS[s] && roots.manifestsByDir?.get(parent)) {
+      for (const m of TOOLCHAIN_OUTPUT_DIRS[s]) if (roots.manifestsByDir.get(parent).has(m)) return `${s}/`;
+    }
   }
   if (file.startsWith(".")) return "dotfiles";
-  if (/\.(test|spec)\.[^/]+$/.test(file) || /^(test_.*|.*_test)\.py$/.test(file) || file === "conftest.py" || /_test\.go$/.test(file)) return "test files";
+  if (
+    /\.(test|spec)\.[^/]+$/.test(file) ||
+    /^(test_.*|.*_test)\.py$/.test(file) ||
+    file === "conftest.py" ||
+    /_test\.(go|rb|exs|dart)$/.test(file) ||
+    /_spec\.rb$/.test(file) ||
+    /Tests?\.(java|kt|cs|php)$/.test(file)
+  ) return "test files";
   if (/\.config\.[^/]+$/.test(file) || /\.d\.[cm]?ts$/.test(file)) return "config and declaration files";
   return null;
 }

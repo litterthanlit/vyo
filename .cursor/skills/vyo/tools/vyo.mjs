@@ -332,6 +332,7 @@ function cmdShapes(argv) {
 function composeCover(factsFile, opt) {
   for (const k of ["from", "style", "theme", "seed"]) if (opt[k] !== undefined) throw new Usage(`--${k} has no place on a cover; ${k === "theme" ? "set ground in the spec (navy, paper, charcoal or forest)" : `leave out --${k}`}`);
   if (opt.field !== undefined && opt.field !== "shape") throw new Usage("a cover draws a shape; leave out --field");
+  if (opt.repo && (!fs.existsSync(opt.repo) || !fs.statSync(opt.repo).isDirectory())) throw new Failure(`--repo ${opt.repo} is not a directory`);
   const facts = readFacts(factsFile);
   const commit = opt.repo ? git(opt.repo, "%h") : undefined;
   const date = (opt.repo && git(opt.repo, "%cs")) ?? new Date().toISOString().slice(0, 10);
@@ -370,7 +371,7 @@ function composeCover(factsFile, opt) {
     }
   })();
   const logFile = opt["shapes-log"] ?? path.join(path.dirname(path.resolve(out)), "recent-shapes.json");
-  const readme = opt.repo ? fs.readdirSync(opt.repo).find((f) => /^readme/i.test(f)) : undefined;
+  const readme = opt.repo ? fs.readdirSync(opt.repo).find((f) => /^readme/i.test(f) && fs.statSync(path.join(opt.repo, f)).isFile()) : undefined;
   const text = readme ? fs.readFileSync(path.join(opt.repo, readme), "utf8").slice(0, 6000) : "";
   const hashKey = parseInt(String(facts.hash).slice(0, 8), 16) || 0;
   const pick = SILHOUETTES[earlier] ? { name: earlier, matched: null } : pickSilhouette(SILHOUETTES, text, readRecent(logFile).shapes, hashKey);
@@ -378,6 +379,9 @@ function composeCover(factsFile, opt) {
   if (pick.matched) recordShape(logFile, like);
   const share = (p) => p.loc / linesIn(parts);
   const around = (p) => aroundProduct(p.id);
+  if (!parts.some((p) => !around(p) && share(p) <= L.share)) {
+    warn(`no product part is at most ${pct(L.share)} of the code, so cover-accent cannot pass on this repo; use a poster instead (vyo compose ${factsFile} --field shape, or leave out --frame cover)`);
+  }
   // The window, measured on this object: an outline when a part the product could be about makes a ring there,
   // else bands.
   const probe = coverScaffold(facts, { commit, date, split: split.length ? split : undefined, parts, strata: "outline", like, accent: parts[parts.length - 1].id });
@@ -438,14 +442,14 @@ function cmdCompose(argv) {
     if (!/^\d+$/.test(opt.seed) || Number(opt.seed) > 2147483647) throw new Usage(`--seed ${opt.seed} is not a whole number from 0 to 2147483647`);
     seed = Number(opt.seed);
   }
+  const frame = opt.frame ?? preset?.frame ?? "loose";
+  if (!FRAMES.includes(frame)) throw new Usage(`--frame ${frame} is not a frame; use ${FRAMES.join(" or ")}`);
+  if (frame === "cover") return composeCover(pos[0], opt);
   if (opt.style !== undefined && !SHAPE_STYLES[opt.style]) throw new Usage(`--style ${opt.style} is not a style; use ${Object.keys(SHAPE_STYLES).join(", ")}`);
   // A style is a shape's look, so --style alone asks for a shape.
   if (opt.style !== undefined && opt.field === undefined && !preset) opt.field = "shape";
   if (opt.split && opt.field !== "shape") throw new Usage("--split cuts a part of a shape field; pass --field shape");
   if (opt.style !== undefined && opt.field !== "shape") throw new Usage("--style picks a shape field's look; pass --field shape");
-  const frame = opt.frame ?? preset?.frame ?? "loose";
-  if (!FRAMES.includes(frame)) throw new Usage(`--frame ${frame} is not a frame; use ${FRAMES.join(" or ")}`);
-  if (frame === "cover") return composeCover(pos[0], opt);
   if (opt.field && FIELDS[opt.field].frames && !FIELDS[opt.field].frames.includes(frame)) throw new Usage(`--field ${opt.field} draws only in the ${FIELDS[opt.field].frames.join(" or ")} frame; leave out --frame`);
   if (preset && frame !== preset.frame) throw new Usage(`--from ${opt.from} is a ${preset.frame} preset; the loose frame draws a field, so use --field`);
   const theme = opt.theme ?? preset?.theme ?? "light";
@@ -454,6 +458,7 @@ function cmdCompose(argv) {
   let commit;
   let date;
   if (opt.repo) {
+    if (!fs.existsSync(opt.repo) || !fs.statSync(opt.repo).isDirectory()) throw new Failure(`--repo ${opt.repo} is not a directory`);
     commit = git(opt.repo, "%h");
     date = git(opt.repo, "%cs");
     if (!commit) warn(`${opt.repo} has no git history; the ${RECORD_FRAMES.includes(frame) ? "record line" : "footer"} will show no commit`);
@@ -534,7 +539,7 @@ function coverSketch(file, spec, opt) {
         : `✗ record: product has no ${p.commit === undefined ? "commit" : "date"}, which compose wrote; run git -C <repo> log -1 --format=%h and --format=%cs and set them as "commit" and "date" in product\n`,
     );
   }
-  const drawable =!errors.some((e) => /^(version|frame|product|ground|figure\.regions(\[0\])?(:|\.(kind|field|shape|strata|solid|turn|split|accent))|figure\.texts(:|\[\d+\]\.role))/.test(e) && !/\.names\[/.test(e));
+  const drawable = !errors.some((e) => /^(version|frame|product|ground|figure:|figure\.regions(\[0\])?(:|\.(kind|field|shape|strata|solid|turn|split|accent))|figure\.texts(:|\[\d+\]\.role))/.test(e) && !/\.names\[/.test(e));
   for (const e of errors) process.stdout.write(`✗ spec: ${e}\n`);
   if (!drawable) {
     process.stdout.write("Fix the ✗ spec lines above, then sketch again: the cover cannot be drawn until its shape, ground and parts are valid.\n");
@@ -569,7 +574,9 @@ function cmdSketch(argv) {
   if (spec?.frame === "cover") return coverSketch(pos[0], spec, opt);
   // Placeholder words and copy rules wait for render; the sketch needs the geometry, the texts and the notes count.
   // A drawn shape is geometry too, so its placeholder blocks the sketch.
-  const blocking = validateSpec(spec).filter((e) => /^(figure\.(regions|texts)|figure:|notes:|version|product)/.test(e) && (/\.shape/.test(e) || !/still the placeholder|: (jargon|a file path|a "01|a middle dot)/.test(e)));
+  const blocking = validateSpec(spec).filter(
+    (e) => /^(spec:|frame:|theme:|figure\.(regions|texts)|figure:|notes:|notBuilt:|version|product|headline: missing)/.test(e) && (/\.shape/.test(e) || !/still the placeholder|: (jargon|a file path|a "01|a middle dot|a typed )/.test(e)),
+  );
   if (blocking.length) {
     for (const e of blocking) fail(`spec: ${e}`);
     return 1;
@@ -603,10 +610,10 @@ function report(found) {
 async function poster(specFile, opt, outDir, files) {
   const spec = readJson(specFile, "poster spec");
   const facts = factsFor(specFile, spec, opt);
-  const repo = spec.product.repo;
   const input = { spec, facts, presets: loadPresets() };
   const specFails = report(runChecks("spec", input));
-  if (specFails) return specFails;
+  if (specFails) return { fails: specFails, rendered: false, repo: spec?.product?.repo };
+  const repo = spec.product.repo;
   if (files.gif && !spec.motion) throw new Failure("render --gif needs motion on the spec: { kind, frames, fps }");
   const base = path.join(outDir, `${repo}-poster`);
   let html;
@@ -616,7 +623,7 @@ async function poster(specFile, opt, outDir, files) {
     throw new Failure(e.message);
   }
   const page = await renderPage({ html, base, motion: spec.motion ?? null, ...files });
-  return report(runChecks("page", { ...input, page }));
+  return { fails: report(runChecks("page", { ...input, page })), rendered: true, repo };
 }
 
 async function cmdRender(argv) {
@@ -627,15 +634,17 @@ async function cmdRender(argv) {
   );
   if (!PAPERS.includes(opt.paper)) throw new Usage(`--paper must be ${PAPERS.join(", ")}`);
   const outDir = opt.out ?? path.dirname(pos[0]);
-  const fails = await poster(pos[0], opt, outDir, { png: !opt["no-png"], pdf: !opt["no-pdf"], gif: !!opt.gif, paper: opt.paper });
+  const { fails, rendered, repo } = await poster(pos[0], opt, outDir, { png: !opt["no-png"], pdf: !opt["no-pdf"], gif: !!opt.gif, paper: opt.paper });
   const code = fails ? 1 : 0;
-  const repo = readJson(pos[0], "poster spec").product.repo;
-  const made = ["html", ...(opt["no-png"] ? [] : ["png", "thumb"]), ...(opt["no-pdf"] ? [] : ["pdf"]), ...(opt.gif ? ["gif", "mp4"] : [])]
-    .map((x) => path.join(outDir, x === "thumb" ? `${repo}-poster-thumb.png` : `${repo}-poster.${x}`))
-    .filter(fs.existsSync);
+  const made =
+    rendered && repo
+      ? ["html", ...(opt["no-png"] ? [] : ["png", "thumb"]), ...(opt["no-pdf"] ? [] : ["pdf"]), ...(opt.gif ? ["gif", "mp4"] : [])]
+          .map((x) => path.join(outDir, x === "thumb" ? `${repo}-poster-thumb.png` : `${repo}-poster.${x}`))
+          .filter(fs.existsSync)
+      : [];
   if (made.length) process.stdout.write(`${code ? "Wrote, with failures" : "Wrote"}: ${made.join(", ")}\n`);
   if (!code) process.stdout.write("PASS\n");
-  else err(`POSTER NOT FINISHED: fix the ${fails} ✗ line${fails === 1 ? "" : "s"} above, then run vyo render again. Any files written above are a failed draft, not the result.`);
+  else err(`POSTER NOT FINISHED: fix the ${fails} ✗ line${fails === 1 ? "" : "s"} above, then run vyo render again.${made.length ? " Any files written above are a failed draft, not the result." : ""}`);
   return code;
 }
 
@@ -643,7 +652,7 @@ async function cmdCheck(argv) {
   const { pos, opt } = args(argv, { facts: { type: "string" } }, 1);
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "vyo-check-"));
   try {
-    const code = (await poster(pos[0], opt, tmp, { png: false, pdf: false })) ? 1 : 0;
+    const code = (await poster(pos[0], opt, tmp, { png: false, pdf: false })).fails ? 1 : 0;
     if (!code) process.stdout.write("PASS\n");
     return code;
   } finally {

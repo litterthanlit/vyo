@@ -64,7 +64,14 @@ export function showFacts(facts) {
   out.push(`Uses found: ${via.http} http, ${via.orm} orm, ${via.package} package`);
   const hidden = hiddenCodeHint(facts);
   if (hidden) out.push("", hidden);
-  if (facts.empty) out.push("", "No screens, endpoints, tables, services, AI or jobs were found: this repo is too small or too unusual to draw.");
+  if (facts.empty) {
+    out.push(
+      "",
+      Object.keys(facts.files).length === 0
+        ? "No screens, endpoints, tables, services, AI or jobs were found: this repo is too small or too unusual to draw."
+        : "No screens, endpoints, tables, services, AI or jobs were found; loose, signal and cover posters still draw this codebase by its parts below.",
+    );
+  }
 
   const grouped = (list, kind, render) => {
     const groups = new Map();

@@ -1,6 +1,6 @@
 // Jobs: Vercel / Netlify crons, Inngest, Trigger.dev, node-cron, BullMQ, Celery / Dramatiq / Huey / APScheduler.
 // A cron target is a job, never also an endpoint.
-import { readSmall } from "./files.mjs";
+import { readSmall, packageRoots, excludeReason } from "./files.mjs";
 import { callArgs, parseArgs, pyString } from "./pyutil.mjs";
 import { jobName } from "./names.mjs";
 import { normRoutePath } from "./routes.mjs";
@@ -8,14 +8,15 @@ import { basename, extname, pub, stripExt } from "./util.mjs";
 
 export function detectJobs(ctx) {
   const { sources, facts, pkgIndex, allPaths, dir } = ctx;
+  const roots = packageRoots(allPaths);
   const addJob = (id, file, schedule, name) => {
     const pkg = file ? pub(pkgIndex.pkgOf(file)) : undefined;
     facts.add("job", `job:${id}`, { name: name || jobName(id), file, meta: { schedule: schedule || undefined, package: pkg } });
   };
 
-  // vercel.json crons
+  // vercel.json crons (skip configs inside excluded directories such as test/ or build/)
   for (const p of allPaths) {
-    if (basename(p) !== "vercel.json" || /(^|\/)(node_modules|\.[^/]+)\//.test(p)) continue;
+    if (basename(p) !== "vercel.json" || excludeReason(p, roots)) continue;
     const text = readSmall(dir, p);
     let json = null;
     try {
@@ -39,7 +40,7 @@ export function detectJobs(ctx) {
 
   // netlify.toml scheduled functions
   for (const p of allPaths) {
-    if (basename(p) !== "netlify.toml") continue;
+    if (basename(p) !== "netlify.toml" || excludeReason(p, roots)) continue;
     const text = readSmall(dir, p) || "";
     for (const m of text.matchAll(/\[functions\.(?:"([^"]+)"|([\w-]+))\]([^[]*)/g)) {
       const sm = /schedule\s*=\s*"([^"]+)"/.exec(m[3]);

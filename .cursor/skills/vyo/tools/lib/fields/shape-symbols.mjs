@@ -32,7 +32,8 @@ function litDepth(mask) {
   const C = SYMBOL_STYLE.cell;
   const { w, h, bits } = maskGrid(mask, C);
   const dist = edt(Float64Array.from(bits, (b) => (b ? 1e12 : 0)), w, h).map(Math.sqrt);
-  const deepest = Math.max(1, ...dist);
+  let deepest = 1;
+  for (let i = 0; i < dist.length; i++) if (dist[i] > deepest) deepest = dist[i];
   const b = mask.box;
   const [bw, bh] = [Math.max(1, b.right - b.left), Math.max(1, b.bottom - b.top)];
   return (x, y) => {

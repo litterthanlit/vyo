@@ -2,7 +2,7 @@
 // merging pairwise by how many imports tie them, into one channel that leaves the right edge. Ported from
 // g-flow. Pure, like wave.mjs: render inlines it, `vyo sketch` imports it.
 import { SHEET } from "../geometry.mjs";
-import { relayout } from "./chords.mjs";
+import { relayout, dodgeBlocks } from "./chords.mjs";
 
 // g-flow's numbers: 5px digits in 3.1px cells on 5px rows; streams start off the left edge and the last merge
 // is at x 600. The channel that leaves is `trunk` of the sheet's height; the streams enter across `span` of it.
@@ -80,7 +80,7 @@ function ribbons(parts, ties, floor) {
   })(root);
   const [top, bottom] = span.map((s) => s * floor);
   const sum = leaves.reduce((s, l) => s + l.thick, 0);
-  const g = leaves.length > 1 ? Math.min(gap[1], Math.max(gap[0], (bottom - top - sum) / (leaves.length - 1))) : 0;
+  const g = leaves.length > 1 ? Math.max(gap[0], (bottom - top - sum) / (leaves.length - 1)) : 0;
   let y = (top + bottom) / 2 - (sum + g * (leaves.length - 1)) / 2;
   for (const l of leaves) {
     l.cy = y + l.thick / 2;
@@ -124,6 +124,7 @@ export function riverRows(region, parts, opts) {
   if (!parts.length) return [];
   const { floor, measure } = opts;
   const { size, cell, pitch, core, gamma, accent, last } = RIVER;
+  const dodge = dodgeBlocks(opts, true);
   const { ribbons: ribs, exit } = ribbons(parts, region.ties ?? [], floor);
   const cols = Math.floor((SHEET.width - 2) / cell);
   const rows = Math.floor(floor / pitch);
@@ -150,6 +151,13 @@ export function riverRows(region, parts, opts) {
   const spacing = Math.round((cell - cw) * 1000) / 1000;
   const startCol = Math.floor((last - accent.back) / cell);
   const exitRow = Math.round((exit - pitch / 2) / pitch);
+  const pad = 12;
+  const blocked = (q, c) => {
+    if (!dodge.length) return false;
+    const y0 = q * pitch;
+    const x0 = c * cell;
+    return dodge.some((b) => b.top - pad < y0 + pitch && b.bottom + pad > y0 && b.left - pad < x0 + cell && b.right + pad > x0);
+  };
   const out = [];
   for (let q = 0; q < rows; q++) {
     let run = null;
@@ -163,7 +171,7 @@ export function riverRows(region, parts, opts) {
     for (let c = 0; c < cols; c++) {
       const k = q * cols + c;
       const d = dens[k];
-      if (d <= 0) {
+      if (d <= 0 || blocked(q, c)) {
         close();
         continue;
       }

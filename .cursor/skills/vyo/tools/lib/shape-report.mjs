@@ -86,7 +86,9 @@ export function thinFeatures(mask) {
     for (const cells of groups(thin, w, h)) {
       const area = cells.length * CELL * CELL;
       if (area < SHAPE_LIMITS.thinArea) continue;
-      const width = 2 * Math.sqrt(Math.max(...cells.map((c) => depth[c]))) * CELL;
+      let maxD = 0;
+      for (let i = 0; i < cells.length; i++) if (depth[cells[i]] > maxD) maxD = depth[cells[i]];
+      const width = 2 * Math.sqrt(maxD) * CELL;
       const mid = cells[Math.floor(cells.length / 2)];
       out.push({ kind, width: Math.max(CELL, Math.round(width)), x: (mid % w) * CELL, y: Math.floor(mid / w) * CELL, area });
     }

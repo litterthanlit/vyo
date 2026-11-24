@@ -104,19 +104,34 @@ export function hasWord(text, phrase) {
 const PATH = [
   /[\w.-]*\/[\w./-]*\.[a-z]{1,5}\b/i,
   /(^|[^\w])(src|lib|app|components|pages|api)\//i,
-  /\b[\w-]+\.(tsx?|jsx?|mjs|cjs|py|rb|go|rs|json|ya?ml|sql|prisma|css|html|mdx?|env)\b/i,
 ];
+const BARE_FILE = /\b[\w-]+\.(tsx?|jsx?|mjs|cjs|py|rb|go|rs|json|ya?ml|sql|prisma|css|html|mdx?|env)\b/gi;
+// Product and runtime names that end in .js are not file paths when written bare (a path like src/Next.js still fails).
+const JS_BRANDS = new Set([
+  "alpine.js", "angular.js", "anime.js", "astro.js", "auth.js", "babylon.js", "backbone.js", "chart.js", "d3.js",
+  "day.js", "dexie.js", "electron.js", "ember.js", "ethers.js", "express.js", "fabric.js", "fastify.js", "fuse.js",
+  "gatsby.js", "handlebars.js", "highlight.js", "hono.js", "howler.js", "koa.js", "konva.js", "leaflet.js", "lit.js",
+  "marked.js", "matter.js", "mermaid.js", "meteor.js", "moment.js", "nest.js", "next.js", "node.js", "nuxt.js",
+  "p5.js", "paper.js", "pdf.js", "phaser.js", "pixi.js", "plotly.js", "popper.js", "prism.js", "quill.js", "qwik.js",
+  "react.js", "remix.js", "reveal.js", "rough.js", "solid.js", "sortable.js", "strapi.js", "svelte.js", "three.js",
+  "tone.js", "two.js", "vega.js", "video.js", "vite.js", "vue.js", "web3.js",
+]);
 const NUMBER_MARKER = /(^|\s)0[1-9](?=[\s.:)]|$)/;
 // The record line and footer print the commit and date from the spec; typed copies go stale.
 const TYPED_COMMIT = /\b(?=[0-9a-f]*\d)(?=[0-9a-f]*[a-f])[0-9a-f]{7,40}\b/i;
 const TYPED_DATE = /\b\d{4}-\d{2}-\d{2}\b/;
 
 /** Problems with poster copy the agent wrote: jargon, file paths, AI tells. */
-export function textProblems(text) {
+export function textProblems(text, { allow = [] } = {}) {
   const out = [];
   const jargon = isJargon(text);
   if (jargon.length) out.push(`jargon: ${jargon.map((j) => `"${j}"`).join(", ")}`);
-  if (PATH.some((re) => re.test(text))) out.push("a file path");
+  const allowed = new Set(allow.filter(isStr).map((s) => s.trim().toLowerCase()));
+  const bareFile = [...text.matchAll(BARE_FILE)].some((m) => {
+    const k = m[0].toLowerCase();
+    return !JS_BRANDS.has(k) && !allowed.has(k);
+  });
+  if (PATH.some((re) => re.test(text)) || bareFile) out.push("a file path");
   if (NUMBER_MARKER.test(text)) out.push('a "01/02/03" style marker');
   if (text.includes("·")) out.push("a middle dot");
   if (TYPED_COMMIT.test(text)) out.push("a typed commit; the engine prints the commit, so leave it out");
@@ -622,7 +637,8 @@ export function validateSpec(spec) {
     }
   }
 
-  for (const [name, text] of copy) for (const problem of textProblems(text)) err(`${name}: ${problem} in "${text}"`);
+  const allow = isStr(p?.name) ? [p.name] : [];
+  for (const [name, text] of copy) for (const problem of textProblems(text, { allow })) err(`${name}: ${problem} in "${text}"`);
   return errors;
 }
 
