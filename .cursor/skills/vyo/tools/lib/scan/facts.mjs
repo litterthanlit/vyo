@@ -10,14 +10,27 @@ export class FactSet {
   add(kind, id, opts = {}) {
     let f = this.map.get(id);
     if (!f) {
-      f = { id, kind, name: opts.name ?? "", files: new Set(), methods: new Set(), vendor: new Set(), meta: {} };
+      f = { id, kind, name: opts.name ?? "", files: new Set(), methods: new Set(), methodsByFile: new Map(), vendor: new Set(), meta: {} };
       this.map.set(id, f);
     }
     if (opts.name && !f.name) f.name = opts.name;
-    if (opts.file) f.files.add(opts.file);
-    for (const x of opts.files || []) f.files.add(x);
+    const addedFiles = [];
+    if (opts.file) {
+      f.files.add(opts.file);
+      addedFiles.push(opts.file);
+    }
+    for (const x of opts.files || []) {
+      f.files.add(x);
+      addedFiles.push(x);
+    }
     const m = opts.meta || {};
-    for (const x of m.methods || []) f.methods.add(x);
+    for (const x of m.methods || []) {
+      f.methods.add(x);
+      for (const file of addedFiles) {
+        if (!f.methodsByFile.has(file)) f.methodsByFile.set(file, new Set());
+        f.methodsByFile.get(file).add(x);
+      }
+    }
     for (const x of m.vendor || []) f.vendor.add(x);
     for (const k of ["schedule", "package", "tools"]) if (m[k] != null && f.meta[k] == null) f.meta[k] = m[k];
     return f;
@@ -49,7 +62,10 @@ export class FactSet {
       this.map.delete(f.id);
       for (const [p, files] of [...byPkg].sort((a, b) => cmp(a[0], b[0]))) {
         const id = `${f.id}#${pub(p)}`;
-        const g = this.add(f.kind, id, { name: f.name, files, meta: { ...f.meta, methods: [...f.methods], package: pub(p) } });
+        const methods = f.methodsByFile.size
+          ? [...new Set([...files].flatMap((file) => [...(f.methodsByFile.get(file) || [])]))]
+          : [...f.methods];
+        const g = this.add(f.kind, id, { name: f.name, files, meta: { ...f.meta, methods, package: pub(p) } });
         g.meta.package = pub(p);
       }
     }

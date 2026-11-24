@@ -59,6 +59,24 @@ function splitTopJs(text) {
   return parts;
 }
 
+function topOptionString(arg, prop) {
+  const s = arg.trim();
+  if (!s.startsWith("{") || !s.endsWith("}")) return "";
+  for (const entry of splitTopJs(s.slice(1, -1))) {
+    const m = /^\s*(?:["']?(\w+)["']?)\s*:\s*["'`]([^"'`]*)["'`]/.exec(entry);
+    if (m && m[1] === prop) return m[2];
+  }
+  return "";
+}
+
+function argsOptionString(argsText, prop, startIdx = 0) {
+  for (const arg of splitTopJs(argsText).slice(startIdx)) {
+    const v = topOptionString(arg, prop);
+    if (v) return v;
+  }
+  return "";
+}
+
 export function detectHttpEndpoints(ctx) {
   detectExpressLike(ctx);
   detectTrpc(ctx);
@@ -69,6 +87,8 @@ function detectExpressLike(ctx) {
   const { sources, named, pkgIndex, facts } = ctx;
   const nodes = new Map(); // file::var -> { file, var, own, routes:[{path,methods}] }
   const byFile = new Map(); // file -> [keys]
+  const defaultExports = new Map(); // file -> var name
+  const exportAliases = new Map(); // file::exported -> local var name
   const edges = new Map(); // child key -> [{ parent, prefix }]
   const key = (f, v) => `${f}::${v}`;
 
@@ -81,31 +101,118 @@ function detectExpressLike(ctx) {
     const receivers = new Map(); // name -> own prefix
     for (const m of code.matchAll(/\b(?:const|let|var)\s+(\w+)\s*(?::[^=\n]+)?=\s*(?:new\s+)?(?:express\s*\(|express\.Router\s*\(|Router\s*\(|(?:Fastify|fastify)\s*\(|Hono\b|Elysia\b|KoaRouter\b|Koa\b|createRouter\b)/g)) {
       let own = "";
-      const tail = code.slice(m.index, m.index + 300);
-      const bp = /\.basePath\(\s*["'`]([^"'`]*)["'`]/.exec(tail) || /\bprefix\s*:\s*["'`]([^"'`]*)["'`]/.exec(tail);
-      if (bp) own = bp[1];
+      let open = m[0].endsWith("(") ? m.index + m[0].length - 1 : -1;
+      if (open < 0) {
+        const rest = code.slice(m.index + m[0].length, m.index + m[0].length + 120);
+        const call = /^\s*(?:<[^>\n]*>)?\s*\(/.exec(rest);
+        if (call) open = m.index + m[0].length + call[0].length - 1;
+      }
+      const close = open >= 0 ? matchClose(code, open) : -1;
+      if (close > open) {
+        const pf = argsOptionString(code.slice(open + 1, close), "prefix");
+        if (pf) own = pf;
+        let pos = close + 1;
+        for (;;) {
+          const cm = /^\s*\.\s*(\w+)\s*\(/.exec(code.slice(pos, pos + 80));
+          if (!cm) break;
+          const cOpen = pos + cm[0].length - 1;
+          const cClose = matchClose(code, cOpen);
+          if (cClose < 0) break;
+          if (cm[1] === "basePath") {
+            const bp = /^\s*["'`]([^"'`]*)["'`]/.exec(code.slice(cOpen + 1, cClose));
+            if (bp) own = bp[1];
+          }
+          pos = cClose + 1;
+        }
+      }
       receivers.set(m[1], own);
     }
     for (const g of ["app", "router", "fastify", "server"]) if (!receivers.has(g) && hasServerDep) receivers.set(g, "");
-    if (receivers.size === 0) continue;
+    // Plugin functions: async function catalog(fastify) { ... } or const catalog = async (fastify) => { ... }
+    const pluginSpans = [];
+    const pluginNames = new Set();
+    const addPlugin = (fnName, param, bodyOpen, isDefault) => {
+      if (!param || NOT_SERVER.has(param) || bodyOpen < 0) return;
+      const bodyClose = matchClose(code, bodyOpen);
+      if (bodyClose < 0) return;
+      const body = code.slice(bodyOpen + 1, bodyClose);
+      const esc = param.replace(/\$/g, "\\$");
+      if (!new RegExp(`\\b${esc}\\s*\\.(?:${VERB}|route|use|register)\\s*\\(`).test(body)) return;
+      pluginSpans.push({ name: fnName, param, start: bodyOpen, end: bodyClose });
+      pluginNames.add(fnName);
+      if (isDefault) defaultExports.set(file, fnName);
+    };
+    for (const fm of code.matchAll(/\b(export\s+default\s+)?(?:export\s+)?(?:async\s+)?function\s*(\w+)?\s*\(\s*(\w+)/g)) {
+      const fnName = fm[2] || (fm[1] ? "default" : "");
+      if (!fnName) continue;
+      const pOpen = code.indexOf("(", fm.index);
+      const pClose = pOpen >= 0 ? matchClose(code, pOpen) : -1;
+      if (pClose < 0) continue;
+      const brace = /^\s*(?::[^{;\n]+)?\{/.exec(code.slice(pClose + 1, pClose + 120));
+      if (brace) addPlugin(fnName, fm[3], pClose + 1 + brace[0].length - 1, !!fm[1]);
+    }
+    for (const am of code.matchAll(/\b(?:const|let|var)\s+(\w+)\s*(?::[^=\n]+)?=\s*(?:async\s+)?(?:function\s*\w*\s*\(\s*(\w+)|\(\s*(\w+)[^)\n]*\)\s*(?::[^={\n]+)?=>|(\w+)\s*=>)/g)) {
+      const fnName = am[1];
+      const param = am[2] || am[3] || am[4];
+      let after = am.index + am[0].length;
+      if (am[2]) {
+        const pOpen = code.indexOf("(", am.index + am[0].indexOf("function"));
+        const pClose = pOpen >= 0 ? matchClose(code, pOpen) : -1;
+        if (pClose < 0) continue;
+        after = pClose + 1;
+      }
+      const brace = /^\s*(?::[^{;\n]+)?\{/.exec(code.slice(after, after + 120));
+      if (brace) addPlugin(fnName, param, after + brace[0].length - 1, false);
+    }
+    if (!defaultExports.has(file)) {
+      const dm = /\bexport\s+default\s+(\w+)\b/.exec(code);
+      if (dm && (receivers.has(dm[1]) || pluginNames.has(dm[1]))) defaultExports.set(file, dm[1]);
+    }
+    for (const em of code.matchAll(/\bexport\s*\{([^}]+)\}/g)) {
+      for (const part of em[1].split(",")) {
+        const am = /^\s*(\w+)\s+as\s+(\w+)\s*$/.exec(part);
+        if (am) exportAliases.set(key(file, am[2]), am[1]);
+      }
+    }
+    if (receivers.size === 0 && pluginNames.size === 0) continue;
     const names = [...receivers.keys()].filter((n) => !NOT_SERVER.has(n));
-    if (names.length === 0) continue;
-    const re = new RegExp(`\\b(${names.map((n) => n.replace(/\$/g, "\\$")).join("|")})\\s*\\.(${VERB})\\s*\\(\\s*(["'\`])(\\/[^"'\`\\n]*)\\3`, "g");
+    const allNames = [...new Set([...names, ...pluginSpans.map((s) => s.param)])];
+    if (allNames.length === 0) continue;
     const keys = [];
     for (const [n, own] of receivers) {
       const k = key(file, n);
       nodes.set(k, { file, var: n, own, routes: [] });
       keys.push(k);
     }
+    for (const fnName of pluginNames) {
+      const k = key(file, fnName);
+      if (!nodes.has(k)) {
+        nodes.set(k, { file, var: fnName, own: "", routes: [] });
+        keys.push(k);
+      }
+    }
     byFile.set(file, keys);
+    const ownerAt = (pos, varName) => {
+      let best = null;
+      for (const s of pluginSpans) {
+        if (s.param === varName && pos >= s.start && pos <= s.end && (!best || s.end - s.start < best.end - best.start)) best = s;
+      }
+      if (best) return key(file, best.name);
+      return receivers.has(varName) ? key(file, varName) : null;
+    };
+    const namePat = allNames.map((n) => n.replace(/\$/g, "\\$")).join("|");
+    const re = new RegExp(`\\b(${namePat})\\s*\\.(${VERB})\\s*\\(\\s*(["'\`])(\\/[^"'\`\\n]*)\\3`, "g");
     let m;
     while ((m = re.exec(code))) {
-      const node = nodes.get(key(file, m[1]));
-      node.routes.push({ path: m[4], methods: m[2] === "all" ? [] : [m[2].toUpperCase()] });
+      const owner = ownerAt(m.index, m[1]);
+      if (!owner) continue;
+      nodes.get(owner).routes.push({ path: m[4], methods: m[2] === "all" ? [] : [m[2].toUpperCase()] });
     }
     // chained: router.route('/x').get(...).post(...)
-    for (const mm of code.matchAll(new RegExp(`\\b(${names.join("|")})\\s*\\.route\\s*\\(\\s*(["'\`])(\\/[^"'\`\\n]*)\\2\\s*\\)`, "g"))) {
-      const node = nodes.get(key(file, mm[1]));
+    for (const mm of code.matchAll(new RegExp(`\\b(${namePat})\\s*\\.route\\s*\\(\\s*(["'\`])(\\/[^"'\`\\n]*)\\2\\s*\\)`, "g"))) {
+      const owner = ownerAt(mm.index, mm[1]);
+      if (!owner) continue;
+      const node = nodes.get(owner);
       const methods = [];
       let i = mm.index + mm[0].length;
       for (;;) {
@@ -119,27 +226,54 @@ function detectExpressLike(ctx) {
       }
       node.routes.push({ path: mm[3], methods });
     }
-    // mounts: app.use('/api', usersRouter)
-    const requireBind = new Map();
+    // mounts: app.use('/api', usersRouter) or fastify.register(plugin, { prefix: '/api' })
+    const requireBind = new Map(); // local -> { file, exportName }
     for (const rm of code.matchAll(/\b(?:const|let|var)\s+(\w+)\s*=\s*require\(\s*["'](\.[^"']*)["']\s*\)/g)) {
       const f = ctx.resolveSpec(file, rm[2]);
-      if (f) requireBind.set(rm[1], f);
+      if (f) requireBind.set(rm[1], { file: f, exportName: null });
     }
-    for (const um of code.matchAll(new RegExp(`\\b(${names.join("|")})\\s*\\.(use|route|register)\\s*\\(\\s*(?:(["'\`])(\\/[^"'\`\\n]*)\\3\\s*,\\s*)?([\\w$.]+)`, "g"))) {
-      const [, parent, verb, , prefix, expr] = um;
-      if (verb === "route" && !prefix) continue;
-      let childFile = requireBind.get(expr.split(".")[0]) || null;
-      let childVar = null;
-      if (!childFile) {
-        for (const nm of named.get(file) || []) for (const n of nm.names) if (n.local === expr.split(".")[0]) childFile = nm.to;
+    for (const rm of code.matchAll(/\b(?:const|let|var)\s*\{([^}]+)\}\s*=\s*require\(\s*["'](\.[^"']*)["']\s*\)/g)) {
+      const f = ctx.resolveSpec(file, rm[2]);
+      if (!f) continue;
+      for (const part of rm[1].split(",")) {
+        const pm = /^\s*(\w+)(?:\s*:\s*(\w+))?\s*$/.exec(part);
+        if (pm) requireBind.set(pm[2] || pm[1], { file: f, exportName: pm[1] });
       }
-      if (!childFile && receivers.has(expr)) {
+    }
+    for (const um of code.matchAll(new RegExp(`\\b(${namePat})\\s*\\.(use|route|register)\\s*\\(\\s*(?:(["'\`])(\\/[^"'\`\\n]*)\\3\\s*,\\s*)?([\\w$.]+)`, "g"))) {
+      const [, parent, verb, , rawPrefix, expr] = um;
+      const pk = ownerAt(um.index, parent);
+      if (!pk) continue;
+      let prefix = rawPrefix ?? "";
+      if (!prefix && verb === "register") {
+        const open = code.indexOf("(", um.index + parent.length);
+        const close = open >= 0 ? matchClose(code, open) : -1;
+        if (close > open) prefix = argsOptionString(code.slice(open + 1, close), "prefix", 1);
+      }
+      if (verb === "route" && !prefix) continue;
+      const [base, prop] = expr.split(".");
+      let childFile = null;
+      let childVar = null;
+      const req = requireBind.get(base);
+      if (req) {
+        childFile = req.file;
+        childVar = req.exportName || prop || null;
+      }
+      if (!childFile) {
+        for (const nm of named.get(file) || []) {
+          for (const n of nm.names) {
+            if (n.local !== base) continue;
+            childFile = nm.to;
+            childVar = n.imported === "*" ? prop || null : n.imported;
+          }
+        }
+      }
+      if (!childFile && (receivers.has(expr) || pluginNames.has(expr))) {
         childFile = file;
         childVar = expr;
       }
       if (!childFile) continue;
-      const pk = key(file, parent);
-      edges.set(`pending:${childFile}:${childVar ?? "*"}:${pk}:${prefix ?? ""}`, [{ pending: true, childFile, childVar, parent: pk, prefix: prefix ?? "" }]);
+      edges.set(`pending:${childFile}:${childVar ?? "*"}:${pk}:${prefix}`, [{ pending: true, childFile, childVar, parent: pk, prefix }]);
     }
   }
 
@@ -147,7 +281,14 @@ function detectExpressLike(ctx) {
   const parents = new Map();
   for (const [, list] of edges) {
     for (const e of list) {
-      const targets = e.childVar ? [key(e.childFile, e.childVar)] : byFile.get(e.childFile) || [];
+      let targets;
+      if (e.childVar) {
+        const resolved = e.childVar === "default" ? defaultExports.get(e.childFile) || "default" : exportAliases.get(key(e.childFile, e.childVar)) || e.childVar;
+        const exact = key(e.childFile, resolved);
+        targets = nodes.has(exact) ? [exact] : byFile.get(e.childFile) || [];
+      } else {
+        targets = byFile.get(e.childFile) || [];
+      }
       for (const t of targets) {
         if (t === e.parent) continue;
         if (!parents.has(t)) parents.set(t, []);

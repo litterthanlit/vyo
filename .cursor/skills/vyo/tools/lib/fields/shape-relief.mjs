@@ -568,6 +568,7 @@ function reliefFindings(value, parts, drawn, mask, region, theme) {
   }
   const cw = ADVANCE * L.size;
   for (const p of parts) {
+    if (!p.loc) continue;
     const name = p.name.toLowerCase();
     const mine = drawn.filter((r) => r.part === p.id);
     if (mine.some((r) => (r.text ?? "").includes(name))) continue;

@@ -240,6 +240,7 @@ export function shapeFindings(report, { rows = report.rows, blocks = [] } = {}) 
   }
 
   for (const p of parts) {
+    if (!p.loc) continue;
     const name = p.name.toLowerCase();
     const mine = rows.filter((r) => r.part === p.id);
     if (mine.some((r) => (r.text ?? "").includes(name))) continue;

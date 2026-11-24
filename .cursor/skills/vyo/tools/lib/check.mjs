@@ -371,7 +371,7 @@ export const CHECKS = [
         const drawn = new Set(page.rows.filter((row) => row.region === r.id).map((row) => row.part));
         return [
           ...(held === total ? [] : [`region ${r.id}: the parts hold ${held} lines but facts.json has ${total}`]),
-          ...parts.filter((p) => !drawn.has(p.id)).map((p) => `region ${r.id}: part "${p.name}" (${p.id}) is never drawn; move the text blocks that cover it`),
+          ...parts.filter((p) => p.loc > 0 && !drawn.has(p.id)).map((p) => `region ${r.id}: part "${p.name}" (${p.id}) is never drawn; move the text blocks that cover it`),
           ...(r.accent !== undefined && !parts.some((p) => p.hot) ? [`region ${r.id}: accent ${r.accent} names no part; vyo parts lists the part ids`] : []),
         ];
       }),

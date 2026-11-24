@@ -90,6 +90,13 @@ export function partsFromFacts(facts, { minShare = PART_DEFAULTS.minShare, maxPa
     .map(([id, p], order) => ({ id, name: names[id] ?? areas.get(id)?.name ?? (files.has(id) ? fileName(id) : id.slice(5)), loc: p.loc, files: p.files, order, ...(files.has(id) ? { file: true } : {}) }));
 }
 
+/** The parts in `after` that came from splitting `id` out of `before` (at least 2 when the split cut it). */
+export function splitPieces(before, after, id) {
+  const prev = new Set(before.map((p) => p.id));
+  const inPart = (p) => (id === ROOT ? p.id === ROOT || (p.file && !p.id.slice(5).includes("/")) : p.id === id || p.id.startsWith(`${id}/`));
+  return after.filter((p) => inPart(p) && (p.id === id || !prev.has(p.id)));
+}
+
 // A part over `share` of the lines, or fewer than `parts` parts, draws a shape as one slab. The cold runs' flask
 // (62% accent, in rings) and train (58%) read well; Got's bone (95%) was one orange haze.
 export const DOMINANT = { share: 0.75, parts: 4 };
@@ -106,7 +113,8 @@ export function dominance(facts, options = {}) {
   if (!big || (big.loc / total <= DOMINANT.share && parts.length >= DOMINANT.parts)) return null;
   const finer = partsFromFacts(facts, { ...options, split: [...(options.split ?? []), big.id] });
   const largest = Math.max(...finer.map((p) => p.loc)) / total;
-  return { part: big, share: big.loc / total, count: parts.length, split: finer.length > parts.length ? { id: big.id, count: finer.length, largest, into: finer.some((p) => p.file) ? "files" : "folders" } : null };
+  const pieces = splitPieces(parts, finer, big.id);
+  return { part: big, share: big.loc / total, count: parts.length, split: pieces.length >= 2 ? { id: big.id, count: finer.length, largest, into: pieces.some((p) => p.file) ? "files" : "folders" } : null };
 }
 
 // Folders that hold code around the product, never the product itself, by the plain word for what they hold.

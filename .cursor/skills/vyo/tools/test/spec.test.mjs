@@ -173,6 +173,12 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
     return s;
   };
   assert.deepEqual(validateSpec(withField({ accent: "area:lib/plan", names: { "area:lib": "kitchen" }, sentence: "plan once", every: 4 })()), []);
+  assert.deepEqual(validateSpec(withField({ accent: "area:order flow", names: { "area:order flow": "orders" } })()), [], "part ids from folders with spaces validate");
+  const spacedShape = preset("shape");
+  spacedShape.figure.regions[0].split = ["area:order flow"];
+  spacedShape.figure.regions[0].accent = "area:order flow";
+  spacedShape.figure.regions[0].names = { "area:order flow": "orders" };
+  assert.deepEqual(validateSpec(spacedShape), [], "split accepts part ids with spaces");
   assert.deepEqual(validateSpec(withField({ seed: 0 })()), []);
   assert.deepEqual(validateSpec(withField({ seed: 2147483647 })()), []);
   assert.deepEqual(validateSpec(withField({ field: "glyph", letter: "Q" })()), []);
@@ -181,6 +187,7 @@ test("a field region: its keys, the options only its kind takes, and copy rules 
     [{ field: "lake" }, new RegExp(`^figure\\.regions\\[0\\]\\.field: "lake" is not a field; use ${Object.keys(FIELDS).join(" or ")}$`)],
     [{ field: "terrain", sentence: "plan once" }, /^figure\.regions\[0\]\.sentence: a terrain field has no sentence; only wave takes it$/],
     [{ accent: "lib/plan" }, /^figure\.regions\[0\]\.accent: an area id like "area:lib\/plan"/],
+    [{ accent: "area:   " }, /^figure\.regions\[0\]\.accent: an area id like "area:lib\/plan"/],
     [{ names: { "area:lib": "the API" } }, /^figure\.regions\[0\]\.names\["area:lib"\]: jargon: "api"/],
     [{ names: { "area:lib": "… a plain name" } }, /still the placeholder/],
     [{ sentence: "x".repeat(41) }, /^figure\.regions\[0\]\.sentence: 41 characters; at most 40$/],

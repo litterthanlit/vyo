@@ -55,13 +55,14 @@ const measure = (text, size) => {
 /** One row of letters in the colour token `tone`: `r` from fillRows or a field layout. */
 function drawRow(S, r, data, height, weight, tone) {
   const text = r.text.replace(/ /g, "\u00a0");
+  const alpha = r.alpha ?? 1;
   const e = el(
     "row",
-    data,
+    { ...data, ...(alpha !== 1 ? { alpha: String(alpha) } : {}) },
     {
       fontSize: r.size + "px", lineHeight: (r.lineHeight ?? height) + "px", height: height + "px",
       left: r.x + "px", top: r.y + "px", width: Math.ceil(r.width) + 1 + "px", letterSpacing: r.spacing + "px",
-      color: `var(--${tone})`, fontWeight: weight, opacity: r.alpha ?? 1,
+      color: `var(--${tone})`, fontWeight: weight, opacity: alpha,
     },
     r.spans ? undefined : text.slice(0, -1),
   );
@@ -260,10 +261,10 @@ function drawDots(S, region) {
       const rows = [...S.querySelectorAll(".row")];
       rows.forEach((row, i) => {
         const u = rows.length ? i / rows.length : 1;
-        row.style.opacity = u <= t ? "1" : "0";
+        row.style.opacity = u <= t ? (row.dataset.alpha ?? "1") : "0";
       });
     } else {
-      for (const row of S.querySelectorAll(".row")) if (row.style.opacity === "0") row.style.opacity = "";
+      for (const row of S.querySelectorAll(".row")) if (row.style.opacity === "0") row.style.opacity = row.dataset.alpha ?? "";
     }
     if (kind === "wipe") {
       for (const mark of S.querySelectorAll("[data-role=mark]")) {

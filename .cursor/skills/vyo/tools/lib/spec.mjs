@@ -320,6 +320,7 @@ function checkShapeSpec(f, shape, err) {
 function checkField(f, r, err, copy, frame) {
   const kind = FIELDS[r.field];
   if (!kind) return err(`${f}.field: "${r.field}" is not a field; use ${Object.keys(FIELDS).join(" or ")}`);
+  const isAreaId = (id) => isStr(id) && /^area:[^\r\n]+$/.test(id) && id.slice(5).trim().length > 0;
   if (kind.frames && !kind.frames.includes(frame)) err(`${f}.field: a ${r.field} field draws only in the ${kind.frames.join(" or ")} frame; remove frame or set it to ${kind.frames[0]}`);
   if (kind.options.includes("shape")) {
     if (r.shape === undefined) err(`${f}.shape: missing; draw the silhouette as { ops: [...] } (vyo compose --field shape prints the format)`);
@@ -350,7 +351,7 @@ function checkField(f, r, err, copy, frame) {
     } else if (st !== undefined && !(isObj(st) && ((st.by === "depth" && Object.keys(st).length === 1) || (st.by === "angle" && isNum(st.angle) && Object.keys(st).length === 2)))) {
       err(`${f}.strata: { "by": "angle", "angle": degrees } (90 stacks the parts top to bottom, 0 left to right) or { "by": "depth" } (shells from the outline in)`);
     }
-    if (r.split !== undefined && !(Array.isArray(r.split) && r.split.length >= 1 && r.split.length <= 4 && r.split.every((id) => isStr(id) && /^area:\S+$/.test(id)))) {
+    if (r.split !== undefined && !(Array.isArray(r.split) && r.split.length >= 1 && r.split.length <= 4 && r.split.every(isAreaId))) {
       err(`${f}.split: a list of 1 to 4 part ids, like ["area:source"], each cut into the folders inside it, or its files when it has none (vyo parts --field shape --split <id> lists the parts it gives)`);
     }
     if (r.echo !== undefined && (!Number.isInteger(r.echo) || r.echo < 0 || r.echo > RINGS.maxEcho)) err(`${f}.echo: a whole number of faded outlines from 0 to ${RINGS.maxEcho}`);
@@ -360,7 +361,7 @@ function checkField(f, r, err, copy, frame) {
     if (r[k] !== undefined && !kind.options.includes(k)) err(`${f}.${k}: a ${r.field} field has no ${k}; only ${Object.keys(FIELDS).filter((n) => FIELDS[n].options.includes(k)).join(", ")} takes it`);
   }
   if (isPlaceholder(r.accent)) err(`${f}.accent: still the placeholder; write the id of the part the product is about (compose and vyo parts list the ids)`);
-  else if (r.accent !== undefined && !(isStr(r.accent) && /^area:\S+$/.test(r.accent))) err(`${f}.accent: an area id like "area:lib/plan", or a glob of them; vyo parts lists the ids`);
+  else if (r.accent !== undefined && !isAreaId(r.accent)) err(`${f}.accent: an area id like "area:lib/plan", or a glob of them; vyo parts lists the ids`);
   const plain = (where, v, max, what) => {
     if (!isStr(v) || !v.trim()) return err(`${where}: missing`);
     if (isPlaceholder(v)) return err(`${where}: still the placeholder; write ${what}`);
@@ -371,7 +372,7 @@ function checkField(f, r, err, copy, frame) {
     if (!isObj(r.names)) err(`${f}.names: a map from part id to plain name`);
     else
       for (const [id, name] of Object.entries(r.names)) {
-        if (!/^area:\S+$/.test(id)) err(`${f}.names: "${id}" is not a part id like "area:lib/plan"`);
+        if (!isAreaId(id)) err(`${f}.names: "${id}" is not a part id like "area:lib/plan"`);
         plain(`${f}.names["${id}"]`, name, LIMITS.partName, "a plain name for the part");
       }
   }

@@ -2,7 +2,7 @@
 // part whose glyphs stray from its share of the lines, an accent that vanishes, a loop whose seam jumps, and an
 // outline accent too thin to see or so thick the object reads orange. Each message names the one change to make.
 import { COVER, COVER_GRID, coverLegend } from "./cover.mjs";
-import { partsFromFacts, partOptions, aroundProduct } from "./parts.mjs";
+import { partsFromFacts, partOptions, aroundProduct, splitPieces } from "./parts.mjs";
 
 // The orange is an accent, never the whole object: past `share` of the code it is most of the object, whatever
 // the strata, and the cover fails. An outline accent under `thin` px reads at thumbnail size as a sliver on one
@@ -135,7 +135,8 @@ export function coverFindings(cover, { still = cover.still, loop = null, cells =
 
 /** How many parts splitting the accent gives it, or 0 when it has nothing inside it to split. */
 function splits(facts, region) {
-  const before = partsFromFacts(facts, partOptions(region)).length;
-  const after = partsFromFacts(facts, { ...partOptions(region), split: [...(region.split ?? []), region.accent] }).length;
-  return after > before ? after - before + 1 : 0;
+  const before = partsFromFacts(facts, partOptions(region));
+  const after = partsFromFacts(facts, { ...partOptions(region), split: [...(region.split ?? []), region.accent] });
+  const pieces = splitPieces(before, after, region.accent);
+  return pieces.length >= 2 ? pieces.length : 0;
 }
