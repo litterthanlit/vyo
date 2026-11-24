@@ -15,6 +15,7 @@ import { launchChromium } from "./browser.mjs";
 import { placeTexts } from "./place.mjs";
 import { coverPage, COVER_FONTS } from "./cover-render.mjs";
 import { platePage, PLATE_FPS } from "./plate-render.mjs";
+import { luminousPage, LUMINOUS_FONTS, luminousGroundFor } from "./luminous-render.mjs";
 import { COVER, COVER_GROUNDS } from "./cover.mjs";
 
 const TOOLS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -32,7 +33,8 @@ const GROT_FONTS = [
 ];
 export const FONT_FACES = FONTS.map(([family, weight]) => ({ family, weight }));
 /** The faces a poster in `frame` loads. */
-export const fontFacesOf = (frame) => (frame === "cover" || frame === "plate" ? COVER_FONTS : FONTS).map(([family, weight]) => ({ family, weight }));
+export const fontFacesOf = (frame) =>
+  (frame === "luminous" ? LUMINOUS_FONTS : frame === "cover" || frame === "plate" ? COVER_FONTS : FONTS).map(([family, weight]) => ({ family, weight }));
 const MAST_FONT = `"Inter Display", Inter, "Helvetica Neue", Helvetica, Arial, sans-serif`;
 export { SHEET };
 
@@ -44,6 +46,9 @@ export const THEMES = {
   "signal-dark": { paper: "#111111", ink: "#F4F0E6", soft: "#6A675F", mid: "#A8A49A", cold: "#3D4A5C", cool: "#6B7C94", hot: "#C8FF00" },
 };
 export const tokensOf = (spec) => {
+  if (frameOf(spec) === "luminous") {
+    return luminousGroundFor(spec);
+  }
   if (frameOf(spec) === "cover" || frameOf(spec) === "plate") {
     const g = COVER_GROUNDS[spec.ground];
     return { paper: g.ground, ink: g.ink, hot: g.accent };
@@ -53,7 +58,7 @@ export const tokensOf = (spec) => {
 };
 /** The colour tokens each field region adds for its own rows, by region id. */
 export const fieldTokensOf = (spec) =>
-  frameOf(spec) === "cover" || frameOf(spec) === "plate" ? {} : Object.fromEntries(spec.figure.regions.filter((r) => r.kind === "field").map((r) => [r.id, FIELDS[r.field].tokens(spec.theme, frameOf(spec))]));
+  frameOf(spec) === "cover" || frameOf(spec) === "plate" || frameOf(spec) === "luminous" ? {} : Object.fromEntries(spec.figure.regions.filter((r) => r.kind === "field").map((r) => [r.id, FIELDS[r.field].tokens(spec.theme, frameOf(spec))]));
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const hotStop = `<span data-hot data-owner="render" style="color:var(--hot)">.</span>`;
@@ -301,6 +306,7 @@ export function buildPage(given, facts) {
   const frame = frameOf(given);
   if (frame === "cover") return coverPage(given, facts, PRELUDE);
   if (frame === "plate") return platePage(given, facts, PRELUDE);
+  if (frame === "luminous") return luminousPage(given, facts, PRELUDE);
   const spec = placeTexts(given, facts);
   const vars = Object.entries(Object.assign({}, ...Object.values(fieldTokensOf(spec)), tokensOf(spec))).map(([k, v]) => `--${k}:${v}`).join(";");
   const halo = frame === "signal" ? SIGNAL_HALO : HALO;
@@ -446,7 +452,7 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.setContent(html, { waitUntil: "load" });
-    await page.waitForFunction(() => window.drawn === true, null, { timeout: 120000 }).catch(() => {});
+    await page.waitForFunction(() => window.drawn === true || window.__vyoLuminousDone === true, null, { timeout: 120000 }).catch(() => {});
     const report = await page.evaluate(`(${fs.readFileSync(path.join(TOOLS, "lib", "inspect.js"), "utf8").replace(/^\/\/.*\n/, "")})()`);
     report.errors = errors;
     report.covered = await coveredText(page);
@@ -463,6 +469,28 @@ export async function renderPage({ html, base, png = true, pdf = true, paper = "
       else if (motion.kind === "pulse" || motion.kind === "signal") report.loop = await writePlateLoop(page, base, sheet);
       else report.loop = await writeGif(page, base, motion);
     }
+    return report;
+  } finally {
+    await browser.close();
+  }
+}
+
+/**
+ * Render a quick 1x sketch PNG of a luminous poster in Chromium and return its metrics & report.
+ * Used by `vyo sketch` when `subject.svg` is authored so agents can visually inspect before full render.
+ */
+export async function renderLuminousSketch({ html, pngPath }) {
+  fs.mkdirSync(path.dirname(path.resolve(pngPath)), { recursive: true });
+  const browser = await launchChromium();
+  try {
+    const page = await browser.newPage({ viewport: SHEET, deviceScaleFactor: 1 });
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.setContent(html, { waitUntil: "load" });
+    await page.waitForFunction(() => window.drawn === true || window.__vyoLuminousDone === true, null, { timeout: 60000 }).catch(() => {});
+    const report = await page.evaluate(`(${fs.readFileSync(path.join(TOOLS, "lib", "inspect.js"), "utf8").replace(/^\/\/.*\n/, "")})()`);
+    report.errors = errors;
+    await page.locator(".sheet").screenshot({ path: pngPath });
     return report;
   } finally {
     await browser.close();
