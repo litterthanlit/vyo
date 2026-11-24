@@ -111,8 +111,13 @@ export function sketchImage(given, facts) {
 
 const placeholder = (list) => !Array.isArray(list) || list.some((w) => typeof w === "string" && w.trim().startsWith(PLACEHOLDER));
 
+const fieldBlocks = (spec, facts) => [
+  ...spec.figure.texts.filter((t) => t.role !== "mark").map((t) => estimateText(t, spec, facts)),
+  ...(hasRecord(spec) ? [{ id: "record", record: true, ...recordRect(recordOf(spec, facts)) }] : []),
+];
+
 /** A field region's rows as the page lays them out, around the estimated text blocks. */
-export function fieldItems(spec, region, facts, texts = spec.figure.texts.map((t) => estimateText(t, spec, facts))) {
+export function fieldItems(spec, region, facts, texts = fieldBlocks(spec, facts)) {
   return layoutField(spec, region, facts, texts);
 }
 
@@ -127,8 +132,9 @@ export function sketch(given, facts) {
   const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(" "));
   const put = (r, c, ch) => r >= 0 && r < ROWS && c >= 0 && c < COLS && (grid[r][c] = ch);
   const loose = hasRecord(spec);
-  const texts = spec.figure.texts.map((t) => estimateText(t, spec, facts));
-  if (loose) texts.push({ id: "record", ...recordRect(recordOf(spec, facts)) });
+  const texts = spec.figure.texts.map((t) => ({ ...estimateText(t, spec, facts), role: t.role }));
+  if (loose) texts.push({ id: "record", record: true, ...recordRect(recordOf(spec, facts)) });
+  const dodge = texts.filter((t) => t.role !== "mark");
   const rowRects = [];
   const dotRects = [];
   const fieldRects = [];
@@ -153,13 +159,13 @@ export function sketch(given, facts) {
       }
       legend.push(`${mark} ${region.id} (shape, ${report.parts.length} ${report.ascii ? "strata; @ marks the accent stratum, ·:-=+*# the light" : "parts; @ marks the accent band"})`);
       shapeLines.push(...shapeSummary(report));
-      const findings = shapeFindings(report, { blocks: spec.figure.texts.map((t) => estimateText(t, spec, facts)) });
+      const findings = shapeFindings(report, { blocks: spec.figure.texts.filter((t) => t.role !== "mark").map((t) => estimateText(t, spec, facts)) });
       for (const [id, messages] of Object.entries(findings)) marked.push(...messages.map((m) => findingLine(id, m)));
       continue;
     }
     if (region.kind === "field") {
       const mark = LETTERS[letter++];
-      const items = fieldItems(spec, region, facts, texts);
+      const items = fieldItems(spec, region, facts, dodge);
       for (const it of items) {
         fieldRects.push({ left: it.x, top: it.y, right: it.x + it.width, bottom: it.y + it.height });
         for (let c = 0; c < COLS; c++) {

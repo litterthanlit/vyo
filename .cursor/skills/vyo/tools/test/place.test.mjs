@@ -135,3 +135,28 @@ test("a relief stacks its headline top left: the largest size the room holds in 
   // Symbols keep the default size.
   assert.equal(placeTexts(spec(), recipe).figure.texts.find((t) => t.role === "headline").size, 42);
 });
+
+test("scaffoldPlaces never collapses headline width below 240px when corners are cramped, and signal auto-placement keeps stepped list and headline clear", async () => {
+  const { scaffoldPlaces } = await import("../lib/frame.mjs");
+  const tiny = { x: 0, y: 0, w: 60, h: 60 };
+  const places = scaffoldPlaces({ "top-left": tiny, "top-right": { x: 780, y: 0, w: 60, h: 60 }, "bottom-left": { x: 0, y: 1130, w: 60, h: 60 }, "bottom-right": { x: 780, y: 1130, w: 60, h: 60 } }, { x: 420, y: 595 }, 5, "loose");
+  assert.ok(places.headline.w >= 240, `headline width ${places.headline.w} stays readable`);
+  assert.ok(places.headline.x >= 40 && places.headline.x + places.headline.w <= SHEET.width - 40, "headline stays inside sheet margins");
+
+  const sig = bare(SHAPES.flask, "symbols");
+  sig.frame = "signal";
+  sig.theme = "dark";
+  sig.headline = "A longer bold grotesque headline that wraps across lines.";
+  sig.figure.texts = [
+    { role: "label", id: "label" },
+    { role: "headline", id: "headline" },
+    { role: "legend", id: "legend", text: legendText },
+    { role: "list", id: "parts", parts: true },
+  ];
+  const placed = placeTexts(sig, recipe);
+  const rects = placed.figure.texts.map((t) => ({ t, r: estimateText(t, placed, recipe, PLACE.em) }));
+  for (const { t, r } of rects) {
+    assert.ok(r.left >= 40 && r.right <= SHEET.width - 40 && r.top >= 40 && r.bottom <= SHEET.height - 40, `${t.id} stays inside margins (${JSON.stringify(r)})`);
+  }
+  rects.forEach(({ t, r }, i) => rects.slice(i + 1).forEach(({ t: u, r: q }) => assert.ok(apart(r, q), `${t.id} and ${u.id} stay apart`)));
+});

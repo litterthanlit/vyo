@@ -145,6 +145,13 @@ function reaches(rows, base, floor) {
   return a.h >= Math.min(need.h, b.h) - 1 && a.w >= Math.min(need.w, b.w) - 1 && a.c >= Math.min(need.c, b.c) - 0.002;
 }
 
+/** Blocks a field must cut around: all blocks in loose (or when not behindTexts), record only in signal, none in swiss. */
+export function dodgeBlocks(opts, behindTexts = true) {
+  if (!behindTexts || opts.frame === "loose") return opts.blocks ?? [];
+  if (opts.frame === "signal") return (opts.blocks ?? []).filter((b) => b.record);
+  return [];
+}
+
 /**
  * Pose a mask and fill it, with part names or, when `region.symbols`, with symbols. `own.mirror: false` keeps it
  * unflipped. A pose that leaves the form under the silhouette minimum softens, and a seeded form that is under it
@@ -152,6 +159,7 @@ function reaches(rows, base, floor) {
  */
 export function fillMask(mask, region, parts, opts, own) {
   const { size, pitch } = region.symbols ? SYMBOLS : own;
+  const dodge = dodgeBlocks(opts, true);
   const fill = (pose) => {
     if (own.mirror === false) pose.mirror = false;
     else if (opts.mirror) pose.mirror = !pose.mirror;
@@ -163,8 +171,8 @@ export function fillMask(mask, region, parts, opts, own) {
       measure: opts.measure,
       theme: opts.theme,
       frame: opts.frame,
-      blocks: opts.blocks,
-      behindTexts: true,
+      blocks: dodge,
+      behindTexts: dodge.length === 0,
       symbols: !!region.symbols,
     });
   };
@@ -212,6 +220,7 @@ export function relayout(region, parts, opts, identity, { size, pitch, behindTex
   for (const it of items) toneOf[it.part] ??= it.tone;
   const drawn = new Set(items.map((it) => it.part));
   const mask = maskFromItems(items, opts.floor, (it) => index.get(it.part) ?? 0);
+  const dodge = dodgeBlocks(opts, behindTexts);
   for (const p of ladder(pose)) {
     const step = Math.round(pitch * p.density * 10) / 10;
     const chords = applyPoseToMask(mask, p, { floor: opts.floor, pitch: step });
@@ -221,8 +230,8 @@ export function relayout(region, parts, opts, identity, { size, pitch, behindTex
       measure: opts.measure,
       theme: opts.theme,
       frame: opts.frame,
-      blocks: opts.blocks,
-      behindTexts,
+      blocks: dodge,
+      behindTexts: dodge.length === 0,
       digits,
       sentence: region.sentence,
       every: region.every,

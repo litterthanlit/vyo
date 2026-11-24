@@ -1300,4 +1300,29 @@ describe("exclusions drop nothing silently", () => {
     const { stderr } = scanTree({ "src/a.go": body, "tests/t.go": body, "tests/u.go": body }, { cli: true });
     assert.match(stderr, /Left out 2 source files \(8 lines\).*tests\/ 2 files\/8 lines/);
   });
+
+  test("Rust target/ is excluded when Cargo.toml is beside it, while non-Rust target/ stays source", () => {
+    const rust = scanTree({ "Cargo.toml": '[package]\nname = "demo"\n', "src/main.rs": "fn main() {}\n", "target/debug/gen.rs": "fn gen() {}\n" }).facts;
+    assert.deepEqual(Object.keys(rust.files), ["src/main.rs"]);
+    assert.equal(rust.excluded.by["target/"].files, 1);
+    const nonRust = scanTree({ "target/main.go": body }).facts;
+    assert.deepEqual(Object.keys(nonRust.files), ["target/main.go"]);
+  });
+
+  test("vercel.json and netlify.toml inside excluded test/fixture folders do not emit phantom jobs", () => {
+    const { facts } = scanTree({
+      "src/app.js": "export const x = 1;\n",
+      "tools/test/fixtures/demo/vercel.json": JSON.stringify({ crons: [{ path: "/api/cron/fake", schedule: "0 0 * * *" }] }),
+      "tests/netlify.toml": '[functions."daily"]\nschedule = "@daily"\n',
+    });
+    assert.deepEqual(facts.facts.filter((f) => f.kind === "job"), []);
+  });
+
+  test("showFacts on a non-web repo with source files does not call it too small to draw", () => {
+    const { facts } = scanTree({ "cmd/main.go": body, "internal/core/run.go": body });
+    assert.equal(facts.empty, true);
+    const out = showFacts(facts);
+    assert.doesNotMatch(out, /too small or too unusual/);
+    assert.match(out, /No screens, endpoints, tables, services, AI or jobs were found/);
+  });
 });

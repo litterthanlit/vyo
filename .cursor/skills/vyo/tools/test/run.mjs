@@ -192,7 +192,9 @@ const facts = JSON.parse(fs.readFileSync(factsFile, "utf8"));
 for (const id of PRESETS.filter((p) => preset(p).frame !== "cover" && preset(p).figure.regions.some((r) => r.kind === "field"))) {
   const spec = preset(id);
   const page = await renderPage({ html: buildPage(spec, facts), base: path.join(OUT, `${id}-twin`), png: false, pdf: false });
-  const blocks = page.blocks.filter((b) => b.role).map((b) => b.rect);
+  const blocks = page.blocks
+    .filter((b) => (b.role && b.role !== "mark") || b.name === "record")
+    .map((b) => (b.name === "record" ? { ...b.rect, record: true } : b.rect));
   const node = spec.figure.regions.flatMap((r) => fieldItems(spec, r, facts, blocks));
   const far = node.filter((n, i) => {
     const r = page.rows[i]?.rect;

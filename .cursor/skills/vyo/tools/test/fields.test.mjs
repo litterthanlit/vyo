@@ -450,3 +450,24 @@ test("symbols: a mask field drawn in shaded symbols with gaps, every part and th
   assert.ok(traced.length > 100 && traced.every((i) => /^[-:=+# ]+$/.test(i.text)), "the bundled wings mask fills with symbols in the symbols style");
   assert.ok(traced.some((i) => i.hot) && parts.every((p) => traced.some((i) => i.part === p.id)), "every part and the accent keep their rows");
 });
+
+test("river spans at least 55% of the height even for small 4-part repos, and generated fields dodge text/record blocks in loose and record in signal", () => {
+  const small = [
+    { id: "area:a", name: "alpha", loc: 300, hot: true },
+    { id: "area:b", name: "beta", loc: 200, hot: false },
+    { id: "area:c", name: "gamma", loc: 150, hot: false },
+    { id: "area:d", name: "delta", loc: 100, hot: false },
+  ];
+  const riv = riverRows({ ties: [[0, 1, 2], [2, 3, 1]] }, small, frame({ floor: 1190, frame: "loose", blocks: [] }));
+  const top = Math.min(...riv.map((r) => r.y));
+  const bottom = Math.max(...riv.map((r) => r.y + r.height));
+  assert.ok((bottom - top) / 1190 >= 0.55, `4-part river spans ${Math.round(((bottom - top) / 1190) * 100)}% height`);
+
+  const textBlock = { left: 100, top: 200, right: 400, bottom: 320 };
+  const recBlock = { left: 40, top: 1140, right: 380, bottom: 1152, record: true };
+  const looseWave = waveRows({}, small, frame({ floor: 1190, frame: "loose", blocks: [textBlock, recBlock] }));
+  assert.ok(looseWave.every((it) => !touches(it, textBlock, 8) && !touches(it, recBlock, 8)), "loose wave clears both text and record blocks");
+  const sigWave = waveRows({}, small, frame({ floor: 1190, frame: "signal", blocks: [textBlock, recBlock] }));
+  assert.ok(sigWave.some((it) => touches(it, textBlock, 0)), "signal wave still passes behind text blocks");
+  assert.ok(sigWave.every((it) => !touches(it, recBlock, 8)), "signal wave still clears the record line");
+});

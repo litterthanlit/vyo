@@ -30,7 +30,7 @@ export const ROLES = {
   // Charcoal or paper, one signal colour, grotesque headline, archival meta, highlighter marks.
   signal: {
     label: { size: [12, 10, 16], lh: (s) => Math.round(s * 1.2), count: [1, 1], prints: "name", em: ADVANCE + 0.18, mono: true },
-    headline: { size: [52, 36, 72], lh: (s) => Math.round(s * 0.98), count: [1, 1], prints: "headline", em: 0.42 },
+    headline: { size: [52, 36, 72], lh: (s) => Math.round(s * 0.98), count: [1, 1], prints: "headline", em: 0.56 },
     paragraph: { size: [13, 12, 15], lh: (s) => Math.round(s * 1.35), count: [0, 2], max: 220, sentences: 2, em: 0.45 },
     legend: { size: [12, 10, 14], lh: (s) => Math.round(s * 1.4), count: [1, 1], max: 180, sentences: 2, em: ADVANCE, mono: true },
     // The stepped list: bold grotesque caps, each item a bullet and one step further in, four steps then back.
@@ -122,7 +122,13 @@ export const recordRect = (spot) =>
 export const SCAFFOLD = { inset: 40, gap: 16, between: 24, bottomEnd: 60, minW: 160, minH: 60 };
 // A block's width, and the characters it is given room for: three quarters of its role's limit (the headline's 72).
 // The blocks every poster needs are placed first, so an optional list never takes the legend's corner.
-const BLOCKS = { label: { w: 220 }, headline: { w: 380, chars: 54 }, legend: { w: 260, chars: 135 }, list: { w: 240 }, paragraph: { w: 240, chars: 165 } };
+const BLOCKS = {
+  label: { w: 220, min: 140 },
+  headline: { w: 380, min: 240, chars: 54 },
+  legend: { w: 260, min: 180, chars: 135 },
+  list: { w: 240, min: 160 },
+  paragraph: { w: 240, min: 180, chars: 165 },
+};
 
 /**
  * Where compose puts the loose frame's texts, by i-loose's rule: the headline in the largest empty corner,
@@ -160,9 +166,9 @@ export function scaffoldPlaces(corners, accent, listLines, frame = "loose") {
   const out = {};
   for (const [role, b] of Object.entries(BLOCKS)) {
     const { size: [size], lh, em } = ROLES[frame][role];
-    const widthIn = (r) => Math.max(minW / 2, Math.min(b.w, r.w));
+    const widthIn = (r) => Math.max(b.min, Math.min(b.w, r.w));
     // Wrapping at word breaks fills about 85% of each line, so plan for that many characters per line.
-    const heightIn = (r) => lh(size) * (role === "list" ? listLines : b.chars ? Math.ceil(b.chars / Math.floor((0.85 * widthIn(r)) / (em * size))) : 1);
+    const heightIn = (r) => lh(size) * (role === "list" ? listLines : b.chars ? Math.ceil(b.chars / Math.max(1, Math.floor((0.85 * widthIn(r)) / (em * size)))) : 1);
     const fits = (r) => r.h - r.used - (r.used ? between : 0) >= heightIn(r);
     const most = by((r) => -(r.h - r.used))[0];
     // The wanted corner, else the roomiest, else any corner that still holds the block.

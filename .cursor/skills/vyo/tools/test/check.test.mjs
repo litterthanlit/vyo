@@ -221,3 +221,39 @@ test("facts-empty speaks only in the swiss frame, whose footer prints counts", (
   const check = CHECKS.find((c) => c.id === "facts-empty");
   assert.deepEqual([check.frames, check.run({ facts: empty }).length], [["swiss"], 1], "the swiss footer still warns");
 });
+
+test("part-name matches the product name by whole word only, so short names like Go do not flag algorithms", () => {
+  const tiny = {
+    facts: [{ id: "area:algo", kind: "area", name: "Algorithms", meta: { leaf: true } }, { id: "area:rt", kind: "area", name: "Go runtime", meta: { leaf: true } }],
+    files: { "algo/a.go": { area: "area:algo", loc: 50 }, "rt/b.go": { area: "area:rt", loc: 50 } },
+  };
+  const msgs = CHECKS.find((c) => c.id === "part-name").run({
+    spec: { product: { name: "Go" }, figure: { regions: [field({ names: { "area:algo": "algorithms", "area:rt": "Go runtime" } })] } },
+    facts: tiny,
+  });
+  assert.equal(msgs.some((m) => /algorithms/.test(m)), false);
+  assert.equal(msgs.some((m) => /Go runtime/.test(m)), true);
+});
+
+test("shape checks run in the signal frame, palette prints ground on cover, and copy exempts product-name labels", () => {
+  const shapeCover = CHECKS.find((c) => c.id === "shape-cover");
+  assert.ok(shapeCover.frames.includes("signal"), "shape-cover includes signal frame");
+  const shapeThin = CHECKS.find((c) => c.id === "shape-thin");
+  assert.ok(shapeThin.frames.includes("signal"), "shape-thin includes signal frame");
+  const paletteMsgs = CHECKS.find((c) => c.id === "palette").run({
+    spec: { frame: "cover", ground: "navy", figure: { regions: [] } },
+    page: page({ boxes: [{ color: "rgb(1, 2, 3)", hot: false, where: "sheet" }], texts: [] }),
+  });
+  assert.deepEqual(paletteMsgs, ["sheet uses rgb(1, 2, 3), not a navy token"]);
+  const copyMsgs = CHECKS.find((c) => c.id === "copy").run({
+    spec: { frame: "loose", product: { name: "MyTool.js" }, figure: { regions: [] } },
+    page: page({
+      rows: [],
+      blocks: [
+        { name: "label", role: "label", text: "MYTOOL.JS", owner: "figure", rect: rect(40, 40, 140, 60) },
+        { name: "headline", role: "headline", text: "MyTool.js draws code.", owner: "figure", rect: rect(40, 80, 340, 140) },
+      ],
+    }),
+  });
+  assert.deepEqual(copyMsgs, []);
+});

@@ -234,12 +234,16 @@ function drawDots(S, region) {
     Object.assign(h.style, { fontSize: b.style.fontSize, lineHeight: b.style.lineHeight });
   }
   const origin = S.getBoundingClientRect();
-  const blocks = [...S.querySelectorAll("[data-role]")].map((b) => {
+  const boxOf = (b, record = false) => {
     const range = document.createRange();
     range.selectNodeContents(b);
     const r = range.getBoundingClientRect();
-    return { left: r.left - origin.left, top: r.top - origin.top, right: r.right - origin.left, bottom: r.bottom - origin.top };
-  });
+    return { left: r.left - origin.left, top: r.top - origin.top, right: r.right - origin.left, bottom: r.bottom - origin.top, ...(record ? { record: true } : {}) };
+  };
+  const blocks = [
+    ...[...S.querySelectorAll("[data-role]:not([data-role=mark])")].map((b) => boxOf(b)),
+    ...[...S.querySelectorAll("[data-block=record]")].map((b) => boxOf(b, true)),
+  ];
   const draw = { fill: drawFill, dots: drawDots, field: drawField, routes: drawRoutes };
   window.figure = { regions: F.regions.map((r) => draw[r.kind](S, r, blocks)) };
   window.applyMotion = (t) => {

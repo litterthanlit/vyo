@@ -2,7 +2,7 @@
 // vanishing point. Pure: render inlines it, `vyo sketch` imports it.
 import { SHEET, clearOf } from "../geometry.mjs";
 import { rowsPerPart, repeatTo, toneSet, depthTone } from "./wave.mjs";
-import { relayout } from "./chords.mjs";
+import { relayout, dodgeBlocks } from "./chords.mjs";
 
 export const RADIAL = { size: 5.6, pitch: 6.4 };
 
@@ -16,6 +16,7 @@ export function radialRows(region, parts, opts) {
   if (region.seed) return relayout(region, parts, opts, radialRows, { size: RADIAL.size, pitch: RADIAL.pitch, behindTexts: true });
   const { floor, theme = "light", frame, measure } = opts;
   const { size, pitch } = RADIAL;
+  const dodge = dodgeBlocks(opts, true);
   const cx = SHEET.width * 0.5;
   const apex = 36;
   const slots = Array.from({ length: Math.floor(floor / pitch) }, (_, i) => {
@@ -24,8 +25,8 @@ export function radialRows(region, parts, opts) {
     const half = 28 + t * 390;
     const left = Math.max(0, cx - half);
     const right = Math.min(SHEET.width - 2, cx + half);
-    return { y, runs: clearOf([[left, right]], y, pitch, []) };
-  });
+    return { y, runs: clearOf([[left, right]], y, pitch, dodge) };
+  }).filter((s) => s.runs.length);
   const counts = rowsPerPart(parts, slots.length);
   const rows = parts.flatMap((p, i) => Array(counts[i]).fill(p)).slice(0, slots.length);
   const cw = Math.round(measure("M", size) * 20) / 20;

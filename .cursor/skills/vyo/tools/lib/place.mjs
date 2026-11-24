@@ -38,11 +38,16 @@ export function estimateText(t, spec, facts, em = 1) {
   // signal frame's grotesque headline, by an average.
   const track = HEADLINE_TRACK[frameOf(spec)];
   const serif = role.prints === "headline" && track !== undefined;
+  const list = () => {
+    const items = facts || !t.parts ? listItems(spec, t, facts) : ["x".repeat(12)];
+    return frameOf(spec) === "signal" ? items.map((s, i) => `${" ".repeat((i % 4) * 4)}• ${s}`) : items;
+  };
   const lines = {
     name: () => one(frameOf(spec) === "swiss" ? `${spec.product.name}.` : spec.product.name.toUpperCase()),
     headline: () => headlineLines(spec, t.w, size),
-  }[role.prints]?.() ?? (t.role === "list" ? (facts || !t.parts ? listItems(spec, t, facts) : ["x".repeat(12)]) : t.role === "rule" ? [ruleText(t)] : t.role === "label" ? one(t.text) : wrap((t.text || "").replace(/\*\*/g, ""), Math.max(1, Math.floor(t.w / per))));
-  const width = Math.min(t.w, serif ? Math.max(...lines.map((l) => serifWidth(l, size, track))) * em : Math.max(1, ...lines.map((l) => l.length)) * per);
+  }[role.prints]?.() ?? (t.role === "list" ? list() : t.role === "rule" ? [ruleText(t)] : t.role === "label" ? one(t.text) : wrap((t.text || "").replace(/\*\*/g, ""), Math.max(1, Math.floor(t.w / per))));
+  const natural = serif ? Math.max(...lines.map((l) => serifWidth(l, size, track))) * em : Math.max(1, ...lines.map((l) => l.length)) * per;
+  const width = t.role === "list" && frameOf(spec) === "signal" ? natural : Math.min(t.w, natural);
   const left = t.align === "right" ? t.x + t.w - width : t.align === "center" ? t.x + (t.w - width) / 2 : t.x;
   return { id: t.id, left, top: t.y, right: left + width, bottom: t.y + lines.length * lineHeight(spec, t), lines: lines.length };
 }
@@ -101,17 +106,24 @@ function roomGrid(mask, rec, fixed) {
  */
 function stack(spec, facts, blocks, width, align, headSize, { widths = {}, label = PLACE.after.label } = {}) {
   let y = 0;
+  let maxW = width;
   const out = blocks.map((t, i) => {
     const [, most] = PLACE.w[t.role];
-    const w = Math.round(widths[t.role] ?? Math.min(t.w ?? most, most, width));
+    let w = Math.round(widths[t.role] ?? Math.min(t.w ?? most, most, width));
     const size = t.size ?? (t.role === "headline" ? headSize : undefined);
-    const placed = { ...t, w, ...(size !== undefined ? { size } : {}), align: t.align ?? align };
+    let placed = { ...t, w, ...(size !== undefined ? { size } : {}), align: t.align ?? align };
     const est = estimateText({ ...placed, x: 0, y: 0 }, spec, facts, PLACE.em);
+    const needed = Math.ceil(est.right - est.left);
+    if (needed > w) {
+      w = needed;
+      placed = { ...placed, w };
+    }
+    if (w > maxW) maxW = w;
     const top = y;
     y += est.bottom + (i < blocks.length - 1 ? (t.role === "label" ? label : PLACE.after.other) : 0);
-    return { placed, top, dx: align === "right" ? width - w : 0 };
+    return { placed, top };
   });
-  return { out, height: y };
+  return { out: out.map(({ placed, top }) => ({ placed, top, dx: align === "right" ? maxW - placed.w : 0 })), height: y, width: maxW };
 }
 
 /**
@@ -148,7 +160,7 @@ function placeColumn(spec, facts, room, blocks, centre, roomy, stacked) {
         const column = Math.max(width, ...blocks.filter((t) => t.role === "legend").map(() => legend));
         for (const align of ["left", "right"]) {
           const col = stack(spec, facts, blocks, column, align, size, { widths: { headline: width, legend }, label: S.label });
-          const spot = findSpot(room, column, col.height, centre);
+          const spot = findSpot(room, col.width, col.height, centre);
           if (!spot || spot.align !== align) continue;
           return col.out.map(({ placed, top, dx }) => ({ ...placed, x: spot.x + dx, y: spot.y + top }));
         }
@@ -162,7 +174,7 @@ function placeColumn(spec, facts, room, blocks, centre, roomy, stacked) {
     for (let width = widest; width >= narrowest; width -= 20) {
       for (const align of ["left", "right"]) {
         const col = stack(spec, facts, blocks, width, align, size);
-        const spot = findSpot(room, width, col.height, centre);
+        const spot = findSpot(room, col.width, col.height, centre);
         if (!spot || spot.align !== align) continue;
         return col.out.map(({ placed, top, dx }) => ({ ...placed, x: spot.x + dx, y: spot.y + top }));
       }

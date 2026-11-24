@@ -2,7 +2,7 @@
 // at the top behind the masthead, swings across and leaves through the floor. Pure: render inlines it,
 // `vyo sketch` imports it.
 import { SHEET, clearOf } from "../geometry.mjs";
-import { relayout } from "./chords.mjs";
+import { relayout, dodgeBlocks } from "./chords.mjs";
 
 // f-wave-paper's numbers: 6.9px letters on 7.9px rows from the top edge to the floor, about 110 rows above
 // a 900px floor. That density is what reads as a band at a sixth of the size.
@@ -62,13 +62,14 @@ export function waveRows(region, parts, opts) {
   if (region.seed) return relayout(region, parts, opts, waveRows, { size: WAVE.size, pitch: WAVE.pitch, behindTexts: true });
   const { floor, mirror, theme = "light", frame, measure } = opts;
   const { size, pitch } = WAVE;
+  const dodge = dodgeBlocks(opts, true);
   const every = region.every ?? WAVE.every;
   const slots = Array.from({ length: Math.floor(floor / pitch) }, (_, i) => {
     const y = Math.round(i * pitch * 10) / 10;
     const { centre: cx, half } = wavePath(y);
     const centre = mirror ? SHEET.width - cx : cx;
-    return { y, half, runs: clearOf([[Math.max(0, centre - half), Math.min(SHEET.width - 2, centre + half)]], y, pitch, []) };
-  });
+    return { y, half, runs: clearOf([[Math.max(0, centre - half), Math.min(SHEET.width - 2, centre + half)]], y, pitch, dodge) };
+  }).filter((s) => s.runs.length);
   const counts = rowsPerPart(parts, slots.length);
   // Fewer rows than parts: the last parts go undrawn, and the field-parts check names them.
   const rows = parts.flatMap((p, i) => Array(counts[i]).fill(p)).slice(0, slots.length);
